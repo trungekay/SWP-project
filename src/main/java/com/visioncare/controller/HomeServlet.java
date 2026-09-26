@@ -27,13 +27,10 @@ public class HomeServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            // Bỏ qua kết nối DB tạm thời theo yêu cầu (chỉ làm frontend trước)
-            /* 
             List<Doctor> doctors = doctorDAO.getAll();
             List<Department> departments = departmentDAO.getAll();
             request.setAttribute("doctors", doctors);
             request.setAttribute("departments", departments);
-            */
 
             request.getRequestDispatcher("/views/home/index.jsp").forward(request, response);
         } catch (Exception e) {

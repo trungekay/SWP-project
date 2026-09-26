@@ -48,15 +48,7 @@ public class LoginServlet extends HttpServlet {
         String password = request.getParameter("password");
 
         try {
-            // Mock đăng nhập không cần DB
-            /*
             User user = userDAO.login(email, password);
-            */
-            User user = new User();
-            user.setId(1);
-            user.setFullName("Admin Mock");
-            user.setEmail(email);
-            user.setRole("admin");
 
             if (user != null) {
                 // Đăng nhập thành công

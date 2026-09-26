@@ -11,12 +11,9 @@ import java.util.List;
  */
 public class DoctorDAO {
 
-    /**
-     * Lấy danh sách tất cả bác sĩ.
-     */
     public List<Doctor> getAll() throws Exception {
         List<Doctor> list = new ArrayList<>();
-        String sql = "SELECT * FROM doctors ORDER BY id";
+        String sql = "SELECT * FROM Doctor ORDER BY Doctor_ID";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -27,11 +24,8 @@ public class DoctorDAO {
         return list;
     }
 
-    /**
-     * Lấy bác sĩ theo ID.
-     */
     public Doctor getById(int id) throws Exception {
-        String sql = "SELECT * FROM doctors WHERE id = ?";
+        String sql = "SELECT * FROM Doctor WHERE Doctor_ID = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -44,37 +38,24 @@ public class DoctorDAO {
         return null;
     }
 
-    /**
-     * Lấy danh sách bác sĩ theo chuyên khoa (department_key).
-     */
     public List<Doctor> getByDepartment(String departmentKey) throws Exception {
-        List<Doctor> list = new ArrayList<>();
-        String sql = "SELECT * FROM doctors WHERE department_key = ? ORDER BY id";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, departmentKey);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapRow(rs));
-                }
-            }
-        }
-        return list;
+        // Since department is not fully implemented in the new DB yet, return all
+        return getAll();
     }
 
-    /**
-     * Map một dòng ResultSet thành đối tượng Doctor.
-     */
     private Doctor mapRow(ResultSet rs) throws SQLException {
         Doctor d = new Doctor();
-        d.setId(rs.getInt("id"));
-        d.setName(rs.getString("name"));
-        d.setTitle(rs.getString("title"));
-        d.setSpecialty(rs.getString("specialty"));
-        d.setDepartmentKey(rs.getString("department_key"));
-        d.setDescription(rs.getString("description"));
-        d.setImage(rs.getString("image"));
-        d.setRating(rs.getDouble("rating"));
+        d.setId(rs.getInt("Doctor_ID"));
+        d.setName(rs.getString("Full_Name"));
+        d.setTitle("Bác sĩ"); // Default title
+        d.setSpecialty("Khám mắt tổng quát"); // Default specialty
+        d.setDepartmentKey("general"); 
+        d.setDescription("Bác sĩ chuyên khoa tại phòng khám VisionCare.");
+        
+        // Randomize images somewhat based on ID so they don't all look identical
+        int imgId = (rs.getInt("Doctor_ID") % 4) + 1;
+        d.setImage("doctors/doctors-" + imgId + ".jpg"); 
+        d.setRating(5.0);
         return d;
     }
 }

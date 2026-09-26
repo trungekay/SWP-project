@@ -9,19 +9,29 @@ import java.sql.*;
  */
 public class UserDAO {
 
-    /**
-     * Đăng nhập: kiểm tra email + password.
-     * Trả về User nếu đúng, null nếu sai.
-     */
     public User login(String email, String password) throws Exception {
-        String sql = "SELECT * FROM users WHERE email = ? AND password = ?";
+        String sql = "SELECT a.Account_ID, a.Email, r.Role_Name " +
+                     "FROM Account a JOIN Role r ON a.Role_ID = r.Role_ID " +
+                     "WHERE a.Email = ? AND a.Password = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, email);
             ps.setString(2, password);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return mapRow(rs);
+                    User u = new User();
+                    u.setId(rs.getInt("Account_ID"));
+                    u.setEmail(rs.getString("Email"));
+                    u.setFullName(email); // We don't join profile tables yet, just use email
+                    
+                    // Map DB roles to application roles
+                    String roleName = rs.getString("Role_Name");
+                    if ("System_Admin".equals(roleName)) u.setRole("admin");
+                    else if ("Doctor".equals(roleName)) u.setRole("doctor");
+                    else if ("Patient".equals(roleName)) u.setRole("patient");
+                    else u.setRole(roleName.toLowerCase());
+                    
+                    return u;
                 }
             }
         }

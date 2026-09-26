@@ -50,22 +50,16 @@
                     </tr>
                   </thead>
                   <tbody>
+                  <c:forEach var="room" items="${rooms}">
                     <tr>
-                      <td>P101</td>
-                      <td>Phòng Khám 01</td>
-                      <td>Khám tổng quát</td>
+                      <td>P${room.id}</td>
+                      <td>${room.name}</td>
+                      <td>Khám chuyên khoa</td> <!-- Since room functionality isn't strictly defined in DB, defaulting this text -->
                       <td class="text-end">
                         <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></button>
                       </td>
                     </tr>
-                    <tr>
-                      <td>P102</td>
-                      <td>Phòng Khúc Xạ</td>
-                      <td>Đo khúc xạ</td>
-                      <td class="text-end">
-                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></button>
-                      </td>
-                    </tr>
+                  </c:forEach>
                   </tbody>
                 </table>
               </div>
@@ -90,22 +84,16 @@
                     </tr>
                   </thead>
                   <tbody>
+                  <c:forEach var="slot" items="${timeSlots}">
                     <tr>
-                      <td>Sáng 1</td>
-                      <td>07:30 - 08:30</td>
+                      <td>${slot.slotName}</td>
+                      <td>${slot.startTime} - ${slot.endTime}</td>
                       <td><span class="badge bg-success">Hoạt động</span></td>
                       <td class="text-end">
                         <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></button>
                       </td>
                     </tr>
-                    <tr>
-                      <td>Sáng 2</td>
-                      <td>08:30 - 09:30</td>
-                      <td><span class="badge bg-success">Hoạt động</span></td>
-                      <td class="text-end">
-                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></button>
-                      </td>
-                    </tr>
+                  </c:forEach>
                   </tbody>
                 </table>
               </div>
