@@ -20,4 +20,23 @@ public class RoomDAO {
         }
         return list;
     }
+    // Thêm phòng mới (Create)
+    public boolean addRoom(String roomName) throws Exception {
+        String sql = "INSERT INTO Room (Room_Name) VALUES (?)";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, roomName); // Ngăn chặn SQL Injection
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    // Xóa phòng (Delete)
+    public boolean deleteRoom(int roomId) throws Exception {
+        String sql = "DELETE FROM Room WHERE Room_ID = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, roomId);
+            return ps.executeUpdate() > 0;
+        }
+    }
 }
