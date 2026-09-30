@@ -64,7 +64,7 @@
             <li><a href="${pageContext.request.contextPath}/home" class="${param.activeNav == 'home' ? 'active' : ''}">Trang chủ</a></li>
             <li><a href="${pageContext.request.contextPath}/home#about">Giới thiệu</a></li>
             <li><a href="${pageContext.request.contextPath}/home#services">Dịch vụ</a></li>
-            <li><a href="${pageContext.request.contextPath}/doctor-schedules" class="${param.activeNav == 'doctors' ? 'active' : ''}">Bác sĩ</a></li>
+            <li><a href="${pageContext.request.contextPath}/home#doctors" class="${param.activeNav == 'doctors' ? 'active' : ''}">Bác sĩ</a></li>
             <li><a href="${pageContext.request.contextPath}/home#contact">Liên hệ</a></li>
 
             <c:choose>

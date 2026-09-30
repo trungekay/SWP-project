@@ -1,6 +1,15 @@
-CREATE DATABASE eye_clinic_db;
+USE master;
 GO
-USE eye_clinic_db;
+IF EXISTS (SELECT name FROM sys.databases WHERE name = N'eye_clinic_db_v2')
+BEGIN
+    ALTER DATABASE eye_clinic_db_v2 SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE eye_clinic_db_v2;
+END
+GO
+
+CREATE DATABASE eye_clinic_db_v2;
+GO
+USE eye_clinic_db_v2;
 GO
 
 -- TẠO BẢNG DANH MỤC & CẤU HÌNH (MASTER DATA)
@@ -71,6 +80,9 @@ CREATE TABLE Doctor (
     Account_ID INT NOT NULL UNIQUE,
     Full_Name NVARCHAR(255) NOT NULL,
     License_Number VARCHAR(100) NOT NULL UNIQUE,
+    Specialty NVARCHAR(100) NULL,
+    Biography NVARCHAR(MAX) NULL,
+    Achievements NVARCHAR(MAX) NULL,
     Room_ID INT NULL,
     FOREIGN KEY (Account_ID) REFERENCES Account(Account_ID),
     FOREIGN KEY (Room_ID) REFERENCES Room(Room_ID)
@@ -258,13 +270,13 @@ INSERT INTO System_Admin (Account_ID, Full_Name) VALUES (1, N'Quản trị viên
 INSERT INTO Director (Account_ID, Full_Name) VALUES (2, N'Nguyễn Văn Giám Đốc'); 
 INSERT INTO Staff (Account_ID, Full_Name, Position) VALUES (5, N'Lễ Tân Phạm Thị Lan', N'Thu Ngân & Tiếp Đón'); 
 INSERT INTO Medical_Specialist (Account_ID, Full_Name, Specialty) VALUES (4, N'KTV. Lê Thị Hoa', N'Chẩn đoán hình ảnh'); 
-INSERT INTO Doctor (Account_ID, Full_Name, License_Number, Room_ID) 
+INSERT INTO Doctor (Account_ID, Full_Name, License_Number, Specialty, Biography, Achievements, Room_ID) 
 VALUES 
-(3, N'BS. Trần Văn Nam', 'BS-12345/EYE', 1),
-(7, N'TS.BS. Nguyễn Xuân Tịnh', 'BS-56789/EYE', 1),
-(8, N'ThS.BS. Lê Hoàng Lan', 'BS-98765/EYE', 1),
-(9, N'BSCKII. Trần Quang Huy', 'BS-45678/EYE', 1),
-(10, N'BS. Phạm Bảo Ngọc', 'BS-34567/EYE', 1); 
+(3, N'BS. Trần Văn Nam', 'BS-12345/EYE', N'Khám mắt tổng quát', N'Bác sĩ Nam có hơn 10 năm kinh nghiệm trong lĩnh vực nhãn khoa tổng quát. Chuyên khám và điều trị các bệnh lý về mắt thường gặp.', N'• Bằng khen Thầy thuốc tận tâm 2023<br>• Tác giả 5 bài báo khoa học về nhãn khoa', 1),
+(7, N'TS.BS. Nguyễn Xuân Tịnh', 'BS-56789/EYE', N'Khúc xạ & Kính', N'Tiến sĩ Tịnh tốt nghiệp Đại học Y Hà Nội và từng tu nghiệp tại Nhật Bản. Ông chuyên sâu về tật khúc xạ và kiểm soát cận thị ở trẻ em.', N'• Bằng Tiến sĩ Y khoa năm 2018<br>• Trưởng nhóm nghiên cứu Ortho-K<br>• Giải thưởng Y học Cống hiến 2021', 1),
+(8, N'ThS.BS. Lê Hoàng Lan', 'BS-98765/EYE', N'Phẫu thuật LASIK', N'Thạc sĩ Lan là một trong những phẫu thuật viên LASIK hàng đầu với hàng ngàn ca phẫu thuật thành công. Cô luôn áp dụng các công nghệ laser mới nhất.', N'• Chứng nhận Phẫu thuật viên SMILE Pro<br>• Thành viên Hội Nhãn khoa Mỹ (AAO)<br>• Hoàn thành hơn 5,000 ca phẫu thuật khúc xạ', 1),
+(9, N'BSCKII. Trần Quang Huy', 'BS-45678/EYE', N'Đục thủy tinh thể', N'Bác sĩ chuyên khoa II Trần Quang Huy có hơn 20 năm kinh nghiệm. Bác sĩ Huy chuyên phẫu thuật Phaco thay thủy tinh thể nhân tạo.', N'• Bác sĩ Chuyên khoa II Nhãn khoa<br>• Bằng khen của Bộ Y Tế 2020<br>• Chuyên gia đào tạo phẫu thuật Phaco', 1),
+(10, N'BS. Phạm Bảo Ngọc', 'BS-34567/EYE', N'Nhãn khoa trẻ em', N'Bác sĩ Ngọc chuyên điều trị lác, nhược thị và các bệnh mắt ở trẻ em. Bác sĩ luôn mang lại sự thoải mái và an tâm cho các bệnh nhi.', N'• Bác sĩ Nội trú Nhãn khoa<br>• Chứng chỉ Nhãn Nhi quốc tế<br>• Đóng góp nhiều cho cộng đồng y tế trẻ em', 1); 
 
 INSERT INTO Patient (Account_ID, Full_Name, Phone, DOB, Address) 
 VALUES 

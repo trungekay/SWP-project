@@ -11,6 +11,8 @@ public class Doctor {
     private String specialty;     // Pháº«u thuáº­t LASIK & KhÃºc xáº¡
     private String departmentKey; // lasik, glaucoma, general, pediatric
     private String description;
+    private String biography;     // new
+    private String achievements;  // new
     private String image;         // doctors/doctors-1.jpg
     private double rating;        // 4.5
 
@@ -18,13 +20,15 @@ public class Doctor {
     }
 
     public Doctor(int id, String name, String title, String specialty,
-                  String departmentKey, String description, String image, double rating) {
+                  String departmentKey, String description, String biography, String achievements, String image, double rating) {
         this.id = id;
         this.name = name;
         this.title = title;
         this.specialty = specialty;
         this.departmentKey = departmentKey;
         this.description = description;
+        this.biography = biography;
+        this.achievements = achievements;
         this.image = image;
         this.rating = rating;
     }
@@ -77,6 +81,22 @@ public class Doctor {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getBiography() {
+        return biography;
+    }
+
+    public void setBiography(String biography) {
+        this.biography = biography;
+    }
+
+    public String getAchievements() {
+        return achievements;
+    }
+
+    public void setAchievements(String achievements) {
+        this.achievements = achievements;
     }
 
     public String getImage() {
