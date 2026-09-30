@@ -77,20 +77,18 @@
               <div class="mb-3">
                 <label class="form-label fw-bold">Mật khẩu mới</label>
                 <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                  <input type="password" class="form-control" name="newPassword" required placeholder="••••••••">
+                  <input type="password" class="form-control" name="newPassword" required placeholder="Nhập mật khẩu mới">
                 </div>
               </div>
 
               <div class="mb-4">
                 <label class="form-label fw-bold">Xác nhận mật khẩu</label>
                 <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
-                  <input type="password" class="form-control" name="confirmPassword" required placeholder="••••••••">
+                  <input type="password" class="form-control" name="confirmPassword" required placeholder="Nhập lại mật khẩu mới">
                 </div>
               </div>
 
-              <button type="submit" class="btn btn-primary-custom mb-3">
+              <button type="submit" class="btn w-100 py-2 mb-3 text-white" style="border-radius: 8px; font-size: 16px; font-weight: 500; background-color: #0d9488; border-color: #0d9488;">
                 Xác nhận
               </button>
             </form>

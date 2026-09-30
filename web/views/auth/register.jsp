@@ -94,64 +94,57 @@
             </c:if>
 
             <form method="post" action="${pageContext.request.contextPath}/register">
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label for="fullName" class="form-label fw-bold">Họ và tên</label>
-                  <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-person"></i></span>
-                    <input type="text" class="form-control" id="fullName" name="fullName"
-                           placeholder="Nguyễn Văn A" required>
-                  </div>
+              <div class="mb-3">
+                <label for="fullName" class="form-label fw-bold">Họ và tên</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="fullName" name="fullName"
+                         placeholder="Nhập họ và tên" required>
                 </div>
-                <div class="col-md-6 mb-3">
-                  <label for="phone" class="form-label fw-bold">Số điện thoại</label>
-                  <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-telephone"></i></span>
-                    <input type="text" class="form-control" id="phone" name="phone"
-                           placeholder="0901234567" required>
-                  </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="phone" class="form-label fw-bold">Số điện thoại</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="phone" name="phone"
+                         placeholder="Nhập số điện thoại" required>
                 </div>
               </div>
 
               <div class="mb-3">
                 <label for="email" class="form-label fw-bold">Email</label>
                 <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-envelope"></i></span>
                   <input type="email" class="form-control" id="email" name="email"
-                         placeholder="email@example.com" required>
+                         placeholder="Nhập email của bạn" required>
                 </div>
               </div>
 
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label for="password" class="form-label fw-bold">Mật khẩu</label>
-                  <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                    <input type="password" class="form-control" id="password" name="password"
-                           placeholder="••••••••" required>
-                  </div>
+              <div class="mb-3">
+                <label for="password" class="form-label fw-bold">Mật khẩu</label>
+                <div class="input-group">
+                  <input type="password" class="form-control" id="password" name="password"
+                         placeholder="Tạo mật khẩu" required>
                 </div>
-                <div class="col-md-6 mb-3">
-                  <label for="confirmPassword" class="form-label fw-bold">Xác nhận mật khẩu</label>
-                  <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
-                    <input type="password" class="form-control" id="confirmPassword" name="confirmPassword"
-                           placeholder="••••••••" required>
-                  </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="confirmPassword" class="form-label fw-bold">Nhập lại mật khẩu</label>
+                <div class="input-group">
+                  <input type="password" class="form-control" id="confirmPassword" name="confirmPassword"
+                         placeholder="Nhập lại mật khẩu" required>
                 </div>
               </div>
 
               <div class="mb-4">
                 <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
-                  <label class="form-check-label small" for="terms">
-                    Tôi đồng ý với các <a href="#" style="color: #0d9488;">điều khoản & dịch vụ</a> của VisionCare
+                  <input class="form-check-input" type="checkbox" id="terms" name="terms">
+                  <label class="form-check-label small text-muted" for="terms">
+                    Tôi đồng ý nhận thông tin chăm sóc khách hàng và khuyến mãi
                   </label>
                 </div>
               </div>
 
-              <button type="submit" class="btn btn-primary-custom">
-                <i class="bi bi-person-plus-fill me-2"></i>Đăng ký ngay
+              <button type="submit" class="btn w-100 py-2 mt-3 text-white" style="border-radius: 8px; font-size: 16px; font-weight: 500; background-color: #0d9488; border-color: #0d9488;">
+                Đăng ký
               </button>
             </form>
 

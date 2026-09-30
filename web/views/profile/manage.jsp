@@ -68,58 +68,76 @@
       <div class="container">
         <div class="row">
           <div class="col-lg-4">
-            <div class="profile-card text-center">
-              <img src="${pageContext.request.contextPath}/assets/img/testimonials/testimonials-1.jpg" alt="Avatar" class="profile-avatar">
-              <h4>${sessionScope.user.fullName != null ? sessionScope.user.fullName : 'Nguyễn Văn A'}</h4>
-              <p class="text-muted">Bệnh nhân</p>
+            <div class="profile-card text-center border-0 shadow-sm" style="border-right: 1px solid #eee !important; border-radius: 0;">
+              <div class="mb-3">
+                <span class="badge bg-light text-dark rounded-pill border px-3 py-1">Avatar</span>
+              </div>
+              <h4 class="fw-bold" style="color: #1c355e;">${not empty sessionScope.user.fullName ? sessionScope.user.fullName : 'Nguyễn Văn A'}</h4>
+              <p class="text-muted small">Bệnh nhân</p>
               
-              <ul class="nav nav-pills flex-column text-start mt-4" id="profile-nav">
-                <li class="nav-item mb-2">
-                  <a class="nav-link active" href="${pageContext.request.contextPath}/profile/manage"><i class="bi bi-person me-2"></i> Thông tin cá nhân</a>
-                </li>
-                <li class="nav-item mb-2">
-                  <a class="nav-link" href="${pageContext.request.contextPath}/profile/change-password"><i class="bi bi-lock me-2"></i> Đổi mật khẩu</a>
+              <hr class="mt-4 mb-0">
+              <ul class="nav nav-pills flex-column text-start" id="profile-nav">
+                <li class="nav-item">
+                  <a class="nav-link active py-3" style="background: transparent; color: #0d9488; font-weight: 500;" href="${pageContext.request.contextPath}/views/profile/manage.jsp"><i class="bi bi-person me-3"></i> Thông tin chung</a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link text-danger" href="${pageContext.request.contextPath}/logout"><i class="bi bi-box-arrow-right me-2"></i> Đăng xuất</a>
+                  <a class="nav-link py-3 text-dark" href="${pageContext.request.contextPath}/views/profile/appointment-history.jsp"><i class="bi bi-calendar-check me-3 text-muted"></i> Lịch sử hẹn khám</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link py-3 text-dark" href="${pageContext.request.contextPath}/views/profile/medical-history.jsp"><i class="bi bi-journal-medical me-3 text-muted"></i> Hồ sơ y tế & Thanh toán</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link py-3 text-dark" href="${pageContext.request.contextPath}/views/profile/refund-request.jsp"><i class="bi bi-cash-coin me-3 text-muted"></i> Yêu cầu hoàn tiền</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link py-3 text-dark" href="${pageContext.request.contextPath}/views/profile/change-password.jsp"><i class="bi bi-key me-3 text-muted"></i> Đổi mật khẩu</a>
+                </li>
+                <li class="nav-item mt-3">
+                  <a class="nav-link py-3 text-danger fw-500" href="${pageContext.request.contextPath}/logout"><i class="bi bi-box-arrow-right me-3"></i> Đăng xuất</a>
                 </li>
               </ul>
             </div>
           </div>
           
-          <div class="col-lg-8">
-            <div class="profile-card">
-              <h4 class="mb-4">Thông tin cá nhân</h4>
+          <div class="col-lg-8 ps-lg-5">
+            <div class="pt-2">
+              <h4 class="fw-bold" style="color: #1c355e;">Thông tin chung</h4>
+              <p class="text-muted small mb-4">Quản lý và cập nhật thông tin cá nhân của bạn</p>
+              <hr class="mb-4">
+              
               <form method="post" action="${pageContext.request.contextPath}/profile/update">
-                <div class="row mb-3">
+                <div class="row mb-4">
                   <div class="col-md-6">
-                    <label class="form-label fw-bold">Họ và tên</label>
-                    <input type="text" class="form-control" name="fullName" value="${sessionScope.user.fullName != null ? sessionScope.user.fullName : 'Nguyễn Văn A'}">
+                    <label class="form-label text-muted small fw-bold">Họ và tên</label>
+                    <input type="text" class="form-control" name="fullName" value="${not empty sessionScope.user.fullName ? sessionScope.user.fullName : ''}">
                   </div>
-                  <div class="col-md-6">
-                    <label class="form-label fw-bold">Số điện thoại</label>
-                    <input type="text" class="form-control" name="phone" value="0901234567">
+                  <div class="col-md-6 mt-3 mt-md-0">
+                    <label class="form-label text-muted small fw-bold">Số điện thoại</label>
+                    <input type="text" class="form-control" name="phone" value="${not empty sessionScope.user.phone ? sessionScope.user.phone : ''}">
                   </div>
                 </div>
                 
-                <div class="row mb-3">
+                <div class="row mb-4">
                   <div class="col-md-6">
-                    <label class="form-label fw-bold">Email</label>
-                    <input type="email" class="form-control" name="email" value="nguyenvana@example.com" readonly>
-                    <div class="form-text">Không thể thay đổi email đã đăng ký.</div>
+                    <label class="form-label text-muted small fw-bold">Email (Không thể thay đổi)</label>
+                    <input type="email" class="form-control bg-light" name="email" value="${not empty sessionScope.user.email ? sessionScope.user.email : ''}" readonly>
                   </div>
-                  <div class="col-md-6">
-                    <label class="form-label fw-bold">Ngày sinh</label>
-                    <input type="date" class="form-control" name="dob" value="1990-01-01">
+                  <div class="col-md-6 mt-3 mt-md-0">
+                    <label class="form-label text-muted small fw-bold">Ngày sinh</label>
+                    <input type="date" class="form-control" name="dob" value="${not empty sessionScope.user.dob ? sessionScope.user.dob : ''}">
                   </div>
                 </div>
 
                 <div class="mb-4">
-                  <label class="form-label fw-bold">Địa chỉ</label>
-                  <textarea class="form-control" name="address" rows="3">123 Đường Lê Lợi, Phường Bến Thành, Quận 1, TP.HCM</textarea>
+                  <label class="form-label text-muted small fw-bold">Địa chỉ liên hệ</label>
+                  <input type="text" class="form-control" name="address" value="${not empty sessionScope.user.address ? sessionScope.user.address : ''}">
                 </div>
 
-                <button type="submit" class="btn btn-custom px-4 py-2"><i class="bi bi-save me-2"></i>Cập nhật thông tin</button>
+                <div class="text-end mt-4 pt-2">
+                  <button type="submit" class="btn text-white px-4 py-2" style="background-color: #0d9488; border-color: #0d9488; border-radius: 6px;">
+                    Lưu thay đổi
+                  </button>
+                </div>
               </form>
             </div>
           </div>

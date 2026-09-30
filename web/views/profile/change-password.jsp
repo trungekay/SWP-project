@@ -69,28 +69,42 @@
       <div class="container">
         <div class="row">
           <div class="col-lg-4">
-            <div class="profile-card text-center">
-              <img src="${pageContext.request.contextPath}/assets/img/testimonials/testimonials-1.jpg" alt="Avatar" class="profile-avatar">
-              <h4>${sessionScope.user.fullName != null ? sessionScope.user.fullName : 'Nguyễn Văn A'}</h4>
-              <p class="text-muted">Bệnh nhân</p>
+            <div class="profile-card text-center border-0 shadow-sm" style="border-right: 1px solid #eee !important; border-radius: 0;">
+              <div class="mb-3">
+                <span class="badge bg-light text-dark rounded-pill border px-3 py-1">Avatar</span>
+              </div>
+              <h4 class="fw-bold" style="color: #1c355e;">${not empty sessionScope.user.fullName ? sessionScope.user.fullName : 'Nguyễn Văn A'}</h4>
+              <p class="text-muted small">Bệnh nhân</p>
               
-              <ul class="nav nav-pills flex-column text-start mt-4">
-                <li class="nav-item mb-2">
-                  <a class="nav-link" href="${pageContext.request.contextPath}/profile/manage"><i class="bi bi-person me-2"></i> Thông tin cá nhân</a>
-                </li>
-                <li class="nav-item mb-2">
-                  <a class="nav-link active" href="${pageContext.request.contextPath}/profile/change-password"><i class="bi bi-lock me-2"></i> Đổi mật khẩu</a>
+              <hr class="mt-4 mb-0">
+              <ul class="nav nav-pills flex-column text-start" id="profile-nav">
+                <li class="nav-item">
+                  <a class="nav-link py-3 text-dark" href="${pageContext.request.contextPath}/views/profile/manage.jsp"><i class="bi bi-person me-3 text-muted"></i> Thông tin chung</a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link text-danger" href="${pageContext.request.contextPath}/logout"><i class="bi bi-box-arrow-right me-2"></i> Đăng xuất</a>
+                  <a class="nav-link py-3 text-dark" href="${pageContext.request.contextPath}/views/profile/appointment-history.jsp"><i class="bi bi-calendar-check me-3 text-muted"></i> Lịch sử hẹn khám</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link py-3 text-dark" href="${pageContext.request.contextPath}/views/profile/medical-history.jsp"><i class="bi bi-journal-medical me-3 text-muted"></i> Hồ sơ y tế & Thanh toán</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link py-3 text-dark" href="${pageContext.request.contextPath}/views/profile/refund-request.jsp"><i class="bi bi-cash-coin me-3 text-muted"></i> Yêu cầu hoàn tiền</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link active py-3" style="background: transparent; color: #0d9488; font-weight: 500;" href="${pageContext.request.contextPath}/views/profile/change-password.jsp"><i class="bi bi-key me-3"></i> Đổi mật khẩu</a>
+                </li>
+                <li class="nav-item mt-3">
+                  <a class="nav-link py-3 text-danger fw-500" href="${pageContext.request.contextPath}/logout"><i class="bi bi-box-arrow-right me-3"></i> Đăng xuất</a>
                 </li>
               </ul>
             </div>
           </div>
           
-          <div class="col-lg-8">
-            <div class="profile-card">
-              <h4 class="mb-4">Thay đổi mật khẩu</h4>
+          <div class="col-lg-8 ps-lg-5">
+            <div class="pt-2">
+              <h4 class="fw-bold" style="color: #1c355e;">Đổi mật khẩu</h4>
+              <p class="text-muted small mb-4">Đảm bảo tài khoản của bạn đang sử dụng mật khẩu an toàn</p>
+              <hr class="mb-4">
               
               <%-- Thông báo --%>
               <c:if test="${not empty message}">
@@ -101,22 +115,26 @@
               </c:if>
               
               <form method="post" action="${pageContext.request.contextPath}/profile/change-password">
-                <div class="mb-3">
-                  <label class="form-label fw-bold">Mật khẩu hiện tại</label>
-                  <input type="password" class="form-control" name="oldPassword" required>
+                <div class="mb-4">
+                  <label class="form-label text-muted small fw-bold">Mật khẩu hiện tại</label>
+                  <input type="password" class="form-control" name="oldPassword" placeholder="Nhập mật khẩu hiện tại" required>
                 </div>
                 
-                <div class="mb-3">
-                  <label class="form-label fw-bold">Mật khẩu mới</label>
-                  <input type="password" class="form-control" name="newPassword" required>
+                <div class="mb-4">
+                  <label class="form-label text-muted small fw-bold">Mật khẩu mới</label>
+                  <input type="password" class="form-control" name="newPassword" placeholder="Nhập mật khẩu mới" required>
                 </div>
 
                 <div class="mb-4">
-                  <label class="form-label fw-bold">Xác nhận mật khẩu mới</label>
-                  <input type="password" class="form-control" name="confirmPassword" required>
+                  <label class="form-label text-muted small fw-bold">Xác nhận mật khẩu mới</label>
+                  <input type="password" class="form-control" name="confirmPassword" placeholder="Nhập lại mật khẩu mới" required>
                 </div>
 
-                <button type="submit" class="btn btn-custom px-4 py-2"><i class="bi bi-shield-lock me-2"></i>Lưu mật khẩu mới</button>
+                <div class="text-end mt-4 pt-2">
+                  <button type="submit" class="btn text-white px-4 py-2" style="background-color: #0d9488; border-color: #0d9488; border-radius: 6px;">
+                    Cập nhật mật khẩu
+                  </button>
+                </div>
               </form>
             </div>
           </div>

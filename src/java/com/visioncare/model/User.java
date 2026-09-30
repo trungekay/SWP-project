@@ -11,18 +11,22 @@ public class User {
     private String password;
     private String phone;
     private String role;    // patient, doctor, admin
+    private String dob;
+    private String address;
 
     public User() {
     }
 
     public User(int id, String fullName, String email, String password,
-                String phone, String role) {
+                String phone, String role, String dob, String address) {
         this.id = id;
         this.fullName = fullName;
         this.email = email;
         this.password = password;
         this.phone = phone;
         this.role = role;
+        this.dob = dob;
+        this.address = address;
     }
 
     // ===== Getters & Setters =====
@@ -73,5 +77,21 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getDob() {
+        return dob;
+    }
+
+    public void setDob(String dob) {
+        this.dob = dob;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 }

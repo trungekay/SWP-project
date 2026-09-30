@@ -117,7 +117,7 @@
                   <input class="form-check-input" type="checkbox" id="remember" name="remember">
                   <label class="form-check-label small" for="remember">Ghi nhớ đăng nhập</label>
                 </div>
-                <a href="#" class="small text-decoration-none" style="color: #0d9488;">Quên mật khẩu?</a>
+                <a href="${pageContext.request.contextPath}/views/auth/forgot-password.jsp" class="small text-decoration-none" style="color: #0d9488;">Quên mật khẩu?</a>
               </div>
 
               <button type="submit" class="btn btn-login">
@@ -126,7 +126,7 @@
             </form>
 
             <div class="text-center mt-4">
-              <p class="text-muted small mb-0">Chưa có tài khoản? <a href="#" style="color: #0d9488; font-weight: 600;">Đăng ký ngay</a></p>
+              <p class="text-muted small mb-0">Chưa có tài khoản? <a href="${pageContext.request.contextPath}/register" style="color: #0d9488; font-weight: 600;">Đăng ký ngay</a></p>
             </div>
 
           </div>

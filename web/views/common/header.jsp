@@ -70,31 +70,35 @@
             <c:choose>
               <c:when test="${not empty sessionScope.user}">
                 <!-- Admin Dropdown -->
-                <li class="dropdown">
-                  <a href="#"><span>Quản lý (Admin)</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
-                  <ul>
-                    <li><a href="${pageContext.request.contextPath}/admin/dashboard">Dashboard Doanh thu</a></li>
-                    <li><a href="${pageContext.request.contextPath}/admin/users">Quản lý Người dùng</a></li>
-                    <li><a href="${pageContext.request.contextPath}/admin/clinic-config">Cấu hình Phòng Khám</a></li>
-                    <li><a href="${pageContext.request.contextPath}/admin/catalog">Quản lý Danh mục (Dịch vụ/Vật tư)</a></li>
-                  </ul>
-                </li>
+                <c:if test="${sessionScope.user.role == 'admin'}">
+                  <li class="dropdown">
+                    <a href="#"><span>Quản lý (Admin)</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                    <ul>
+                      <li><a href="${pageContext.request.contextPath}/admin/dashboard">Dashboard Doanh thu</a></li>
+                      <li><a href="${pageContext.request.contextPath}/admin/users">Quản lý Người dùng</a></li>
+                      <li><a href="${pageContext.request.contextPath}/admin/clinic-config">Cấu hình Phòng Khám</a></li>
+                      <li><a href="${pageContext.request.contextPath}/admin/catalog">Quản lý Danh mục (Dịch vụ/Vật tư)</a></li>
+                    </ul>
+                  </li>
+                </c:if>
                 
                 <!-- Employee Dropdown -->
-                <li class="dropdown">
-                  <a href="#"><span>Nhân viên</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
-                  <ul>
-                    <li><a href="${pageContext.request.contextPath}/employee/schedule">Lịch làm việc</a></li>
-                  </ul>
-                </li>
+                <c:if test="${sessionScope.user.role == 'doctor' || sessionScope.user.role == 'staff' || sessionScope.user.role == 'director'}">
+                  <li class="dropdown">
+                    <a href="#"><span>Nhân viên</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                    <ul>
+                      <li><a href="${pageContext.request.contextPath}/employee/schedule">Lịch làm việc</a></li>
+                    </ul>
+                  </li>
+                </c:if>
 
                 <!-- User Profile Dropdown -->
                 <li class="dropdown">
                   <a href="#"><span><i class="bi bi-person-circle me-1"></i>${sessionScope.user.fullName != null ? sessionScope.user.fullName : 'Tài khoản'}</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
                   <ul>
-                    <li><a href="${pageContext.request.contextPath}/profile/manage">Hồ sơ cá nhân</a></li>
-                    <li><a href="${pageContext.request.contextPath}/profile/change-password">Đổi mật khẩu</a></li>
-                    <li><a href="${pageContext.request.contextPath}/my-appointments">Lịch hẹn của tôi</a></li>
+                    <li><a href="${pageContext.request.contextPath}/views/profile/manage.jsp">Hồ sơ cá nhân</a></li>
+                    <li><a href="${pageContext.request.contextPath}/views/profile/change-password.jsp">Đổi mật khẩu</a></li>
+                    <li><a href="${pageContext.request.contextPath}/views/profile/medical-history.jsp">Lịch sử khám bệnh</a></li>
                     <li><a href="${pageContext.request.contextPath}/logout">Đăng xuất</a></li>
                   </ul>
                 </li>

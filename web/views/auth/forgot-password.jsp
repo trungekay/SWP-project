@@ -71,17 +71,16 @@
               <p class="text-muted mb-4">Nhập email của bạn, chúng tôi sẽ gửi liên kết để đặt lại mật khẩu.</p>
             </div>
 
-            <form method="post" action="${pageContext.request.contextPath}/forgot-password">
+            <form method="post" action="${pageContext.request.contextPath}/views/auth/verify-otp.jsp">
               <div class="mb-4">
                 <label for="email" class="form-label fw-bold">Email đăng ký</label>
                 <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-envelope"></i></span>
                   <input type="email" class="form-control" id="email" name="email" required placeholder="Nhập email...">
                 </div>
               </div>
 
-              <button type="submit" class="btn btn-primary-custom mb-3">
-                Gửi yêu cầu khôi phục
+              <button type="submit" class="btn w-100 py-2 mb-3 text-white" style="border-radius: 8px; font-size: 16px; font-weight: 500; background-color: #0d9488; border-color: #0d9488;">
+                Xác nhận
               </button>
             </form>
 
