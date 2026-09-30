@@ -44,7 +44,6 @@ public class DoctorScheduleServlet extends HttpServlet {
             }
 
             // Láº¥y danh sÃ¡ch bÃ¡c sÄ© (theo chuyÃªn khoa hoáº·c táº¥t cáº£)
-            /*
             List<Doctor> doctors;
             if (specialty != null && !specialty.isEmpty() && !specialty.equals("all")) {
                 doctors = doctorDAO.getByDepartment(specialty);
@@ -73,7 +72,7 @@ public class DoctorScheduleServlet extends HttpServlet {
                     ts.setBooked(appointmentDAO.isSlotBooked(doc.getId(), selectedDate, time));
                     slots.add(ts);
                 }
-                // Buá»•i chiá»u
+                // Buá»•i chiá» u
                 for (String time : afternoonSlots) {
                     TimeSlot ts = new TimeSlot();
                     ts.setDoctorId(doc.getId());
@@ -84,11 +83,10 @@ public class DoctorScheduleServlet extends HttpServlet {
                 }
                 doctorSlots.put(doc.getId(), slots);
             }
-            */
 
-            request.setAttribute("doctors", new ArrayList<Doctor>());
-            request.setAttribute("departments", new ArrayList<Department>());
-            request.setAttribute("doctorSlots", new HashMap<Integer, List<TimeSlot>>());
+            request.setAttribute("doctors", doctors);
+            request.setAttribute("departments", departments);
+            request.setAttribute("doctorSlots", doctorSlots);
             request.setAttribute("selectedDate", selectedDate.toString());
             request.setAttribute("selectedSpecialty", specialty != null ? specialty : "all");
 

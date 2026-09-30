@@ -169,7 +169,7 @@
     </section><!-- /Stats Section -->
 
     <!-- Services Section -->
-    <section id="services" class="services section">
+    <section id="services" class="services section light-background">
 
       <!-- Section Title -->
       <div class="container section-title" data-aos="fade-up">
@@ -182,74 +182,68 @@
         <div class="row gy-4">
 
           <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
-            <div class="service-item  position-relative">
-              <div class="icon">
-                <i class="fas fa-eye"></i>
+            <div class="card service-card border-0 shadow-sm h-100">
+              <img src="${pageContext.request.contextPath}/assets/img/departments-1.jpg" class="card-img-top" alt="Khám mắt tổng quát" style="height: 200px; object-fit: cover;">
+              <div class="card-body p-4 text-center">
+                <h4 class="card-title fw-bold mb-3">Khám mắt tổng quát</h4>
+                <p class="card-text text-muted mb-4">Đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt và tư vấn chăm sóc mắt định kỳ.</p>
+                <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
               </div>
-              <a href="${pageContext.request.contextPath}/book-appointment" class="stretched-link">
-                <h3>Khám mắt tổng quát</h3>
-              </a>
-              <p>Đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt và tư vấn chăm sóc mắt định kỳ.</p>
             </div>
           </div><!-- End Service Item -->
 
           <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
-            <div class="service-item position-relative">
-              <div class="icon">
-                <i class="fas fa-glasses"></i>
+            <div class="card service-card border-0 shadow-sm h-100">
+              <img src="${pageContext.request.contextPath}/assets/img/departments-2.jpg" class="card-img-top" alt="Đo khúc xạ &amp; Kính" style="height: 200px; object-fit: cover;">
+              <div class="card-body p-4 text-center">
+                <h4 class="card-title fw-bold mb-3">Đo khúc xạ &amp; Kính</h4>
+                <p class="card-text text-muted mb-4">Đo khúc xạ chính xác, tư vấn kính cận/viễn/loạn, kính áp tròng phù hợp từng bệnh nhân.</p>
+                <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
               </div>
-              <a href="${pageContext.request.contextPath}/book-appointment" class="stretched-link">
-                <h3>Đo khúc xạ &amp; Kính</h3>
-              </a>
-              <p>Đo khúc xạ chính xác, tư vấn kính cận/viễn/loạn, kính áp tròng phù hợp từng bệnh nhân.</p>
             </div>
           </div><!-- End Service Item -->
 
           <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
-            <div class="service-item position-relative">
-              <div class="icon">
-                <i class="fas fa-child"></i>
+            <div class="card service-card border-0 shadow-sm h-100">
+              <img src="${pageContext.request.contextPath}/assets/img/departments-4.jpg" class="card-img-top" alt="Nhãn khoa trẻ em" style="height: 200px; object-fit: cover;">
+              <div class="card-body p-4 text-center">
+                <h4 class="card-title fw-bold mb-3">Nhãn khoa trẻ em</h4>
+                <p class="card-text text-muted mb-4">Sàng lọc cận thị sớm, điều trị nhược thị, lác mắt — phòng khám thân thiện cho bé.</p>
+                <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
               </div>
-              <a href="${pageContext.request.contextPath}/book-appointment" class="stretched-link">
-                <h3>Nhãn khoa trẻ em</h3>
-              </a>
-              <p>Sàng lọc cận thị sớm, điều trị nhược thị, lác mắt — phòng khám thân thiện cho bé.</p>
             </div>
           </div><!-- End Service Item -->
 
           <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
-            <div class="service-item position-relative">
-              <div class="icon">
-                <i class="fas fa-laser-pointer"></i>
+            <div class="card service-card border-0 shadow-sm h-100">
+              <img src="${pageContext.request.contextPath}/assets/img/departments-3.jpg" class="card-img-top" alt="Phẫu thuật LASIK" style="height: 200px; object-fit: cover;">
+              <div class="card-body p-4 text-center">
+                <h4 class="card-title fw-bold mb-3">Phẫu thuật LASIK</h4>
+                <p class="card-text text-muted mb-4">Phẫu thuật khúc xạ laser LASIK/SMILE điều trị cận thị, viễn thị, loạn thị vĩnh viễn.</p>
+                <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
               </div>
-              <a href="${pageContext.request.contextPath}/book-appointment" class="stretched-link">
-                <h3>Phẫu thuật LASIK</h3>
-              </a>
-              <p>Phẫu thuật khúc xạ laser LASIK/SMILE điều trị cận thị, viễn thị, loạn thị vĩnh viễn.</p>
             </div>
           </div><!-- End Service Item -->
 
           <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="500">
-            <div class="service-item position-relative">
-              <div class="icon">
-                <i class="fas fa-cloud-sun"></i>
+            <div class="card service-card border-0 shadow-sm h-100">
+              <img src="${pageContext.request.contextPath}/assets/img/departments-5.jpg" class="card-img-top" alt="Đục thủy tinh thể" style="height: 200px; object-fit: cover;">
+              <div class="card-body p-4 text-center">
+                <h4 class="card-title fw-bold mb-3">Đục thủy tinh thể</h4>
+                <p class="card-text text-muted mb-4">Phẫu thuật thay thể thủy tinh nhân tạo (IOL) điều trị đục thủy tinh thể an toàn, hiệu quả.</p>
+                <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
               </div>
-              <a href="${pageContext.request.contextPath}/book-appointment" class="stretched-link">
-                <h3>Đục thủy tinh thể</h3>
-              </a>
-              <p>Phẫu thuật thay thể thủy tinh nhân tạo (IOL) điều trị đục thủy tinh thể an toàn, hiệu quả.</p>
             </div>
           </div><!-- End Service Item -->
 
           <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="600">
-            <div class="service-item position-relative">
-              <div class="icon">
-                <i class="fas fa-notes-medical"></i>
+            <div class="card service-card border-0 shadow-sm h-100">
+              <img src="${pageContext.request.contextPath}/assets/img/gallery/gallery-1.jpg" class="card-img-top" alt="Glaucoma & Võng mạc" style="height: 200px; object-fit: cover;">
+              <div class="card-body p-4 text-center">
+                <h4 class="card-title fw-bold mb-3">Glaucoma &amp; Võng mạc</h4>
+                <p class="card-text text-muted mb-4">Chẩn đoán và điều trị glaucoma, bệnh võng mạc tiểu đường — can thiệp sớm bảo vệ thị lực.</p>
+                <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
               </div>
-              <a href="${pageContext.request.contextPath}/book-appointment" class="stretched-link">
-                <h3>Glaucoma &amp; Võng mạc</h3>
-              </a>
-              <p>Chẩn đoán và điều trị glaucoma, bệnh võng mạc tiểu đường — can thiệp sớm bảo vệ thị lực.</p>
             </div>
           </div><!-- End Service Item -->
 
@@ -392,20 +386,56 @@
 
         <div class="row gy-4">
 
-          <%-- Render bác sĩ từ database --%>
+          <%-- Render bác sĩ từ database (Sử dụng cấu trúc Card hiện đại) --%>
           <c:forEach var="doc" items="${doctors}" varStatus="loop">
-            <div class="col-lg-6" data-aos="fade-up" data-aos-delay="${(loop.index + 1) * 100}">
-              <div class="team-member d-flex align-items-start">
-                <div class="pic"><img src="${pageContext.request.contextPath}/assets/img/${doc.image}" class="img-fluid" alt="${doc.name}"></div>
-                <div class="member-info">
-                  <h4>${doc.name}</h4>
-                  <span>${doc.specialty}</span>
-                  <p>${doc.description}</p>
-                  <p class="mb-0"><a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}" class="btn btn-sm btn-outline-primary rounded-pill">Đặt lịch</a>
-                    <a href="${pageContext.request.contextPath}/doctor-schedules" class="ms-2 small">Xem lịch</a></p>
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="${(loop.index + 1) * 100}">
+              <div class="card doctor-card border-0 shadow-sm h-100 text-center">
+                <div class="card-img-top overflow-hidden mt-4 mx-auto" style="width: 180px; height: 180px; border-radius: 50%; box-shadow: 0px 4px 10px rgba(0,0,0,0.1);">
+                  <img src="${pageContext.request.contextPath}/assets/img/${not empty doc.image ? doc.image : 'doctors/doctors-1.jpg'}" class="img-fluid w-100 h-100" style="object-fit: cover;" alt="${doc.name}">
+                </div>
+                <div class="card-body p-4">
+                  <h4 class="card-title fw-bold mb-1" style="color: var(--heading-color);">${doc.name}</h4>
+                  <p class="text-primary small fw-semibold mb-3"><i class="bi bi-award me-1"></i> ${doc.specialty}</p>
+                  <p class="card-text mb-4 text-muted" style="font-size: 0.95rem;">${doc.description}</p>
+                  <div class="d-flex justify-content-center gap-2">
+                    <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}" class="btn btn-primary rounded-pill px-4 shadow-sm">Đặt lịch</a>
+                    <button type="button" class="btn btn-outline-info rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#homeDoctorModal${doc.id}">Xem chi tiết</button>
+                  </div>
                 </div>
               </div>
             </div><!-- End Team Member -->
+
+            <!-- Doctor Detail Modal (Home) -->
+            <div class="modal fade" id="homeDoctorModal${doc.id}" tabindex="-1" aria-labelledby="homeDoctorModalLabel${doc.id}" aria-hidden="true">
+              <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content border-0 shadow">
+                  <div class="modal-header border-0 pb-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body p-4 pt-0">
+                    <div class="row">
+                      <div class="col-md-4 text-center border-end">
+                        <img src="${pageContext.request.contextPath}/assets/img/${not empty doc.image ? doc.image : 'doctors/doctors-1.jpg'}" class="img-fluid rounded-circle shadow-sm mb-3" style="width: 180px; height: 180px; object-fit: cover;" alt="${doc.name}">
+                        <h4 class="fw-bold text-primary mb-1">${doc.name}</h4>
+                        <p class="text-muted mb-3"><i class="bi bi-award me-1"></i> ${doc.specialty}</p>
+                        <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}" class="btn btn-primary rounded-pill w-100 mt-2">Đặt lịch ngay</a>
+                        <a href="${pageContext.request.contextPath}/doctor-schedules?specialty=all" class="btn btn-outline-primary rounded-pill w-100 mt-2">Xem lịch khám</a>
+                      </div>
+                      <div class="col-md-8 px-4 text-start">
+                        <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Tiểu sử chuyên môn</h5>
+                        <p class="text-muted mb-4" style="line-height: 1.6;">${not empty doc.biography ? doc.biography : doc.description}</p>
+                        
+                        <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Thành tích & Học vấn</h5>
+                        <div class="text-muted" style="line-height: 1.8;">
+                          ${not empty doc.achievements ? doc.achievements : 'Đang cập nhật...'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- End Modal -->
           </c:forEach>
 
         </div>

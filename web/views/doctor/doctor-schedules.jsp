@@ -51,7 +51,16 @@
       background: #f0fdfa;
       padding: 30px;
       border-radius: 10px;
+      border-radius: 10px;
       margin-bottom: 40px;
+    }
+    .time-slot-hover:hover {
+      background-color: #0d9488 !important;
+      color: white !important;
+    }
+    .doctor-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
     }
   </style>
 
@@ -85,20 +94,29 @@
         <div class="filter-section">
           <form class="row g-3 align-items-end" method="get" action="${pageContext.request.contextPath}/doctor-schedules">
             <div class="col-md-4">
-              <label for="specialty" class="form-label fw-bold">Chuyên khoa</label>
+              <label for="specialty" class="form-label fw-bold">Dịch vụ / Khoa</label>
               <select id="specialty" name="specialty" class="form-select">
-                <option value="all" ${selectedSpecialty == 'all' ? 'selected' : ''}>Tất cả chuyên khoa</option>
+                <option value="all" ${selectedSpecialty == 'all' ? 'selected' : ''}>Tất cả Dịch vụ / Khoa</option>
                 <c:forEach var="dept" items="${departments}">
                   <option value="${dept.key}" ${selectedSpecialty == dept.key ? 'selected' : ''}>${dept.name}</option>
                 </c:forEach>
               </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
+              <label for="title" class="form-label fw-bold">Chức danh</label>
+              <select id="title" name="title" class="form-select">
+                <option value="all" ${param.title == 'all' ? 'selected' : ''}>Tất cả chức danh</option>
+                <option value="ts" ${param.title == 'ts' ? 'selected' : ''}>Tiến sĩ</option>
+                <option value="ths" ${param.title == 'ths' ? 'selected' : ''}>Thạc sĩ</option>
+                <option value="bs" ${param.title == 'bs' ? 'selected' : ''}>Bác sĩ</option>
+              </select>
+            </div>
+            <div class="col-md-3">
               <label for="date" class="form-label fw-bold">Ngày khám</label>
               <input type="date" class="form-control" id="date" name="date" value="${selectedDate}" required>
             </div>
-            <div class="col-md-4">
-              <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-2"></i>Tìm bác sĩ</button>
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-2"></i>Lọc</button>
             </div>
           </form>
         </div>
@@ -107,76 +125,71 @@
         <div class="row gy-4" id="doctorList">
 
           <c:forEach var="doc" items="${doctors}">
-            <div class="col-lg-12 doctor-row" data-specialty="${doc.departmentKey}">
-              <div class="schedule-card bg-white p-4">
-                <div class="row">
-                  <div class="col-md-3 text-center border-end">
-                    <img src="${pageContext.request.contextPath}/assets/img/${doc.image}" alt="${doc.name}" class="doctor-avatar mb-3">
-                    <h4 class="mb-1 text-primary">${doc.name}</h4>
-                    <p class="text-muted small mb-2">${doc.specialty}</p>
-                    <div class="d-flex justify-content-center gap-1 text-warning mb-3">
-                      <%-- Render stars based on rating --%>
-                      <c:forEach begin="1" end="5" var="star">
+            <div class="col-lg-4 col-md-6 doctor-row" data-specialty="${doc.departmentKey}">
+              <div class="card doctor-card border-0 shadow-sm h-100 text-center" style="transition: all 0.3s ease;">
+                <div class="card-img-top overflow-hidden mt-4 mx-auto" style="width: 150px; height: 150px; border-radius: 50%; box-shadow: 0px 4px 10px rgba(0,0,0,0.1);">
+                  <img src="${pageContext.request.contextPath}/assets/img/${not empty doc.image ? doc.image : 'doctors/doctors-1.jpg'}" class="img-fluid w-100 h-100" style="object-fit: cover;" alt="${doc.name}">
+                </div>
+                <div class="card-body p-4 d-flex flex-column">
+                  <h4 class="card-title fw-bold mb-1" style="color: var(--heading-color);">${doc.name}</h4>
+                  <p class="text-primary small fw-semibold mb-3"><i class="bi bi-award me-1"></i> ${doc.specialty}</p>
+                  
+                  <div class="text-start mt-auto">
+                    <h6 class="text-secondary mb-2 border-bottom pb-1" style="font-size: 0.9rem;"><i class="bi bi-clock me-1"></i> Lịch trống (${selectedDate})</h6>
+                    <div class="d-flex flex-wrap gap-2 mb-4 justify-content-center">
+                      <c:forEach var="slot" items="${doctorSlots[doc.id]}">
                         <c:choose>
-                          <c:when test="${star <= doc.rating}">
-                            <i class="bi bi-star-fill"></i>
-                          </c:when>
-                          <c:when test="${star - 0.5 <= doc.rating}">
-                            <i class="bi bi-star-half"></i>
+                          <c:when test="${slot.booked}">
+                            <span class="badge bg-light text-muted border p-2 text-decoration-line-through">${slot.startTime}</span>
                           </c:when>
                           <c:otherwise>
-                            <i class="bi bi-star"></i>
+                            <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}&time=${slot.startTime}" class="badge bg-white border border-primary text-primary p-2 text-decoration-none time-slot-hover" style="transition: 0.2s;">${slot.startTime}</a>
                           </c:otherwise>
                         </c:choose>
                       </c:forEach>
+                      <c:if test="${empty doctorSlots[doc.id]}">
+                        <span class="text-muted small">Không có lịch trống</span>
+                      </c:if>
                     </div>
-                    <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}" class="btn btn-outline-primary btn-sm rounded-pill px-4">Đặt lịch</a>
                   </div>
-                  <div class="col-md-9 px-4">
-                    <h5 class="mb-3 border-bottom pb-2">Khung giờ trống — <span class="text-muted">${selectedDate}</span></h5>
 
-                    <%-- Buổi sáng --%>
-                    <div class="mb-4">
-                      <h6 class="text-primary mb-2"><i class="bi bi-brightness-alt-high me-2"></i>Buổi sáng</h6>
-                      <div class="d-flex flex-wrap">
-                        <c:forEach var="slot" items="${doctorSlots[doc.id]}">
-                          <c:if test="${slot.startTime < '12:00'}">
-                            <c:choose>
-                              <c:when test="${slot.booked}">
-                                <span class="time-slot booked">${slot.startTime} (Đã đặt)</span>
-                              </c:when>
-                              <c:otherwise>
-                                <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}&time=${slot.startTime}" class="time-slot">${slot.startTime}</a>
-                              </c:otherwise>
-                            </c:choose>
-                          </c:if>
-                        </c:forEach>
+                  <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}" class="btn btn-primary rounded-pill px-4 shadow-sm w-100 mt-2">Đặt lịch khám</a>
+                  <button type="button" class="btn btn-outline-info rounded-pill px-4 shadow-sm w-100 mt-2" data-bs-toggle="modal" data-bs-target="#doctorModal${doc.id}">Xem thông tin chi tiết</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Doctor Detail Modal -->
+            <div class="modal fade" id="doctorModal${doc.id}" tabindex="-1" aria-labelledby="doctorModalLabel${doc.id}" aria-hidden="true">
+              <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content border-0 shadow">
+                  <div class="modal-header border-0 pb-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body p-4 pt-0">
+                    <div class="row">
+                      <div class="col-md-4 text-center border-end">
+                        <img src="${pageContext.request.contextPath}/assets/img/${not empty doc.image ? doc.image : 'doctors/doctors-1.jpg'}" class="img-fluid rounded-circle shadow-sm mb-3" style="width: 180px; height: 180px; object-fit: cover;" alt="${doc.name}">
+                        <h4 class="fw-bold text-primary mb-1">${doc.name}</h4>
+                        <p class="text-muted mb-3"><i class="bi bi-award me-1"></i> ${doc.specialty}</p>
+                        <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}" class="btn btn-primary rounded-pill w-100 mt-2">Đặt lịch ngay</a>
+                      </div>
+                      <div class="col-md-8 px-4">
+                        <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Tiểu sử chuyên môn</h5>
+                        <p class="text-muted mb-4" style="line-height: 1.6;">${not empty doc.biography ? doc.biography : doc.description}</p>
+                        
+                        <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Thành tích & Học vấn</h5>
+                        <div class="text-muted" style="line-height: 1.8;">
+                          ${not empty doc.achievements ? doc.achievements : 'Đang cập nhật...'}
+                        </div>
                       </div>
                     </div>
-
-                    <%-- Buổi chiều --%>
-                    <div>
-                      <h6 class="text-primary mb-2"><i class="bi bi-sun me-2"></i>Buổi chiều</h6>
-                      <div class="d-flex flex-wrap">
-                        <c:forEach var="slot" items="${doctorSlots[doc.id]}">
-                          <c:if test="${slot.startTime >= '12:00'}">
-                            <c:choose>
-                              <c:when test="${slot.booked}">
-                                <span class="time-slot booked">${slot.startTime} (Đã đặt)</span>
-                              </c:when>
-                              <c:otherwise>
-                                <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}&time=${slot.startTime}" class="time-slot">${slot.startTime}</a>
-                              </c:otherwise>
-                            </c:choose>
-                          </c:if>
-                        </c:forEach>
-                      </div>
-                    </div>
-
                   </div>
                 </div>
               </div>
             </div>
+            <!-- End Modal -->
+
           </c:forEach>
 
           <%-- Khi không tìm thấy bác sĩ --%>
