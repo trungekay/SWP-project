@@ -30,6 +30,9 @@
   <!-- Main CSS File -->
   <link href="${pageContext.request.contextPath}/assets/css/main.css" rel="stylesheet">
   <link href="${pageContext.request.contextPath}/assets/css/dentalcare-public.css" rel="stylesheet">
+  <c:if test="${param.activeNav == 'services'}">
+    <link href="${pageContext.request.contextPath}/assets/css/clinic-services.css" rel="stylesheet">
+  </c:if>
 </head>
 
 <body class="${param.bodyClass}">
@@ -63,7 +66,7 @@
           <ul>
             <li><a href="${pageContext.request.contextPath}/home" class="${param.activeNav == 'home' ? 'active' : ''}">Trang chủ</a></li>
             <li><a href="${pageContext.request.contextPath}/home#about">Giới thiệu</a></li>
-            <li><a href="${pageContext.request.contextPath}/home#services">Dịch vụ</a></li>
+            <li><a href="${pageContext.request.contextPath}/views/service/list.jsp" class="${param.activeNav == 'services' ? 'active' : ''}">Dịch vụ</a></li>
             <li><a href="${pageContext.request.contextPath}/home#doctors" class="${param.activeNav == 'doctors' ? 'active' : ''}">Bác sĩ</a></li>
             <li><a href="${pageContext.request.contextPath}/home#contact">Liên hệ</a></li>
 
