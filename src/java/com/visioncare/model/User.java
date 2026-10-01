@@ -1,18 +1,25 @@
 package com.visioncare.model;
 
 /**
- * Entity Ä‘áº¡i diá»‡n cho ngÆ°á»i dÃ¹ng há»‡ thá»‘ng (bá»‡nh nhÃ¢n, admin, bÃ¡c sÄ©).
+ * Entity dai dien cho nguoi dung he thong (benh nhan, bac si, chuyen vien, nhan vien, admin, giam doc).
  */
 public class User {
 
-    private int id;
+    private int id;                 // Account_ID
     private String fullName;
     private String email;
     private String password;
     private String phone;
-    private String role;    // patient, doctor, admin
+    private String role;            // patient, doctor, medical_specialist, staff, admin, director
     private String dob;
     private String address;
+
+    // Cac truong thong tin bo sung theo tung Actor
+    private int actorId;            // Doctor_ID / Specialist_ID / Staff_ID / Patient_ID
+    private String specialty;       // Chuyen khoa cua Bac si / KTV
+    private String roomName;        // Ten phong lam viec (vd: P.101)
+    private String licenseNumber;   // So chung chi hanh nghe
+    private String position;        // Vi tri cua Nhan vien
 
     public User() {
     }
@@ -93,5 +100,45 @@ public class User {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public int getActorId() {
+        return actorId;
+    }
+
+    public void setActorId(int actorId) {
+        this.actorId = actorId;
+    }
+
+    public String getSpecialty() {
+        return specialty;
+    }
+
+    public void setSpecialty(String specialty) {
+        this.specialty = specialty;
+    }
+
+    public String getRoomName() {
+        return roomName;
+    }
+
+    public void setRoomName(String roomName) {
+        this.roomName = roomName;
+    }
+
+    public String getLicenseNumber() {
+        return licenseNumber;
+    }
+
+    public void setLicenseNumber(String licenseNumber) {
+        this.licenseNumber = licenseNumber;
+    }
+
+    public String getPosition() {
+        return position;
+    }
+
+    public void setPosition(String position) {
+        this.position = position;
     }
 }

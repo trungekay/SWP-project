@@ -1,5 +1,7 @@
 package com.visioncare.controller;
 
+import com.visioncare.dao.WorkScheduleDAO;
+import com.visioncare.model.ScheduleCellDTO;
 import com.visioncare.model.ScheduleDayDTO;
 import com.visioncare.model.ScheduleSlotDTO;
 import com.visioncare.model.User;
@@ -17,7 +19,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
-import java.time.temporal.WeekFields;
 import java.util.*;
 
 /**
@@ -27,6 +28,8 @@ import java.util.*;
 @WebServlet(name = "EmployeeScheduleServlet", urlPatterns = {"/employee/schedule"})
 public class EmployeeScheduleServlet extends HttpServlet {
 
+    private final WorkScheduleDAO workScheduleDAO = new WorkScheduleDAO();
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -34,10 +37,40 @@ public class EmployeeScheduleServlet extends HttpServlet {
             HttpSession session = request.getSession();
             User currentUser = (User) session.getAttribute("user");
 
-            // Neu chua dang nhap trong luc dev test, gan user tam de xem giao dien
+            // Neu chua dang nhap trong luc dev test, gan user tam (BS. Trần Văn Nam - ID: 1)
             if (currentUser == null) {
-                currentUser = new User(3, "ThS.BS. Lê Hoàng Lan", "doctor.lan@visioncare.vn", "", "0901234567", "doctor", "1985-05-15", "Hà Nội");
+                currentUser = workScheduleDAO.getActorProfile(1, "doctor");
+                if (currentUser == null) {
+                    currentUser = new User();
+                    currentUser.setId(3);
+                    currentUser.setActorId(1);
+                    currentUser.setFullName("BS. Trần Văn Nam");
+                    currentUser.setRole("doctor");
+                    currentUser.setSpecialty("Khám mắt tổng quát");
+                    currentUser.setRoomName("Phòng Khám Mắt 101");
+                }
                 session.setAttribute("user", currentUser);
+            }
+
+            // Xac dinh doi tuong dang duoc xem lich (Actor hien tai hoac doi tuong duoc chon qua Switcher)
+            String viewActorIdParam = request.getParameter("viewActorId");
+            String viewRoleParam = request.getParameter("viewRole");
+
+            int effectiveActorId = currentUser.getActorId() > 0 ? currentUser.getActorId() : 1;
+            String effectiveRole = currentUser.getRole() != null ? currentUser.getRole() : "doctor";
+
+            if (viewActorIdParam != null && !viewActorIdParam.isEmpty() && viewRoleParam != null && !viewRoleParam.isEmpty()) {
+                try {
+                    effectiveActorId = Integer.parseInt(viewActorIdParam);
+                    effectiveRole = viewRoleParam;
+                } catch (NumberFormatException ignored) {
+                }
+            }
+
+            // Lay profile day du cua nguoi dang duoc xem lich
+            User viewedActor = workScheduleDAO.getActorProfile(effectiveActorId, effectiveRole);
+            if (viewedActor == null) {
+                viewedActor = currentUser;
             }
 
             LocalDate today = LocalDate.now();
@@ -77,7 +110,6 @@ public class EmployeeScheduleServlet extends HttpServlet {
                 LocalDate wStart = firstMondayOfYear.plusWeeks(w - 1);
                 LocalDate wEnd = wStart.plusDays(6);
 
-                // Dung neu tuan 53 da qua sang nam tiep theo
                 if (w == 53 && wStart.getYear() > selectedYear) {
                     break;
                 }
@@ -127,28 +159,7 @@ public class EmployeeScheduleServlet extends HttpServlet {
                 ));
             }
 
-            // Tinh tuan truoc / tuan sau cho nut mui ten < va >
-            int prevWeek = selectedWeek - 1;
-            int prevYear = selectedYear;
-            if (prevWeek < 1) {
-                prevYear = selectedYear - 1;
-                prevWeek = 52; // Tuan cuoi nam truoc
-            }
-
-            int nextWeek = selectedWeek + 1;
-            int nextYear = selectedYear;
-            if (nextWeek > weekOptions.size()) {
-                if (selectedYear < maxYear) {
-                    nextYear = selectedYear + 1;
-                    nextWeek = 1; // Tuan 1 nam sau
-                } else {
-                    nextWeek = weekOptions.size(); // Giu o tuan cuoi nam toi da
-                }
-            }
-
-            boolean isViewingCurrentWeek = (selectedYear == currentYear && selectedWeek == currentWeekOfThisYear);
-
-            // 4. Danh sach cac Slot 30 phut theo nghiep vu
+            // 4. Danh sach cac Slot 30 phut theo nghiep vu phong kham mat
             List<ScheduleSlotDTO> slots = new ArrayList<>();
             slots.add(new ScheduleSlotDTO("Slot 1", "08:00 - 08:30", "Morning"));
             slots.add(new ScheduleSlotDTO("Slot 2", "08:30 - 09:00", "Morning"));
@@ -165,11 +176,59 @@ public class EmployeeScheduleServlet extends HttpServlet {
             slots.add(new ScheduleSlotDTO("Slot 13", "16:00 - 16:30", "Afternoon"));
             slots.add(new ScheduleSlotDTO("Slot 14", "16:30 - 17:00", "Afternoon"));
 
+            // 5. TRUY VAN DU LIEU THAT TU DATABASE CHO MA TRAN LICH
+            String startDateStr = startOfSelectedWeek.format(fullFormatter);
+            String endDateStr = endOfSelectedWeek.format(fullFormatter);
+            Map<String, ScheduleCellDTO> scheduleMatrix = workScheduleDAO.getScheduleMatrix(
+                    effectiveActorId, effectiveRole, startDateStr, endDateStr
+            );
+
+            // Tinh tong so ca lam viec trong tuan va dem ca tung ngay
+            int totalWeeklySlots = 0;
+            for (ScheduleDayDTO day : weekDays) {
+                int daySlotsCount = 0;
+                for (ScheduleSlotDTO slot : slots) {
+                    String key = day.getFullDate() + "_" + slot.getId();
+                    ScheduleCellDTO cell = scheduleMatrix.get(key);
+                    if (cell != null && !cell.isOff() && !cell.isOnLeave()) {
+                        daySlotsCount++;
+                        totalWeeklySlots++;
+                    }
+                }
+                day.setTotalSlotsCount(daySlotsCount);
+            }
+
+            double totalWeeklyHours = totalWeeklySlots * 0.5; // Moi slot 30 phut = 0.5 gio
+
+            // Tinh tuan truoc / tuan sau cho nut mui ten < va >
+            int prevWeek = selectedWeek - 1;
+            int prevYear = selectedYear;
+            if (prevWeek < 1) {
+                prevYear = selectedYear - 1;
+                prevWeek = 52;
+            }
+
+            int nextWeek = selectedWeek + 1;
+            int nextYear = selectedYear;
+            if (nextWeek > weekOptions.size()) {
+                if (selectedYear < maxYear) {
+                    nextYear = selectedYear + 1;
+                    nextWeek = 1;
+                } else {
+                    nextWeek = weekOptions.size();
+                }
+            }
+
+            boolean isViewingCurrentWeek = (selectedYear == currentYear && selectedWeek == currentWeekOfThisYear);
+
             // Lay ca loc (all, Morning, Afternoon)
             String sessionFilter = request.getParameter("session");
             if (sessionFilter == null || sessionFilter.isEmpty()) {
                 sessionFilter = "all";
             }
+
+            // Lay danh sach nhan su de hien thi trong Dropdown Switcher
+            List<User> staffAndDoctorList = workScheduleDAO.getStaffAndDoctorList();
 
             // Truyen attribute sang JSP
             request.setAttribute("selectedYear", selectedYear);
@@ -186,8 +245,17 @@ public class EmployeeScheduleServlet extends HttpServlet {
 
             request.setAttribute("weekDays", weekDays);
             request.setAttribute("slots", slots);
+            request.setAttribute("scheduleMatrix", scheduleMatrix);
+            request.setAttribute("totalWeeklySlots", totalWeeklySlots);
+            request.setAttribute("totalWeeklyHours", totalWeeklyHours);
             request.setAttribute("sessionFilter", sessionFilter);
+
             request.setAttribute("currentUser", currentUser);
+            request.setAttribute("viewedActor", viewedActor);
+            request.setAttribute("effectiveActorId", effectiveActorId);
+            request.setAttribute("effectiveRole", effectiveRole);
+            request.setAttribute("staffAndDoctorList", staffAndDoctorList);
+
             request.setAttribute("todayStr", LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm • dd/MM/yyyy")));
 
             request.getRequestDispatcher("/views/employee/schedule.jsp").forward(request, response);

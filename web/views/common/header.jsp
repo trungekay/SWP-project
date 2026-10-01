@@ -82,8 +82,8 @@
                   </li>
                 </c:if>
                 
-                <!-- Employee Dropdown -->
-                <c:if test="${sessionScope.user.role == 'doctor' || sessionScope.user.role == 'staff' || sessionScope.user.role == 'director'}">
+                <!-- Employee Dropdown (Doctor, Specialist, Staff, Director) -->
+                <c:if test="${sessionScope.user.role == 'doctor' || sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist' || sessionScope.user.role == 'staff' || sessionScope.user.role == 'director'}">
                   <li class="dropdown">
                     <a href="#"><span>Nhân viên</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
                     <ul>

@@ -8,6 +8,7 @@ public class ScheduleDayDTO {
     private String dateStr;
     private String fullDate;
     private boolean isToday;
+    private int totalSlotsCount;
 
     public ScheduleDayDTO() {
     }
@@ -17,6 +18,7 @@ public class ScheduleDayDTO {
         this.dateStr = dateStr;
         this.fullDate = fullDate;
         this.isToday = isToday;
+        this.totalSlotsCount = 0;
     }
 
     public String getDayName() {
@@ -53,5 +55,13 @@ public class ScheduleDayDTO {
 
     public void setToday(boolean today) {
         isToday = today;
+    }
+
+    public int getTotalSlotsCount() {
+        return totalSlotsCount;
+    }
+
+    public void setTotalSlotsCount(int totalSlotsCount) {
+        this.totalSlotsCount = totalSlotsCount;
     }
 }
