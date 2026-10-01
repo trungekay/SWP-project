@@ -106,12 +106,20 @@
               <p class="text-muted small mb-4">Đảm bảo tài khoản của bạn đang sử dụng mật khẩu an toàn</p>
               <hr class="mb-4">
               
-              <%-- Thông báo --%>
-              <c:if test="${not empty message}">
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                  <i class="bi bi-check-circle me-2"></i>${message}
+              <c:if test="${not empty sessionScope.success}">
+                <div class="alert alert-success alert-dismissible fade show small" role="alert">
+                  <i class="bi bi-check-circle me-2"></i>${sessionScope.success}
                   <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
+                <c:remove var="success" scope="session" />
+              </c:if>
+              
+              <c:if test="${not empty sessionScope.error}">
+                <div class="alert alert-danger alert-dismissible fade show small" role="alert">
+                  <i class="bi bi-exclamation-triangle me-2"></i>${sessionScope.error}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <c:remove var="error" scope="session" />
               </c:if>
               
               <form method="post" action="${pageContext.request.contextPath}/profile/change-password">

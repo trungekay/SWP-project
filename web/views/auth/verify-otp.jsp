@@ -83,7 +83,7 @@
             </form>
 
             <div class="text-center mt-3">
-              <p class="small text-muted mb-3">Chưa nhận được mã? <a href="#" style="color: #0d9488; font-weight: 500;" class="text-decoration-none">Gửi lại (59s)</a></p>
+              <p class="small text-muted mb-3" id="resendContainer">Chưa nhận được mã? <span style="color: #6c757d; font-weight: 500;" id="resendTimer">Gửi lại (59s)</span></p>
               <a href="${pageContext.request.contextPath}/login" class="text-decoration-none small" style="color: #0d9488; font-weight: 500;"><i class="bi bi-arrow-left me-1"></i>Quay lại Đăng nhập</a>
             </div>
           </div>
@@ -91,6 +91,61 @@
       </div>
     </section>
   </main>
+
+  <script>
+    // OTP Countdown Script
+    document.addEventListener("DOMContentLoaded", function() {
+      let timeLeft = 59;
+      const timerElement = document.getElementById("resendTimer");
+      const resendContainer = document.getElementById("resendContainer");
+      
+      const countdownInterval = setInterval(function() {
+        timeLeft--;
+        if (timeLeft <= 0) {
+          clearInterval(countdownInterval);
+          resendContainer.innerHTML = 'Chưa nhận được mã? <a href="${pageContext.request.contextPath}/resend-otp" style="color: #0d9488; font-weight: 500;" class="text-decoration-none">Gửi lại mã</a>';
+        } else {
+          timerElement.innerText = "Gửi lại (" + timeLeft + "s)";
+        }
+      }, 1000);
+      
+      // Auto move focus and handle paste
+      const inputs = document.querySelectorAll(".otp-input");
+      
+      inputs.forEach((input, index) => {
+        // Handle normal typing
+        input.addEventListener("input", function(e) {
+          if (this.value.length === 1 && index < inputs.length - 1) {
+            inputs[index + 1].focus();
+          }
+        });
+        
+        // Handle backspace
+        input.addEventListener("keydown", function(e) {
+          if (e.key === "Backspace" && index > 0 && this.value.length === 0) {
+            inputs[index - 1].focus();
+            inputs[index - 1].value = '';
+          }
+        });
+        
+        // Handle paste
+        input.addEventListener("paste", function(e) {
+          e.preventDefault();
+          const pastedData = (e.clipboardData || window.clipboardData).getData("text").trim();
+          if (/^\d{1,6}$/.test(pastedData)) {
+            for (let i = 0; i < pastedData.length; i++) {
+              if (index + i < inputs.length) {
+                inputs[index + i].value = pastedData[i];
+                if (index + i < inputs.length - 1) {
+                  inputs[index + i + 1].focus();
+                }
+              }
+            }
+          }
+        });
+      });
+    });
+  </script>
 
 <%-- Include Footer --%>
 <jsp:include page="/views/common/footer.jsp" />

@@ -8,8 +8,8 @@ import java.util.Properties;
 public class EmailUtil {
     
     // Config these properties with a real email account that supports SMTP sending
-    private static final String SENDER_EMAIL = "your-email@gmail.com";
-    private static final String SENDER_PASSWORD = "your-app-password"; // App password
+    private static final String SENDER_EMAIL = "hotro.visioncare@gmail.com";
+    private static final String SENDER_PASSWORD = "gmpizjvpsdxssjwe";
 
     public static void sendOtpEmail(String recipientEmail, String otp) throws Exception {
         Properties properties = new Properties();
@@ -25,10 +25,10 @@ public class EmailUtil {
             }
         });
 
-        Message message = new MimeMessage(session);
+        MimeMessage message = new MimeMessage(session);
         message.setFrom(new InternetAddress(SENDER_EMAIL));
         message.setRecipient(Message.RecipientType.TO, new InternetAddress(recipientEmail));
-        message.setSubject("Mã OTP Xác thực - VisionCare");
+        message.setSubject("Mã OTP Xác thực - VisionCare", "UTF-8");
         
         String htmlContent = "<div style='font-family: Arial, sans-serif; padding: 20px; text-align: center;'>"
                 + "<h2 style='color: #0d9488;'>Xác thực tài khoản VisionCare</h2>"
