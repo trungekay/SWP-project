@@ -105,6 +105,22 @@
               <p class="text-muted small mb-4">Quản lý và cập nhật thông tin cá nhân của bạn</p>
               <hr class="mb-4">
               
+              <c:if test="${not empty sessionScope.success}">
+                <div class="alert alert-success alert-dismissible fade show small" role="alert">
+                  <i class="bi bi-check-circle me-2"></i>${sessionScope.success}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <c:remove var="success" scope="session" />
+              </c:if>
+              
+              <c:if test="${not empty sessionScope.error}">
+                <div class="alert alert-danger alert-dismissible fade show small" role="alert">
+                  <i class="bi bi-exclamation-triangle me-2"></i>${sessionScope.error}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <c:remove var="error" scope="session" />
+              </c:if>
+              
               <form method="post" action="${pageContext.request.contextPath}/profile/update">
                 <div class="row mb-4">
                   <div class="col-md-6">

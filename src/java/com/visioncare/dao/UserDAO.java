@@ -65,12 +65,12 @@ public class UserDAO {
         return null;
     }
 
-    /**
+    /
      * ÄÄƒng kÃ½ tÃ i khoáº£n má»›i.
-     * Tráº£ vá» true náº¿u thÃ nh cÃ´ng.
+     * Tráº£ vá» true náº¿u thÃ nh cÃ´ng.**
      */
     public boolean register(User user) throws Exception {
-        String insertAccount = "INSERT INTO Account (Role_ID, Email, Password, Active) VALUES ((SELECT TOP 1 Role_ID FROM Role WHERE Role_Name = 'Patient'), ?, ?, 1)";
+        String insertAccount = "INSERT INTO Account (Role_ID, Email, Password) VALUES ((SELECT TOP 1 Role_ID FROM Role WHERE Role_Name = 'Patient'), ?, ?)";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(insertAccount, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, user.getEmail());
@@ -131,5 +131,38 @@ public class UserDAO {
         u.setPhone(rs.getString("phone"));
         u.setRole(rs.getString("role"));
         return u;
+    }
+
+    /**
+     * Cập nhật thông tin profile của Patient
+     */
+    public boolean updateProfile(User user) throws Exception {
+        String sql = "UPDATE Patient SET Full_Name = ?, Phone = ?, DOB = ?, Address = ? WHERE Account_ID = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, user.getFullName());
+            ps.setString(2, user.getPhone());
+            if (user.getDob() != null && !user.getDob().isEmpty()) {
+                ps.setDate(3, java.sql.Date.valueOf(user.getDob()));
+            } else {
+                ps.setNull(3, java.sql.Types.DATE);
+            }
+            ps.setString(4, user.getAddress());
+            ps.setInt(5, user.getId());
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Cập nhật mật khẩu
+     */
+    public boolean updatePassword(int accountId, String newPassword) throws Exception {
+        String sql = "UPDATE Account SET Password = ? WHERE Account_ID = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newPassword);
+            ps.setInt(2, accountId);
+            return ps.executeUpdate() > 0;
+        }
     }
 }
