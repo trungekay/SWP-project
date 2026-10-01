@@ -25,7 +25,7 @@
   }
 
   .schedule-container {
-    max-width: 1380px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 24px 16px;
   }
@@ -88,31 +88,59 @@
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 16px;
     margin-bottom: 16px;
   }
 
-  .btn-nav-week {
+  .week-selector-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-nav-arrow {
     background: #ffffff;
     border: 1px solid var(--vc-border);
     color: #334155;
-    font-weight: 500;
-    padding: 6px 14px;
+    width: 36px;
+    height: 36px;
     border-radius: 8px;
-    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-decoration: none;
+    transition: all 0.2s;
   }
 
-  .btn-nav-week:hover {
+  .btn-nav-arrow:hover {
     background: #f8fafc;
     border-color: #cbd5e1;
-    color: #0f172a;
+    color: var(--vc-primary);
+  }
+
+  .select-week-dropdown {
+    height: 36px;
+    border: 1px solid var(--vc-border);
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1e293b;
+    padding: 4px 12px;
+    background-color: #ffffff;
+    min-width: 270px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  .select-week-dropdown:focus {
+    border-color: var(--vc-primary);
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
+    outline: none;
   }
 
   .btn-session-filter {
-    padding: 6px 16px;
+    padding: 6px 14px;
     border-radius: 8px;
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 600;
     border: 1px solid var(--vc-border);
     background: #fff;
@@ -127,7 +155,7 @@
     border-color: var(--vc-primary);
   }
 
-  /* Schedule Table Grid */
+  /* Schedule Table Grid Fixed Size */
   .schedule-card {
     background: #ffffff;
     border-radius: 16px;
@@ -141,42 +169,62 @@
     border-collapse: separate;
     border-spacing: 0;
     width: 100%;
+    table-layout: fixed; /* Khóa tỷ lệ cột để các ô luôn đều 100% */
   }
 
   .table-schedule thead th {
     background: #f8fafc;
     color: #475569;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 14px 10px;
+    letter-spacing: 0.3px;
+    padding: 10px 4px;
     text-align: center;
     border-bottom: 2px solid var(--vc-border);
     border-right: 1px solid var(--vc-border);
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .table-schedule thead th:last-child {
-    border-right: none;
+  .col-day-header {
+    width: 135px;
+    min-width: 135px;
+    max-width: 135px;
+    text-align: left !important;
+    padding-left: 14px !important;
+  }
+
+  .col-slot-header {
+    width: 105px;
+    min-width: 105px;
+    max-width: 105px;
+  }
+
+  .col-total-header {
+    width: 85px;
+    min-width: 85px;
+    max-width: 85px;
+    border-right: none !important;
   }
 
   .table-schedule thead th .time-sub {
-    font-size: 11px;
+    font-size: 10.5px;
     color: #94a3b8;
     font-weight: 500;
     display: block;
-    margin-top: 2px;
+    margin-top: 1px;
     text-transform: none;
   }
 
   .table-schedule tbody td {
-    padding: 12px 8px;
+    padding: 6px 4px;
     vertical-align: middle;
     border-bottom: 1px solid #f1f5f9;
     border-right: 1px solid #f1f5f9;
     background: #ffffff;
-    transition: background 0.15s;
+    height: 60px; /* Chiều cao cố định hàng */
   }
 
   .table-schedule tbody td:last-child {
@@ -192,24 +240,24 @@
     background: #ffffff !important;
     font-weight: 600;
     color: #1e293b;
-    min-width: 130px;
-    padding-left: 16px !important;
+    padding-left: 12px !important;
   }
 
   .day-name {
-    font-size: 14px;
+    font-size: 13.5px;
     color: #0f172a;
     font-weight: 700;
+    white-space: nowrap;
   }
 
   .day-date {
-    font-size: 12px;
+    font-size: 11px;
     color: #64748b;
     display: inline-block;
-    padding: 2px 8px;
+    padding: 1px 6px;
     background: #f1f5f9;
-    border-radius: 6px;
-    margin-left: 6px;
+    border-radius: 4px;
+    margin-left: 4px;
     font-weight: 500;
   }
 
@@ -225,20 +273,23 @@
   .today-badge {
     background: var(--vc-primary);
     color: #ffffff;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 6px;
+    padding: 2px 6px;
+    border-radius: 4px;
     display: inline-block;
-    margin-top: 4px;
+    margin-top: 2px;
   }
 
-  /* Slot States */
+  /* Slot Button: ĐỒNG ĐỀU 100% VỀ KÍCH THƯỚC VÀ CẤU TRÚC */
   .slot-btn {
     width: 100%;
-    padding: 8px 6px;
+    height: 48px; /* Cố định chính xác 48px cho TẤT CẢ các trạng thái */
+    min-height: 48px;
+    max-height: 48px;
+    padding: 4px 6px;
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 600;
     text-align: center;
     border: none;
@@ -247,9 +298,32 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    min-height: 44px;
+    box-sizing: border-box;
+    overflow: hidden;
     text-decoration: none;
+    line-height: 1.25;
+  }
+
+  .slot-btn .slot-title {
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 11.5px;
+    font-weight: 700;
+  }
+
+  .slot-btn .slot-sub {
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 10px;
+    opacity: 0.88;
+    margin-top: 1px;
+    font-weight: 500;
   }
 
   /* State 1: Làm việc (Available) */
@@ -257,13 +331,12 @@
     background: #0d9488;
     color: #ffffff;
     border: 1px solid #0f766e;
-    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.2);
+    box-shadow: 0 1px 4px rgba(13, 148, 136, 0.2);
   }
 
   .slot-available:hover {
     background: #0f766e;
     color: #ffffff;
-    transform: translateY(-1px);
   }
 
   /* State 2: Có khách đến khám (Booked) */
@@ -271,47 +344,48 @@
     background: #2563eb;
     color: #ffffff;
     border: 1px solid #1d4ed8;
-    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+    box-shadow: 0 1px 4px rgba(37, 99, 235, 0.2);
   }
 
   .slot-booked:hover {
     background: #1d4ed8;
     color: #ffffff;
-    transform: translateY(-1px);
   }
 
-  /* State 3: Nghỉ / Không có ca */
-  .slot-off {
-    background: #ffffff;
-    color: #94a3b8;
-    border: 1px dashed #cbd5e1;
-    font-weight: 500;
-    cursor: default;
-  }
-
-  /* State 4: Ca đang nghỉ phép đã duyệt */
+  /* State 3: Ca đang nghỉ phép đã duyệt */
   .slot-onleave {
     background: #fee2e2;
     color: #b91c1c;
     border: 1px solid #fca5a5;
-    font-weight: 600;
+  }
+
+  /* State 4: Nghỉ / Không có ca */
+  .slot-off {
+    background: #ffffff;
+    color: #94a3b8;
+    border: 1px dashed #cbd5e1;
+    cursor: default;
+  }
+
+  .slot-off .slot-sub {
+    color: #cbd5e1;
   }
 
   .total-cell {
     text-align: center;
     font-weight: 700;
     color: var(--vc-primary-dark);
-    font-size: 13px;
-    min-width: 90px;
+    font-size: 12px;
   }
 
   .total-badge {
     background: #ccfbf1;
     color: #0f766e;
-    padding: 6px 12px;
-    border-radius: 20px;
+    padding: 4px 8px;
+    border-radius: 12px;
     display: inline-block;
     border: 1px solid #99f6e4;
+    font-size: 11px;
   }
 
   .total-badge-today {
@@ -326,22 +400,22 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 20px;
-    padding: 16px 24px;
+    padding: 14px 20px;
     background: #f8fafc;
     border-top: 1px solid var(--vc-border);
-    font-size: 13px;
+    font-size: 12.5px;
     color: #475569;
   }
 
   .legend-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
 
   .legend-box {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     border-radius: 4px;
   }
 </style>
@@ -406,23 +480,45 @@
 
     <!-- Toolbar: Date range & Filters -->
     <div class="schedule-toolbar">
-      <div class="d-flex align-items-center gap-2">
-        <div class="btn-group shadow-sm">
-          <a href="${pageContext.request.contextPath}/employee/schedule?weekOffset=${weekOffset - 1}&session=${sessionFilter}" class="btn-nav-week">
-            <i class="bi bi-chevron-left"></i> Tuần trước
+      
+      <!-- Bộ lọc Tuần Cụ Thể (Dropdown Ngày bắt đầu - Ngày kết thúc) -->
+      <div class="week-selector-group">
+        <span class="small fw-bold text-muted d-none d-sm-inline"><i class="bi bi-calendar3 me-1"></i>Xem tuần:</span>
+        
+        <!-- Nút mũi tên tuần trước -->
+        <a href="${pageContext.request.contextPath}/employee/schedule?weekOffset=${weekOffset - 1}&session=${sessionFilter}" 
+           class="btn-nav-arrow" title="Tuần trước">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+
+        <!-- Dropdown chọn các tuần cụ thể (dd/MM/yyyy - dd/MM/yyyy) -->
+        <select class="select-week-dropdown" 
+                onchange="window.location.href='${pageContext.request.contextPath}/employee/schedule?weekOffset=' + this.value + '&session=${sessionFilter}'">
+          <c:forEach var="w" items="${weekOptions}">
+            <option value="${w.offset}" ${w.offset == weekOffset ? 'selected' : ''}>
+              Tuần: ${w.label}
+            </option>
+          </c:forEach>
+        </select>
+
+        <!-- Nút mũi tên tuần sau -->
+        <a href="${pageContext.request.contextPath}/employee/schedule?weekOffset=${weekOffset + 1}&session=${sessionFilter}" 
+           class="btn-nav-arrow" title="Tuần sau">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+
+        <!-- Nút về tuần hiện tại nếu đang ở tuần khác -->
+        <c:if test="${weekOffset != 0}">
+          <a href="${pageContext.request.contextPath}/employee/schedule?weekOffset=0&session=${sessionFilter}" 
+             class="btn btn-outline-primary btn-sm rounded-pill ms-1 px-2 py-1" style="font-size: 11.5px;">
+            Về tuần này
           </a>
-          <a href="${pageContext.request.contextPath}/employee/schedule?weekOffset=0&session=${sessionFilter}" class="btn-nav-week ${weekOffset == 0 ? 'fw-bold text-teal' : ''}">
-            Tuần này
-          </a>
-          <a href="${pageContext.request.contextPath}/employee/schedule?weekOffset=${weekOffset + 1}&session=${sessionFilter}" class="btn-nav-week">
-            Tuần sau <i class="bi bi-chevron-right"></i>
-          </a>
-        </div>
+        </c:if>
       </div>
 
-      <!-- Ca Filter Buttons -->
+      <!-- Ca Filter Buttons (Sáng / Chiều / Tất cả) -->
       <div class="d-flex align-items-center gap-2">
-        <span class="small fw-bold text-muted me-1">Khung ca:</span>
+        <span class="small fw-bold text-muted me-1 d-none d-md-inline">Khung ca:</span>
         <a href="${pageContext.request.contextPath}/employee/schedule?weekOffset=${weekOffset}&session=all" 
            class="btn-session-filter ${sessionFilter == 'all' ? 'active' : ''}">Tất cả (30p)</a>
         <a href="${pageContext.request.contextPath}/employee/schedule?weekOffset=${weekOffset}&session=Morning" 
@@ -432,25 +528,25 @@
       </div>
     </div>
 
-    <!-- Schedule Matrix Card (Chiều dọc: Ngày trong tuần | Chiều ngang: Các ca 30p) -->
+    <!-- Schedule Matrix Card (Fixed Grid Layout - Cột dọc Ngày, Cột ngang Slot 30p đều 100%) -->
     <div class="schedule-card">
       <div class="table-responsive">
         <table class="table table-schedule">
           <thead>
             <tr>
-              <th style="min-width: 140px; text-align: left; padding-left: 16px;">NGÀY</th>
+              <th class="col-day-header">NGÀY</th>
               
               <!-- Render Header các Slot 30 phút theo Filter -->
               <c:forEach var="slot" items="${slots}">
                 <c:if test="${sessionFilter == 'all' || slot.session == sessionFilter}">
-                  <th>
+                  <th class="col-slot-header">
                     <c:out value="${slot.id}" />
                     <span class="time-sub"><c:out value="${slot.timeRange}" /></span>
                   </th>
                 </c:if>
               </c:forEach>
 
-              <th style="min-width: 100px;">TỔNG CA</th>
+              <th class="col-total-header">TỔNG CA</th>
             </tr>
           </thead>
           <tbody>
@@ -468,19 +564,19 @@
                   </c:if>
                 </td>
 
-                <!-- Các Cột Chiều Ngang: Các Slot 30 phút -->
+                <!-- Các Cột Chiều Ngang: Các Slot 30 phút (Chiều cao & kích thước đồng đều 100%) -->
                 <c:forEach var="slot" items="${slots}">
                   <c:if test="${sessionFilter == 'all' || slot.session == sessionFilter}">
-                    <td class="text-center" style="min-width: 110px;">
+                    <td class="text-center">
                       
                       <!-- Demo Data Logic: Minh họa các trạng thái nghiệp vụ chuẩn -->
                       <c:choose>
                         
                         <%-- 1. Ca có khách khám (Booked) --%>
                         <c:when test="${(loop.index == 0 && slot.id == 'Slot 2') || (loop.index == 2 && slot.id == 'Slot 3')}">
-                          <div class="slot-btn slot-booked" title="Có khách khám">
-                            <span><i class="bi bi-person-check-fill me-1"></i>Nguyễn Văn A</span>
-                            <small style="font-size: 10px; opacity: 0.9;">P.101 &bull; 08:30</small>
+                          <div class="slot-btn slot-booked" title="Có khách khám: Nguyễn Văn A">
+                            <span class="slot-title"><i class="bi bi-person-fill me-1"></i>Nguyễn Văn A</span>
+                            <span class="slot-sub">P.101 &bull; 08:30</span>
                           </div>
                         </c:when>
 
@@ -492,22 +588,24 @@
                                      || (loop.index == 4 && slot.id == 'Slot 8')
                                      || (loop.index == 5 && slot.id == 'Slot 1')}">
                           <div class="slot-btn slot-available" title="Ca làm việc sẵn sàng tiếp nhận">
-                            <span><i class="bi bi-check2-circle me-1"></i>Làm việc</span>
-                            <small style="font-size: 10px; opacity: 0.9;">P.101</small>
+                            <span class="slot-title"><i class="bi bi-check2-circle me-1"></i>Làm việc</span>
+                            <span class="slot-sub">P.101</span>
                           </div>
                         </c:when>
 
                         <%-- 3. Ca xin nghỉ đã duyệt (On Leave) --%>
                         <c:when test="${loop.index == 4 && slot.id == 'Slot 2'}">
                           <div class="slot-btn slot-onleave" title="Ca nghỉ phép đã duyệt">
-                            <span><i class="bi bi-x-circle me-1"></i>Nghỉ phép</span>
+                            <span class="slot-title"><i class="bi bi-x-circle me-1"></i>Nghỉ phép</span>
+                            <span class="slot-sub">Đã duyệt</span>
                           </div>
                         </c:when>
 
                         <%-- 4. Ca trống không đi làm / Nghỉ mặc định --%>
                         <c:otherwise>
-                          <div class="slot-btn slot-off">
-                            <span>Nghỉ</span>
+                          <div class="slot-btn slot-off" title="Không có lịch trực">
+                            <span class="slot-title">Nghỉ</span>
+                            <span class="slot-sub">-</span>
                           </div>
                         </c:otherwise>
 
@@ -522,7 +620,7 @@
                   <c:choose>
                     <c:when test="${loop.index == 0}"><span class="total-badge">3 ca</span></c:when>
                     <c:when test="${loop.index == 1}"><span class="total-badge">2 ca</span></c:when>
-                    <c:when test="${loop.index == 2}"><span class="total-badge ${day.today ? 'total-badge-today' : ''}">3 ca (Trực)</span></c:when>
+                    <c:when test="${loop.index == 2}"><span class="total-badge ${day.today ? 'total-badge-today' : ''}">3 ca</span></c:when>
                     <c:when test="${loop.index == 3}"><span class="total-badge">1 ca</span></c:when>
                     <c:when test="${loop.index == 4}"><span class="total-badge">2 ca</span></c:when>
                     <c:when test="${loop.index == 5}"><span class="total-badge">1 ca</span></c:when>

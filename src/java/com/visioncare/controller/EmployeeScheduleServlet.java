@@ -3,6 +3,7 @@ package com.visioncare.controller;
 import com.visioncare.model.ScheduleDayDTO;
 import com.visioncare.model.ScheduleSlotDTO;
 import com.visioncare.model.User;
+import com.visioncare.model.WeekOptionDTO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -13,6 +14,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
@@ -48,16 +50,35 @@ public class EmployeeScheduleServlet extends HttpServlet {
             }
 
             LocalDate today = LocalDate.now();
-            LocalDate startOfWeek = today.plusWeeks(weekOffset).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            LocalDate startOfThisWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            LocalDate startOfSelectedWeek = startOfThisWeek.plusWeeks(weekOffset);
+            LocalDate endOfSelectedWeek = startOfSelectedWeek.plusDays(6);
             
             DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("dd/MM");
             DateTimeFormatter fullFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            DateTimeFormatter dmyFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+            // Tao danh sach cac tuan cu the de nguoi dung chon qua Dropdown (Tu -4 tuan den +8 tuan)
+            List<WeekOptionDTO> weekOptions = new ArrayList<>();
+            for (int i = -4; i <= 8; i++) {
+                LocalDate wStart = startOfThisWeek.plusWeeks(i);
+                LocalDate wEnd = wStart.plusDays(6);
+                String startStr = wStart.format(dmyFormatter);
+                String endStr = wEnd.format(dmyFormatter);
+                String label = startStr + " - " + endStr;
+                if (i == 0) {
+                    label += " (Tuần này)";
+                }
+                weekOptions.add(new WeekOptionDTO(i, label, startStr, endStr, i == 0));
+            }
+
+            String currentSelectedWeekRange = startOfSelectedWeek.format(dmyFormatter) + " - " + endOfSelectedWeek.format(dmyFormatter);
 
             String[] dayNames = {"Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"};
             
             List<ScheduleDayDTO> weekDays = new ArrayList<>();
             for (int i = 0; i < 7; i++) {
-                LocalDate date = startOfWeek.plusDays(i);
+                LocalDate date = startOfSelectedWeek.plusDays(i);
                 boolean isToday = date.isEqual(today);
                 weekDays.add(new ScheduleDayDTO(
                         dayNames[i],
@@ -94,9 +115,11 @@ public class EmployeeScheduleServlet extends HttpServlet {
             request.setAttribute("weekDays", weekDays);
             request.setAttribute("slots", slots);
             request.setAttribute("weekOffset", weekOffset);
+            request.setAttribute("weekOptions", weekOptions);
+            request.setAttribute("currentSelectedWeekRange", currentSelectedWeekRange);
             request.setAttribute("sessionFilter", sessionFilter);
             request.setAttribute("currentUser", currentUser);
-            request.setAttribute("todayStr", java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm • dd/MM/yyyy")));
+            request.setAttribute("todayStr", LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm • dd/MM/yyyy")));
 
             request.getRequestDispatcher("/views/employee/schedule.jsp").forward(request, response);
         } catch (Exception e) {
