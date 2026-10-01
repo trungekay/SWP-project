@@ -66,13 +66,13 @@ public class LoginServlet extends HttpServlet {
                 }
             } else {
                 // ÄÄƒng nháº­p tháº¥t báº¡i
-                request.setAttribute("error", "Email hoáº·c máº­t kháº©u khÃ´ng Ä‘Ãºng.");
+                request.setAttribute("error", "Email hoặc mật khẩu không đúng.");
                 request.setAttribute("email", email);
                 request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("error", "CÃ³ lá»—i xáº£y ra: " + e.getMessage());
+            request.setAttribute("error", "Có lỗi xảy ra: " + e.getMessage());
             request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
         }
     }
