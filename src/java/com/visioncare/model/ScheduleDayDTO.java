@@ -8,6 +8,7 @@ public class ScheduleDayDTO {
     private String dateStr;
     private String fullDate;
     private boolean isToday;
+    private boolean isPast;
     private int totalSlotsCount;
 
     public ScheduleDayDTO() {
@@ -18,6 +19,16 @@ public class ScheduleDayDTO {
         this.dateStr = dateStr;
         this.fullDate = fullDate;
         this.isToday = isToday;
+        this.isPast = false;
+        this.totalSlotsCount = 0;
+    }
+
+    public ScheduleDayDTO(String dayName, String dateStr, String fullDate, boolean isToday, boolean isPast) {
+        this.dayName = dayName;
+        this.dateStr = dateStr;
+        this.fullDate = fullDate;
+        this.isToday = isToday;
+        this.isPast = isPast;
         this.totalSlotsCount = 0;
     }
 
@@ -30,6 +41,10 @@ public class ScheduleDayDTO {
     }
 
     public String getDateStr() {
+        return dateStr;
+    }
+
+    public String getDayDate() {
         return dateStr;
     }
 
@@ -57,6 +72,26 @@ public class ScheduleDayDTO {
         isToday = today;
     }
 
+    public boolean isPast() {
+        return isPast;
+    }
+
+    public boolean getIsPast() {
+        return isPast;
+    }
+
+    public boolean getPast() {
+        return isPast;
+    }
+
+    public void setPast(boolean past) {
+        isPast = past;
+    }
+
+    public void setIsPast(boolean past) {
+        isPast = past;
+    }
+
     public int getTotalSlotsCount() {
         return totalSlotsCount;
     }
@@ -65,3 +100,4 @@ public class ScheduleDayDTO {
         this.totalSlotsCount = totalSlotsCount;
     }
 }
+

@@ -13,6 +13,16 @@
 <main class="main">
   <div class="schedule-container">
 
+    <!-- Flash Messages (Sau khi dang ky hoac cap nhat lich) -->
+    <c:if test="${not empty sessionScope.successMessage}">
+      <div class="alert alert-success alert-dismissible fade show rounded-3 mb-3 shadow-sm" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <c:out value="${sessionScope.successMessage}" />
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      <c:remove var="successMessage" scope="session" />
+    </c:if>
+
     <!-- Top Card: Profile & Stats (Dữ liệu Động từ DB) -->
     <div class="profile-header-card">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
@@ -39,7 +49,7 @@
           </div>
         </div>
 
-        <!-- Right: Stats & Switcher -->
+        <!-- Right: Stats, Switcher & Register CTA -->
         <div class="d-flex align-items-center flex-wrap gap-2">
           <div>
             <div class="stat-label text-md-end">Tổng ca tuần này</div>
@@ -79,6 +89,13 @@
               </c:forEach>
             </ul>
           </div>
+
+          <!-- Nút Đăng Ký Lịch Làm Việc -->
+          <a href="${pageContext.request.contextPath}/employee/register-schedule?year=${selectedYear}&week=${selectedWeek}"
+             class="btn btn-primary btn-sm rounded-pill px-3 py-2 fw-semibold" 
+             style="background: var(--vc-primary); border-color: var(--vc-primary);">
+            <i class="bi bi-calendar-plus me-1"></i> Đăng ký lịch
+          </a>
 
         </div>
 
