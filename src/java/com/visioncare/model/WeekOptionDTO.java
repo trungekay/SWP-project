@@ -1,9 +1,10 @@
 package com.visioncare.model;
 
 /**
- * DTO bieu dien mot tuy chon tuan trong dropdown filter (Tu ngay ... den ngay ...).
+ * DTO bieu dien mot tuy chon tuan trong dropdown filter (Tuan XX: Tu ngay ... den ngay ...).
  */
 public class WeekOptionDTO {
+    private int weekNumber;
     private int offset;
     private String label;
     private String startDateStr;
@@ -13,12 +14,21 @@ public class WeekOptionDTO {
     public WeekOptionDTO() {
     }
 
-    public WeekOptionDTO(int offset, String label, String startDateStr, String endDateStr, boolean isCurrentWeek) {
+    public WeekOptionDTO(int weekNumber, int offset, String label, String startDateStr, String endDateStr, boolean isCurrentWeek) {
+        this.weekNumber = weekNumber;
         this.offset = offset;
         this.label = label;
         this.startDateStr = startDateStr;
         this.endDateStr = endDateStr;
         this.isCurrentWeek = isCurrentWeek;
+    }
+
+    public int getWeekNumber() {
+        return weekNumber;
+    }
+
+    public void setWeekNumber(int weekNumber) {
+        this.weekNumber = weekNumber;
     }
 
     public int getOffset() {
