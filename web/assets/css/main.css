@@ -1726,5 +1726,11 @@ section,
 --------------------------------------------------------------*/
 .starter-section {
   /* Add your styles here */
-}. d o c t o r - c a r d : h o v e r ,   . s e r v i c e - c a r d : h o v e r   {   t r a n s f o r m :   t r a n s l a t e Y ( - 5 p x ) ;   t r a n s i t i o n :   0 . 3 s ;   b o x - s h a d o w :   0   1 0 p x   2 0 p x   r g b a ( 0 , 0 , 0 , 0 . 1 )   ! i m p o r t a n t ;   }  
- 
+}
+
+.doctor-card:hover,
+.service-card:hover {
+  transform: translateY(-5px);
+  transition: 0.3s;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+}
