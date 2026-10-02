@@ -1,6 +1,8 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<fmt:setLocale value="vi_VN" scope="page" />
 
 <%-- Include Header --%>
 <jsp:include page="/views/common/header.jsp">
@@ -195,13 +197,13 @@
     <!-- Services Section: same Service_Catalog rows as the admin page -->
     <section id="services" class="services section light-background">
       <span id="service"></span>
-      <div class="container section-title" data-aos="fade-up">
+      <div class="container section-title">
         <h2>Dịch vụ nhãn khoa</h2>
-        <p>Các dịch vụ thăm khám và điều trị mắt tại VisionCare</p>
+        <p>Các dịch vụ thăm khám và điều trị mắt tại VisionCare (${catalogServices.size()} dịch vụ)</p>
       </div>
       <div class="container"><div class="row gy-4">
         <c:forEach items="${catalogServices}" var="service">
-          <div class="col-lg-4 col-md-6" data-aos="fade-up">
+          <div class="col-lg-4 col-md-6">
             <div class="card service-card border-0 shadow-sm h-100">
               <c:choose>
                 <c:when test="${service.uploadedImage}">
@@ -214,7 +216,7 @@
               <div class="card-body p-4 text-center">
                 <h4 class="card-title fw-bold mb-3"><c:out value="${service.name}" /></h4>
                 <p class="card-text text-muted mb-2"><c:out value="${service.summary}" /></p>
-                <p class="fw-semibold mb-4"><c:out value="${service.price}" /> VNĐ</p>
+                <p class="fw-semibold mb-4"><fmt:formatNumber value="${service.price}" pattern="#,##0" /> VNĐ</p>
                 <a href="#departments" onclick="document.getElementById('department-link-${service.id}').click();" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
               </div>
             </div>

@@ -67,12 +67,14 @@
 .catalog-service-actions > div { display: flex; gap: 7px; }
 .catalog-price { color: #334155; background: #f3f4f6; border-radius: 6px; padding: 7px 10px; font-size: 11px; white-space: nowrap; }
 .catalog-price i { color: #008775; }
-.catalog-edit, .catalog-detail, .catalog-supply-edit { border: 0; border-radius: 7px; padding: 7px 11px; font-size: 11px; font-weight: 700; }
-.catalog-edit, .catalog-detail, .catalog-supply-edit { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
+.catalog-edit, .catalog-supply-edit, .catalog-delete { border: 0; border-radius: 7px; padding: 7px 11px; font-size: 11px; font-weight: 700; }
+.catalog-edit, .catalog-supply-edit, .catalog-delete { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; white-space: nowrap; }
 .catalog-edit, .catalog-supply-edit { background: #e6f3f1; color: #008775; }
 .catalog-edit:hover, .catalog-supply-edit:hover { background: #d3ece8; }
-.catalog-detail { color: #64748b; background: #fff; border: 1px solid #e2e8f0; }
-.catalog-detail:hover { background: #f8fafc; }
+.catalog-delete-form { margin: 0; }
+.catalog-delete { color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; cursor: pointer; }
+.catalog-delete:hover { background: #fee2e2; }
+.catalog-supply-actions { display: flex; align-items: center; gap: 7px; }
 .catalog-service-image { background: #f8fafc; padding: 10px; border-left: 1px solid #edf0f2; }
 .catalog-service-image img { width: 100%; height: 100%; min-height: 175px; max-height: 230px; object-fit: cover; border-radius: 8px; }
 .catalog-supply-thumb { width: 52px; height: 52px; object-fit: cover; border-radius: 7px; }
@@ -90,6 +92,25 @@
 .catalog-table td small { display: block; color: #94a3b8; margin-top: 4px; }
 .catalog-stock.is-low { color: #b45309; background: #fffbeb; }
 .catalog-success { background: #dff8ec; color: #047857; border: 1px solid #a7e6c6; border-radius: 9px; padding: 12px 16px; font-size: 13px; }
+.catalog-success-toast { position: fixed; top: 100px; right: 24px; z-index: 1100; display: flex; align-items: center; gap: 10px; max-width: calc(100vw - 32px); padding: 14px 18px; border: 1px solid #a7e6c6; border-left: 5px solid #008775; border-radius: 11px; background: #fff; color: #006d5f; box-shadow: 0 12px 35px rgba(0, 59, 51, .16); font-size: 14px; font-weight: 700; animation: catalog-toast-in .25s ease-out, catalog-toast-out .3s ease-in 2.7s forwards; }
+.catalog-success-toast i { font-size: 20px; color: #008775; }
+@keyframes catalog-toast-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes catalog-toast-out { to { opacity: 0; transform: translateY(-10px); } }
+.catalog-delete-error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 9px; padding: 12px 16px; font-size: 13px; }
+.catalog-delete-dialog { width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; border: 1px solid #d4ebe5; border-radius: 18px; padding: 28px; background: #fff; color: #334155; box-shadow: 0 24px 70px rgba(0, 59, 51, .22); text-align: center; }
+.catalog-delete-dialog::backdrop { background: rgba(0, 54, 47, .5); backdrop-filter: blur(3px); }
+.catalog-delete-dialog-icon { display: grid; place-items: center; width: 60px; height: 60px; margin: 0 auto 18px; border-radius: 50%; background: #e6f3f1; color: #008775; font-size: 26px; }
+.catalog-delete-dialog h2 { margin: 0 0 10px; color: #006d5f; font-size: 22px; font-weight: 700; }
+.catalog-delete-dialog p { margin: 0; line-height: 1.6; font-size: 14px; }
+.catalog-delete-dialog p strong { color: #006d5f; overflow-wrap: anywhere; }
+.catalog-delete-dialog .catalog-delete-dialog-note { margin-top: 10px; color: #64748b; font-size: 12px; }
+.catalog-delete-dialog-actions { display: flex; justify-content: center; gap: 10px; margin-top: 26px; }
+.catalog-delete-dialog-actions button { border-radius: 9px; padding: 10px 16px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.catalog-delete-cancel { border: 1px solid #cbd5e1; background: #fff; color: #475569; }
+.catalog-delete-cancel:hover { background: #f8fafc; }
+.catalog-delete-confirm { border: 1px solid #008775; background: #008775; color: #fff; }
+.catalog-delete-confirm:hover { background: #006d5f; }
+.catalog-delete-dialog-actions button:focus-visible { outline: 3px solid #86d5c8; outline-offset: 2px; }
 .catalog-edit-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 28px; align-items: start; padding-top: 28px; padding-bottom: 76px; }
 .catalog-edit-sidebar { padding: 16px; }
 .catalog-edit-sidebar h2 { font-size: 16px; margin: 0; }

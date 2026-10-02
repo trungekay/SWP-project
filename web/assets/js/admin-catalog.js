@@ -4,6 +4,39 @@ document.addEventListener('DOMContentLoaded', () => {
   const suppliesView = document.getElementById('suppliesView');
   const cards = [...document.querySelectorAll('.catalog-service')];
   const rows = [...document.querySelectorAll('.catalog-table tbody tr')];
+  const successToast = document.getElementById('catalogSuccessToast');
+  if (successToast) {
+    window.setTimeout(() => {
+      successToast.remove();
+      const url = new URL(window.location.href);
+      url.searchParams.delete('created');
+      url.searchParams.delete('updated');
+      url.searchParams.delete('deleted');
+      window.history.replaceState(null, '', url);
+    }, 3000);
+  }
+  const deleteDialog = document.getElementById('catalogDeleteDialog');
+  let pendingDeleteForm = null;
+
+  document.querySelectorAll('.catalog-delete-form').forEach((form) => {
+    form.querySelector('.catalog-delete').addEventListener('click', () => {
+      pendingDeleteForm = form;
+      document.getElementById('catalogDeleteKind').textContent = form.dataset.kind;
+      document.getElementById('catalogDeleteName').textContent = `\u201c${form.dataset.name}\u201d`;
+      deleteDialog.showModal();
+    });
+  });
+  document.getElementById('catalogDeleteCancel').addEventListener('click', () => deleteDialog.close());
+  document.getElementById('catalogDeleteConfirm').addEventListener('click', () => {
+    if (!pendingDeleteForm) return;
+    const form = pendingDeleteForm;
+    pendingDeleteForm = null;
+    form.submit();
+  });
+  deleteDialog.addEventListener('close', () => { pendingDeleteForm = null; });
+  deleteDialog.addEventListener('click', (event) => {
+    if (event.target === deleteDialog) deleteDialog.close();
+  });
 
   function setTab(tab) {
     servicesView.hidden = tab !== 'services';

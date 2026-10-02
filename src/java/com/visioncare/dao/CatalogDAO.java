@@ -34,6 +34,14 @@ public class CatalogDAO {
         }
     }
 
+    public boolean deleteService(int id) throws Exception {
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement statement = connection.prepareStatement("DELETE FROM Service_Catalog WHERE Service_ID = ?")) {
+            statement.setInt(1, id);
+            return statement.executeUpdate() == 1;
+        }
+    }
+
     public int saveService(int id, int accountId, String code, String name, BigDecimal price,
             String specialty, String tag, String summary, String description,
             byte[] imageData, String imageMimeType) throws Exception {
@@ -84,6 +92,14 @@ public class CatalogDAO {
             try (ResultSet result = statement.executeQuery()) {
                 return result.next() ? supply(result) : null;
             }
+        }
+    }
+
+    public boolean deleteSupply(int id) throws Exception {
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement statement = connection.prepareStatement("DELETE FROM Medical_Supply WHERE Supply_ID = ?")) {
+            statement.setInt(1, id);
+            return statement.executeUpdate() == 1;
         }
     }
 

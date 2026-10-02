@@ -74,6 +74,15 @@ public class AdminCatalogServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_FORBIDDEN); return;
         }
         boolean service = path.endsWith("/service");
+        String action = request.getParameter("action");
+        if ("delete".equals(action)) {
+            delete(request, response, service);
+            return;
+        }
+        if (action != null && !"save".equals(action)) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
         try {
             int id = optionalId(request.getParameter("id"));
             int savedId;
@@ -103,7 +112,8 @@ public class AdminCatalogServlet extends HttpServlet {
                         upload == null ? null : upload.getBytes(),
                         upload == null ? null : upload.getMimeType());
             }
-            response.sendRedirect(request.getContextPath() + "/admin/catalog?tab=" + (service ? "services" : "supplies") + "&saved=1&id=" + savedId);
+            response.sendRedirect(request.getContextPath() + "/admin/catalog?tab=" + (service ? "services" : "supplies")
+                    + (id == 0 ? "&created=1" : "&updated=1") + "&id=" + savedId);
         } catch (IllegalArgumentException e) {
             request.setAttribute("error", e.getMessage() == null ? "Thông tin nhập không hợp lệ." : e.getMessage());
             showFormWithSubmittedValues(request, response, service);
@@ -168,6 +178,31 @@ public class AdminCatalogServlet extends HttpServlet {
             throw new IllegalArgumentException("Đơn giá phải là số nguyên không âm, tối đa 18 chữ số.");
         }
         return value;
+    }
+
+    private void delete(HttpServletRequest request, HttpServletResponse response, boolean service)
+            throws IOException {
+        final int id;
+        try {
+            id = optionalId(request.getParameter("id"));
+            if (id == 0) throw new IllegalArgumentException("Mã không hợp lệ.");
+        } catch (IllegalArgumentException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        try {
+            boolean deleted = service ? dao.deleteService(id) : dao.deleteSupply(id);
+            if (!deleted) {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
+            response.sendRedirect(request.getContextPath() + "/admin/catalog?tab="
+                    + (service ? "services" : "supplies") + "&deleted=1");
+        } catch (Exception e) {
+            log("Could not delete catalog item", e);
+            response.sendRedirect(request.getContextPath() + "/admin/catalog?tab="
+                    + (service ? "services" : "supplies") + "&deleteError=1");
+        }
     }
 
     private CatalogDAO.ImageData imageUpload(HttpServletRequest request) throws Exception {
