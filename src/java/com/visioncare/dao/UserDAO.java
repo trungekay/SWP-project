@@ -65,8 +65,7 @@ public class UserDAO {
         return null;
     }
 
-    /
-     * ÄÄƒng kÃ½ tÃ i khoáº£n má»›i.
+    /* ÄÄƒng kÃ½ tÃ i khoáº£n má»›i.
      * Tráº£ vá» true náº¿u thÃ nh cÃ´ng.**
      */
     public boolean register(User user) throws Exception {
