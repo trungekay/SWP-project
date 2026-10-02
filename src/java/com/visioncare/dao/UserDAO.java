@@ -10,9 +10,22 @@ import java.sql.*;
 public class UserDAO {
 
     public User login(String email, String password) throws Exception {
-        String sql = "SELECT a.Account_ID, a.Email, r.Role_Name, p.Full_Name, p.Phone, p.DOB, p.Address " +
-                     "FROM Account a JOIN Role r ON a.Role_ID = r.Role_ID " +
+        String sql = "SELECT a.Account_ID, a.Email, r.Role_Name, " +
+                     "COALESCE(d.Full_Name, ms.Full_Name, s.Full_Name, dir.Full_Name, sa.Full_Name, p.Full_Name, a.Email) AS Display_Name, " +
+                     "COALESCE(d.Doctor_ID, ms.Specialist_ID, s.Staff_ID, dir.Director_ID, sa.Admin_ID, p.Patient_ID, 0) AS Actor_ID, " +
+                     "COALESCE(d.Specialty, ms.Specialty, s.Position, N'Khúc xạ & Nhãn khoa') AS Specialty_Info, " +
+                     "COALESCE(rm.Room_Name, N'P.101 (Tầng 1)') AS Room_Info, " +
+                     "d.License_Number, s.Position, " +
+                     "p.Phone, p.DOB, p.Address " +
+                     "FROM Account a " +
+                     "JOIN Role r ON a.Role_ID = r.Role_ID " +
                      "LEFT JOIN Patient p ON a.Account_ID = p.Account_ID " +
+                     "LEFT JOIN Doctor d ON a.Account_ID = d.Account_ID " +
+                     "LEFT JOIN Room rm ON d.Room_ID = rm.Room_ID " +
+                     "LEFT JOIN Medical_Specialist ms ON a.Account_ID = ms.Account_ID " +
+                     "LEFT JOIN Staff s ON a.Account_ID = s.Account_ID " +
+                     "LEFT JOIN Director dir ON a.Account_ID = dir.Account_ID " +
+                     "LEFT JOIN System_Admin sa ON a.Account_ID = sa.Account_ID " +
                      "WHERE a.Email = ? AND a.Password = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -23,10 +36,12 @@ public class UserDAO {
                     User u = new User();
                     u.setId(rs.getInt("Account_ID"));
                     u.setEmail(rs.getString("Email"));
-                    
-                    // Populate from Patient if exists
-                    String patientName = rs.getString("Full_Name");
-                    u.setFullName(patientName != null ? patientName : rs.getString("Email"));
+                    u.setFullName(rs.getString("Display_Name"));
+                    u.setActorId(rs.getInt("Actor_ID"));
+                    u.setSpecialty(rs.getString("Specialty_Info"));
+                    u.setRoomName(rs.getString("Room_Info"));
+                    u.setLicenseNumber(rs.getString("License_Number"));
+                    u.setPosition(rs.getString("Position"));
                     u.setPhone(rs.getString("Phone"));
                     
                     Date dobDate = rs.getDate("DOB");
@@ -35,9 +50,12 @@ public class UserDAO {
                     
                     // Map DB roles to application roles
                     String roleName = rs.getString("Role_Name");
-                    if ("System_Admin".equals(roleName)) u.setRole("admin");
-                    else if ("Doctor".equals(roleName)) u.setRole("doctor");
-                    else if ("Patient".equals(roleName)) u.setRole("patient");
+                    if ("System_Admin".equalsIgnoreCase(roleName)) u.setRole("admin");
+                    else if ("Doctor".equalsIgnoreCase(roleName)) u.setRole("doctor");
+                    else if ("Medical_Specialist".equalsIgnoreCase(roleName)) u.setRole("medical_specialist");
+                    else if ("Staff".equalsIgnoreCase(roleName)) u.setRole("staff");
+                    else if ("Director".equalsIgnoreCase(roleName)) u.setRole("director");
+                    else if ("Patient".equalsIgnoreCase(roleName)) u.setRole("patient");
                     else u.setRole(roleName.toLowerCase());
                     
                     return u;
@@ -47,12 +65,12 @@ public class UserDAO {
         return null;
     }
 
-    /**
+    /
      * ÄÄƒng kÃ½ tÃ i khoáº£n má»›i.
-     * Tráº£ vá» true náº¿u thÃ nh cÃ´ng.
+     * Tráº£ vá» true náº¿u thÃ nh cÃ´ng.**
      */
     public boolean register(User user) throws Exception {
-        String insertAccount = "INSERT INTO Account (Role_ID, Email, Password, Active) VALUES ((SELECT TOP 1 Role_ID FROM Role WHERE Role_Name = 'Patient'), ?, ?, 1)";
+        String insertAccount = "INSERT INTO Account (Role_ID, Email, Password) VALUES ((SELECT TOP 1 Role_ID FROM Role WHERE Role_Name = 'Patient'), ?, ?)";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(insertAccount, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, user.getEmail());
