@@ -16,7 +16,6 @@
 
 body {
   background-color: #f1f5f9;
-  padding-bottom: 80px; /* Khoang dem cho sticky bar phia duoi */
 }
 
 .register-container {
@@ -94,8 +93,9 @@ body {
 .week-selector-group {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .btn-nav-arrow {
@@ -104,8 +104,10 @@ body {
   color: #334155;
   width: 36px;
   height: 36px;
+  min-width: 36px;
+  flex: 0 0 36px;
   border-radius: 8px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
@@ -125,10 +127,21 @@ body {
   font-size: 13.5px;
   font-weight: 700;
   color: #0f172a;
-  padding: 4px 10px;
+  padding: 4px 28px 4px 10px;
   background-color: #ffffff;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px 10px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: auto !important;
   min-width: 110px;
+  max-width: 130px;
+  flex: 0 0 auto !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
 }
 
 .select-week-dropdown {
@@ -138,10 +151,20 @@ body {
   font-size: 13px;
   font-weight: 600;
   color: #1e293b;
-  padding: 4px 12px;
+  padding: 4px 28px 4px 12px;
   background-color: #ffffff;
-  min-width: 290px;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 10px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: auto !important;
+  min-width: 280px;
+  flex: 0 0 auto !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
 }
 
 .select-year-dropdown:focus,
@@ -219,11 +242,12 @@ body {
 }
 
 .col-day-header {
-  width: 140px;
-  min-width: 140px;
-  max-width: 140px;
+  width: 145px;
+  min-width: 145px;
+  max-width: 145px;
   text-align: left !important;
   padding-left: 14px !important;
+  background: #f8fafc;
 }
 
 .col-slot-header {
@@ -232,10 +256,7 @@ body {
   max-width: 105px;
 }
 
-.col-action-header {
-  width: 95px;
-  min-width: 95px;
-  max-width: 95px;
+.table-register thead th:last-child {
   border-right: none !important;
 }
 
@@ -270,6 +291,27 @@ body {
   font-weight: 600;
   color: #1e293b;
   padding-left: 12px !important;
+}
+
+.day-row-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  border-radius: 4px;
+  border: 1.5px solid #cbd5e1;
+  transition: all 0.15s ease-in-out;
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.day-row-checkbox:checked {
+  background-color: var(--vc-primary);
+  border-color: var(--vc-primary);
+}
+
+.day-row-checkbox:focus {
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2);
+  border-color: var(--vc-primary);
 }
 
 .day-name {
@@ -479,11 +521,24 @@ body {
   background: #ccfbf1;
   color: #0f766e;
   font-weight: 700;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 20px;
   font-size: 13px;
   margin-left: 6px;
   border: 1px solid #99f6e4;
+  transition: all 0.2s ease;
+}
+
+.selected-count-badge.warning {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.selected-count-badge.success {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
 }
 
 .btn-submit-schedule {

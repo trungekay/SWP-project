@@ -307,10 +307,35 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                 return;
             }
 
+            // RANG BUOC TOI THIEU 30 GIO (60 CA / TUAN)
+            int parsedYear = Integer.parseInt(yearParam);
+            int parsedWeek = Integer.parseInt(weekParam);
+            LocalDate firstMonday = LocalDate.of(parsedYear, 1, 4).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            LocalDate startOfWeek = firstMonday.plusWeeks(parsedWeek - 1);
+            LocalDate endOfWeek = startOfWeek.plusDays(6);
+            DateTimeFormatter fullFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+            Set<String> alreadyRegisteredKeys = workScheduleDAO.getRegisteredSlotKeys(
+                    actorId, role, startOfWeek.format(fullFormatter), endOfWeek.format(fullFormatter)
+            );
+
+            int totalWeeklySlots = alreadyRegisteredKeys.size() + registrationList.size();
+            double totalWeeklyHours = totalWeeklySlots * 0.5;
+
+            if (totalWeeklyHours < 30.0) {
+                double missingHours = 30.0 - totalWeeklyHours;
+                int missingSlots = 60 - totalWeeklySlots;
+                session.setAttribute("errorMessage", "Quy định phòng khám: Tổng thời gian làm việc trong tuần phải đạt tối thiểu 30.0 giờ (tương đương 60 ca 30 phút). "
+                        + "Hiện tại bạn mới đăng ký " + String.format("%.1f", totalWeeklyHours) + " giờ (" + totalWeeklySlots + " ca), còn thiếu " 
+                        + String.format("%.1f", missingHours) + " giờ (" + missingSlots + " ca) nữa!");
+                response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
+                return;
+            }
+
             boolean success = workScheduleDAO.registerScheduleBatch(actorId, role, registrationList);
 
             if (success) {
-                session.setAttribute("successMessage", "Đăng ký thành công " + registrationList.size() + " ca làm việc mới!");
+                session.setAttribute("successMessage", "Đăng ký thành công " + registrationList.size() + " ca làm việc mới! Tổng thời gian tuần này: " + String.format("%.1f", totalWeeklyHours) + " giờ.");
                 response.sendRedirect(request.getContextPath() + "/employee/schedule?year=" + yearParam + "&week=" + weekParam);
             } else {
                 session.setAttribute("errorMessage", "Có lỗi xảy ra trong quá trình lưu lịch làm việc. Vui lòng thử lại!");

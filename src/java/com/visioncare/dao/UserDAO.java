@@ -65,10 +65,10 @@ public class UserDAO {
         return null;
     }
 
-    /
-     * ÄÄƒng kÃ½ tÃ i khoáº£n má»›i.
-     * Tráº£ vá» true náº¿u thÃ nh cÃ´ng.**
-     */
+//    /
+//     * ÄÄƒng kÃ½ tÃ i khoáº£n má»›i.
+//     * Tráº£ vá» true náº¿u thÃ nh cÃ´ng.**
+//     */
     public boolean register(User user) throws Exception {
         String insertAccount = "INSERT INTO Account (Role_ID, Email, Password) VALUES ((SELECT TOP 1 Role_ID FROM Role WHERE Role_Name = 'Patient'), ?, ?)";
         try (Connection conn = DBContext.getConnection();
