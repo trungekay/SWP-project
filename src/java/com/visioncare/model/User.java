@@ -13,6 +13,8 @@ public class User {
     private String role;            // patient, doctor, medical_specialist, staff, admin, director
     private String dob;
     private String address;
+    private int roleId;
+    private String status;
 
     // Cac truong thong tin bo sung theo tung Actor
     private int actorId;            // Doctor_ID / Specialist_ID / Staff_ID / Patient_ID
@@ -25,7 +27,7 @@ public class User {
     }
 
     public User(int id, String fullName, String email, String password,
-                String phone, String role, String dob, String address) {
+                String phone, String role, String dob, String address, int roleId, String status) {
         this.id = id;
         this.fullName = fullName;
         this.email = email;
@@ -34,6 +36,8 @@ public class User {
         this.role = role;
         this.dob = dob;
         this.address = address;
+        this.roleId = roleId;
+        this.status = status;
     }
 
     // ===== Getters & Setters =====
@@ -102,43 +106,19 @@ public class User {
         this.address = address;
     }
 
-    public int getActorId() {
-        return actorId;
+    public int getRoleId() {
+        return roleId;
     }
 
-    public void setActorId(int actorId) {
-        this.actorId = actorId;
+    public void setRoleId(int roleId) {
+        this.roleId = roleId;
     }
 
-    public String getSpecialty() {
-        return specialty;
+    public String getStatus() {
+        return status;
     }
 
-    public void setSpecialty(String specialty) {
-        this.specialty = specialty;
-    }
-
-    public String getRoomName() {
-        return roomName;
-    }
-
-    public void setRoomName(String roomName) {
-        this.roomName = roomName;
-    }
-
-    public String getLicenseNumber() {
-        return licenseNumber;
-    }
-
-    public void setLicenseNumber(String licenseNumber) {
-        this.licenseNumber = licenseNumber;
-    }
-
-    public String getPosition() {
-        return position;
-    }
-
-    public void setPosition(String position) {
-        this.position = position;
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

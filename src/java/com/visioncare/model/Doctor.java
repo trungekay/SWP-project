@@ -15,6 +15,7 @@ public class Doctor {
     private String achievements;  // new
     private String image;         // doctors/doctors-1.jpg
     private double rating;        // 4.5
+    private int roomId;
 
     public Doctor() {
     }
@@ -113,5 +114,13 @@ public class Doctor {
 
     public void setRating(double rating) {
         this.rating = rating;
+    }
+
+    public int getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(int roomId) {
+        this.roomId = roomId;
     }
 }
