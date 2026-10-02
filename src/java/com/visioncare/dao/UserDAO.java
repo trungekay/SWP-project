@@ -107,16 +107,12 @@ public class UserDAO {
     public java.util.List<User> getAllUsers() throws Exception {
         java.util.List<User> list = new java.util.ArrayList<>();
         String sql = "SELECT a.Account_ID, a.Email, a.Account_Status, r.Role_ID, r.Role_Name, " +
-                     "COALESCE(p.Full_Name, d.Full_Name, s.Full_Name, ms.Full_Name, sa.Full_Name, dir.Full_Name) as Full_Name, " +
-                     "p.Phone, p.DOB, p.Address " +
+                     "COALESCE(p.Full_Name, e.Full_Name) as Full_Name, " +
+                     "COALESCE(p.Phone, e.Phone) as Phone, p.DOB, p.Address " +
                      "FROM Account a " +
                      "JOIN Role r ON a.Role_ID = r.Role_ID " +
                      "LEFT JOIN Patient p ON a.Account_ID = p.Account_ID " +
-                     "LEFT JOIN Doctor d ON a.Account_ID = d.Account_ID " +
-                     "LEFT JOIN Staff s ON a.Account_ID = s.Account_ID " +
-                     "LEFT JOIN Medical_Specialist ms ON a.Account_ID = ms.Account_ID " +
-                     "LEFT JOIN System_Admin sa ON a.Account_ID = sa.Account_ID " +
-                     "LEFT JOIN Director dir ON a.Account_ID = dir.Account_ID " +
+                     "LEFT JOIN Employee_Profile e ON a.Account_ID = e.Account_ID " +
                      "ORDER BY a.Account_ID DESC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -137,7 +133,7 @@ public class UserDAO {
     }
     public boolean deleteUser(int accountId) throws Exception {
         try (Connection conn = DBContext.getConnection()) {
-            String[] profileTables = {"System_Admin", "Director", "Staff", "Doctor", "Medical_Specialist", "Patient"};
+            String[] profileTables = {"Employee_Profile", "Patient"};
             for (String table : profileTables) {
                 String sqlDelProfile = "DELETE FROM " + table + " WHERE Account_ID = ?";
                 try (PreparedStatement ps = conn.prepareStatement(sqlDelProfile)) {
@@ -163,22 +159,24 @@ public class UserDAO {
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
                     int accId = rs.getInt(1);
-                    String insertDetail = "";
-                    if (user.getRoleId() == 1) insertDetail = "INSERT INTO System_Admin (Account_ID, Full_Name) VALUES (?, ?)";
-                    else if (user.getRoleId() == 2) insertDetail = "INSERT INTO Director (Account_ID, Full_Name) VALUES (?, ?)";
-                    else if (user.getRoleId() == 5) insertDetail = "INSERT INTO Staff (Account_ID, Full_Name) VALUES (?, ?)";
-                    else if (user.getRoleId() == 3) insertDetail = "INSERT INTO Doctor (Account_ID, Full_Name, License_Number) VALUES (?, ?, ?)";
-                    else if (user.getRoleId() == 4) insertDetail = "INSERT INTO Medical_Specialist (Account_ID, Full_Name) VALUES (?, ?)";
-                    else insertDetail = "INSERT INTO Patient (Account_ID, Full_Name, Phone) VALUES (?, ?, ?)";
-                    if (!insertDetail.isEmpty()) {
+                    if (user.getRoleId() == 6) {
+                        String insertDetail = "INSERT INTO Patient (Account_ID, Full_Name, Phone) VALUES (?, ?, ?)";
+                        try (PreparedStatement ps2 = conn.prepareStatement(insertDetail)) {
+                            ps2.setInt(1, accId);
+                            ps2.setString(2, user.getFullName());
+                            String phone = (user.getPhone() != null && !user.getPhone().trim().isEmpty()) ? user.getPhone() : "000" + accId;
+                            ps2.setString(3, phone);
+                            ps2.executeUpdate();
+                        } catch(Exception e) {}
+                    } else {
+                        String insertDetail = "INSERT INTO Employee_Profile (Account_ID, Full_Name, License_Number) VALUES (?, ?, ?)";
                         try (PreparedStatement ps2 = conn.prepareStatement(insertDetail)) {
                             ps2.setInt(1, accId);
                             ps2.setString(2, user.getFullName());
                             if (user.getRoleId() == 3) {
                                 ps2.setString(3, "DOC-" + accId); 
-                            } else if (user.getRoleId() == 6) {
-                                String phone = (user.getPhone() != null && !user.getPhone().trim().isEmpty()) ? user.getPhone() : "000" + accId;
-                                ps2.setString(3, phone);
+                            } else {
+                                ps2.setNull(3, java.sql.Types.NVARCHAR);
                             }
                             ps2.executeUpdate();
                         } catch(Exception e) {}
@@ -191,16 +189,12 @@ public class UserDAO {
     }
     public User getUserById(int accountId) throws Exception {
         String sql = "SELECT a.Account_ID, a.Email, a.Account_Status, r.Role_ID, r.Role_Name, " +
-                     "COALESCE(p.Full_Name, d.Full_Name, s.Full_Name, ms.Full_Name, sa.Full_Name, dir.Full_Name) as Full_Name, " +
-                     "p.Phone, p.DOB, p.Address " +
+                     "COALESCE(p.Full_Name, e.Full_Name) as Full_Name, " +
+                     "COALESCE(p.Phone, e.Phone) as Phone, p.DOB, p.Address " +
                      "FROM Account a " +
                      "JOIN Role r ON a.Role_ID = r.Role_ID " +
                      "LEFT JOIN Patient p ON a.Account_ID = p.Account_ID " +
-                     "LEFT JOIN Doctor d ON a.Account_ID = d.Account_ID " +
-                     "LEFT JOIN Staff s ON a.Account_ID = s.Account_ID " +
-                     "LEFT JOIN Medical_Specialist ms ON a.Account_ID = ms.Account_ID " +
-                     "LEFT JOIN System_Admin sa ON a.Account_ID = sa.Account_ID " +
-                     "LEFT JOIN Director dir ON a.Account_ID = dir.Account_ID " +
+                     "LEFT JOIN Employee_Profile e ON a.Account_ID = e.Account_ID " +
                      "WHERE a.Account_ID = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
