@@ -52,10 +52,15 @@ public class AdminUserDetailServlet extends HttpServlet {
         try {
             int accountId = Integer.parseInt(idParam);
             
-            if ("updateRole".equals(action)) {
+            if ("update".equals(action)) {
                 int newRoleId = Integer.parseInt(request.getParameter("roleId"));
+                String fullName = request.getParameter("fullName");
+                String phone = request.getParameter("phone");
+                
                 userDAO.updateUserRole(accountId, newRoleId);
-                request.getSession().setAttribute("success", "Cập nhật quyền thành công.");
+                userDAO.updateUserProfile(accountId, fullName, phone);
+                
+                request.getSession().setAttribute("success", "Cập nhật thông tin và quyền thành công.");
             }
             
             response.sendRedirect(request.getContextPath() + "/admin/users/detail?id=" + accountId);
