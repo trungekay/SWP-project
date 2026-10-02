@@ -333,6 +333,8 @@
         .role-superadmin { background-color: #e0e7ff; color: #4338ca; }
         .role-manager { background-color: #ffedd5; color: #c2410c; }
         .role-doctor { background-color: #dbeafe; color: #1d4ed8; }
+        .role-specialist { background-color: #fce7f3; color: #be185d; }
+        .role-staff { background-color: #fef3c7; color: #b45309; }
         .role-user { background-color: #f1f5f9; color: #475569; }
 
         .badge-status {
@@ -443,6 +445,18 @@
             justify-content: center;
             margin: 0 auto 20px;
         }
+        .modal-icon-success {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background-color: #dcfce7;
+            color: #16a34a;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
         .modal-title-custom {
             font-size: 20px;
             font-weight: 700;
@@ -484,6 +498,17 @@
             border-radius: 8px;
             font-weight: 500;
         }
+        .btn-modal-success {
+            background-color: var(--primary-color);
+            border: none;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .btn-modal-success:hover {
+            background-color: var(--primary-hover);
+        }
         
     </style>
 </head>
@@ -512,7 +537,7 @@
         <header class="top-header">
             <div class="search-bar">
                 <i class="bi bi-search"></i>
-                <input type="text" placeholder="Tìm kiếm nhanh...">
+                <input type="text" id="searchInput" placeholder="Tìm kiếm nhanh..." onkeyup="filterTable()">
             </div>
             <div class="header-right">
                 <button class="btn-icon">
@@ -563,22 +588,21 @@
             <div class="content-card">
                 <div class="table-toolbar">
                     <div class="filter-group">
-                        <select class="filter-select">
+                        <select class="filter-select" id="roleFilter" onchange="filterTable()">
                             <option value="">Tất cả vai trò</option>
-                            <option value="admin">Super Admin</option>
-                            <option value="manager">Manager</option>
-                            <option value="doctor">Doctor</option>
-                            <option value="patient">User</option>
+                            <option value="System_Admin">System Admin</option>
+                            <option value="Director">Director</option>
+                            <option value="Doctor">Doctor</option>
+                            <option value="Medical_Specialist">Medical Specialist</option>
+                            <option value="Staff">Staff</option>
+                            <option value="Patient">Patient</option>
                         </select>
-                        <select class="filter-select">
+                        <select class="filter-select" id="statusFilter" onchange="filterTable()">
                             <option value="">Trạng thái</option>
-                            <option value="active">Hoạt động</option>
-                            <option value="inactive">Đã khóa</option>
+                            <option value="Active">Hoạt động</option>
+                            <option value="Inactive">Đã khóa</option>
                         </select>
                     </div>
-                    <a href="#" class="btn-outline-custom">
-                        <i class="bi bi-upload"></i> Xuất dữ liệu
-                    </a>
                 </div>
 
                 <div class="table-responsive">
@@ -589,13 +613,12 @@
                                 <th>SỐ ĐIỆN THOẠI</th>
                                 <th>VAI TRÒ (ROLE)</th>
                                 <th>TRẠNG THÁI</th>
-                                <th>NGÀY TẠO</th>
                                 <th class="text-end">THAO TÁC</th>
                             </tr>
                         </thead>
                         <tbody>
                             <c:forEach var="user" items="${users}">
-                                <tr>
+                                <tr data-role="${user.role == 'admin' ? 'System_Admin' : user.role}" data-status="${user.status}">
                                     <td>
                                         <div class="user-cell">
                                             <!-- Create Initials -->
@@ -625,16 +648,22 @@
                                     <td>
                                         <c:choose>
                                             <c:when test="${user.role == 'admin' || user.role == 'System_Admin'}">
-                                                <span class="badge-role role-superadmin">Super Admin</span>
+                                                <span class="badge-role role-superadmin">System Admin</span>
                                             </c:when>
-                                            <c:when test="${user.role == 'Director' || user.role == 'Staff'}">
-                                                <span class="badge-role role-manager">Manager</span>
+                                            <c:when test="${user.role == 'Director'}">
+                                                <span class="badge-role role-manager">Director</span>
                                             </c:when>
                                             <c:when test="${user.role == 'Doctor'}">
                                                 <span class="badge-role role-doctor">Doctor</span>
                                             </c:when>
+                                            <c:when test="${user.role == 'Medical_Specialist'}">
+                                                <span class="badge-role role-specialist">Medical Specialist</span>
+                                            </c:when>
+                                            <c:when test="${user.role == 'Staff'}">
+                                                <span class="badge-role role-staff">Staff</span>
+                                            </c:when>
                                             <c:otherwise>
-                                                <span class="badge-role role-user">User</span>
+                                                <span class="badge-role role-user">Patient</span>
                                             </c:otherwise>
                                         </c:choose>
                                     </td>
@@ -648,7 +677,6 @@
                                             </c:otherwise>
                                         </c:choose>
                                     </td>
-                                    <td>20/09/2026</td> <!-- Hardcoded as mockup, or use a date from user if available -->
                                     <td>
                                         <div class="action-btns justify-content-end">
                                             <a href="${pageContext.request.contextPath}/admin/users/detail?id=${user.id}" class="action-btn" title="Xem chi tiết">
@@ -725,14 +753,21 @@
     <div class="modal fade" id="activateModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
                 <div class="modal-body">
-                    <h3 class="modal-title-custom mt-3">Kích hoạt tài khoản?</h3>
+                    <div class="modal-icon-success">
+                        <i class="bi bi-unlock"></i>
+                    </div>
+                    <h3 class="modal-title-custom">Kích hoạt tài khoản?</h3>
+                    <p class="modal-text">Tài khoản này sẽ được mở khóa và có thể đăng nhập lại vào hệ thống.</p>
                     <form action="${pageContext.request.contextPath}/admin/users" method="post" id="activateForm">
                         <input type="hidden" name="id" id="activateUserId">
                         <input type="hidden" name="action" value="activate">
-                        <div class="modal-actions mt-4">
+                        <div class="modal-actions">
                             <button type="button" class="btn btn-modal-cancel" data-bs-dismiss="modal">Hủy</button>
-                            <button type="submit" class="btn btn-primary-custom">Kích hoạt</button>
+                            <button type="submit" class="btn btn-modal-success">Kích hoạt</button>
                         </div>
                     </form>
                 </div>
@@ -769,6 +804,35 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        function filterTable() {
+            var roleFilter = document.getElementById("roleFilter").value;
+            var statusFilter = document.getElementById("statusFilter").value;
+            var searchFilter = document.getElementById("searchInput").value.toLowerCase();
+            var rows = document.querySelectorAll("tbody tr");
+
+            rows.forEach(function(row) {
+                var role = row.getAttribute("data-role");
+                var status = row.getAttribute("data-status");
+                
+                var nameText = row.querySelector(".name").textContent.toLowerCase();
+                var emailText = row.querySelector(".email").textContent.toLowerCase();
+                var phoneText = row.children[1].textContent.toLowerCase();
+                
+                var matchRole = (roleFilter === "" || role === roleFilter);
+                var matchStatus = (statusFilter === "" || status === statusFilter);
+                var matchSearch = (searchFilter === "" || 
+                                   nameText.includes(searchFilter) || 
+                                   emailText.includes(searchFilter) || 
+                                   phoneText.includes(searchFilter));
+
+                if (matchRole && matchStatus && matchSearch) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        }
+
         function openDeactivateModal(id) {
             document.getElementById('deactivateUserId').value = id;
             new bootstrap.Modal(document.getElementById('deactivateModal')).show();
