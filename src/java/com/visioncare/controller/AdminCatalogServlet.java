@@ -1,13 +1,17 @@
 package com.visioncare.controller;
 
 import com.visioncare.dao.CatalogDAO;
+import com.visioncare.model.CatalogService;
+import com.visioncare.model.MedicalSupply;
 import com.visioncare.model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.Part;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -18,6 +22,7 @@ import java.util.UUID;
 @WebServlet(name = "AdminCatalogServlet", urlPatterns = {
     "/admin/catalog", "/admin/catalog/service", "/admin/catalog/supply"
 })
+@MultipartConfig(maxFileSize = 5 * 1024 * 1024, maxRequestSize = 6 * 1024 * 1024)
 public class AdminCatalogServlet extends HttpServlet {
     private final CatalogDAO dao = new CatalogDAO();
 
@@ -31,18 +36,21 @@ public class AdminCatalogServlet extends HttpServlet {
             if ("/admin/catalog".equals(path)) {
                 request.setAttribute("catalogServices", dao.listServices());
                 request.setAttribute("catalogSupplies", dao.listSupplies());
+                request.setAttribute("specialties", dao.listSpecialties());
                 request.getRequestDispatcher("/views/admin/catalog.jsp").forward(request, response);
             } else {
                 boolean service = path.endsWith("/service");
-                List<Map<String, Object>> choices = service ? dao.listServices() : dao.listSupplies();
+                List<?> choices = service ? dao.listServices() : dao.listSupplies();
                 int id = optionalId(request.getParameter("id"));
                 if (id == 0 && !"1".equals(request.getParameter("new")) && !choices.isEmpty()) {
-                    id = (Integer) choices.get(0).get("id");
+                    id = service ? ((CatalogService) choices.get(0)).getId()
+                            : ((MedicalSupply) choices.get(0)).getId();
                 }
-                Map<String, Object> item = id == 0 ? new HashMap<>() :
+                Object item = id == 0 ? new HashMap<String, Object>() :
                         (service ? dao.getService(id) : dao.getSupply(id));
                 if (item == null) { response.sendError(HttpServletResponse.SC_NOT_FOUND); return; }
                 request.setAttribute("choices", choices);
+                if (service) request.setAttribute("specialties", dao.listSpecialties());
                 request.setAttribute("item", item);
                 request.setAttribute("kind", service ? "service" : "supply");
                 request.getRequestDispatcher("/views/admin/catalog-edit.jsp").forward(request, response);
@@ -51,7 +59,7 @@ public class AdminCatalogServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         } catch (Exception e) {
             log("Could not load admin catalog", e);
-            request.setAttribute("error", "Không tải được danh mục. Hãy kiểm tra kết nối và chạy catalog_migration_v2.sql.");
+            request.setAttribute("error", "Không tải được danh mục. Hãy kiểm tra kết nối và cấu trúc bảng Service_Catalog, Medical_Supply trong eye_clinic_db_v2.");
             request.getRequestDispatcher("/views/admin/catalog-error.jsp").forward(request, response);
         }
     }
@@ -71,22 +79,18 @@ public class AdminCatalogServlet extends HttpServlet {
         try {
             int id = optionalId(request.getParameter("id"));
             int savedId;
+            CatalogDAO.ImageData upload = imageUpload(request);
             if (service) {
                 String code = field(request, "code", 20, false);
                 String name = field(request, "name", 255, true);
                 BigDecimal price = price(request);
-                String specialty = field(request, "specialty", 30, false);
-                if (!specialty.isEmpty() && !List.of("general", "refraction", "lasik", "children", "retina", "cataract").contains(specialty)) {
-                    throw new IllegalArgumentException("Chuyên khoa không hợp lệ.");
-                }
+                String specialty = field(request, "specialty", 100, true);
                 String tag = field(request, "tag", 100, false);
                 String summary = field(request, "summary", 500, false);
                 String description = field(request, "description", 4000, false);
-                String image = field(request, "image", 255, false);
-                if (!image.isEmpty() && !image.matches("(departments-[1-5]\\.jpg|gallery/gallery-1\\.jpg)")) {
-                    throw new IllegalArgumentException("Ảnh dịch vụ không hợp lệ.");
-                }
-                savedId = dao.saveService(id, user.getId(), code, name, price, specialty, tag, summary, description, image);
+                savedId = dao.saveService(id, user.getId(), code, name, price, specialty, tag, summary,
+                        description, upload == null ? null : upload.getBytes(),
+                        upload == null ? null : upload.getMimeType());
             } else {
                 String name = field(request, "name", 255, true);
                 String category = field(request, "category", 100, true);
@@ -94,7 +98,9 @@ public class AdminCatalogServlet extends HttpServlet {
                 String unit = field(request, "unit", 30, true);
                 int quantity = Integer.parseInt(field(request, "quantity", 10, true));
                 if (quantity < 0) throw new IllegalArgumentException("Số lượng không được âm.");
-                savedId = dao.saveSupply(id, name, category, batch, unit, quantity, price(request));
+                savedId = dao.saveSupply(id, name, category, batch, unit, quantity, price(request),
+                        upload == null ? null : upload.getBytes(),
+                        upload == null ? null : upload.getMimeType());
             }
             response.sendRedirect(request.getContextPath() + "/admin/catalog?tab=" + (service ? "services" : "supplies") + "&saved=1&id=" + savedId);
         } catch (IllegalArgumentException e) {
@@ -115,6 +121,7 @@ public class AdminCatalogServlet extends HttpServlet {
         }
         try {
             request.setAttribute("choices", service ? dao.listServices() : dao.listSupplies());
+            if (service) request.setAttribute("specialties", dao.listSpecialties());
         } catch (Exception e) {
             log("Could not reload catalog choices", e);
         }
@@ -161,5 +168,30 @@ public class AdminCatalogServlet extends HttpServlet {
             throw new IllegalArgumentException("Đơn giá phải là số nguyên không âm, tối đa 18 chữ số.");
         }
         return value;
+    }
+
+    private CatalogDAO.ImageData imageUpload(HttpServletRequest request) throws Exception {
+        Part part = request.getPart("imageFile");
+        if (part == null || part.getSize() == 0) return null;
+        if (part.getSize() > 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("Ảnh phải nhỏ hơn 5 MB.");
+        }
+        byte[] bytes;
+        try (java.io.InputStream input = part.getInputStream()) {
+            bytes = input.readAllBytes();
+        }
+        String mime;
+        if (bytes.length >= 3 && (bytes[0] & 255) == 0xff && (bytes[1] & 255) == 0xd8 && (bytes[2] & 255) == 0xff) {
+            mime = "image/jpeg";
+        } else if (bytes.length >= 8 && (bytes[0] & 255) == 0x89 && bytes[1] == 'P' && bytes[2] == 'N' && bytes[3] == 'G'
+                && bytes[4] == 13 && bytes[5] == 10 && bytes[6] == 26 && bytes[7] == 10) {
+            mime = "image/png";
+        } else if (bytes.length >= 12 && bytes[0] == 'R' && bytes[1] == 'I' && bytes[2] == 'F' && bytes[3] == 'F'
+                && bytes[8] == 'W' && bytes[9] == 'E' && bytes[10] == 'B' && bytes[11] == 'P') {
+            mime = "image/webp";
+        } else {
+            throw new IllegalArgumentException("Chỉ nhận ảnh JPG, PNG hoặc WebP.");
+        }
+        return new CatalogDAO.ImageData(bytes, mime);
     }
 }

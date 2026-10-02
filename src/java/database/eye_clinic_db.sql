@@ -26,6 +26,39 @@ CREATE TABLE Account (
     FOREIGN KEY (Role_ID) REFERENCES Role(Role_ID)
 );
 
+CREATE TABLE Service_Catalog (
+    Service_ID      INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    Created_By      INT NULL,
+    Service_Code    VARCHAR(20) NULL,
+    Service_Name    NVARCHAR(255) NOT NULL,
+    Price           DECIMAL(18,0) NOT NULL,
+    Specialty_Name  NVARCHAR(100) NULL,
+    Tag             NVARCHAR(100) NULL,
+    Summary         NVARCHAR(500) NULL,
+    Description     NVARCHAR(MAX) NULL,
+    Image_Path      VARCHAR(255) NULL,
+    Image_Data      VARBINARY(MAX) NULL,
+    Image_Mime_Type VARCHAR(50) NULL,
+    FOREIGN KEY (Created_By) REFERENCES Account(Account_ID),
+    CONSTRAINT CHK_Service_Catalog_Price CHECK (Price >= 0)
+);
+CREATE UNIQUE INDEX UX_Service_Catalog_Code ON Service_Catalog(Service_Code)
+    WHERE Service_Code IS NOT NULL;
+
+CREATE TABLE Medical_Supply (
+    Supply_ID    INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    Supply_Name  NVARCHAR(255) NOT NULL,
+    Category     NVARCHAR(100) NOT NULL,
+    Batch_Code   VARCHAR(50) NULL,
+    Unit         NVARCHAR(30) NOT NULL,
+    Quantity     INT NOT NULL DEFAULT (0),
+    Price        DECIMAL(18,0) NOT NULL,
+    Image_Data   VARBINARY(MAX) NULL,
+    Image_Mime_Type VARCHAR(50) NULL,
+    CONSTRAINT CHK_Medical_Supply_Quantity CHECK (Quantity >= 0),
+    CONSTRAINT CHK_Medical_Supply_Price CHECK (Price >= 0)
+);
+
 CREATE TABLE Room (
     Room_ID     INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     Room_Name   NVARCHAR(100) NOT NULL UNIQUE,
@@ -284,6 +317,23 @@ INSERT INTO Service (Service_Name, Actual_Price) VALUES
 (N'Khám mắt tổng quát', 200000),
 (N'Đo khúc xạ máy',     100000),
 (N'Chụp OCT đáy mắt',   400000);
+
+-- Danh mục quản trị; bảng Service ở trên dùng cho Procedure_Order.
+INSERT INTO Service_Catalog
+    (Service_Code, Service_Name, Price, Specialty_Name, Tag, Summary, Description, Image_Path)
+VALUES
+('NK-01', N'Nhãn khoa tổng quát', 250000, N'Nhãn khoa tổng quát', N'Gói cơ bản', N'Khám và chẩn đoán toàn diện các bệnh lý về mắt, phù hợp với mọi lứa tuổi.', N'Bao gồm đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt, đánh giá tình trạng giác mạc và thủy tinh thể.', 'departments-1.jpg'),
+('KX-02', N'Đo Khúc xạ & Kính', 150000, N'Khúc xạ & Kính', N'Khúc xạ kế', N'Khám sàng lọc và đo độ khúc xạ với hệ thống đo tự động chuẩn xác.', N'Đo khúc xạ chính xác bằng máy tự động, thử thị lực và tư vấn tròng kính phù hợp.', 'departments-2.jpg'),
+('LS-03', N'Phẫu thuật LASIK', 18000000, N'Phẫu thuật LASIK', N'Kỹ thuật cao', N'Xóa cận không dao, thời gian phục hồi nhanh chóng.', N'Phẫu thuật khúc xạ laser LASIK/SMILE điều trị cận thị, viễn thị và loạn thị với công nghệ hiện đại.', 'departments-3.jpg'),
+('PE-04', N'Nhãn khoa trẻ em & Nhược thị', 300000, N'Nhãn khoa trẻ em', N'Trẻ em & Học đường', N'Sàng lọc sớm các tật khúc xạ tiến triển, tật lé và suy giảm thị lực ở trẻ nhỏ.', N'Sàng lọc cận thị sớm, điều trị nhược thị và lác mắt trong không gian khám thân thiện.', 'departments-4.jpg'),
+('TT-05', N'Đục thủy tinh thể (Phaco)', 12000000, N'Đục thủy tinh thể', N'Phẫu thuật Phaco', N'Tái tạo tầm nhìn trong sáng bằng phương pháp tán nhuyễn Phaco tiên tiến.', N'Phẫu thuật thay thể thủy tinh nhân tạo điều trị đục thủy tinh thể an toàn, đường mổ siêu nhỏ.', 'departments-5.jpg'),
+('GL-06', N'Glaucoma & Võng mạc', 500000, N'Glaucoma & Võng mạc', N'Đáy mắt chuyên sâu', N'Kiểm soát nhãn áp, bảo tồn thị trường thần kinh mắt và ngăn ngừa biến chứng mù lòa.', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.', 'gallery/gallery-1.jpg');
+
+INSERT INTO Medical_Supply (Supply_Name, Category, Batch_Code, Unit, Quantity, Price) VALUES
+(N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Dung dịch nhỏ mắt', 'SYS-2026A', N'lọ', 142, 95000),
+(N'Tròng kính Essilor Crizal Alize 1.60', N'Tròng kính', 'ESL-8839', N'cặp', 45, 1250000),
+(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Dung dịch nhỏ mắt', 'SNL-091', N'lọ', 8, 88000),
+(N'Que thử màu huỳnh quang Fluorescein Strips', N'Vật tư chẩn đoán', 'FLS-002', N'hộp', 22, 320000);
 
 INSERT INTO Procedure_Order (Specialist_Employee_ID, Record_ID, Service_ID, Status) VALUES
 (4, 1, 2, N'Completed');

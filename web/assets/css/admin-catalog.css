@@ -1,5 +1,6 @@
 .admin-catalog-page { background: #f8fafc; color: #334155; }
 .catalog-page { min-height: 70vh; background: #f8fafc; font-family: Inter, Roboto, sans-serif; }
+.catalog-page [hidden] { display: none !important; }
 .catalog-page section.catalog-view { padding: 0; background: transparent; overflow: visible; }
 .catalog-page section.catalog-edit-panel { padding: 24px; overflow: visible; }
 .catalog-breadcrumb { border-bottom: 1px solid #e7ebef; padding: 14px 0; font-size: 12px; color: #94a3b8; }
@@ -43,7 +44,7 @@
 .catalog-search:focus-within { border-color: #008775; }
 .catalog-search input { border: 0; outline: 0; padding: 8px 0; width: 100%; font-size: 12px; color: #334155; background: transparent; }
 .catalog-filter-selects { display: flex; gap: 9px; }
-.catalog-filter-selects select { border: 1px solid #dbe2e8; border-radius: 7px; background: #fff; padding: 8px 9px; color: #64748b; font-size: 11px; max-width: 180px; }
+.catalog-filters select { border: 1px solid #dbe2e8; border-radius: 7px; background: #fff; padding: 8px 9px; color: #64748b; font-size: 11px; max-width: 180px; }
 .catalog-service { display: grid; grid-template-columns: minmax(0, 1fr) 205px; overflow: hidden; }
 .catalog-service-body { display: flex; flex-direction: column; justify-content: space-between; min-width: 0; padding: 19px; }
 .catalog-service-main { border-left: 4px solid #008775; padding-left: 14px; }

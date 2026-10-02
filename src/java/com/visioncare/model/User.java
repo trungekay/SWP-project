@@ -121,4 +121,19 @@ public class User {
     public void setStatus(String status) {
         this.status = status;
     }
+
+    public int getActorId() { return actorId; }
+    public void setActorId(int actorId) { this.actorId = actorId; }
+
+    public String getSpecialty() { return specialty; }
+    public void setSpecialty(String specialty) { this.specialty = specialty; }
+
+    public String getRoomName() { return roomName; }
+    public void setRoomName(String roomName) { this.roomName = roomName; }
+
+    public String getLicenseNumber() { return licenseNumber; }
+    public void setLicenseNumber(String licenseNumber) { this.licenseNumber = licenseNumber; }
+
+    public String getPosition() { return position; }
+    public void setPosition(String position) { this.position = position; }
 }
