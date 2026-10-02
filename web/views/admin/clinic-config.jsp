@@ -43,9 +43,8 @@
                 <table class="table table-bordered align-middle">
                   <thead class="table-light">
                     <tr>
-                      <th>Mã phòng</th>
-                      <th>Tên phòng</th>
-                      <th>Chức năng</th>
+                      <th>Số phòng</th>
+                      <th>Loại phòng</th>
                       <th class="text-end">Thao tác</th>
                     </tr>
                   </thead>
@@ -54,11 +53,51 @@
                     <tr>
                       <td>P${room.id}</td>
                       <td>${room.name}</td>
-                      <td>Khám chuyên khoa</td> <!-- Since room functionality isn't strictly defined in DB, defaulting this text -->
                       <td class="text-end">
-                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editRoomModal${room.id}"><i class="bi bi-pencil"></i></button>
                       </td>
                     </tr>
+                    
+                    <!-- Edit Room Modal -->
+                    <div class="modal fade" id="editRoomModal${room.id}" tabindex="-1">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <form action="${pageContext.request.contextPath}/admin/room-config" method="post">
+                            <input type="hidden" name="action" value="edit">
+                            <input type="hidden" name="roomId" value="${room.id}">
+                            <div class="modal-header border-0 pb-0">
+                              <h5 class="modal-title fw-bold text-primary">Sửa Tên Phòng Khám</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                              <div class="mb-3">
+                                <label class="form-label fw-semibold">Loại phòng (Tên phòng)</label>
+                                <input type="text" name="roomName" class="form-control" value="${room.name}" required>
+                              </div>
+                              <div class="mb-3">
+                                <label class="form-label fw-semibold">Chỉ định bác sĩ trực</label>
+                                <select name="doctorId" class="form-select">
+                                  <option value="">-- Không có / Bỏ trống --</option>
+                                  <c:forEach var="doctor" items="${doctors}">
+                                    <c:if test="${doctor.roomId == room.id || doctor.roomId == 0 || empty doctor.roomId}">
+                                      <option value="${doctor.id}" ${doctor.roomId == room.id ? 'selected' : ''}>
+                                        ${doctor.name} - ${doctor.specialty}
+                                      </option>
+                                    </c:if>
+                                  </c:forEach>
+                                </select>
+                                <div class="form-text text-muted small">Chỉ hiển thị bác sĩ đang trực tại phòng này hoặc chưa được phân công.</div>
+                              </div>
+                            </div>
+                            <div class="modal-footer border-0 pt-0">
+                              <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Hủy</button>
+                              <button type="submit" class="btn btn-primary px-4 rounded-pill">Cập nhật</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- End Edit Modal -->
                   </c:forEach>
                   </tbody>
                 </table>
@@ -84,15 +123,68 @@
                     </tr>
                   </thead>
                   <tbody>
-                  <c:forEach var="slot" items="${timeSlots}">
+                  <c:forEach var="slot" items="${timeSlots}" varStatus="statusIdx">
                     <tr>
                       <td>${slot.slotName}</td>
                       <td>${slot.startTime} - ${slot.endTime}</td>
-                      <td><span class="badge bg-success">Hoạt động</span></td>
+                      <td>
+                        <c:choose>
+                          <c:when test="${slot.status eq 'Available'}">
+                            <span class="badge bg-success">Hoạt động</span>
+                          </c:when>
+                          <c:otherwise>
+                            <span class="badge bg-danger">Ngừng hoạt động</span>
+                          </c:otherwise>
+                        </c:choose>
+                      </td>
                       <td class="text-end">
-                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editSlotModal${statusIdx.index}"><i class="bi bi-pencil"></i></button>
                       </td>
                     </tr>
+                    
+                    <!-- Edit Slot Modal -->
+                    <div class="modal fade" id="editSlotModal${statusIdx.index}" tabindex="-1">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <form action="${pageContext.request.contextPath}/admin/timeslot-config" method="post">
+                            <input type="hidden" name="action" value="edit">
+                            <input type="hidden" name="oldSlotName" value="${slot.slotName}">
+                            <div class="modal-header border-0 pb-0">
+                              <h5 class="modal-title fw-bold text-primary">Sửa Khung Giờ Khám</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                              <div class="mb-3">
+                                <label class="form-label fw-semibold">Tên ca (Slot Name)</label>
+                                <input type="text" name="slotName" class="form-control" value="${slot.slotName}" required>
+                              </div>
+                              <div class="row mb-3">
+                                <div class="col-6">
+                                  <label class="form-label fw-semibold">Giờ bắt đầu</label>
+                                  <input type="time" name="startTime" class="form-control" value="${slot.startTime}" required>
+                                </div>
+                                <div class="col-6">
+                                  <label class="form-label fw-semibold">Giờ kết thúc</label>
+                                  <input type="time" name="endTime" class="form-control" value="${slot.endTime}" required>
+                                </div>
+                              </div>
+                              <div class="mb-3">
+                                <label class="form-label fw-semibold">Trạng thái</label>
+                                <select name="status" class="form-select" required>
+                                  <option value="Available" ${slot.status == 'Available' ? 'selected' : ''}>Hoạt động</option>
+                                  <option value="Canceled" ${slot.status != 'Available' ? 'selected' : ''}>Ngừng hoạt động</option>
+                                </select>
+                              </div>
+                            </div>
+                            <div class="modal-footer border-0 pt-0">
+                              <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Hủy</button>
+                              <button type="submit" class="btn btn-primary px-4 rounded-pill">Cập nhật</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- End Edit Slot Modal -->
                   </c:forEach>
                   </tbody>
                 </table>
@@ -171,6 +263,18 @@
               <div class="mb-3">
                 <label class="form-label fw-semibold">Tên phòng khám</label>
                 <input type="text" name="roomName" class="form-control" required placeholder="VD: Phòng Khám 102">
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Phân công bác sĩ trực (Tùy chọn)</label>
+                <select name="doctorId" class="form-select">
+                  <option value="">-- Bỏ qua / Sắp xếp sau --</option>
+                  <c:forEach var="doctor" items="${doctors}">
+                    <c:if test="${doctor.roomId == 0 || empty doctor.roomId}">
+                      <option value="${doctor.id}">${doctor.name} - ${doctor.specialty}</option>
+                    </c:if>
+                  </c:forEach>
+                </select>
+                <div class="form-text text-muted small">Chỉ hiển thị các bác sĩ chưa được phân công phòng nào.</div>
               </div>
             </div>
             <div class="modal-footer border-0 pt-0">
