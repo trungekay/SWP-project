@@ -13,12 +13,14 @@ public class User {
     private String role;    // patient, doctor, admin
     private String dob;
     private String address;
+    private int roleId;
+    private String status;
 
     public User() {
     }
 
     public User(int id, String fullName, String email, String password,
-                String phone, String role, String dob, String address) {
+                String phone, String role, String dob, String address, int roleId, String status) {
         this.id = id;
         this.fullName = fullName;
         this.email = email;
@@ -27,6 +29,8 @@ public class User {
         this.role = role;
         this.dob = dob;
         this.address = address;
+        this.roleId = roleId;
+        this.status = status;
     }
 
     // ===== Getters & Setters =====
@@ -93,5 +97,21 @@ public class User {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public int getRoleId() {
+        return roleId;
+    }
+
+    public void setRoleId(int roleId) {
+        this.roleId = roleId;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }
