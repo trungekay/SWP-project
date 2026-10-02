@@ -23,6 +23,8 @@ public class AdminClinicConfigServlet extends HttpServlet {
         try {
             request.setAttribute("rooms", roomDAO.getAll());
             request.setAttribute("timeSlots", timeSlotDAO.getConfiguredSlots());
+            com.visioncare.dao.DoctorDAO doctorDAO = new com.visioncare.dao.DoctorDAO();
+            request.setAttribute("doctors", doctorDAO.getAll());
         } catch (Exception e) {
             e.printStackTrace();
             request.setAttribute("error", "Lá»—i táº£i cáº¥u hÃ¬nh: " + e.getMessage());

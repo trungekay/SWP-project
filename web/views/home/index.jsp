@@ -121,6 +121,29 @@
 
       </div>
 
+      <!-- Gallery Section (Moved inside About) -->
+      <div class="gallery pt-0 mt-5">
+        <!-- Section Title -->
+        <div class="container section-title" data-aos="fade-up">
+          <h2>Hình ảnh phòng khám</h2>
+          <p>Không gian hiện đại, sạch sẽ và thân thiện tại VisionCare — nơi bạn an tâm chăm sóc đôi mắt</p>
+        </div><!-- End Section Title -->
+
+        <div class="container-fluid" data-aos="fade-up" data-aos-delay="100">
+          <div class="row g-0">
+            <c:forEach var="i" begin="1" end="8">
+              <div class="col-lg-3 col-md-4">
+                <div class="gallery-item">
+                  <a href="${pageContext.request.contextPath}/assets/img/gallery/gallery-${i}.jpg" class="glightbox" data-gallery="images-gallery">
+                    <img src="${pageContext.request.contextPath}/assets/img/gallery/gallery-${i}.jpg" alt="" class="img-fluid">
+                  </a>
+                </div>
+              </div><!-- End Gallery Item -->
+            </c:forEach>
+          </div>
+        </div>
+      </div>
+
     </section><!-- /About Section -->
 
     <!-- Stats Section -->
@@ -187,7 +210,7 @@
               <div class="card-body p-4 text-center">
                 <h4 class="card-title fw-bold mb-3">Khám mắt tổng quát</h4>
                 <p class="card-text text-muted mb-4">Đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt và tư vấn chăm sóc mắt định kỳ.</p>
-                <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
+                <a href="#departments" onclick="document.querySelector('a[href=\'#departments-tab-1\']').click();" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
               </div>
             </div>
           </div><!-- End Service Item -->
@@ -198,7 +221,7 @@
               <div class="card-body p-4 text-center">
                 <h4 class="card-title fw-bold mb-3">Đo khúc xạ &amp; Kính</h4>
                 <p class="card-text text-muted mb-4">Đo khúc xạ chính xác, tư vấn kính cận/viễn/loạn, kính áp tròng phù hợp từng bệnh nhân.</p>
-                <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
+                <a href="#departments" onclick="document.querySelector('a[href=\'#departments-tab-2\']').click();" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
               </div>
             </div>
           </div><!-- End Service Item -->
@@ -209,7 +232,7 @@
               <div class="card-body p-4 text-center">
                 <h4 class="card-title fw-bold mb-3">Nhãn khoa trẻ em</h4>
                 <p class="card-text text-muted mb-4">Sàng lọc cận thị sớm, điều trị nhược thị, lác mắt — phòng khám thân thiện cho bé.</p>
-                <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
+                <a href="#departments" onclick="document.querySelector('a[href=\'#departments-tab-4\']').click();" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
               </div>
             </div>
           </div><!-- End Service Item -->
@@ -220,7 +243,7 @@
               <div class="card-body p-4 text-center">
                 <h4 class="card-title fw-bold mb-3">Phẫu thuật LASIK</h4>
                 <p class="card-text text-muted mb-4">Phẫu thuật khúc xạ laser LASIK/SMILE điều trị cận thị, viễn thị, loạn thị vĩnh viễn.</p>
-                <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
+                <a href="#departments" onclick="document.querySelector('a[href=\'#departments-tab-3\']').click();" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
               </div>
             </div>
           </div><!-- End Service Item -->
@@ -231,7 +254,7 @@
               <div class="card-body p-4 text-center">
                 <h4 class="card-title fw-bold mb-3">Đục thủy tinh thể</h4>
                 <p class="card-text text-muted mb-4">Phẫu thuật thay thể thủy tinh nhân tạo (IOL) điều trị đục thủy tinh thể an toàn, hiệu quả.</p>
-                <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
+                <a href="#departments" onclick="document.querySelector('a[href=\'#departments-tab-6\']').click();" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
               </div>
             </div>
           </div><!-- End Service Item -->
@@ -242,7 +265,7 @@
               <div class="card-body p-4 text-center">
                 <h4 class="card-title fw-bold mb-3">Glaucoma &amp; Võng mạc</h4>
                 <p class="card-text text-muted mb-4">Chẩn đoán và điều trị glaucoma, bệnh võng mạc tiểu đường — can thiệp sớm bảo vệ thị lực.</p>
-                <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
+                <a href="#departments" onclick="document.querySelector('a[href=\'#departments-tab-5\']').click();" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
               </div>
             </div>
           </div><!-- End Service Item -->
@@ -300,6 +323,9 @@
               </li>
               <li class="nav-item">
                 <a class="nav-link" data-bs-toggle="tab" href="#departments-tab-5">Glaucoma &amp; Võng mạc</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#departments-tab-6">Đục thủy tinh thể</a>
               </li>
             </ul>
           </div>
@@ -361,7 +387,19 @@
                     <p>Sử dụng OCT và máy phân tích lớp sợi thần kinh thị giác để phát hiện sớm glaucoma. Điều trị bằng thuốc, laser hoặc phẫu thuật tùy giai đoạn bệnh, theo dõi định kỳ bảo vệ thị lực lâu dài.</p>
                   </div>
                   <div class="col-lg-4 text-center order-1 order-lg-2">
-                    <img src="${pageContext.request.contextPath}/assets/img/departments-5.jpg" alt="Glaucoma và Võng mạc" class="img-fluid">
+                    <img src="${pageContext.request.contextPath}/assets/img/gallery/gallery-1.jpg" alt="Glaucoma và Võng mạc" class="img-fluid">
+                  </div>
+                </div>
+              </div>
+              <div class="tab-pane" id="departments-tab-6">
+                <div class="row">
+                  <div class="col-lg-8 details order-2 order-lg-1">
+                    <h3>Đục thủy tinh thể</h3>
+                    <p class="fst-italic">Phẫu thuật thay thể thủy tinh nhân tạo (IOL) an toàn, lấy lại thị lực sáng rõ.</p>
+                    <p>Sử dụng công nghệ Phaco hiện đại, thời gian phẫu thuật ngắn, không đau, hồi phục nhanh. Cung cấp đa dạng các loại thủy tinh thể nhân tạo (đơn tiêu, đa tiêu) phù hợp với nhu cầu sinh hoạt của bệnh nhân.</p>
+                  </div>
+                  <div class="col-lg-4 text-center order-1 order-lg-2">
+                    <img src="${pageContext.request.contextPath}/assets/img/departments-5.jpg" alt="Đục thủy tinh thể" class="img-fluid">
                   </div>
                 </div>
               </div>
@@ -519,107 +557,77 @@
 
     </section><!-- /Faq Section -->
 
-    <!-- Gallery Section -->
-    <section id="gallery" class="gallery section">
 
-      <!-- Section Title -->
-      <div class="container section-title" data-aos="fade-up">
-        <h2>Hình ảnh phòng khám</h2>
-        <p>Không gian hiện đại, sạch sẽ và thân thiện tại VisionCare — nơi bạn an tâm chăm sóc đôi mắt</p>
-      </div><!-- End Section Title -->
-
-      <div class="container-fluid" data-aos="fade-up" data-aos-delay="100">
-
-        <div class="row g-0">
-          <c:forEach var="i" begin="1" end="8">
-            <div class="col-lg-3 col-md-4">
-              <div class="gallery-item">
-                <a href="${pageContext.request.contextPath}/assets/img/gallery/gallery-${i}.jpg" class="glightbox" data-gallery="images-gallery">
-                  <img src="${pageContext.request.contextPath}/assets/img/gallery/gallery-${i}.jpg" alt="" class="img-fluid">
-                </a>
-              </div>
-            </div><!-- End Gallery Item -->
-          </c:forEach>
-        </div>
-
-      </div>
-
-    </section><!-- /Gallery Section -->
 
     <!-- Contact Section -->
-    <section id="contact" class="contact section">
+    <!-- Contact Section -->
+    <section id="contact" class="contact section light-background">
+      <style>
+        .contact-card {
+          transition: all 0.3s ease;
+          border-bottom: 3px solid transparent;
+        }
+        .contact-card:hover {
+          transform: translateY(-10px);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+          border-bottom: 3px solid var(--accent-color);
+        }
+        .contact-card .icon-circle {
+          transition: all 0.3s ease;
+          background-color: color-mix(in srgb, var(--accent-color), transparent 90%);
+        }
+        .contact-card .icon-circle i {
+          color: var(--accent-color);
+          transition: all 0.3s ease;
+        }
+        .contact-card:hover .icon-circle {
+          background-color: var(--accent-color);
+        }
+        .contact-card:hover .icon-circle i {
+          color: #ffffff;
+        }
+      </style>
 
       <!-- Section Title -->
       <div class="container section-title" data-aos="fade-up">
         <h2>Liên hệ</h2>
-        <p>Gửi câu hỏi hoặc phản hồi cho VisionCare — chúng tôi luôn sẵn sàng hỗ trợ bạn</p>
+        <p>Thông tin liên hệ của VisionCare — chúng tôi luôn sẵn sàng hỗ trợ bạn</p>
       </div><!-- End Section Title -->
 
-      <div class="mb-5" data-aos="fade-up" data-aos-delay="200">
-        <iframe style="border:0; width: 100%; height: 270px;" src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d48389.78314118045!2d-74.006138!3d40.710059!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25a22a3bda30d%3A0xb89d1fe6bc499443!2sDowntown%20Conference%20Center!5e0!3m2!1sen!2sus!4v1676961268712!5m2!1sen!2sus" frameborder="0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-      </div><!-- End Google Maps -->
-
       <div class="container" data-aos="fade-up" data-aos-delay="100">
+        <div class="row gy-4 justify-content-center">
 
-        <div class="row gy-4">
-
-          <div class="col-lg-4">
-            <div class="info-item d-flex" data-aos="fade-up" data-aos-delay="300">
-              <i class="bi bi-geo-alt flex-shrink-0"></i>
-              <div>
-                <h3>Địa chỉ</h3>
-                <p>456 Lê Thị Riêng, Quận 10, TP.HCM</p>
+          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
+            <div class="contact-card info-box text-center p-5 shadow-sm rounded-4 h-100 bg-white">
+              <div class="icon-circle mb-4 mx-auto d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; border-radius: 50%;">
+                <i class="bi bi-geo-alt fs-1"></i>
               </div>
-            </div><!-- End Info Item -->
-
-            <div class="info-item d-flex" data-aos="fade-up" data-aos-delay="400">
-              <i class="bi bi-telephone flex-shrink-0"></i>
-              <div>
-                <h3>Hotline</h3>
-                <p>1800 599 988</p>
-              </div>
-            </div><!-- End Info Item -->
-
-            <div class="info-item d-flex" data-aos="fade-up" data-aos-delay="500">
-              <i class="bi bi-envelope flex-shrink-0"></i>
-              <div>
-                <h3>Email</h3>
-                <p>hotro@visioncare.vn</p>
-              </div>
-            </div><!-- End Info Item -->
-
+              <h4 class="fw-bold mb-3" style="color: var(--heading-color);">Địa chỉ</h4>
+              <p class="text-muted mb-0">456 Lê Thị Riêng<br>Quận 10, TP.HCM</p>
+            </div>
           </div>
 
-          <div class="col-lg-8">
-            <form action="${pageContext.request.contextPath}/contact" method="post" class="php-email-form" data-aos="fade-up" data-aos-delay="200">
-              <div class="row gy-4">
-
-                <div class="col-md-6">
-                  <input type="text" name="name" class="form-control" placeholder="Họ và tên" required="">
-                </div>
-
-                <div class="col-md-6 ">
-                  <input type="email" class="form-control" name="email" placeholder="Email" required="">
-                </div>
-
-                <div class="col-md-12">
-                  <input type="text" class="form-control" name="subject" placeholder="Tiêu đề" required="">
-                </div>
-
-                <div class="col-md-12">
-                  <textarea class="form-control" name="message" rows="6" placeholder="Nội dung tin nhắn" required=""></textarea>
-                </div>
-
-                <div class="col-md-12 text-center">
-                  <button type="submit">Gửi tin nhắn</button>
-                </div>
-
+          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
+            <div class="contact-card info-box text-center p-5 shadow-sm rounded-4 h-100 bg-white">
+              <div class="icon-circle mb-4 mx-auto d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; border-radius: 50%;">
+                <i class="bi bi-telephone fs-1"></i>
               </div>
-            </form>
-          </div><!-- End Contact Form -->
+              <h4 class="fw-bold mb-3" style="color: var(--heading-color);">Hotline</h4>
+              <p class="text-muted mb-0">1800 599 988<br>Tư vấn 24/7</p>
+            </div>
+          </div>
+
+          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
+            <div class="contact-card info-box text-center p-5 shadow-sm rounded-4 h-100 bg-white">
+              <div class="icon-circle mb-4 mx-auto d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; border-radius: 50%;">
+                <i class="bi bi-envelope fs-1"></i>
+              </div>
+              <h4 class="fw-bold mb-3" style="color: var(--heading-color);">Email</h4>
+              <p class="text-muted mb-0"><a href="mailto:hotro@visioncare.vn" class="text-muted text-decoration-none">hotro@visioncare.vn</a><br><a href="mailto:contact@visioncare.vn" class="text-muted text-decoration-none">contact@visioncare.vn</a></p>
+            </div>
+          </div>
 
         </div>
-
       </div>
 
     </section><!-- /Contact Section -->

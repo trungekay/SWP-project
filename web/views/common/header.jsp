@@ -127,8 +127,10 @@
               <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
             </nav>
 
-            <a class="cta-btn d-none d-sm-block" href="${pageContext.request.contextPath}/book-appointment">Đặt lịch
-              ngay</a>
+            <c:if test="${empty sessionScope.user || sessionScope.user.role == 'patient'}">
+              <a class="cta-btn d-none d-sm-block" href="${pageContext.request.contextPath}/book-appointment">Đặt lịch
+                ngay</a>
+            </c:if>
 
           </div>
 
