@@ -13,7 +13,7 @@ public class DoctorDAO {
 
     public List<Doctor> getAll() throws Exception {
         List<Doctor> list = new ArrayList<>();
-        String sql = "SELECT * FROM Doctor ORDER BY Doctor_ID";
+        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 3 ORDER BY e.Employee_ID";
         try (Connection conn = DBContext.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
@@ -25,7 +25,7 @@ public class DoctorDAO {
     }
 
     public Doctor getById(int id) throws Exception {
-        String sql = "SELECT * FROM Doctor WHERE Doctor_ID = ?";
+        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 3 AND e.Employee_ID = ?";
         try (Connection conn = DBContext.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -43,11 +43,24 @@ public class DoctorDAO {
         return getAll();
     }
 
+    public boolean assignDoctorToRoom(int doctorId, int roomId) throws Exception {
+        String sql = "UPDATE Employee_Profile SET Room_ID = ? WHERE Employee_ID = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (roomId <= 0) {
+                ps.setNull(1, Types.INTEGER); // Unassign room if 0
+            } else {
+                ps.setInt(1, roomId);
+            }
+            ps.setInt(2, doctorId);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
     private Doctor mapRow(ResultSet rs) throws SQLException {
         Doctor d = new Doctor();
-        d.setId(rs.getInt("Doctor_ID"));
+        d.setId(rs.getInt("Employee_ID"));
         String fullName = rs.getString("Full_Name");
-        d.setId(rs.getInt("Doctor_ID"));
         d.setName(fullName);
 
         // Parse title from full name
@@ -74,9 +87,14 @@ public class DoctorDAO {
         }
 
         // Randomize images somewhat based on ID so they don't all look identical
-        int imgId = (rs.getInt("Doctor_ID") % 4) + 1;
+        int imgId = (rs.getInt("Employee_ID") % 4) + 1;
         d.setImage("doctors/doctors-" + imgId + ".jpg");
         d.setRating(5.0);
+        
+        if (hasColumn(rs, "Room_ID")) {
+            d.setRoomId(rs.getInt("Room_ID"));
+        }
+        
         return d;
     }
 

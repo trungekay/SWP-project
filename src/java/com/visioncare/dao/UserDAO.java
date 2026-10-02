@@ -11,21 +11,17 @@ public class UserDAO {
 
     public User login(String email, String password) throws Exception {
         String sql = "SELECT a.Account_ID, a.Email, r.Role_Name, " +
-                     "COALESCE(d.Full_Name, ms.Full_Name, s.Full_Name, dir.Full_Name, sa.Full_Name, p.Full_Name, a.Email) AS Display_Name, " +
-                     "COALESCE(d.Doctor_ID, ms.Specialist_ID, s.Staff_ID, dir.Director_ID, sa.Admin_ID, p.Patient_ID, 0) AS Actor_ID, " +
-                     "COALESCE(d.Specialty, ms.Specialty, s.Position, N'Khúc xạ & Nhãn khoa') AS Specialty_Info, " +
+                     "COALESCE(e.Full_Name, p.Full_Name, a.Email) AS Display_Name, " +
+                     "COALESCE(e.Employee_ID, p.Patient_ID, 0) AS Actor_ID, " +
+                     "COALESCE(e.Specialty, N'Khúc xạ & Nhãn khoa') AS Specialty_Info, " +
                      "COALESCE(rm.Room_Name, N'P.101 (Tầng 1)') AS Room_Info, " +
-                     "d.License_Number, s.Position, " +
+                     "e.License_Number, e.Specialty AS Position, " +
                      "p.Phone, p.DOB, p.Address " +
                      "FROM Account a " +
                      "JOIN Role r ON a.Role_ID = r.Role_ID " +
                      "LEFT JOIN Patient p ON a.Account_ID = p.Account_ID " +
-                     "LEFT JOIN Doctor d ON a.Account_ID = d.Account_ID " +
-                     "LEFT JOIN Room rm ON d.Room_ID = rm.Room_ID " +
-                     "LEFT JOIN Medical_Specialist ms ON a.Account_ID = ms.Account_ID " +
-                     "LEFT JOIN Staff s ON a.Account_ID = s.Account_ID " +
-                     "LEFT JOIN Director dir ON a.Account_ID = dir.Account_ID " +
-                     "LEFT JOIN System_Admin sa ON a.Account_ID = sa.Account_ID " +
+                     "LEFT JOIN Employee_Profile e ON a.Account_ID = e.Account_ID " +
+                     "LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID " +
                      "WHERE a.Email = ? AND a.Password = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -65,7 +61,7 @@ public class UserDAO {
         return null;
     }
 
-    /
+    /**
      * ÄÄƒng kÃ½ tÃ i khoáº£n má»›i.
      * Tráº£ vá» true náº¿u thÃ nh cÃ´ng.**
      */
