@@ -12,7 +12,6 @@ import java.io.IOException;
 public class AdminRoomConfigServlet extends HttpServlet {
     private final RoomDAO roomDAO = new RoomDAO();
 
-    // Hiển thị danh sách (Read)
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -24,11 +23,10 @@ public class AdminRoomConfigServlet extends HttpServlet {
         }
     }
 
-    // Xử lý Form Submit (Thêm/Xóa)
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String action = request.getParameter("action"); // "add" hoặc "delete"
+        String action = request.getParameter("action");
 
         try {
             if ("add".equals(action)) {
@@ -42,11 +40,10 @@ public class AdminRoomConfigServlet extends HttpServlet {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            // Xử lý lỗi ném ra message cho UI
+
             request.getSession().setAttribute("errorMsg", "Không thể thực hiện thao tác. Có thể phòng đang được sử dụng.");
         }
         
-        // Sử dụng Redirect thay vì Forward sau khi POST để tránh lỗi duplicate form submission
         response.sendRedirect(request.getContextPath() + "/admin/room-config");
     }
 }

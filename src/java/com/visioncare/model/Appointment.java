@@ -2,9 +2,6 @@ package com.visioncare.model;
 
 import java.sql.Date;
 
-/**
- * Entity Ä‘áº¡i diá»‡n cho má»™t lá»‹ch háº¹n khÃ¡m máº¯t.
- */
 public class Appointment {
 
     private int id;
@@ -14,17 +11,15 @@ public class Appointment {
     private Date dob;
     private int doctorId;
     private Date appointmentDate;
-    private String timeSlot;       // "08:00", "09:30"
-    private String department;     // general, lasik, pediatric, ...
-    private String payment;        // vnpay, momo, clinic
-    private String reason;         // LÃ½ do khÃ¡m / triá»‡u chá»©ng
-    private String status;         // pending, confirmed, cancelled, completed
-    private int userId;            // 0 náº¿u khÃ¡ch vÃ£ng lai
+    private String timeSlot;     
+    private String department;  
+    private String payment;       
+    private String reason;         
+    private String status;        
+    private int userId;           
 
     public Appointment() {
     }
-
-    // ===== Getters & Setters =====
 
     public int getId() {
         return id;

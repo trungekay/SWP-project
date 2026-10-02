@@ -7,7 +7,6 @@ import java.util.Properties;
 
 public class EmailUtil {
     
-    // Config these properties with a real email account that supports SMTP sending
     private static final String SENDER_EMAIL = "hotro.visioncare@gmail.com";
     private static final String SENDER_PASSWORD = "gmpizjvpsdxssjwe";
 

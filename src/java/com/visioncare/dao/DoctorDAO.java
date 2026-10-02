@@ -6,9 +6,6 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * DAO xá»­ lÃ½ truy váº¥n liÃªn quan Ä‘áº¿n BÃ¡c sÄ©.
- */
 public class DoctorDAO {
 
     public List<Doctor> getAll() throws Exception {
@@ -39,7 +36,6 @@ public class DoctorDAO {
     }
 
     public List<Doctor> getByDepartment(String departmentKey) throws Exception {
-        // Since department is not fully implemented in the new DB yet, return all
         return getAll();
     }
 
@@ -50,7 +46,6 @@ public class DoctorDAO {
         d.setId(rs.getInt("Doctor_ID"));
         d.setName(fullName);
 
-        // Parse title from full name
         String title = "Bác sĩ";
         if (fullName.startsWith("TS.BS."))
             title = "Tiến sĩ";
@@ -73,7 +68,6 @@ public class DoctorDAO {
             d.setAchievements(rs.getString("Achievements"));
         }
 
-        // Randomize images somewhat based on ID so they don't all look identical
         int imgId = (rs.getInt("Doctor_ID") % 4) + 1;
         d.setImage("doctors/doctors-" + imgId + ".jpg");
         d.setRating(5.0);

@@ -18,14 +18,12 @@ public class ServiceServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            // Controller gọi DAO để lấy Data
             List<Service> listServices = serviceDAO.getAllServices();
             request.setAttribute("services", listServices);
             
-            // Forward Data sang View (JSP)
             request.getRequestDispatcher("/views/service/list.jsp").forward(request, response);
         } catch (Exception e) {
-            e.printStackTrace(); // Log lỗi cho server
+            e.printStackTrace();
             response.sendRedirect(request.getContextPath() + "/error-500.jsp");
         }
     }

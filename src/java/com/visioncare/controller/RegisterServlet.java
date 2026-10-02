@@ -55,12 +55,10 @@ public class RegisterServlet extends HttpServlet {
             if (sessionOtp != null && sessionOtp.equals(enteredOtp) && pendingUser != null) {
                 // Register user
                 try {
-                    // Temporarily catching Exception, userDAO might throw SQLException
                     userDAO.register(pendingUser);
                     session.removeAttribute("registerOtp");
                     session.removeAttribute("pendingUser");
                     
-                    // Auto login after verify
                     session.setAttribute("user", pendingUser);
                     response.sendRedirect(request.getContextPath() + "/home");
                     
@@ -76,7 +74,6 @@ public class RegisterServlet extends HttpServlet {
             return;
         }
 
-        // Registration form submitted
         String fullName = request.getParameter("fullName");
         String phone = request.getParameter("phone");
         String email = request.getParameter("email");
@@ -90,7 +87,6 @@ public class RegisterServlet extends HttpServlet {
         }
 
         try {
-            // Check if user exists (UserDAO might not have email checking in all schemas, but we try)
             User existing = userDAO.getByEmail(email);
             if (existing != null) {
                 request.setAttribute("error", "Email đã tồn tại trong hệ thống.");
@@ -98,10 +94,8 @@ public class RegisterServlet extends HttpServlet {
                 return;
             }
 
-            // Generate 6-digit OTP
             String otp = String.format("%06d", new Random().nextInt(999999));
             
-            // Create user object but don't save yet
             User user = new User();
             user.setFullName(fullName);
             user.setPhone(phone);
@@ -109,19 +103,15 @@ public class RegisterServlet extends HttpServlet {
             user.setPassword(password);
             user.setRole("patient");
             
-            // Store in session
             session.setAttribute("pendingUser", user);
             session.setAttribute("registerOtp", otp);
             
-            // Send email
             try {
                 EmailUtil.sendOtpEmail(email, otp);
             } catch (Exception e) {
                 System.out.println("Could not send email, check credentials: " + e.getMessage());
-                // In development, we can still proceed and check console for OTP
             }
             
-            // Redirect to OTP verification page
             response.sendRedirect(request.getContextPath() + "/verify-otp");
             
         } catch (Exception e) {

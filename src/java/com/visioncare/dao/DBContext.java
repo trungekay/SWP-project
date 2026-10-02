@@ -5,10 +5,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Properties;
 
-/**
- * Lá»›p quáº£n lÃ½ káº¿t ná»‘i cÆ¡ sá»Ÿ dá»¯ liá»‡u.
- * Äá»c cáº¥u hÃ¬nh tá»« db.properties trÃªn classpath.
- */
 public class DBContext {
 
     private static String DRIVER;
@@ -35,10 +31,6 @@ public class DBContext {
         }
     }
 
-    /**
-     * Táº¡o vÃ  tráº£ vá» má»™t Connection má»›i tá»›i database.
-     * Gá»i xong pháº£i Ä‘Ã³ng Connection (dÃ¹ng try-with-resources).
-     */
     public static Connection getConnection() throws Exception {
         return DriverManager.getConnection(URL, USERNAME, PASSWORD);
     }

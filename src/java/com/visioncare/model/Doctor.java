@@ -6,15 +6,15 @@ package com.visioncare.model;
 public class Doctor {
 
     private int id;
-    private String name;          // ThS.BS. Nguyá»…n VÄƒn An
-    private String title;         // ThS.BS., TS.BS., BS.CKI., BS.
-    private String specialty;     // Pháº«u thuáº­t LASIK & KhÃºc xáº¡
-    private String departmentKey; // lasik, glaucoma, general, pediatric
+    private String name;          
+    private String title;        
+    private String specialty;     
+    private String departmentKey;
     private String description;
-    private String biography;     // new
-    private String achievements;  // new
-    private String image;         // doctors/doctors-1.jpg
-    private double rating;        // 4.5
+    private String biography;  
+    private String achievements;  
+    private String image;      
+    private double rating;      
 
     public Doctor() {
     }
@@ -32,8 +32,6 @@ public class Doctor {
         this.image = image;
         this.rating = rating;
     }
-
-    // ===== Getters & Setters =====
 
     public int getId() {
         return id;

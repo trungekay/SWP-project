@@ -1,8 +1,5 @@
 package com.visioncare.model;
 
-/**
- * Entity Ä‘áº¡i diá»‡n cho ngÆ°á»i dÃ¹ng há»‡ thá»‘ng (bá»‡nh nhÃ¢n, admin, bÃ¡c sÄ©).
- */
 public class User {
 
     private int id;
@@ -10,7 +7,7 @@ public class User {
     private String email;
     private String password;
     private String phone;
-    private String role;    // patient, doctor, admin
+    private String role;
     private String dob;
     private String address;
 
@@ -29,7 +26,6 @@ public class User {
         this.address = address;
     }
 
-    // ===== Getters & Setters =====
 
     public int getId() {
         return id;

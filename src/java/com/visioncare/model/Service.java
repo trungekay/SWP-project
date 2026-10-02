@@ -5,7 +5,6 @@ public class Service {
     private String serviceName;
     private double price;
 
-    // Constructor, Getters & Setters
     public Service() {}
 
     public Service(int serviceId, String serviceName, double price) {

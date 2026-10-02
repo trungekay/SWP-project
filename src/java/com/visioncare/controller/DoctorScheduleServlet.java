@@ -16,10 +16,6 @@ import java.io.IOException;
 import java.sql.Date;
 import java.util.*;
 
-/**
- * Servlet hiá»ƒn thá»‹ danh sÃ¡ch bÃ¡c sÄ© vÃ  lá»‹ch trá»‘ng.
- * URL: /doctor-schedules
- */
 @WebServlet(name = "DoctorScheduleServlet", urlPatterns = {"/doctor-schedules"})
 public class DoctorScheduleServlet extends HttpServlet {
 
@@ -31,11 +27,9 @@ public class DoctorScheduleServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            // Láº¥y filter parameters
             String specialty = request.getParameter("specialty");
             String dateStr = request.getParameter("date");
 
-            // NgÃ y máº·c Ä‘á»‹nh = hÃ´m nay
             Date selectedDate;
             if (dateStr != null && !dateStr.isEmpty()) {
                 selectedDate = Date.valueOf(dateStr);
@@ -43,7 +37,6 @@ public class DoctorScheduleServlet extends HttpServlet {
                 selectedDate = new Date(System.currentTimeMillis());
             }
 
-            // Láº¥y danh sÃ¡ch bÃ¡c sÄ© (theo chuyÃªn khoa hoáº·c táº¥t cáº£)
             List<Doctor> doctors;
             if (specialty != null && !specialty.isEmpty() && !specialty.equals("all")) {
                 doctors = doctorDAO.getByDepartment(specialty);
@@ -51,11 +44,8 @@ public class DoctorScheduleServlet extends HttpServlet {
                 doctors = doctorDAO.getAll();
             }
 
-            // Láº¥y danh sÃ¡ch chuyÃªn khoa
             List<Department> departments = departmentDAO.getAll();
 
-            // Láº¥y time slots cho má»—i bÃ¡c sÄ©
-            // Key: doctorId, Value: list of TimeSlot
             Map<Integer, List<TimeSlot>> doctorSlots = new LinkedHashMap<>();
 
             String[] morningSlots = {"08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00"};
@@ -63,7 +53,7 @@ public class DoctorScheduleServlet extends HttpServlet {
 
             for (Doctor doc : doctors) {
                 List<TimeSlot> slots = new ArrayList<>();
-                // Buá»•i sÃ¡ng
+
                 for (String time : morningSlots) {
                     TimeSlot ts = new TimeSlot();
                     ts.setDoctorId(doc.getId());
@@ -72,7 +62,7 @@ public class DoctorScheduleServlet extends HttpServlet {
                     ts.setBooked(appointmentDAO.isSlotBooked(doc.getId(), selectedDate, time));
                     slots.add(ts);
                 }
-                // Buá»•i chiá» u
+
                 for (String time : afternoonSlots) {
                     TimeSlot ts = new TimeSlot();
                     ts.setDoctorId(doc.getId());
@@ -93,7 +83,7 @@ public class DoctorScheduleServlet extends HttpServlet {
             request.getRequestDispatcher("/views/doctor/doctor-schedules.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("error", "CÃ³ lá»—i xáº£y ra: " + e.getMessage());
+            request.setAttribute("error", "Có lỗi xảy ra: " + e.getMessage());
             request.getRequestDispatcher("/views/error/500.jsp").forward(request, response);
         }
     }

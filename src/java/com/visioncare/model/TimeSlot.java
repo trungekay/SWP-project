@@ -2,16 +2,13 @@ package com.visioncare.model;
 
 import java.sql.Date;
 
-/**
- * Entity Ä‘áº¡i diá»‡n cho má»™t khung giá» khÃ¡m cá»§a bÃ¡c sÄ©.
- */
 public class TimeSlot {
 
     private int id;
     private int doctorId;
     private Date date;
-    private String startTime;   // "08:00", "08:30", "09:00"
-    private boolean booked;     // true náº¿u Ä‘Ã£ cÃ³ bá»‡nh nhÃ¢n Ä‘áº·t
+    private String startTime;  
+    private boolean booked;   
 
     public TimeSlot() {
     }
@@ -24,7 +21,6 @@ public class TimeSlot {
         this.booked = booked;
     }
 
-    // ===== Getters & Setters =====
 
     public int getId() {
         return id;

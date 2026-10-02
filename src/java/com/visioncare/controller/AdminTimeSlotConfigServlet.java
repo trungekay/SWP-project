@@ -25,7 +25,6 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
                 String endTime = request.getParameter("endTime");
                 String session = request.getParameter("session");
                 
-                // Gọi DAO để insert record
                 timeSlotDAO.addTimeSlot(workDate, slotName, startTime, endTime, session);
                 
             } else if ("delete".equals(action)) {
@@ -33,7 +32,6 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
                 boolean success = timeSlotDAO.deleteTimeSlot(scheduleId);
                 
                 if (!success) {
-                    // Logic nghiệp vụ an toàn: không xóa được nếu slot đã bị ai đó "Booked"
                     request.getSession().setAttribute("errorMsg", "Không thể xóa Slot này vì đã có bệnh nhân đặt hoặc dữ liệu không tồn tại!");
                 }
             }
@@ -42,7 +40,6 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
             request.getSession().setAttribute("errorMsg", "Lỗi cấu hình Slot: " + e.getMessage());
         }
 
-        // POST-Redirect-GET Pattern: Redirect để làm mới trang an toàn
         response.sendRedirect(request.getContextPath() + "/admin/clinic-config");
     }
 }

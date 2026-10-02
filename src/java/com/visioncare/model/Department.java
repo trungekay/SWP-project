@@ -1,14 +1,11 @@
 package com.visioncare.model;
 
-/**
- * Entity Ä‘áº¡i diá»‡n cho chuyÃªn khoa nhÃ£n khoa.
- */
 public class Department {
 
     private int id;
-    private String key;         // general, lasik, pediatric, glaucoma, refraction
-    private String name;        // NhÃ£n khoa tá»•ng quÃ¡t
-    private String icon;        // fa-solid fa-eye
+    private String key;    
+    private String name;     
+    private String icon; 
     private String description;
 
     public Department() {
@@ -21,8 +18,6 @@ public class Department {
         this.icon = icon;
         this.description = description;
     }
-
-    // ===== Getters & Setters =====
 
     public int getId() {
         return id;

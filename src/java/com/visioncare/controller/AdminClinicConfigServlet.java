@@ -7,9 +7,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-/**
- * Servlet xá»­ lÃ½ mÃ n hÃ¬nh Cáº¥u hÃ¬nh phÃ²ng khÃ¡m (Admin)
- */
 @WebServlet(name = "AdminClinicConfigServlet", urlPatterns = {"/admin/clinic-config"})
 public class AdminClinicConfigServlet extends HttpServlet {
 

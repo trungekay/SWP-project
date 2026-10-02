@@ -4,9 +4,6 @@ import com.visioncare.model.User;
 
 import java.sql.*;
 
-/**
- * DAO xá»­ lÃ½ truy váº¥n liÃªn quan Ä‘áº¿n User (Ä‘Äƒng nháº­p, Ä‘Äƒng kÃ½).
- */
 public class UserDAO {
 
     public User login(String email, String password) throws Exception {
@@ -25,7 +22,6 @@ public class UserDAO {
                     u.setEmail(rs.getString("Email"));
                     u.setPassword(rs.getString("Password"));
                     
-                    // Populate from Patient if exists
                     String patientName = rs.getString("Full_Name");
                     u.setFullName(patientName != null ? patientName : rs.getString("Email"));
                     u.setPhone(rs.getString("Phone"));
@@ -34,7 +30,6 @@ public class UserDAO {
                     u.setDob(dobDate != null ? dobDate.toString() : null);
                     u.setAddress(rs.getString("Address"));
                     
-                    // Map DB roles to application roles
                     String roleName = rs.getString("Role_Name");
                     if ("System_Admin".equals(roleName)) u.setRole("admin");
                     else if ("Doctor".equals(roleName)) u.setRole("doctor");
@@ -48,10 +43,6 @@ public class UserDAO {
         return null;
     }
 
-    /**
-     * ÄÄƒng kÃ½ tÃ i khoáº£n má»›i.
-     * Tráº£ vá» true náº¿u thÃ nh cÃ´ng.
-     */
     public boolean register(User user) throws Exception {
         String insertAccount = "INSERT INTO Account (Role_ID, Email, Password) VALUES ((SELECT TOP 1 Role_ID FROM Role WHERE Role_Name = 'Patient'), ?, ?)";
         try (Connection conn = DBContext.getConnection();
@@ -77,9 +68,6 @@ public class UserDAO {
         return false;
     }
 
-    /**
-     * TÃ¬m user theo email.
-     */
     public User getByEmail(String email) throws Exception {
         String sql = "SELECT a.*, p.Full_Name, p.Phone, p.DOB, p.Address FROM Account a LEFT JOIN Patient p ON a.Account_ID = p.Account_ID WHERE a.Email = ?";
         try (Connection conn = DBContext.getConnection();
@@ -116,9 +104,6 @@ public class UserDAO {
         return u;
     }
 
-    /**
-     * Cập nhật thông tin profile của Patient
-     */
     public boolean updateProfile(User user) throws Exception {
         String sql = "UPDATE Patient SET Full_Name = ?, Phone = ?, DOB = ?, Address = ? WHERE Account_ID = ?";
         try (Connection conn = DBContext.getConnection();
@@ -136,9 +121,6 @@ public class UserDAO {
         }
     }
 
-    /**
-     * Cập nhật mật khẩu
-     */
     public boolean updatePassword(int accountId, String newPassword) throws Exception {
         String sql = "UPDATE Account SET Password = ? WHERE Account_ID = ?";
         try (Connection conn = DBContext.getConnection();

@@ -6,14 +6,8 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * DAO xá»­ lÃ½ truy váº¥n liÃªn quan Ä‘áº¿n Lá»‹ch háº¹n khÃ¡m.
- */
 public class AppointmentDAO {
 
-    /**
-     * Táº¡o lá»‹ch háº¹n má»›i â€” tráº£ vá» ID vá»«a táº¡o.
-     */
     public int create(Appointment a) throws Exception {
         String sql = "INSERT INTO appointments "
                 + "(patient_name, phone, email, dob, doctor_id, appointment_date, "
@@ -44,9 +38,6 @@ public class AppointmentDAO {
         return -1;
     }
 
-    /**
-     * Láº¥y danh sÃ¡ch lá»‹ch háº¹n cá»§a má»™t bÃ¡c sÄ© trong má»™t ngÃ y.
-     */
     public List<Appointment> getByDoctorAndDate(int doctorId, Date date) throws Exception {
         List<Appointment> list = new ArrayList<>();
         String sql = "SELECT * FROM appointments WHERE doctor_id = ? AND appointment_date = ? "
@@ -64,9 +55,6 @@ public class AppointmentDAO {
         return list;
     }
 
-    /**
-     * Láº¥y danh sÃ¡ch lá»‹ch háº¹n cá»§a má»™t user.
-     */
     public List<Appointment> getByUserId(int userId) throws Exception {
         List<Appointment> list = new ArrayList<>();
         String sql = "SELECT * FROM appointments WHERE user_id = ? ORDER BY appointment_date DESC, time_slot";
@@ -82,9 +70,6 @@ public class AppointmentDAO {
         return list;
     }
 
-    /**
-     * Kiá»ƒm tra khung giá» Ä‘Ã£ Ä‘Æ°á»£c Ä‘áº·t chÆ°a.
-     */
     public boolean isSlotBooked(int doctorId, Date date, String timeSlot) throws Exception {
         String sql = "SELECT COUNT(*) FROM appointments "
                 + "WHERE doctor_id = ? AND appointment_date = ? AND time_slot = ? AND status != 'cancelled'";

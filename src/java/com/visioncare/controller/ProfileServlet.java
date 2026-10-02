@@ -47,7 +47,7 @@ public class ProfileServlet extends HttpServlet {
             }
             
             try {
-                // Update password in DB
+
                 userDAO.updatePassword(currentUser.getId(), newPassword);
                 currentUser.setPassword(newPassword);
                 session.setAttribute("user", currentUser);
@@ -62,26 +62,23 @@ public class ProfileServlet extends HttpServlet {
             return;
         }
 
-        // Profile update flow
+
         String fullName = request.getParameter("fullName");
         String phone = request.getParameter("phone");
         String dob = request.getParameter("dob");
         String address = request.getParameter("address");
 
         try {
-            // Update object
+
             currentUser.setFullName(fullName);
             currentUser.setPhone(phone);
             currentUser.setDob(dob);
             currentUser.setAddress(address);
             
-            // Update database
             userDAO.updateProfile(currentUser);
             
-            // Update session
             session.setAttribute("user", currentUser);
             
-            // Redirect back with success message
             request.getSession().setAttribute("success", "Cập nhật hồ sơ thành công!");
             response.sendRedirect(request.getContextPath() + "/views/profile/manage.jsp");
             
