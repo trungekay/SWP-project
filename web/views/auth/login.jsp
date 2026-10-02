@@ -85,7 +85,14 @@
               <p class="text-muted mb-4">Đăng nhập vào tài khoản của bạn</p>
             </div>
 
-            <%-- Thông báo lỗi --%>
+            <%-- Thông báo lỗi / thành công --%>
+            <c:if test="${not empty sessionScope.successMsg}">
+              <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle me-2"></i>${sessionScope.successMsg}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+              <c:remove var="successMsg" scope="session" />
+            </c:if>
             <c:if test="${not empty error}">
               <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 <i class="bi bi-exclamation-triangle me-2"></i>${error}
