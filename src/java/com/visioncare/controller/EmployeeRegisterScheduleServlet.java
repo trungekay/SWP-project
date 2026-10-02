@@ -12,7 +12,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-
 import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -21,13 +20,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 
-/**
- * Servlet xu ly dang ky lich lam viec hang tuan cho Doctor, Medical Specialist, Staff.
- * URL: /employee/register-schedule
- */
-@WebServlet(name = "EmployeeRegisterScheduleServlet", urlPatterns = {"/employee/register-schedule"})
+@WebServlet(name = "EmployeeRegisterScheduleServlet", urlPatterns = { "/employee/register-schedule" })
 public class EmployeeRegisterScheduleServlet extends HttpServlet {
-
     private final WorkScheduleDAO workScheduleDAO = new WorkScheduleDAO();
 
     @Override
@@ -36,8 +30,6 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
         try {
             HttpSession session = request.getSession();
             User currentUser = (User) session.getAttribute("user");
-
-            // Neu chua dang nhap trong luc test, tu dong fallback mock user
             if (currentUser == null) {
                 currentUser = workScheduleDAO.getActorProfile(1, "doctor");
                 if (currentUser == null) {
@@ -51,20 +43,16 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                 }
                 session.setAttribute("user", currentUser);
             }
-
             int actorId = currentUser.getActorId() > 0 ? currentUser.getActorId() : 1;
             String role = currentUser.getRole() != null ? currentUser.getRole() : "doctor";
-
             LocalDate today = LocalDate.now();
             int currentYear = today.getYear();
             int maxYear = currentYear + 1;
-
-            // 1. Tinh toan tuan hien tai cua nam nay
-            LocalDate firstMondayOfCurrentYear = LocalDate.of(currentYear, 1, 4).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            LocalDate firstMondayOfCurrentYear = LocalDate.of(currentYear, 1, 4)
+                    .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
             DateTimeFormatter dmyFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
             DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("dd/MM");
             DateTimeFormatter fullFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
             int currentWeekOfThisYear = 1;
             int totalWeeksInCurrentYear = 52;
             for (int w = 1; w <= 53; w++) {
@@ -78,22 +66,16 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                     currentWeekOfThisYear = w;
                 }
             }
-
-            // Tuan som nhat duoc phep dang ky la TUAN TIEP THEO
             int earliestYear = currentYear;
             int earliestWeek = currentWeekOfThisYear + 1;
             if (earliestWeek > totalWeeksInCurrentYear) {
                 earliestYear = currentYear + 1;
                 earliestWeek = 1;
             }
-
-            // 2. Danh sach nam duoc phep chon (chi tu nam co tuan tiep theo tro di)
             List<Integer> availableYears = new ArrayList<>();
             for (int y = earliestYear; y <= maxYear; y++) {
                 availableYears.add(y);
             }
-
-            // Xu ly nam duoc chon
             String yearParam = request.getParameter("year");
             int selectedYear = earliestYear;
             if (yearParam != null && !yearParam.isEmpty()) {
@@ -105,34 +87,29 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                 } catch (NumberFormatException ignored) {
                 }
             }
-
-            // 3. Tinh danh sach cac tuan duoc phep dang ky cho selectedYear (tu tuan tiep theo tro di)
-            LocalDate firstMondayOfSelectedYear = LocalDate.of(selectedYear, 1, 4).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            LocalDate firstMondayOfSelectedYear = LocalDate.of(selectedYear, 1, 4)
+                    .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
             int minWeekInSelectedYear = (selectedYear == currentYear) ? (currentWeekOfThisYear + 1) : 1;
-
             List<WeekOptionDTO> weekOptions = new ArrayList<>();
             int totalWeeksInSelectedYear = 52;
-
             for (int w = 1; w <= 53; w++) {
                 LocalDate wStart = firstMondayOfSelectedYear.plusWeeks(w - 1);
                 LocalDate wEnd = wStart.plusDays(6);
-
                 if (w == 53 && wStart.getYear() > selectedYear) {
                     break;
                 }
                 totalWeeksInSelectedYear = w;
-
                 if (w >= minWeekInSelectedYear) {
                     boolean isFirstAvailable = (selectedYear == earliestYear && w == earliestWeek);
-                    String label = String.format("Tuần %02d: %s - %s", w, wStart.format(dmyFormatter), wEnd.format(dmyFormatter));
+                    String label = String.format("Tuần %02d: %s - %s", w, wStart.format(dmyFormatter),
+                            wEnd.format(dmyFormatter));
                     if (isFirstAvailable) {
                         label += " (Tuần tiếp theo)";
                     }
-                    weekOptions.add(new WeekOptionDTO(w, 0, label, wStart.format(dmyFormatter), wEnd.format(dmyFormatter), isFirstAvailable));
+                    weekOptions.add(new WeekOptionDTO(w, 0, label, wStart.format(dmyFormatter),
+                            wEnd.format(dmyFormatter), isFirstAvailable));
                 }
             }
-
-            // 4. Xu ly Tuan duoc chon
             String weekParam = request.getParameter("week");
             int selectedWeek = (selectedYear == earliestYear) ? earliestWeek : 1;
             if (weekParam != null && !weekParam.isEmpty()) {
@@ -144,29 +121,22 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                 } catch (NumberFormatException ignored) {
                 }
             }
-
-            // Tinh 7 ngay trong tuan duoc chon (Thu Hai -> Chu Nhat)
             LocalDate startOfSelectedWeek = firstMondayOfSelectedYear.plusWeeks(selectedWeek - 1);
             LocalDate endOfSelectedWeek = startOfSelectedWeek.plusDays(6);
-
-            String[] dayNames = {"Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"};
+            String[] dayNames = { "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật" };
             List<ScheduleDayDTO> weekDays = new ArrayList<>();
             for (int i = 0; i < 7; i++) {
                 LocalDate date = startOfSelectedWeek.plusDays(i);
                 boolean isToday = date.isEqual(today);
                 boolean isPast = date.isBefore(today);
-
                 ScheduleDayDTO dayDto = new ScheduleDayDTO(
                         dayNames[i],
                         date.format(dayFormatter),
                         date.format(fullFormatter),
                         isToday,
-                        isPast
-                );
+                        isPast);
                 weekDays.add(dayDto);
             }
-
-            // 5. Danh sach cac Slot 30 phut theo quy chuan VisionCare
             List<ScheduleSlotDTO> slots = new ArrayList<>();
             slots.add(new ScheduleSlotDTO("Slot 1", "08:00 - 08:30", "Morning", "08:00", "08:30"));
             slots.add(new ScheduleSlotDTO("Slot 2", "08:30 - 09:00", "Morning", "08:30", "09:00"));
@@ -182,8 +152,6 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             slots.add(new ScheduleSlotDTO("Slot 12", "15:30 - 16:00", "Afternoon", "15:30", "16:00"));
             slots.add(new ScheduleSlotDTO("Slot 13", "16:00 - 16:30", "Afternoon", "16:00", "16:30"));
             slots.add(new ScheduleSlotDTO("Slot 14", "16:30 - 17:00", "Afternoon", "16:30", "17:00"));
-
-            // 6. Lay tap hop cac Slot da dang ky trong Database
             String startDateStr = startOfSelectedWeek.format(fullFormatter);
             String endDateStr = endOfSelectedWeek.format(fullFormatter);
             Set<String> registeredKeys = workScheduleDAO.getRegisteredSlotKeys(actorId, role, startDateStr, endDateStr);
@@ -191,12 +159,9 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             for (String k : registeredKeys) {
                 registeredMap.put(k, Boolean.TRUE);
             }
-
-            // Tinh tuan truoc / tuan sau cho nut dieu huong (khong cho quay lai truoc tuan tiep theo)
             boolean hasPrevWeek = true;
             int prevWeek = selectedWeek - 1;
             int prevYear = selectedYear;
-
             if (selectedYear == earliestYear && selectedWeek <= earliestWeek) {
                 hasPrevWeek = false;
             } else if (prevWeek < minWeekInSelectedYear) {
@@ -207,7 +172,6 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                     hasPrevWeek = false;
                 }
             }
-
             boolean hasNextWeek = true;
             int nextWeek = selectedWeek + 1;
             int nextYear = selectedYear;
@@ -219,13 +183,10 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                     hasNextWeek = false;
                 }
             }
-
-            // Lay thong tin profile day du cua actor
             User actorProfile = workScheduleDAO.getActorProfile(actorId, role);
             if (actorProfile == null) {
                 actorProfile = currentUser;
             }
-
             request.setAttribute("actorProfile", actorProfile);
             request.setAttribute("selectedYear", selectedYear);
             request.setAttribute("availableYears", availableYears);
@@ -238,14 +199,12 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             request.setAttribute("nextWeek", nextWeek);
             request.setAttribute("nextYear", nextYear);
             request.setAttribute("today", today.format(fullFormatter));
-
             request.setAttribute("weekDays", weekDays);
             request.setAttribute("slots", slots);
             request.setAttribute("registeredKeys", registeredKeys);
             request.setAttribute("registeredMap", registeredMap);
             request.setAttribute("registeredCount", registeredKeys.size());
             request.setAttribute("registeredHours", registeredKeys.size() * 0.5);
-
             request.getRequestDispatcher("/views/employee/register-schedule.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
@@ -260,31 +219,24 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
         try {
             HttpSession session = request.getSession();
             User currentUser = (User) session.getAttribute("user");
-
             if (currentUser == null) {
                 response.sendRedirect(request.getContextPath() + "/login");
                 return;
             }
-
             int actorId = currentUser.getActorId() > 0 ? currentUser.getActorId() : 1;
             String role = currentUser.getRole() != null ? currentUser.getRole() : "doctor";
-
             String yearParam = request.getParameter("year");
             String weekParam = request.getParameter("week");
-
             String[] selectedSlots = request.getParameterValues("selectedSlots");
-
             if (selectedSlots == null || selectedSlots.length == 0) {
                 session.setAttribute("errorMessage", "Vui lòng chọn ít nhất một ca làm việc để đăng ký!");
-                response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
+                response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam
+                        + "&week=" + weekParam);
                 return;
             }
-
             List<ScheduleRegistrationDTO> registrationList = new ArrayList<>();
             LocalDate today = LocalDate.now();
-
             for (String raw : selectedSlots) {
-                // Format: "yyyy-MM-dd|Slot X|08:00:00|08:30:00|Morning"
                 String[] parts = raw.split("\\|");
                 if (parts.length >= 5) {
                     String workDate = parts[0];
@@ -292,56 +244,32 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                     String startTime = parts[2];
                     String endTime = parts[3];
                     String sessionType = parts[4];
-
-                    // Kiem tra khong dang ky ngay qua khu
                     LocalDate date = LocalDate.parse(workDate);
                     if (!date.isBefore(today)) {
-                        registrationList.add(new ScheduleRegistrationDTO(workDate, slot, startTime, endTime, sessionType));
+                        registrationList
+                                .add(new ScheduleRegistrationDTO(workDate, slot, startTime, endTime, sessionType));
                     }
                 }
             }
-
             if (registrationList.isEmpty()) {
                 session.setAttribute("errorMessage", "Không có ca làm việc hợp lệ trong tương lai để đăng ký!");
-                response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
+                response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam
+                        + "&week=" + weekParam);
                 return;
             }
-
-            // RANG BUOC TOI THIEU 30 GIO (60 CA / TUAN)
-            int parsedYear = Integer.parseInt(yearParam);
-            int parsedWeek = Integer.parseInt(weekParam);
-            LocalDate firstMonday = LocalDate.of(parsedYear, 1, 4).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            LocalDate startOfWeek = firstMonday.plusWeeks(parsedWeek - 1);
-            LocalDate endOfWeek = startOfWeek.plusDays(6);
-            DateTimeFormatter fullFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-            Set<String> alreadyRegisteredKeys = workScheduleDAO.getRegisteredSlotKeys(
-                    actorId, role, startOfWeek.format(fullFormatter), endOfWeek.format(fullFormatter)
-            );
-
-            int totalWeeklySlots = alreadyRegisteredKeys.size() + registrationList.size();
-            double totalWeeklyHours = totalWeeklySlots * 0.5;
-
-            if (totalWeeklyHours < 30.0) {
-                double missingHours = 30.0 - totalWeeklyHours;
-                int missingSlots = 60 - totalWeeklySlots;
-                session.setAttribute("errorMessage", "Quy định phòng khám: Tổng thời gian làm việc trong tuần phải đạt tối thiểu 30.0 giờ (tương đương 60 ca 30 phút). "
-                        + "Hiện tại bạn mới đăng ký " + String.format("%.1f", totalWeeklyHours) + " giờ (" + totalWeeklySlots + " ca), còn thiếu " 
-                        + String.format("%.1f", missingHours) + " giờ (" + missingSlots + " ca) nữa!");
-                response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
-                return;
-            }
-
             boolean success = workScheduleDAO.registerScheduleBatch(actorId, role, registrationList);
-
             if (success) {
-                session.setAttribute("successMessage", "Đăng ký thành công " + registrationList.size() + " ca làm việc mới! Tổng thời gian tuần này: " + String.format("%.1f", totalWeeklyHours) + " giờ.");
-                response.sendRedirect(request.getContextPath() + "/employee/schedule?year=" + yearParam + "&week=" + weekParam);
+                session.setAttribute("successMessage",
+                        "Đăng ký thành công " + registrationList.size() + " ca làm việc mới! Tổng thời gian tuần này: "
+                                + String.format("%.1f", totalWeeklyHours) + " giờ.");
+                response.sendRedirect(
+                        request.getContextPath() + "/employee/schedule?year=" + yearParam + "&week=" + weekParam);
             } else {
-                session.setAttribute("errorMessage", "Có lỗi xảy ra trong quá trình lưu lịch làm việc. Vui lòng thử lại!");
-                response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
+                session.setAttribute("errorMessage",
+                        "Có lỗi xảy ra trong quá trình lưu lịch làm việc. Vui lòng thử lại!");
+                response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam
+                        + "&week=" + weekParam);
             }
-
         } catch (Exception e) {
             e.printStackTrace();
             HttpSession session = request.getSession();
