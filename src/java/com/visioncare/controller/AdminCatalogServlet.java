@@ -36,7 +36,6 @@ public class AdminCatalogServlet extends HttpServlet {
             if ("/admin/catalog".equals(path)) {
                 request.setAttribute("catalogServices", dao.listServices());
                 request.setAttribute("catalogSupplies", dao.listSupplies());
-                request.setAttribute("specialties", dao.listSpecialties());
                 request.getRequestDispatcher("/views/admin/catalog.jsp").forward(request, response);
             } else {
                 boolean service = path.endsWith("/service");
@@ -50,7 +49,6 @@ public class AdminCatalogServlet extends HttpServlet {
                         (service ? dao.getService(id) : dao.getSupply(id));
                 if (item == null) { response.sendError(HttpServletResponse.SC_NOT_FOUND); return; }
                 request.setAttribute("choices", choices);
-                if (service) request.setAttribute("specialties", dao.listSpecialties());
                 request.setAttribute("item", item);
                 request.setAttribute("kind", service ? "service" : "supply");
                 request.getRequestDispatcher("/views/admin/catalog-edit.jsp").forward(request, response);
@@ -84,7 +82,10 @@ public class AdminCatalogServlet extends HttpServlet {
                 String code = field(request, "code", 20, false);
                 String name = field(request, "name", 255, true);
                 BigDecimal price = price(request);
-                String specialty = field(request, "specialty", 100, true);
+                String specialty = field(request, "specialty", 30, false);
+                if (!specialty.isEmpty() && !List.of("general", "refraction", "lasik", "children", "retina", "cataract").contains(specialty)) {
+                    throw new IllegalArgumentException("Chuyên khoa không hợp lệ.");
+                }
                 String tag = field(request, "tag", 100, false);
                 String summary = field(request, "summary", 500, false);
                 String description = field(request, "description", 4000, false);
@@ -121,7 +122,6 @@ public class AdminCatalogServlet extends HttpServlet {
         }
         try {
             request.setAttribute("choices", service ? dao.listServices() : dao.listSupplies());
-            if (service) request.setAttribute("specialties", dao.listSpecialties());
         } catch (Exception e) {
             log("Could not reload catalog choices", e);
         }

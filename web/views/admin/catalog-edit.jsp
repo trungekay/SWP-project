@@ -23,7 +23,7 @@
     <section class="catalog-panel catalog-edit-panel">
       <div class="catalog-edit-heading"><div><h1>${empty item.id ? 'Thêm mới' : 'Cập nhật'} ${kind == 'service' ? 'dịch vụ' : 'vật tư'}</h1><p>Nhấn “Lưu thay đổi” để ghi trực tiếp vào database.</p></div><a href="${pageContext.request.contextPath}/admin/catalog?tab=${kind == 'service' ? 'services' : 'supplies'}">← Về danh sách</a></div>
       <c:if test="${not empty error}"><div class="catalog-form-error" role="alert"><c:out value="${error}" /></div></c:if>
-      <form class="catalog-edit-form" action="${pageContext.request.contextPath}/admin/catalog/${kind}" method="post">
+      <form class="catalog-edit-form" action="${pageContext.request.contextPath}/admin/catalog/${kind}" method="post" enctype="multipart/form-data">
         <input type="hidden" name="csrf" value="${sessionScope.catalogCsrf}">
         <input type="hidden" name="id" value="${fn:escapeXml(item.id)}">
         <c:choose>
@@ -33,13 +33,14 @@
             <div class="catalog-form-grid"><label>Đơn giá (VNĐ) <span>*</span><input name="price" type="number" min="0" step="1" required value="${fn:escapeXml(item.price)}"></label><label>Nhãn hiển thị<input name="tag" maxlength="100" value="${fn:escapeXml(item.tag)}" placeholder="VD: Gói cơ bản"></label></div>
             <label>Tóm tắt ngắn<input name="summary" maxlength="500" value="${fn:escapeXml(item.summary)}"></label>
             <label>Mô tả chi tiết<textarea name="description" rows="5" maxlength="4000"><c:out value="${item.description}" /></textarea></label>
-            <label>Ảnh minh họa<select name="image"><option value="">Ảnh mặc định</option><option value="departments-1.jpg" ${item.image == 'departments-1.jpg' ? 'selected' : ''}>Khám tổng quát</option><option value="departments-2.jpg" ${item.image == 'departments-2.jpg' ? 'selected' : ''}>Khúc xạ</option><option value="departments-3.jpg" ${item.image == 'departments-3.jpg' ? 'selected' : ''}>LASIK</option><option value="departments-4.jpg" ${item.image == 'departments-4.jpg' ? 'selected' : ''}>Trẻ em</option><option value="departments-5.jpg" ${item.image == 'departments-5.jpg' ? 'selected' : ''}>Phaco</option><option value="gallery/gallery-1.jpg" ${item.image == 'gallery/gallery-1.jpg' ? 'selected' : ''}>Võng mạc</option></select></label>
+            <label>Ảnh minh họa từ máy<input type="file" name="imageFile" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG hoặc WebP, tối đa 5 MB. Để trống nếu muốn giữ ảnh hiện tại.</small></label><c:if test="${not empty item.id}"><c:choose><c:when test="${item.uploadedImage}"><img class="catalog-image-preview" src="${pageContext.request.contextPath}/catalog-image?kind=service&amp;id=${item.id}" alt="Ảnh dịch vụ hiện tại"></c:when><c:when test="${not empty item.image}"><img class="catalog-image-preview" src="${pageContext.request.contextPath}/assets/img/${fn:escapeXml(item.image)}" alt="Ảnh dịch vụ hiện tại"></c:when></c:choose></c:if>
           </c:when>
           <c:otherwise>
             <label>Tên vật tư / dược phẩm <span>*</span><input name="name" maxlength="255" required value="${fn:escapeXml(item.name)}"></label>
             <div class="catalog-form-grid"><label>Phân loại <span>*</span><input name="category" maxlength="100" required value="${fn:escapeXml(item.category)}" placeholder="VD: Dung dịch nhỏ mắt"></label><label>Số lô<input name="batch" maxlength="50" value="${fn:escapeXml(item.batch)}"></label></div>
             <div class="catalog-form-grid"><label>Số lượng tồn kho <span>*</span><input name="quantity" type="number" min="0" step="1" required value="${fn:escapeXml(item.quantity)}"></label><label>Đơn vị <span>*</span><input name="unit" maxlength="30" required value="${fn:escapeXml(item.unit)}" placeholder="VD: lọ, hộp, cặp"></label></div>
             <label>Đơn giá (VNĐ) <span>*</span><input name="price" type="number" min="0" step="1" required value="${fn:escapeXml(item.price)}"></label>
+            <label>Ảnh vật tư từ máy<input type="file" name="imageFile" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG hoặc WebP, tối đa 5 MB. Để trống nếu muốn giữ ảnh hiện tại.</small></label><c:if test="${not empty item.id && item.uploadedImage}"><img class="catalog-image-preview" src="${pageContext.request.contextPath}/catalog-image?kind=supply&amp;id=${item.id}" alt="Ảnh vật tư hiện tại"></c:if>
           </c:otherwise>
         </c:choose>
         <div class="catalog-form-actions"><a class="catalog-detail" href="${pageContext.request.contextPath}/admin/catalog?tab=${kind == 'service' ? 'services' : 'supplies'}">Hủy</a><button class="catalog-primary" type="submit"><i class="bi bi-check-lg"></i> Lưu thay đổi</button></div>

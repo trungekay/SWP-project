@@ -11,19 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CatalogDAO {
-    private static final String SERVICE_COLUMNS = "Service_ID, Service_Code, Service_Name, Price, Specialty_Name, Tag, Summary, Description, Image_Path, CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
+    private static final String SERVICE_COLUMNS = "Service_ID, Service_Code, Service_Name, Price, Specialty_Code, Tag, Summary, Description, Image_Path, CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
     private static final String SUPPLY_COLUMNS = "Supply_ID, Supply_Name, Category, Batch_Code, Unit, Quantity, Price, CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
-
-    public List<String> listSpecialties() throws Exception {
-        List<String> names = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "SELECT DISTINCT Specialty_Name FROM Service_Catalog WHERE Specialty_Name IS NOT NULL AND LTRIM(RTRIM(Specialty_Name)) <> '' ORDER BY Specialty_Name");
-             ResultSet result = statement.executeQuery()) {
-            while (result.next()) names.add(result.getString(1));
-        }
-        return names;
-    }
 
     public List<CatalogService> listServices() throws Exception {
         List<CatalogService> items = new ArrayList<>();
@@ -50,8 +39,8 @@ public class CatalogDAO {
             byte[] imageData, String imageMimeType) throws Exception {
         boolean create = id == 0;
         String sql = create
-            ? "INSERT INTO Service_Catalog (Created_By, Service_Code, Service_Name, Price, Specialty_Name, Tag, Summary, Description, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-            : "UPDATE Service_Catalog SET Service_Code = ?, Service_Name = ?, Price = ?, Specialty_Name = ?, Tag = ?, Summary = ?, Description = ?" +
+            ? "INSERT INTO Service_Catalog (Created_By, Service_Code, Service_Name, Price, Specialty_Code, Tag, Summary, Description, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            : "UPDATE Service_Catalog SET Service_Code = ?, Service_Name = ?, Price = ?, Specialty_Code = ?, Tag = ?, Summary = ?, Description = ?" +
               (imageData == null ? "" : ", Image_Data = ?, Image_Mime_Type = ?") + " WHERE Service_ID = ?";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -133,7 +122,7 @@ public class CatalogDAO {
         return new CatalogService(
                 result.getInt("Service_ID"), result.getString("Service_Code"),
                 result.getString("Service_Name"), result.getBigDecimal("Price"),
-                result.getString("Specialty_Name"), result.getString("Tag"),
+                result.getString("Specialty_Code"), result.getString("Tag"),
                 result.getString("Summary"), result.getString("Description"),
                 result.getString("Image_Path"), result.getBoolean("Has_Image"));
     }
