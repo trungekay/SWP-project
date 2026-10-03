@@ -61,12 +61,7 @@ CREATE TABLE Medical_Supply (
 
 CREATE TABLE Room (
     Room_ID     INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    Room_Name   NVARCHAR(100) NOT NULL UNIQUE,
-    address     NVARCHAR(255) NULL,
-    hotline     NVARCHAR(20) NULL,
-    status      NVARCHAR(50) NOT NULL DEFAULT (N'Available'),
-    created_at  DATETIME2 NOT NULL DEFAULT (SYSUTCDATETIME()),
-    updated_at  DATETIME2 NOT NULL DEFAULT (SYSUTCDATETIME())
+    Room_Name   NVARCHAR(100) NOT NULL UNIQUE
 );
 
 CREATE TABLE Patient (
@@ -222,8 +217,6 @@ GO
 
 ALTER TABLE Account ADD CONSTRAINT CHK_Account_Status
     CHECK (Account_Status IN (N'Active', N'Inactive', N'Banned', N'Locked'));
-ALTER TABLE Room ADD CONSTRAINT CHK_Room_Status
-    CHECK (status IN (N'Available', N'Maintenance', N'Closed'));
 ALTER TABLE Work_Schedule ADD CONSTRAINT CHK_WS_Has_Employee
     CHECK (Doctor_Employee_ID IS NOT NULL OR Specialist_Employee_ID IS NOT NULL);
 ALTER TABLE Work_Schedule ADD CONSTRAINT CHK_WS_Time CHECK (End_Time > Start_Time);
@@ -258,13 +251,13 @@ INSERT INTO Role (Role_Name) VALUES
 (N'System_Admin'), (N'Director'), (N'Doctor'),
 (N'Medical_Specialist'), (N'Staff'), (N'Patient');
 
-INSERT INTO Room (Room_Name, address, hotline, status) VALUES
-(N'Phòng Khám Mắt 101',           N'Cơ sở chính', N'1900-0101', N'Available'),
-(N'Phòng Đo Khúc Xạ 201',         N'Cơ sở chính', N'1900-0101', N'Available'),
-(N'Phòng Chụp OCT 202',           N'Cơ sở chính', N'1900-0101', N'Available'),
-(N'Phòng Phẫu Thuật LASIK 301',   N'Cơ sở chính', N'1900-0101', N'Available'),
-(N'Phòng Điều Trị Đục TTT 302',   N'Cơ sở chính', N'1900-0101', N'Available'),
-(N'Phòng Khám Nhi 104',           N'Cơ sở chính', N'1900-0101', N'Available');
+INSERT INTO Room (Room_Name) VALUES
+(N'Phòng Khám Mắt 101'),
+(N'Phòng Đo Khúc Xạ 201'),
+(N'Phòng Chụp OCT 202'),
+(N'Phòng Phẫu Thuật LASIK 301'),
+(N'Phòng Điều Trị Đục TTT 302'),
+(N'Phòng Khám Nhi 104');
 
 INSERT INTO Account (Role_ID, Email, Password, Auth_Provider, Account_Status) VALUES
 (1, N'admin@eyeclinic.com',          N'123', N'Local', N'Active'),
