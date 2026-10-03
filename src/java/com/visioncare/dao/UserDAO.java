@@ -1,4 +1,5 @@
 package com.visioncare.dao;
+
 import com.visioncare.model.User;
 import java.sql.*;
 import java.util.ArrayList;
@@ -21,7 +22,7 @@ public class UserDAO {
     "LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID " +
     "WHERE a.Email = ? AND a.Password = ?";
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, email);
             ps.setString(2, password);
             try (ResultSet rs = ps.executeQuery()) {
@@ -40,13 +41,20 @@ public class UserDAO {
                     u.setDob(dobDate != null ? dobDate.toString() : null);
                     u.setAddress(rs.getString("Address"));
                     String roleName = rs.getString("Role_Name");
-                    if ("System_Admin".equalsIgnoreCase(roleName)) u.setRole("admin");
-                    else if ("Doctor".equalsIgnoreCase(roleName)) u.setRole("doctor");
-                    else if ("Medical_Specialist".equalsIgnoreCase(roleName)) u.setRole("medical_specialist");
-                    else if ("Staff".equalsIgnoreCase(roleName)) u.setRole("staff");
-                    else if ("Director".equalsIgnoreCase(roleName)) u.setRole("director");
-                    else if ("Patient".equalsIgnoreCase(roleName)) u.setRole("patient");
-                    else u.setRole(roleName.toLowerCase());
+                    if ("System_Admin".equalsIgnoreCase(roleName))
+                        u.setRole("admin");
+                    else if ("Doctor".equalsIgnoreCase(roleName))
+                        u.setRole("doctor");
+                    else if ("Medical_Specialist".equalsIgnoreCase(roleName))
+                        u.setRole("medical_specialist");
+                    else if ("Staff".equalsIgnoreCase(roleName))
+                        u.setRole("staff");
+                    else if ("Director".equalsIgnoreCase(roleName))
+                        u.setRole("director");
+                    else if ("Patient".equalsIgnoreCase(roleName))
+                        u.setRole("patient");
+                    else
+                        u.setRole(roleName.toLowerCase());
                     return u;
                 }
             }
@@ -57,7 +65,7 @@ public class UserDAO {
     public boolean register(User user) throws Exception {
         String insertAccount = "INSERT INTO Account (Role_ID, Email, Password) VALUES ((SELECT TOP 1 Role_ID FROM Role WHERE Role_Name = 'Patient'), ?, ?)";
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(insertAccount, Statement.RETURN_GENERATED_KEYS)) {
+                PreparedStatement ps = conn.prepareStatement(insertAccount, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, user.getEmail());
             ps.setString(2, user.getPassword());
             ps.executeUpdate();
@@ -81,7 +89,7 @@ public class UserDAO {
     public User getByEmail(String email) throws Exception {
         String sql = "SELECT a.*, p.Full_Name, p.Phone, p.DOB, p.Address FROM Account a LEFT JOIN Patient p ON a.Account_ID = p.Account_ID WHERE a.Email = ?";
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, email);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -328,7 +336,7 @@ public class UserDAO {
     public boolean updatePassword(int accountId, String newPassword) throws Exception {
         String sql = "UPDATE Account SET Password = ? WHERE Account_ID = ?";
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, newPassword);
             ps.setInt(2, accountId);
             return ps.executeUpdate() > 0;
