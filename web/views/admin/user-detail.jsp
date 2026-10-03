@@ -135,6 +135,12 @@
         </header>
 
         <div class="page-content">
+            <div class="mb-4 text-end">
+                <a href="${pageContext.request.contextPath}/admin/users" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> Quay lại danh sách
+                </a>
+            </div>
+
             <c:if test="${not empty requestScope.message}">
                 <div class="alert alert-success">${requestScope.message}</div>
             </c:if>
@@ -155,7 +161,6 @@
                             <h2 class="profile-name">${user.fullName}</h2>
                             <div class="profile-meta">
                                 <span><i class="bi bi-envelope"></i> ${user.email}</span>
-                                <span><i class="bi bi-calendar3"></i> Tham gia: 20/09/2026</span>
                             </div>
                         </div>
                     </div>

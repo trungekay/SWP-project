@@ -33,6 +33,9 @@
       <!-- Main CSS File -->
       <link href="${pageContext.request.contextPath}/assets/css/main.css" rel="stylesheet">
       <link href="${pageContext.request.contextPath}/assets/css/dentalcare-public.css" rel="stylesheet">
+      <c:if test="${param.bodyClass == 'admin-catalog-page'}">
+        <link href="${pageContext.request.contextPath}/assets/css/admin-catalog.css" rel="stylesheet">
+      </c:if>
     </head>
 
     <body class="${param.bodyClass}">
@@ -76,20 +79,6 @@
                 <c:choose>
                   <c:when test="${not empty sessionScope.user}">
                     <!-- Admin Dropdown -->
-                    <c:if test="${sessionScope.user.role == 'admin'}">
-                      <li class="dropdown">
-                        <a href="#"><span>Quản lý (Admin)</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
-                        <ul>
-                          <li><a href="${pageContext.request.contextPath}/admin/dashboard">Dashboard Doanh thu</a></li>
-                          <li><a href="${pageContext.request.contextPath}/admin/users">Quản lý Người dùng</a></li>
-                          <li><a href="${pageContext.request.contextPath}/admin/clinic-config">Cấu hình Phòng Khám</a>
-                          </li>
-                          <li><a href="${pageContext.request.contextPath}/admin/catalog">Quản lý Danh mục (Dịch vụ/Vật
-                              tư)</a></li>
-                        </ul>
-                      </li>
-                    </c:if>
-
                     <!-- Employee Dropdown (Doctor, Specialist, Staff, Director) -->
                     <c:if
                       test="${sessionScope.user.role == 'doctor' || sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist' || sessionScope.user.role == 'staff' || sessionScope.user.role == 'director'}">
