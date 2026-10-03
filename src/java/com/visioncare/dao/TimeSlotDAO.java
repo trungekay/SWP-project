@@ -1,19 +1,15 @@
 package com.visioncare.dao;
-
 import com.visioncare.model.TimeSlotConfig;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
-
 public class TimeSlotDAO {
     public List<TimeSlotConfig> getConfiguredSlots() throws Exception {
         List<TimeSlotConfig> list = new ArrayList<>();
-        // Query unique time slots from Work_Schedule since there is no master table for them yet
-        String sql = "SELECT DISTINCT Slot, Start_Time, End_Time, Session " +
-                     "FROM Work_Schedule " +
-                     "ORDER BY Start_Time";
+        String sql = "SELECT Slot, MIN(Start_Time) AS Start_Time, MIN(End_Time) AS End_Time, MAX(Status) AS Status " +
+                     "FROM Work_Schedule GROUP BY Slot ORDER BY Start_Time";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -22,31 +18,62 @@ public class TimeSlotDAO {
                     rs.getString("Slot"),
                     rs.getString("Start_Time"),
                     rs.getString("End_Time"),
-                    rs.getString("Session")
+                    "Undefined",
+                    rs.getString("Status")
                 ));
             }
         }
         return list;
     }
-    // Thêm một Slot cấu hình vào lịch làm việc chung
     public boolean addTimeSlot(String date, String slotName, String startTime, String endTime, String session) throws Exception {
-        String sql = "INSERT INTO Work_Schedule (Work_Date, Slot, Start_Time, End_Time, Session, Status) " +
-                     "VALUES (?, ?, ?, ?, ?, 'Available')";
+        // Insert this slot for all active doctors
+        String sql = "INSERT INTO Work_Schedule (Doctor_Employee_ID, Work_Date, Slot, Start_Time, End_Time, Status) " +
+                     "SELECT e.Employee_ID, ?, ?, ?, ?, 'Available' " +
+                     "FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID " +
+                     "WHERE a.Role_ID = 3 AND a.Account_Status = 'Active'";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, date);       // Định dạng: yyyy-MM-dd
-            ps.setString(2, slotName);   // Ví dụ: "Slot 1"
-            ps.setString(3, startTime);  // Ví dụ: "08:00:00"
-            ps.setString(4, endTime);    // Ví dụ: "08:30:00"
-            ps.setString(5, session);    // "Morning" / "Afternoon"
-            
+            ps.setString(1, date);       
+            ps.setString(2, slotName);   
+            ps.setString(3, startTime);  
+            ps.setString(4, endTime);    
             return ps.executeUpdate() > 0;
         }
     }
-
-    // Xóa một cấu hình Slot chưa có ai đặt (Trạng thái = Available)
+    public boolean updateTimeSlotConfig(String oldSlotName, String newSlotName, String startTime, String endTime, String status) throws Exception {
+        try (Connection conn = DBContext.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                if ("Canceled".equals(status)) {
+                    // Delete all available (empty) slots with this name
+                    String sqlDelete = "DELETE FROM Work_Schedule WHERE Slot = ? AND Status = 'Available'";
+                    try (PreparedStatement ps = conn.prepareStatement(sqlDelete)) {
+                        ps.setString(1, oldSlotName);
+                        ps.executeUpdate();
+                    }
+                }
+                
+                // Update time and name for all remaining slots (e.g. booked ones, or all if status is Available)
+                String sqlUpdate = "UPDATE Work_Schedule SET Slot = ?, Start_Time = ?, End_Time = ? WHERE Slot = ?";
+                try (PreparedStatement ps = conn.prepareStatement(sqlUpdate)) {
+                    ps.setString(1, newSlotName);
+                    ps.setString(2, startTime);
+                    ps.setString(3, endTime);
+                    ps.setString(4, oldSlotName);
+                    ps.executeUpdate();
+                }
+                
+                conn.commit();
+                return true;
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        }
+    }
     public boolean deleteTimeSlot(int scheduleId) throws Exception {
-        // Chỉ cho phép xóa khi Status là 'Available' (Business Logic)
         String sql = "DELETE FROM Work_Schedule WHERE Schedule_ID = ? AND Status = 'Available'";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

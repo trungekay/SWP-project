@@ -522,12 +522,29 @@
         </a>
         <ul class="sidebar-menu">
             <li>
+                <a href="${pageContext.request.contextPath}/admin/dashboard">
+                    <i class="bi bi-graph-up"></i>
+                    Dashboard Doanh thu
+                </a>
+            </li>
+            <li>
                 <a href="${pageContext.request.contextPath}/admin/users" class="active">
                     <i class="bi bi-person"></i>
                     Quản lý Người dùng
                 </a>
             </li>
-            <!-- Add other menu items here if needed -->
+            <li>
+                <a href="${pageContext.request.contextPath}/admin/clinic-config">
+                    <i class="bi bi-gear"></i>
+                    Cấu hình Phòng Khám
+                </a>
+            </li>
+            <li>
+                <a href="${pageContext.request.contextPath}/admin/catalog">
+                    <i class="bi bi-box"></i>
+                    Quản lý Danh mục (Dịch vụ/Vật tư)
+                </a>
+            </li>
         </ul>
     </aside>
 

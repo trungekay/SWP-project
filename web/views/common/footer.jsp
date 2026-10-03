@@ -37,11 +37,11 @@
         <div class="col-lg-2 col-md-3 footer-links">
           <h4>Dịch vụ</h4>
           <ul>
-            <li><a href="${pageContext.request.contextPath}/home#services">Nhãn khoa tổng quát</a></li>
-            <li><a href="${pageContext.request.contextPath}/home#services">Khúc xạ &amp; Kính</a></li>
-            <li><a href="${pageContext.request.contextPath}/home#services">Phẫu thuật LASIK</a></li>
-            <li><a href="${pageContext.request.contextPath}/home#services">Nhãn khoa trẻ em</a></li>
-            <li><a href="${pageContext.request.contextPath}/home#services">Glaucoma &amp; Võng mạc</a></li>
+            <li><a href="${pageContext.request.contextPath}/home#service">Nhãn khoa tổng quát</a></li>
+            <li><a href="${pageContext.request.contextPath}/home#service">Khúc xạ &amp; Kính</a></li>
+            <li><a href="${pageContext.request.contextPath}/home#service">Phẫu thuật LASIK</a></li>
+            <li><a href="${pageContext.request.contextPath}/home#service">Nhãn khoa trẻ em</a></li>
+            <li><a href="${pageContext.request.contextPath}/home#service">Glaucoma &amp; Võng mạc</a></li>
           </ul>
         </div>
 

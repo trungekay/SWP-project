@@ -33,6 +33,9 @@
       <!-- Main CSS File -->
       <link href="${pageContext.request.contextPath}/assets/css/main.css" rel="stylesheet">
       <link href="${pageContext.request.contextPath}/assets/css/dentalcare-public.css" rel="stylesheet">
+      <c:if test="${param.bodyClass == 'admin-catalog-page'}">
+        <link href="${pageContext.request.contextPath}/assets/css/admin-catalog.css" rel="stylesheet">
+      </c:if>
     </head>
 
     <body class="${param.bodyClass}">
@@ -127,8 +130,10 @@
               <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
             </nav>
 
-            <a class="cta-btn d-none d-sm-block" href="${pageContext.request.contextPath}/book-appointment">Đặt lịch
-              ngay</a>
+            <c:if test="${empty sessionScope.user || sessionScope.user.role == 'patient'}">
+              <a class="cta-btn d-none d-sm-block" href="${pageContext.request.contextPath}/book-appointment">Đặt lịch
+                ngay</a>
+            </c:if>
 
           </div>
 
