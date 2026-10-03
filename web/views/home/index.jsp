@@ -1,5 +1,8 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<fmt:setLocale value="vi_VN" scope="page" />
 
 <%-- Include Header --%>
 <jsp:include page="/views/common/header.jsp">
@@ -191,89 +194,35 @@
 
     </section><!-- /Stats Section -->
 
-    <!-- Services Section -->
+    <!-- Services Section: same Service_Catalog rows as the admin page -->
     <section id="services" class="services section light-background">
-
-      <!-- Section Title -->
-      <div class="container section-title" data-aos="fade-up">
+      <span id="service"></span>
+      <div class="container section-title">
         <h2>Dịch vụ nhãn khoa</h2>
-        <p>Các dịch vụ thăm khám và điều trị mắt tại VisionCare — đặt lịch tư vấn để được bác sĩ thăm khám cụ thể</p>
-      </div><!-- End Section Title -->
-
-      <div class="container">
-
-        <div class="row gy-4">
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
-            <div class="card service-card border-0 shadow-sm h-100">
-              <img src="${pageContext.request.contextPath}/assets/img/departments-1.jpg" class="card-img-top" alt="Khám mắt tổng quát" style="height: 200px; object-fit: cover;">
-              <div class="card-body p-4 text-center">
-                <h4 class="card-title fw-bold mb-3">Khám mắt tổng quát</h4>
-                <p class="card-text text-muted mb-4">Đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt và tư vấn chăm sóc mắt định kỳ.</p>
-                <a href="#departments" onclick="document.querySelector('a[href=\'#departments-tab-1\']').click();" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
-              </div>
-            </div>
-          </div><!-- End Service Item -->
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
-            <div class="card service-card border-0 shadow-sm h-100">
-              <img src="${pageContext.request.contextPath}/assets/img/departments-2.jpg" class="card-img-top" alt="Đo khúc xạ &amp; Kính" style="height: 200px; object-fit: cover;">
-              <div class="card-body p-4 text-center">
-                <h4 class="card-title fw-bold mb-3">Đo khúc xạ &amp; Kính</h4>
-                <p class="card-text text-muted mb-4">Đo khúc xạ chính xác, tư vấn kính cận/viễn/loạn, kính áp tròng phù hợp từng bệnh nhân.</p>
-                <a href="#departments" onclick="document.querySelector('a[href=\'#departments-tab-2\']').click();" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
-              </div>
-            </div>
-          </div><!-- End Service Item -->
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
-            <div class="card service-card border-0 shadow-sm h-100">
-              <img src="${pageContext.request.contextPath}/assets/img/departments-4.jpg" class="card-img-top" alt="Nhãn khoa trẻ em" style="height: 200px; object-fit: cover;">
-              <div class="card-body p-4 text-center">
-                <h4 class="card-title fw-bold mb-3">Nhãn khoa trẻ em</h4>
-                <p class="card-text text-muted mb-4">Sàng lọc cận thị sớm, điều trị nhược thị, lác mắt — phòng khám thân thiện cho bé.</p>
-                <a href="#departments" onclick="document.querySelector('a[href=\'#departments-tab-4\']').click();" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
-              </div>
-            </div>
-          </div><!-- End Service Item -->
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
-            <div class="card service-card border-0 shadow-sm h-100">
-              <img src="${pageContext.request.contextPath}/assets/img/departments-3.jpg" class="card-img-top" alt="Phẫu thuật LASIK" style="height: 200px; object-fit: cover;">
-              <div class="card-body p-4 text-center">
-                <h4 class="card-title fw-bold mb-3">Phẫu thuật LASIK</h4>
-                <p class="card-text text-muted mb-4">Phẫu thuật khúc xạ laser LASIK/SMILE điều trị cận thị, viễn thị, loạn thị vĩnh viễn.</p>
-                <a href="#departments" onclick="document.querySelector('a[href=\'#departments-tab-3\']').click();" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
-              </div>
-            </div>
-          </div><!-- End Service Item -->
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="500">
-            <div class="card service-card border-0 shadow-sm h-100">
-              <img src="${pageContext.request.contextPath}/assets/img/departments-5.jpg" class="card-img-top" alt="Đục thủy tinh thể" style="height: 200px; object-fit: cover;">
-              <div class="card-body p-4 text-center">
-                <h4 class="card-title fw-bold mb-3">Đục thủy tinh thể</h4>
-                <p class="card-text text-muted mb-4">Phẫu thuật thay thể thủy tinh nhân tạo (IOL) điều trị đục thủy tinh thể an toàn, hiệu quả.</p>
-                <a href="#departments" onclick="document.querySelector('a[href=\'#departments-tab-6\']').click();" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
-              </div>
-            </div>
-          </div><!-- End Service Item -->
-
-          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="600">
-            <div class="card service-card border-0 shadow-sm h-100">
-              <img src="${pageContext.request.contextPath}/assets/img/gallery/gallery-1.jpg" class="card-img-top" alt="Glaucoma & Võng mạc" style="height: 200px; object-fit: cover;">
-              <div class="card-body p-4 text-center">
-                <h4 class="card-title fw-bold mb-3">Glaucoma &amp; Võng mạc</h4>
-                <p class="card-text text-muted mb-4">Chẩn đoán và điều trị glaucoma, bệnh võng mạc tiểu đường — can thiệp sớm bảo vệ thị lực.</p>
-                <a href="#departments" onclick="document.querySelector('a[href=\'#departments-tab-5\']').click();" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
-              </div>
-            </div>
-          </div><!-- End Service Item -->
-
-        </div>
-
+        <p>Các dịch vụ thăm khám và điều trị mắt tại VisionCare (${catalogServices.size()} dịch vụ)</p>
       </div>
-
+      <div class="container"><div class="row gy-4">
+        <c:forEach items="${catalogServices}" var="service">
+          <div class="col-lg-4 col-md-6">
+            <div class="card service-card border-0 shadow-sm h-100">
+              <c:choose>
+                <c:when test="${service.uploadedImage}">
+                  <img src="${pageContext.request.contextPath}/catalog-image?kind=service&amp;id=${service.id}" class="card-img-top" alt="${fn:escapeXml(service.name)}" style="height: 200px; object-fit: cover;">
+                </c:when>
+                <c:otherwise>
+                  <img src="${pageContext.request.contextPath}/assets/img/${empty service.image ? 'departments-1.jpg' : fn:escapeXml(service.image)}" class="card-img-top" alt="${fn:escapeXml(service.name)}" style="height: 200px; object-fit: cover;">
+                </c:otherwise>
+              </c:choose>
+              <div class="card-body p-4 text-center">
+                <h4 class="card-title fw-bold mb-3"><c:out value="${service.name}" /></h4>
+                <p class="card-text text-muted mb-2"><c:out value="${service.summary}" /></p>
+                <p class="fw-semibold mb-4"><fmt:formatNumber value="${service.price}" pattern="#,##0" /> VNĐ</p>
+                <a href="#departments" onclick="document.getElementById('department-link-${service.id}').click();" class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
+              </div>
+            </div>
+          </div>
+        </c:forEach>
+      </div></div>
     </section><!-- /Services Section -->
 
     <!-- Appointment Section -->
@@ -295,120 +244,41 @@
 
     </section><!-- /Appointment Section -->
 
-    <!-- Departments Section -->
+    <!-- Departments Section: details from Service_Catalog -->
     <section id="departments" class="departments section">
-
-      <!-- Section Title -->
       <div class="container section-title" data-aos="fade-up">
         <h2>Chuyên khoa</h2>
-        <p>Các chuyên khoa nhãn khoa chuyên sâu tại VisionCare — đội ngũ bác sĩ được đào tạo bài bản trong và ngoài nước</p>
-      </div><!-- End Section Title -->
-
-      <div class="container" data-aos="fade-up" data-aos-delay="100">
-
-        <div class="row">
-          <div class="col-lg-3">
-            <ul class="nav nav-tabs flex-column">
-              <li class="nav-item">
-                <a class="nav-link active show" data-bs-toggle="tab" href="#departments-tab-1">Nhãn khoa tổng quát</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" data-bs-toggle="tab" href="#departments-tab-2">Khúc xạ &amp; Kính</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" data-bs-toggle="tab" href="#departments-tab-3">Phẫu thuật LASIK</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" data-bs-toggle="tab" href="#departments-tab-4">Nhãn khoa trẻ em</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" data-bs-toggle="tab" href="#departments-tab-5">Glaucoma &amp; Võng mạc</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" data-bs-toggle="tab" href="#departments-tab-6">Đục thủy tinh thể</a>
-              </li>
-            </ul>
-          </div>
-          <div class="col-lg-9 mt-4 mt-lg-0">
-            <div class="tab-content">
-              <div class="tab-pane active show" id="departments-tab-1">
-                <div class="row">
-                  <div class="col-lg-8 details order-2 order-lg-1">
-                    <h3>Nhãn khoa tổng quát</h3>
-                    <p class="fst-italic">Khám và chẩn đoán toàn diện các bệnh lý về mắt, phù hợp với mọi lứa tuổi.</p>
-                    <p>Bao gồm đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt, đánh giá tình trạng giác mạc và thủy tinh thể. Bác sĩ sẽ tư vấn lộ trình điều trị phù hợp, minh bạch chi phí trước khi thực hiện.</p>
-                  </div>
-                  <div class="col-lg-4 text-center order-1 order-lg-2">
-                    <img src="${pageContext.request.contextPath}/assets/img/departments-1.jpg" alt="Nhãn khoa tổng quát" class="img-fluid">
-                  </div>
-                </div>
-              </div>
-              <div class="tab-pane" id="departments-tab-2">
-                <div class="row">
-                  <div class="col-lg-8 details order-2 order-lg-1">
-                    <h3>Khúc xạ &amp; Kính</h3>
-                    <p class="fst-italic">Đo khúc xạ chính xác bằng máy tự động, tư vấn kính phù hợp với từng nhu cầu.</p>
-                    <p>Dịch vụ đo và cắt kính cận, viễn, loạn thị; tư vấn kính áp tròng hàng ngày, hàng tháng. Hỗ trợ chương trình Ortho-K kiểm soát cận thị cho trẻ em.</p>
-                  </div>
-                  <div class="col-lg-4 text-center order-1 order-lg-2">
-                    <img src="${pageContext.request.contextPath}/assets/img/departments-2.jpg" alt="Khúc xạ và Kính" class="img-fluid">
-                  </div>
-                </div>
-              </div>
-              <div class="tab-pane" id="departments-tab-3">
-                <div class="row">
-                  <div class="col-lg-8 details order-2 order-lg-1">
-                    <h3>Phẫu thuật LASIK &amp; SMILE</h3>
-                    <p class="fst-italic">Phẫu thuật khúc xạ laser hiện đại, điều trị dứt điểm cận thị, viễn thị, loạn thị.</p>
-                    <p>VisionCare trang bị hệ thống laser Excimer thế hệ mới nhất. Quy trình thăm khám tiền phẫu kỹ lưỡng, theo dõi hậu phẫu miễn phí trong 12 tháng, cam kết hoàn tiền nếu không đạt kết quả.</p>
-                  </div>
-                  <div class="col-lg-4 text-center order-1 order-lg-2">
-                    <img src="${pageContext.request.contextPath}/assets/img/departments-3.jpg" alt="Phẫu thuật LASIK" class="img-fluid">
-                  </div>
-                </div>
-              </div>
-              <div class="tab-pane" id="departments-tab-4">
-                <div class="row">
-                  <div class="col-lg-8 details order-2 order-lg-1">
-                    <h3>Nhãn khoa trẻ em</h3>
-                    <p class="fst-italic">Sàng lọc, phát hiện và điều trị sớm các bệnh mắt ở trẻ em.</p>
-                    <p>Khám tật khúc xạ, nhược thị, lác mắt cho trẻ từ 6 tháng tuổi. Phòng khám thiết kế thân thiện, nhẹ nhàng, giúp bé thoải mái trong suốt quá trình thăm khám và điều trị.</p>
-                  </div>
-                  <div class="col-lg-4 text-center order-1 order-lg-2">
-                    <img src="${pageContext.request.contextPath}/assets/img/departments-4.jpg" alt="Nhãn khoa trẻ em" class="img-fluid">
-                  </div>
-                </div>
-              </div>
-              <div class="tab-pane" id="departments-tab-5">
-                <div class="row">
-                  <div class="col-lg-8 details order-2 order-lg-1">
-                    <h3>Glaucoma &amp; Bệnh lý Võng mạc</h3>
-                    <p class="fst-italic">Chẩn đoán và điều trị chuyên sâu glaucoma, bệnh võng mạc tiểu đường và thoái hóa điểm vàng.</p>
-                    <p>Sử dụng OCT và máy phân tích lớp sợi thần kinh thị giác để phát hiện sớm glaucoma. Điều trị bằng thuốc, laser hoặc phẫu thuật tùy giai đoạn bệnh, theo dõi định kỳ bảo vệ thị lực lâu dài.</p>
-                  </div>
-                  <div class="col-lg-4 text-center order-1 order-lg-2">
-                    <img src="${pageContext.request.contextPath}/assets/img/gallery/gallery-1.jpg" alt="Glaucoma và Võng mạc" class="img-fluid">
-                  </div>
-                </div>
-              </div>
-              <div class="tab-pane" id="departments-tab-6">
-                <div class="row">
-                  <div class="col-lg-8 details order-2 order-lg-1">
-                    <h3>Đục thủy tinh thể</h3>
-                    <p class="fst-italic">Phẫu thuật thay thể thủy tinh nhân tạo (IOL) an toàn, lấy lại thị lực sáng rõ.</p>
-                    <p>Sử dụng công nghệ Phaco hiện đại, thời gian phẫu thuật ngắn, không đau, hồi phục nhanh. Cung cấp đa dạng các loại thủy tinh thể nhân tạo (đơn tiêu, đa tiêu) phù hợp với nhu cầu sinh hoạt của bệnh nhân.</p>
-                  </div>
-                  <div class="col-lg-4 text-center order-1 order-lg-2">
-                    <img src="${pageContext.request.contextPath}/assets/img/departments-5.jpg" alt="Đục thủy tinh thể" class="img-fluid">
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
+        <p>Thông tin chi tiết các dịch vụ và chuyên khoa tại VisionCare</p>
       </div>
-
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+        <div class="row">
+          <div class="col-lg-3"><ul class="nav nav-tabs flex-column">
+            <c:forEach items="${catalogServices}" var="service" varStatus="status">
+              <li class="nav-item"><a id="department-link-${service.id}" class="nav-link ${status.first ? 'active show' : ''}" data-bs-toggle="tab" href="#departments-tab-${service.id}"><c:out value="${service.name}" /></a></li>
+            </c:forEach>
+          </ul></div>
+          <div class="col-lg-9 mt-4 mt-lg-0"><div class="tab-content">
+            <c:forEach items="${catalogServices}" var="service" varStatus="status">
+              <div class="tab-pane ${status.first ? 'active show' : ''}" id="departments-tab-${service.id}">
+                <div class="row">
+                  <div class="col-lg-8 details order-2 order-lg-1">
+                    <h3><c:out value="${service.name}" /></h3>
+                    <c:if test="${not empty service.specialty}"><p class="fw-semibold"><c:out value="${service.specialty}" /></p></c:if>
+                    <p class="fst-italic"><c:out value="${service.summary}" /></p>
+                    <p><c:out value="${service.description}" /></p>
+                  </div>
+                  <div class="col-lg-4 text-center order-1 order-lg-2">
+                    <c:choose>
+                      <c:when test="${service.uploadedImage}"><img src="${pageContext.request.contextPath}/catalog-image?kind=service&amp;id=${service.id}" alt="${fn:escapeXml(service.name)}" class="img-fluid"></c:when>
+                      <c:otherwise><img src="${pageContext.request.contextPath}/assets/img/${empty service.image ? 'departments-1.jpg' : fn:escapeXml(service.image)}" alt="${fn:escapeXml(service.name)}" class="img-fluid"></c:otherwise>
+                    </c:choose>
+                  </div>
+                </div>
+              </div>
+            </c:forEach>
+          </div></div>
+        </div>
+      </div>
     </section><!-- /Departments Section -->
 
     <!-- Doctors Section -->
