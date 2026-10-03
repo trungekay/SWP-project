@@ -1,37 +1,51 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
-<jsp:include page="/views/common/header.jsp">
-  <jsp:param name="pageTitle" value="Cấu hình Phòng Khám" />
-  <jsp:param name="pageDescription" value="Cấu hình phòng khám và khung giờ" />
-  <jsp:param name="bodyClass" value="starter-page-page" />
-</jsp:include>
-
-  <style>
-    .admin-card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-      padding: 24px;
-    }
-  </style>
-
-  <main class="main bg-light pb-5">
-    <div class="page-title">
-      <div class="container">
-        <h2 class="mb-0">Cấu hình Phòng Khám</h2>
-        <nav class="breadcrumbs">
-          <ol>
-            <li><a href="${pageContext.request.contextPath}/admin/dashboard">Dashboard</a></li>
-            <li class="current">Cấu hình</li>
-          </ol>
-        </nav>
-      </div>
-    </div>
-
-    <section class="section pt-4">
-      <div class="container">
-        <div class="row g-4">
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cấu hình Phòng Khám - VisionCare Admin</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Vendor CSS Files (from header.jsp) -->
+    <link href="${pageContext.request.contextPath}/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="${pageContext.request.contextPath}/assets/vendor/aos/aos.css" rel="stylesheet">
+    <link href="${pageContext.request.contextPath}/assets/vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
+    
+    <!-- Main CSS File -->
+    <link href="${pageContext.request.contextPath}/assets/css/main.css" rel="stylesheet">
+    
+    <jsp:include page="/views/admin/layout/admin-css.jsp" />
+    <style>
+        .admin-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            padding: 24px;
+        }
+    </style>
+</head>
+<body>
+    <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
+        <jsp:param name="activeNav" value="clinic-config" />
+    </jsp:include>
+    <main class="main-wrapper">
+        <jsp:include page="/views/admin/layout/admin-header.jsp" />
+        <div class="page-content">
+            <div class="page-header">
+                <div class="page-title">
+                    <h2>Cấu hình Phòng Khám</h2>
+                    <p>Cấu hình phòng khám và khung giờ</p>
+                </div>
+            </div>
+            <div class="row g-4">
           <!-- Clinic Rooms -->
           <div class="col-lg-6">
             <div class="admin-card">
@@ -333,6 +347,8 @@
       </div>
     </div>
 
-  </main>
-
-<jsp:include page="/views/common/footer.jsp" />
+    </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
