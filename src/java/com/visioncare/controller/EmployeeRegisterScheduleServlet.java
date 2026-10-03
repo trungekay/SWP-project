@@ -257,6 +257,31 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                         + "&week=" + weekParam);
                 return;
             }
+
+            int year = Integer.parseInt(yearParam);
+            int week = Integer.parseInt(weekParam);
+            LocalDate firstDayOfYear = LocalDate.of(year, 1, 1);
+            LocalDate firstMonday = firstDayOfYear.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            if (firstMonday.getYear() < year && firstDayOfYear.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR) > 50) {
+                firstMonday = firstMonday.plusWeeks(1);
+            }
+            LocalDate startOfWeek = firstMonday.plusWeeks(week - 1);
+            LocalDate endOfWeek = startOfWeek.plusDays(6);
+            DateTimeFormatter dbFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            Set<String> existingKeys = workScheduleDAO.getRegisteredSlotKeys(actorId, role, startOfWeek.format(dbFmt), endOfWeek.format(dbFmt));
+
+            Set<String> allKeysThisWeek = new HashSet<>(existingKeys);
+            for (ScheduleRegistrationDTO item : registrationList) {
+                allKeysThisWeek.add(item.getWorkDate() + "_" + item.getSlot());
+            }
+            double totalWeeklyHours = allKeysThisWeek.size() * 0.5;
+
+            if (totalWeeklyHours < 30.0) {
+                session.setAttribute("errorMessage", "Quy định: Bạn cần đăng ký tối thiểu 30.0 giờ / tuần (hiện tại mới có: " + String.format("%.1f", totalWeeklyHours) + "h). Vui lòng chọn thêm!");
+                response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
+                return;
+            }
+
             boolean success = workScheduleDAO.registerScheduleBatch(actorId, role, registrationList);
             if (success) {
                 session.setAttribute("successMessage",

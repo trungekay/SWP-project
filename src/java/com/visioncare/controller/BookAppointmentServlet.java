@@ -25,8 +25,8 @@ public class BookAppointmentServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            request.setAttribute("doctors", new java.util.ArrayList<Doctor>());
-            request.setAttribute("departments", new java.util.ArrayList<Department>());
+            request.setAttribute("doctors", doctorDAO.getAll());
+            request.setAttribute("departments", departmentDAO.getAll());
             String docParam = request.getParameter("doc");
             if (docParam != null) {
                 request.setAttribute("selectedDoctor", docParam);
