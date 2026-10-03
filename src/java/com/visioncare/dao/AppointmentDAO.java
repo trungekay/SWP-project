@@ -3,7 +3,9 @@ import com.visioncare.model.Appointment;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+
 public class AppointmentDAO {
+
     public int create(Appointment a) throws Exception {
         Connection conn = null;
         try {
