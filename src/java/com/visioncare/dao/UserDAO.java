@@ -29,10 +29,13 @@ public class UserDAO {
                     User u = new User();
                     u.setId(rs.getInt("Account_ID"));
                     u.setEmail(rs.getString("Email"));
-                    u.setPassword(rs.getString("Password"));
-                    
-                    String patientName = rs.getString("Full_Name");
-                    u.setFullName(patientName != null ? patientName : rs.getString("Email"));
+                    u.setPassword(password);
+                    u.setFullName(rs.getString("Display_Name"));
+                    u.setActorId(rs.getInt("Actor_ID"));
+                    u.setSpecialty(rs.getString("Specialty_Info"));
+                    u.setRoomName(rs.getString("Room_Info"));
+                    u.setLicenseNumber(rs.getString("License_Number"));
+                    u.setPosition(rs.getString("Position"));
                     u.setPhone(rs.getString("Phone"));
                     Date dobDate = rs.getDate("DOB");
                     u.setDob(dobDate != null ? dobDate.toString() : null);
