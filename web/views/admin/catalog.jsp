@@ -49,35 +49,139 @@
         <button type="button" class="catalog-tab ${param.tab == 'supplies' ? '' : 'is-active'}" data-tab="services" aria-selected="${param.tab == 'supplies' ? 'false' : 'true'}"><span><i class="bi bi-clipboard2-pulse"></i> Dịch vụ phòng khám</span><b>${catalogServices.size()}</b></button>
         <button type="button" class="catalog-tab ${param.tab == 'supplies' ? 'is-active' : ''}" data-tab="supplies" aria-selected="${param.tab == 'supplies' ? 'true' : 'false'}"><span><i class="bi bi-box-seam"></i> Vật tư &amp; Thiết bị</span><b>${catalogSupplies.size()}</b></button>
       </div>
-    </aside>
 
-    <div class="catalog-content">
-      <c:choose>
-        <c:when test="${param.created == '1'}"><c:set var="catalogSuccessMessage" value="Đã tạo thành công" /></c:when>
-        <c:when test="${param.updated == '1'}"><c:set var="catalogSuccessMessage" value="Đã sửa thành công" /></c:when>
-        <c:when test="${param.deleted == '1'}"><c:set var="catalogSuccessMessage" value="Đã xóa thành công" /></c:when>
-      </c:choose>
-      <c:if test="${not empty catalogSuccessMessage}"><div id="catalogSuccessToast" class="catalog-success-toast" role="status" aria-live="polite"><i class="bi bi-check-circle-fill" aria-hidden="true"></i><span><c:out value="${catalogSuccessMessage}" /></span></div></c:if>
-      <c:if test="${param.deleteError == '1'}"><div class="catalog-delete-error" role="alert">Không thể xóa mục này. Mục có thể đang được sử dụng; hãy kiểm tra dữ liệu liên quan.</div></c:if>
-      <section class="catalog-view" id="servicesView" aria-label="Danh sách dịch vụ" ${param.tab == 'supplies' ? 'hidden' : ''}>
-        <div class="catalog-panel catalog-heading"><div><div class="catalog-heading-line"><h1>Danh sách Dịch vụ Phòng khám</h1><span class="catalog-count">${catalogServices.size()} dịch vụ</span></div><p>Quản lý danh mục khám bệnh, phẫu thuật, quy trình đo khám &amp; chi phí dịch vụ</p></div><a class="catalog-primary" href="${pageContext.request.contextPath}/admin/catalog/service"><i class="bi bi-pencil-square"></i> Cập nhật dịch vụ</a></div>
-        <div class="catalog-panel catalog-filters"><label class="catalog-search"><i class="bi bi-search"></i><input type="search" id="serviceSearch" placeholder="Tìm tên dịch vụ, chuyên khoa..." aria-label="Tìm dịch vụ"></label><select id="specialtySelect" aria-label="Lọc chuyên khoa"><option value="all">Tất cả chuyên khoa</option><option value="general">Nhãn khoa tổng quát</option><option value="refraction">Khúc xạ &amp; Kính</option><option value="lasik">Phẫu thuật LASIK</option><option value="children">Nhãn khoa trẻ em</option><option value="retina">Glaucoma &amp; Võng mạc</option><option value="cataract">Đục thủy tinh thể</option></select></div>
-        <div class="catalog-service-list" id="serviceList">
-          <c:forEach items="${catalogServices}" var="service">
-            <article class="catalog-service" data-specialty="${fn:escapeXml(service.specialty)}">
-              <div class="catalog-service-body"><div class="catalog-service-main"><div class="catalog-meta"><span class="catalog-tag"><c:out value="${empty service.tag ? 'Dịch vụ' : service.tag}" /></span><span>Mã: <c:out value="${empty service.code ? service.id : service.code}" /></span></div><h2 class="catalog-service-name"><c:out value="${service.name}" /></h2><c:if test="${not empty service.summary}"><p class="catalog-summary"><c:out value="${service.summary}" /></p></c:if><c:if test="${not empty service.description}"><p class="catalog-description"><c:out value="${service.description}" /></p></c:if></div><div class="catalog-service-actions"><strong class="catalog-price"><i class="bi bi-tag-fill"></i> <fmt:formatNumber value="${service.price}" pattern="#,##0" /> VNĐ</strong><div><a class="catalog-edit" href="${pageContext.request.contextPath}/admin/catalog/service?id=${service.id}"><i class="bi bi-pencil"></i> Sửa</a><form class="catalog-delete-form" method="post" action="${pageContext.request.contextPath}/admin/catalog/service" data-kind="dịch vụ" data-name="${fn:escapeXml(service.name)}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="${service.id}"><input type="hidden" name="csrf" value="${sessionScope.catalogCsrf}"><button class="catalog-delete" type="button"><i class="bi bi-trash"></i> Xóa</button></form></div></div></div>
-              <div class="catalog-service-image"><c:choose><c:when test="${service.uploadedImage}"><img src="${pageContext.request.contextPath}/catalog-image?kind=service&amp;id=${service.id}" alt="Hình minh họa dịch vụ"></c:when><c:otherwise><img src="${pageContext.request.contextPath}/assets/img/${empty service.image ? 'departments-1.jpg' : fn:escapeXml(service.image)}" alt="Hình minh họa dịch vụ"></c:otherwise></c:choose></div>
-            </article>
-          </c:forEach>
-        </div><p class="catalog-empty" id="serviceEmpty" hidden>Không tìm thấy dịch vụ phù hợp.</p>
-      </section>
+      <section class="section pt-4">
+        <div class="container">
 
-      <section class="catalog-view" id="suppliesView" aria-label="Danh sách vật tư" ${param.tab == 'supplies' ? '' : 'hidden'}>
-        <div class="catalog-panel catalog-heading"><div><h1>Danh mục Vật tư &amp; Dược phẩm Y tế</h1><p>Quản lý thuốc nhỏ mắt, vật tư tiêu hao, tròng kính và kính áp tròng</p></div><a class="catalog-primary" href="${pageContext.request.contextPath}/admin/catalog/supply"><i class="bi bi-pencil-square"></i> Cập nhật vật tư</a></div>
-        <div class="catalog-panel catalog-supply-panel"><div class="catalog-supply-toolbar"><label class="catalog-search"><i class="bi bi-search"></i><input type="search" id="supplySearch" placeholder="Tìm tên vật tư, dược phẩm..." aria-label="Tìm vật tư"></label><span>${catalogSupplies.size()} mặt hàng</span></div><div class="catalog-table-wrap"><table class="catalog-table"><thead><tr><th>Ảnh</th><th>Tên vật tư / Dược phẩm</th><th>Phân loại</th><th>Tồn kho</th><th>Đơn giá</th><th>Trạng thái</th><th>Hành động</th></tr></thead><tbody>
-          <c:forEach items="${catalogSupplies}" var="supply"><tr><td><c:if test="${supply.uploadedImage}"><img class="catalog-supply-thumb" src="${pageContext.request.contextPath}/catalog-image?kind=supply&amp;id=${supply.id}" alt="Ảnh vật tư"></c:if></td><td><strong><c:out value="${supply.name}" /></strong><small>Lô: <c:out value="${supply.batch}" /></small></td><td><c:out value="${supply.category}" /></td><td>${supply.quantity} <c:out value="${supply.unit}" /></td><td><fmt:formatNumber value="${supply.price}" pattern="#,##0" /> VNĐ</td><td><span class="catalog-stock ${supply.quantity < 10 ? 'is-low' : ''}">${supply.quantity < 10 ? 'Sắp hết hàng' : 'Còn hàng'}</span></td><td><div class="catalog-supply-actions"><a class="catalog-supply-edit" href="${pageContext.request.contextPath}/admin/catalog/supply?id=${supply.id}"><i class="bi bi-pencil"></i> Cập nhật</a><form class="catalog-delete-form" method="post" action="${pageContext.request.contextPath}/admin/catalog/supply" data-kind="vật tư" data-name="${fn:escapeXml(supply.name)}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="${supply.id}"><input type="hidden" name="csrf" value="${sessionScope.catalogCsrf}"><button class="catalog-delete" type="button"><i class="bi bi-trash"></i> Xóa</button></form></div></td></tr></c:forEach>
-        </tbody></table></div><p class="catalog-empty" id="supplyEmpty" hidden>Không tìm thấy vật tư phù hợp.</p></div>
+          <ul class="nav nav-tabs mb-4" id="catalogTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#services" type="button"
+                role="tab">Dịch vụ Phòng Khám</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#items" type="button" role="tab">Vật tư
+                (Thuốc/Kính)</button>
+            </li>
+          </ul>
+
+          <div class="tab-content" id="catalogTabsContent">
+            <!-- Services Tab -->
+            <div class="tab-pane fade show active" id="services" role="tabpanel">
+              <div class="admin-card">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                  <h5 class="mb-0">Danh sách Dịch vụ</h5>
+                  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal"><i
+                      class="bi bi-plus-circle me-1"></i>Thêm dịch vụ</button>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle border">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Mã DV</th>
+                        <th>Tên dịch vụ</th>
+                        <th>Đơn giá</th>
+                        <th class="text-end">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>SV01</td>
+                        <td>Khám mắt tổng quát</td>
+                        <td class="text-danger fw-bold">200,000 đ</td>
+                        <td class="text-end">
+                          <button class="btn btn-sm btn-outline-primary" title="Cập nhật giá" data-bs-toggle="modal"
+                            data-bs-target="#updatePriceModal"><i class="bi bi-pencil"></i></button>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>SV02</td>
+                        <td>Đo khúc xạ, cắt kính</td>
+                        <td class="text-danger fw-bold">150,000 đ</td>
+                        <td class="text-end">
+                          <button class="btn btn-sm btn-outline-primary" title="Cập nhật giá" data-bs-toggle="modal"
+                            data-bs-target="#updatePriceModal"><i class="bi bi-pencil"></i></button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Items Tab -->
+            <div class="tab-pane fade" id="items" role="tabpanel">
+              <div class="admin-card">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                  <h5 class="mb-0">Danh sách Vật tư (Thuốc, Kính)</h5>
+                  <button class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>Thêm vật tư</button>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle border">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Mã VT</th>
+                        <th>Tên vật tư</th>
+                        <th>Loại</th>
+                        <th>Đơn giá</th>
+                        <th>Tồn kho</th>
+                        <th class="text-end">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>IT01</td>
+                        <td>Thuốc nhỏ mắt V.Rohto</td>
+                        <td>Thuốc</td>
+                        <td class="text-danger fw-bold">55,000 đ</td>
+                        <td>120 hộp</td>
+                        <td class="text-end">
+                          <button class="btn btn-sm btn-outline-primary" title="Cập nhật"><i
+                              class="bi bi-pencil"></i></button>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>IT02</td>
+                        <td>Gọng kính Titanium</td>
+                        <td>Kính</td>
+                        <td class="text-danger fw-bold">850,000 đ</td>
+                        <td>45 cái</td>
+                        <td class="text-end">
+                          <button class="btn btn-sm btn-outline-primary" title="Cập nhật"><i
+                              class="bi bi-pencil"></i></button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
+    </main>
+
+    <!-- Modal Update Price -->
+    <div class="modal fade" id="updatePriceModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form>
+            <div class="modal-header">
+              <h5 class="modal-title">Cập nhật đơn giá</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Đơn giá mới (VNĐ)</label>
+                <input type="number" class="form-control" required value="200000">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+              <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 </main>

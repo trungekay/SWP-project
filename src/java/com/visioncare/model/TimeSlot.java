@@ -4,8 +4,9 @@ public class TimeSlot {
     private int id;
     private int doctorId;
     private Date date;
-    private String startTime;   
-    private boolean booked;     
+    private String startTime;  
+    private boolean booked;   
+
     public TimeSlot() {
     }
     public TimeSlot(int id, int doctorId, Date date, String startTime, boolean booked) {
@@ -15,6 +16,8 @@ public class TimeSlot {
         this.startTime = startTime;
         this.booked = booked;
     }
+
+
     public int getId() {
         return id;
     }

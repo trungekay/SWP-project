@@ -4,6 +4,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.util.Properties;
 public class EmailUtil {
+    
     private static final String SENDER_EMAIL = "hotro.visioncare@gmail.com";
     private static final String SENDER_PASSWORD = "gmpizjvpsdxssjwe";
     public static void sendOtpEmail(String recipientEmail, String otp) throws Exception {

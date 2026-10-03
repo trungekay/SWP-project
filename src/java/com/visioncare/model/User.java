@@ -5,7 +5,7 @@ public class User {
     private String email;
     private String password;
     private String phone;
-    private String role;            
+    private String role;
     private String dob;
     private String address;
     private int roleId;
@@ -30,6 +30,8 @@ public class User {
         this.roleId = roleId;
         this.status = status;
     }
+
+
     public int getId() {
         return id;
     }

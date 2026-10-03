@@ -35,7 +35,8 @@ public class LoginServlet extends HttpServlet {
             if (user != null) {
                 HttpSession session = request.getSession();
                 session.setAttribute("user", user);
-                session.setMaxInactiveInterval(30 * 60); 
+                session.setMaxInactiveInterval(30 * 60);
+
                 String redirect = (String) session.getAttribute("redirectAfterLogin");
                 if (redirect != null) {
                     session.removeAttribute("redirectAfterLogin");
