@@ -43,18 +43,6 @@ public class TimeSlotDAO {
             return ps.executeUpdate() > 0;
         }
     }
-    public boolean updateTimeSlotConfig(String oldSlotName, String newSlotName, String startTime, String endTime, String status) throws Exception {
-        String sql = "UPDATE Work_Schedule SET Slot = ?, Start_Time = ?, End_Time = ?, Status = ? WHERE Slot = ?";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, newSlotName);
-            ps.setString(2, startTime);
-            ps.setString(3, endTime);
-            ps.setString(4, status);
-            ps.setString(5, oldSlotName);
-            return ps.executeUpdate() > 0;
-        }
-    }
 
     public boolean deleteTimeSlot(int scheduleId) throws Exception {
         String sql = "DELETE FROM Work_Schedule WHERE Schedule_ID = ? AND Status = 'Available'";
