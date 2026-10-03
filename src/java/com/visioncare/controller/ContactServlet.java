@@ -1,15 +1,12 @@
 package com.visioncare.controller;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-
 @WebServlet(name = "ContactServlet", urlPatterns = {"/contact"})
 public class ContactServlet extends HttpServlet {
-
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -17,7 +14,6 @@ public class ContactServlet extends HttpServlet {
         String email = request.getParameter("email");
         String subject = request.getParameter("subject");
         String message = request.getParameter("message");
-
         System.out.println("=== Contact Form ===");
         System.out.println("Name: " + name);
         System.out.println("Email: " + email);

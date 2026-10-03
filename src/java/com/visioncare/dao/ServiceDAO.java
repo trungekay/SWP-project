@@ -1,12 +1,10 @@
 package com.visioncare.dao;
-
 import com.visioncare.model.Service;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
-
 public class ServiceDAO {
     
     public List<Service> getAllServices() throws Exception {
@@ -16,7 +14,6 @@ public class ServiceDAO {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-             
             while (rs.next()) {
                 Service s = new Service(
                     rs.getInt("Service_ID"),

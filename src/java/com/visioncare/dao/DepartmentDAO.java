@@ -1,7 +1,5 @@
 package com.visioncare.dao;
-
 import com.visioncare.model.Department;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +13,6 @@ public class DepartmentDAO {
         list.add(new Department(3, "glaucoma", "Glaucoma và Võng mạc", "bi-activity", "Chuyên sâu về cườm nước và bệnh lý võng mạc."));
         return list;
     }
-
     public Department getByKey(String key) throws Exception {
         for (Department d : getAll()) {
             if (d.getKey().equals(key)) {

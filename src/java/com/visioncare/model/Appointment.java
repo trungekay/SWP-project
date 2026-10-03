@@ -1,9 +1,6 @@
 package com.visioncare.model;
-
 import java.sql.Date;
-
 public class Appointment {
-
     private int id;
     private String patientName;
     private String phone;
@@ -24,103 +21,78 @@ public class Appointment {
     public int getId() {
         return id;
     }
-
     public void setId(int id) {
         this.id = id;
     }
-
     public String getPatientName() {
         return patientName;
     }
-
     public void setPatientName(String patientName) {
         this.patientName = patientName;
     }
-
     public String getPhone() {
         return phone;
     }
-
     public void setPhone(String phone) {
         this.phone = phone;
     }
-
     public String getEmail() {
         return email;
     }
-
     public void setEmail(String email) {
         this.email = email;
     }
-
     public Date getDob() {
         return dob;
     }
-
     public void setDob(Date dob) {
         this.dob = dob;
     }
-
     public int getDoctorId() {
         return doctorId;
     }
-
     public void setDoctorId(int doctorId) {
         this.doctorId = doctorId;
     }
-
     public Date getAppointmentDate() {
         return appointmentDate;
     }
-
     public void setAppointmentDate(Date appointmentDate) {
         this.appointmentDate = appointmentDate;
     }
-
     public String getTimeSlot() {
         return timeSlot;
     }
-
     public void setTimeSlot(String timeSlot) {
         this.timeSlot = timeSlot;
     }
-
     public String getDepartment() {
         return department;
     }
-
     public void setDepartment(String department) {
         this.department = department;
     }
-
     public String getPayment() {
         return payment;
     }
-
     public void setPayment(String payment) {
         this.payment = payment;
     }
-
     public String getReason() {
         return reason;
     }
-
     public void setReason(String reason) {
         this.reason = reason;
     }
-
     public String getStatus() {
         return status;
     }
-
     public void setStatus(String status) {
         this.status = status;
     }
-
     public int getUserId() {
         return userId;
     }
-
     public void setUserId(int userId) {
         this.userId = userId;
     }

@@ -1,0 +1,28 @@
+/* Reuse main.css service cards, Bootstrap grid and the shared public header.
+   Keep the reference-specific layout scoped to this page. */
+.clinic-services-page .header .topbar {
+  display: none !important;
+}
+
+.clinic-services-page .header {
+  border-top: 1px solid color-mix(in srgb, var(--default-color), transparent 85%);
+  box-shadow: 0 2px 12px rgb(0 0 0 / 6%);
+}
+
+.clinic-services-page #clinic-services {
+  padding-top: 8px;
+}
+
+@media (max-width: 767.98px) {
+  .clinic-services-page #clinic-services {
+    padding-top: 28px;
+  }
+
+  .clinic-services-page .section-title {
+    padding-bottom: 36px;
+  }
+
+  .clinic-services-page .service-item {
+    padding: 48px 20px;
+  }
+}

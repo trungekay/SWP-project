@@ -1,12 +1,10 @@
 package com.visioncare.dao;
-
 import com.visioncare.model.Room;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
-
 public class RoomDAO {
     public List<Room> getAll() throws Exception {
         List<Room> list = new ArrayList<>();
@@ -34,6 +32,15 @@ public class RoomDAO {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, roomId);
+            return ps.executeUpdate() > 0;
+        }
+    }
+    public boolean updateRoom(int roomId, String roomName) throws Exception {
+        String sql = "UPDATE Room SET Room_Name = ? WHERE Room_ID = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, roomName);
+            ps.setInt(2, roomId);
             return ps.executeUpdate() > 0;
         }
     }
