@@ -1,5 +1,4 @@
 package com.visioncare.controller;
-
 import com.visioncare.dao.WorkScheduleDAO;
 import com.visioncare.model.ScheduleDayDTO;
 import com.visioncare.model.ScheduleRegistrationDTO;
@@ -19,11 +18,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
-
-@WebServlet(name = "EmployeeRegisterScheduleServlet", urlPatterns = { "/employee/register-schedule" })
+@WebServlet(name = "EmployeeRegisterScheduleServlet", urlPatterns = {"/employee/register-schedule"})
 public class EmployeeRegisterScheduleServlet extends HttpServlet {
     private final WorkScheduleDAO workScheduleDAO = new WorkScheduleDAO();
-
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -48,8 +45,7 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             LocalDate today = LocalDate.now();
             int currentYear = today.getYear();
             int maxYear = currentYear + 1;
-            LocalDate firstMondayOfCurrentYear = LocalDate.of(currentYear, 1, 4)
-                    .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            LocalDate firstMondayOfCurrentYear = LocalDate.of(currentYear, 1, 4).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
             DateTimeFormatter dmyFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
             DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("dd/MM");
             DateTimeFormatter fullFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -87,8 +83,7 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                 } catch (NumberFormatException ignored) {
                 }
             }
-            LocalDate firstMondayOfSelectedYear = LocalDate.of(selectedYear, 1, 4)
-                    .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            LocalDate firstMondayOfSelectedYear = LocalDate.of(selectedYear, 1, 4).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
             int minWeekInSelectedYear = (selectedYear == currentYear) ? (currentWeekOfThisYear + 1) : 1;
             List<WeekOptionDTO> weekOptions = new ArrayList<>();
             int totalWeeksInSelectedYear = 52;
@@ -101,13 +96,11 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                 totalWeeksInSelectedYear = w;
                 if (w >= minWeekInSelectedYear) {
                     boolean isFirstAvailable = (selectedYear == earliestYear && w == earliestWeek);
-                    String label = String.format("Tuần %02d: %s - %s", w, wStart.format(dmyFormatter),
-                            wEnd.format(dmyFormatter));
+                    String label = String.format("Tuần %02d: %s - %s", w, wStart.format(dmyFormatter), wEnd.format(dmyFormatter));
                     if (isFirstAvailable) {
                         label += " (Tuần tiếp theo)";
                     }
-                    weekOptions.add(new WeekOptionDTO(w, 0, label, wStart.format(dmyFormatter),
-                            wEnd.format(dmyFormatter), isFirstAvailable));
+                    weekOptions.add(new WeekOptionDTO(w, 0, label, wStart.format(dmyFormatter), wEnd.format(dmyFormatter), isFirstAvailable));
                 }
             }
             String weekParam = request.getParameter("week");
@@ -123,7 +116,7 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             }
             LocalDate startOfSelectedWeek = firstMondayOfSelectedYear.plusWeeks(selectedWeek - 1);
             LocalDate endOfSelectedWeek = startOfSelectedWeek.plusDays(6);
-            String[] dayNames = { "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật" };
+            String[] dayNames = {"Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"};
             List<ScheduleDayDTO> weekDays = new ArrayList<>();
             for (int i = 0; i < 7; i++) {
                 LocalDate date = startOfSelectedWeek.plusDays(i);
@@ -134,7 +127,8 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                         date.format(dayFormatter),
                         date.format(fullFormatter),
                         isToday,
-                        isPast);
+                        isPast
+                );
                 weekDays.add(dayDto);
             }
             List<ScheduleSlotDTO> slots = new ArrayList<>();
@@ -212,7 +206,6 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             response.getWriter().println("<h3>Lỗi khi tải trang đăng ký lịch: " + e.getMessage() + "</h3>");
         }
     }
-
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -230,8 +223,7 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             String[] selectedSlots = request.getParameterValues("selectedSlots");
             if (selectedSlots == null || selectedSlots.length == 0) {
                 session.setAttribute("errorMessage", "Vui lòng chọn ít nhất một ca làm việc để đăng ký!");
-                response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam
-                        + "&week=" + weekParam);
+                response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
                 return;
             }
             List<ScheduleRegistrationDTO> registrationList = new ArrayList<>();
@@ -246,29 +238,22 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                     String sessionType = parts[4];
                     LocalDate date = LocalDate.parse(workDate);
                     if (!date.isBefore(today)) {
-                        registrationList
-                                .add(new ScheduleRegistrationDTO(workDate, slot, startTime, endTime, sessionType));
+                        registrationList.add(new ScheduleRegistrationDTO(workDate, slot, startTime, endTime, sessionType));
                     }
                 }
             }
             if (registrationList.isEmpty()) {
                 session.setAttribute("errorMessage", "Không có ca làm việc hợp lệ trong tương lai để đăng ký!");
-                response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam
-                        + "&week=" + weekParam);
+                response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
                 return;
             }
             boolean success = workScheduleDAO.registerScheduleBatch(actorId, role, registrationList);
             if (success) {
-                session.setAttribute("successMessage",
-                        "Đăng ký thành công " + registrationList.size() + " ca làm việc mới! Tổng thời gian tuần này: "
-                                + String.format("%.1f", totalWeeklyHours) + " giờ.");
-                response.sendRedirect(
-                        request.getContextPath() + "/employee/schedule?year=" + yearParam + "&week=" + weekParam);
+                session.setAttribute("successMessage", "Đăng ký thành công " + registrationList.size() + " ca làm việc mới!");
+                response.sendRedirect(request.getContextPath() + "/employee/schedule?year=" + yearParam + "&week=" + weekParam);
             } else {
-                session.setAttribute("errorMessage",
-                        "Có lỗi xảy ra trong quá trình lưu lịch làm việc. Vui lòng thử lại!");
-                response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam
-                        + "&week=" + weekParam);
+                session.setAttribute("errorMessage", "Có lỗi xảy ra trong quá trình lưu lịch làm việc. Vui lòng thử lại!");
+                response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
             }
         } catch (Exception e) {
             e.printStackTrace();
