@@ -1,16 +1,11 @@
 package com.visioncare.dao;
-
 import com.visioncare.model.User;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * DAO xá»­ lÃ½ truy váº¥n liÃªn quan Ä‘áº¿n User (Ä‘Äƒng nháº­p, Ä‘Äƒng kÃ½).
- */
-public class UserDAO {
 
+public class UserDAO {
     public User login(String email, String password) throws Exception {
         String sql =
     "SELECT a.Account_ID, a.Email, r.Role_Name, " +
@@ -42,12 +37,9 @@ public class UserDAO {
                     u.setLicenseNumber(rs.getString("License_Number"));
                     u.setPosition(rs.getString("Position"));
                     u.setPhone(rs.getString("Phone"));
-                    
                     Date dobDate = rs.getDate("DOB");
                     u.setDob(dobDate != null ? dobDate.toString() : null);
                     u.setAddress(rs.getString("Address"));
-                    
-                    // Map DB roles to application roles
                     String roleName = rs.getString("Role_Name");
                     if ("System_Admin".equalsIgnoreCase(roleName)) u.setRole("admin");
                     else if ("Doctor".equalsIgnoreCase(roleName)) u.setRole("doctor");
@@ -56,7 +48,6 @@ public class UserDAO {
                     else if ("Director".equalsIgnoreCase(roleName)) u.setRole("director");
                     else if ("Patient".equalsIgnoreCase(roleName)) u.setRole("patient");
                     else u.setRole(roleName.toLowerCase());
-                    
                     return u;
                 }
             }
@@ -71,7 +62,6 @@ public class UserDAO {
             ps.setString(1, user.getEmail());
             ps.setString(2, user.getPassword());
             ps.executeUpdate();
-            
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
                     int accId = rs.getInt(1);
@@ -88,10 +78,6 @@ public class UserDAO {
         }
         return false;
     }
-
-    /**
-     * TÃ¬m user theo email.
-     */
     public User getByEmail(String email) throws Exception {
         String sql = "SELECT a.*, p.Full_Name, p.Phone, p.DOB, p.Address FROM Account a LEFT JOIN Patient p ON a.Account_ID = p.Account_ID WHERE a.Email = ?";
         try (Connection conn = DBContext.getConnection();
@@ -105,18 +91,15 @@ public class UserDAO {
                     u.setPassword(rs.getString("Password"));
                     u.setFullName(rs.getString("Full_Name"));
                     u.setPhone(rs.getString("Phone"));
-                    
                     Date dobDate = rs.getDate("DOB");
                     u.setDob(dobDate != null ? dobDate.toString() : null);
                     u.setAddress(rs.getString("Address"));
-                    
                     return u;
                 }
             }
         }
         return null;
     }
-
     private User mapRow(ResultSet rs) throws SQLException {
         User u = new User();
         u.setId(rs.getInt("id"));
@@ -193,7 +176,6 @@ public class UserDAO {
         }
         return users;
     }
-
     public User getUserById(int accountId) throws Exception {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(ADMIN_USER_SELECT + "WHERE a.Account_ID = ?")) {
@@ -312,6 +294,46 @@ public class UserDAO {
             } catch (SQLException e) {
                 conn.rollback();
                 return false;
+            }
+            String sqlEmployee = "UPDATE Employee_Profile SET Full_Name = ?, Phone = ? WHERE Account_ID = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sqlEmployee)) {
+                ps.setString(1, fullName);
+                ps.setString(2, phone);
+                ps.setInt(3, accountId);
+                ps.executeUpdate();
+            }
+        }
+    }
+    public void updatePassword(int accountId, String newPassword) throws Exception {
+        String sql = "UPDATE Account SET Password = ? WHERE Account_ID = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newPassword);
+            ps.setInt(2, accountId);
+            ps.executeUpdate();
+        }
+    }
+    public void updateProfile(User user) throws Exception {
+        try (Connection conn = DBContext.getConnection()) {
+            String sqlPatient = "UPDATE Patient SET Full_Name = ?, Phone = ?, DOB = ?, Address = ? WHERE Account_ID = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sqlPatient)) {
+                ps.setString(1, user.getFullName());
+                ps.setString(2, user.getPhone());
+                if (user.getDob() != null && !user.getDob().isEmpty()) {
+                    ps.setDate(3, java.sql.Date.valueOf(user.getDob()));
+                } else {
+                    ps.setNull(3, java.sql.Types.DATE);
+                }
+                ps.setString(4, user.getAddress());
+                ps.setInt(5, user.getId());
+                ps.executeUpdate();
+            }
+            String sqlEmployee = "UPDATE Employee_Profile SET Full_Name = ?, Phone = ? WHERE Account_ID = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sqlEmployee)) {
+                ps.setString(1, user.getFullName());
+                ps.setString(2, user.getPhone());
+                ps.setInt(3, user.getId());
+                ps.executeUpdate();
             }
         }
     }

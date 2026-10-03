@@ -1,14 +1,14 @@
 USE master;
 GO
-IF EXISTS (SELECT name FROM sys.databases WHERE name = N'eye_clinic_db_v2')
+IF EXISTS (SELECT name FROM sys.databases WHERE name = N'eye_clinic_db')
 BEGIN
-    ALTER DATABASE eye_clinic_db_v2 SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE eye_clinic_db_v2;
+    ALTER DATABASE eye_clinic_db SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE eye_clinic_db;
 END
 GO
-CREATE DATABASE eye_clinic_db_v2;
+CREATE DATABASE eye_clinic_db;
 GO
-USE eye_clinic_db_v2;
+USE eye_clinic_db;
 GO
 
 CREATE TABLE Role (
@@ -259,9 +259,12 @@ INSERT INTO Role (Role_Name) VALUES
 (N'Medical_Specialist'), (N'Staff'), (N'Patient');
 
 INSERT INTO Room (Room_Name, address, hotline, status) VALUES
-(N'Cơ sở Quận 1',     N'25 Nguyễn Trãi, Quận 1, TP.HCM',     N'1900-0101', N'Available'),
-(N'Cơ sở Quận 3',     N'48 Lê Lợi, Quận 3, TP.HCM',          N'1900-0103', N'Available'),
-(N'Cơ sở Tân Bình',   N'12 Hoàng Văn Thụ, Tân Bình, TP.HCM', N'1900-0104', N'Available');
+(N'Phòng Khám Mắt 101',           N'Cơ sở chính', N'1900-0101', N'Available'),
+(N'Phòng Đo Khúc Xạ 201',         N'Cơ sở chính', N'1900-0101', N'Available'),
+(N'Phòng Chụp OCT 202',           N'Cơ sở chính', N'1900-0101', N'Available'),
+(N'Phòng Phẫu Thuật LASIK 301',   N'Cơ sở chính', N'1900-0101', N'Available'),
+(N'Phòng Điều Trị Đục TTT 302',   N'Cơ sở chính', N'1900-0101', N'Available'),
+(N'Phòng Khám Nhi 104',           N'Cơ sở chính', N'1900-0101', N'Available');
 
 INSERT INTO Account (Role_ID, Email, Password, Auth_Provider, Account_Status) VALUES
 (1, N'admin@eyeclinic.com',          N'123', N'Local', N'Active'),
@@ -273,7 +276,9 @@ INSERT INTO Account (Role_ID, Email, Password, Auth_Provider, Account_Status) VA
 (3, N'doctor.tinh@eyeclinic.com',    N'123', N'Local', N'Active'),
 (3, N'doctor.lan2@eyeclinic.com',    N'123', N'Local', N'Active'),
 (3, N'doctor.huy@eyeclinic.com',     N'123', N'Local', N'Active'),
-(3, N'doctor.ngoc@eyeclinic.com',    N'123', N'Local', N'Active');
+(3, N'doctor.ngoc@eyeclinic.com',    N'123', N'Local', N'Active'),
+(3, N'doctor.long@eyeclinic.com',    N'123', N'Local', N'Active'),
+(3, N'doctor.linh@eyeclinic.com',    N'123', N'Local', N'Active');
 
 INSERT INTO Patient (Account_ID, Full_Name, Phone, DOB, Address) VALUES
 (6,    N'Nguyễn Văn An',  N'0901234567', '1995-05-15', N'123 Lê Lợi, Q.1, TP.HCM'),
@@ -285,10 +290,12 @@ INSERT INTO Employee_Profile (Account_ID, Room_ID, Full_Name, Phone, Specialty, 
 (3,  1,    N'BS. Trần Văn Nam',           NULL, N'Khám mắt tổng quát',    N'BS-12345/EYE'),
 (4,  3,    N'KTV. Lê Thị Hoa',            NULL, N'Chẩn đoán hình ảnh',    NULL),
 (5,  NULL, N'Lễ Tân Phạm Thị Lan',        NULL, N'Thu Ngân & Tiếp Đón',   NULL),
-(7,  1,    N'TS.BS. Nguyễn Xuân Tịnh',    NULL, N'Khúc xạ & Kính',        N'BS-56789/EYE'),
-(8,  1,    N'ThS.BS. Lê Hoàng Lan',       NULL, N'Phẫu thuật LASIK',      N'BS-98765/EYE'),
-(9,  1,    N'BSCKII. Trần Quang Huy',     NULL, N'Đục thủy tinh thể',     N'BS-45678/EYE'),
-(10, 1,    N'BS. Phạm Bảo Ngọc',          NULL, N'Nhãn khoa trẻ em',      N'BS-34567/EYE');
+(7,  2,    N'TS.BS. Nguyễn Xuân Tịnh',    NULL, N'Khúc xạ & Kính',        N'BS-56789/EYE'),
+(8,  4,    N'ThS.BS. Lê Hoàng Lan',       NULL, N'Phẫu thuật LASIK',      N'BS-98765/EYE'),
+(9,  5,    N'BSCKII. Trần Quang Huy',     NULL, N'Đục thủy tinh thể',     N'BS-45678/EYE'),
+(10, 6,    N'BS. Phạm Bảo Ngọc',          NULL, N'Nhãn khoa trẻ em',      N'BS-34567/EYE'),
+(11, NULL, N'BS. Hoàng Phi Long',         NULL, N'Đáy mắt',               N'BS-77777/EYE'),
+(12, NULL, N'BS. Mai Thùy Linh',          NULL, N'Thần kinh nhãn khoa',   N'BS-88888/EYE');
 
 INSERT INTO Work_Schedule
     (Doctor_Employee_ID, Specialist_Employee_ID, Work_Date, Slot, Start_Time, End_Time, Status)

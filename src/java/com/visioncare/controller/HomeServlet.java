@@ -1,5 +1,4 @@
 package com.visioncare.controller;
-
 import com.visioncare.dao.DoctorDAO;
 import com.visioncare.dao.CatalogDAO;
 import com.visioncare.model.Doctor;
@@ -11,20 +10,25 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
-
-/**
- * Servlet xá»­ lÃ½ trang chá»§ VisionCare.
- * URL: /home hoáº·c /
- */
 @WebServlet(name = "HomeServlet", urlPatterns = {"/home", ""})
 public class HomeServlet extends HttpServlet {
-
     private final DoctorDAO doctorDAO = new DoctorDAO();
     private final CatalogDAO catalogDAO = new CatalogDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        com.visioncare.model.User user = (com.visioncare.model.User) request.getSession().getAttribute("user");
+        if (user != null) {
+            String role = user.getRole();
+            if ("admin".equals(role)) {
+                response.sendRedirect(request.getContextPath() + "/admin/users");
+                return;
+            } else if ("director".equals(role) || "staff".equals(role) || "doctor".equals(role) || "specialist".equals(role) || "medical_specialist".equals(role)) {
+                response.sendRedirect(request.getContextPath() + "/employee/schedule");
+                return;
+            }
+        }
         try {
             List<Doctor> doctors = doctorDAO.getAll();
             request.setAttribute("doctors", doctors);
