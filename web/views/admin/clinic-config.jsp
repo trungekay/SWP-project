@@ -7,45 +7,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cấu hình Phòng Khám - VisionCare Admin</title>
-    <!-- Google Fonts -->
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Bootstrap 5 CSS -->
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
-    <!-- Vendor CSS Files (from header.jsp) -->
-    <link href="${pageContext.request.contextPath}/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-    <link href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-    <link href="${pageContext.request.contextPath}/assets/vendor/aos/aos.css" rel="stylesheet">
-    <link href="${pageContext.request.contextPath}/assets/vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
-    
-    <!-- Main CSS File -->
-    <link href="${pageContext.request.contextPath}/assets/css/main.css" rel="stylesheet">
-    
-    <jsp:include page="/views/admin/layout/admin-css.jsp" />
-    <style>
-        .admin-card {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            padding: 24px;
-        }
-    </style>
+    <!-- Admin Layout CSS -->
+    <link href="${pageContext.request.contextPath}/assets/css/admin-layout.css" rel="stylesheet">
+
+  <style>
+    .admin-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      padding: 24px;
+    }
+    .page-content { padding: 30px; }
+    .page-title { margin-bottom: 24px; }
+    .page-title h2 { font-size: 24px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+    .breadcrumbs { font-size: 14px; color: #64748b; }
+    .breadcrumbs ol { list-style: none; padding: 0; margin: 0; display: flex; gap: 8px; }
+    .breadcrumbs ol li.current { color: #0f172a; font-weight: 500; }
+    .breadcrumbs ol li a { color: var(--primary-color); text-decoration: none; }
+  </style>
 </head>
 <body>
+
+    <!-- Sidebar Include -->
     <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
-        <jsp:param name="activeNav" value="clinic-config" />
+        <jsp:param name="activeNav" value="config" />
     </jsp:include>
+
+    <!-- Main Content -->
     <main class="main-wrapper">
+        
+        <!-- Header Include -->
         <jsp:include page="/views/admin/layout/admin-header.jsp" />
-        <div class="page-content">
-            <div class="page-header">
-                <div class="page-title">
-                    <h2>Cấu hình Phòng Khám</h2>
-                    <p>Cấu hình phòng khám và khung giờ</p>
-                </div>
+
+        <div class="page-content bg-light pb-5">
+            <div class="page-title">
+              <div class="container-fluid px-0">
+                <h2 class="mb-0">Cấu hình Phòng Khám</h2>
+                <nav class="breadcrumbs mt-2">
+                  <ol>
+                    <li><a href="${pageContext.request.contextPath}/admin/dashboard">Dashboard</a></li>
+                    <li>/</li>
+                    <li class="current">Cấu hình</li>
+                  </ol>
+                </nav>
+              </div>
             </div>
-            <div class="row g-4">
+
+            <section class="section pt-4">
+              <div class="container-fluid px-0">
+                <div class="row g-4">
           <!-- Clinic Rooms -->
           <div class="col-lg-6">
             <div class="admin-card">
@@ -347,8 +364,12 @@
       </div>
     </div>
 
-    </div>
+              </div>
+            </section>
+        </div>
     </main>
+
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -1,53 +1,32 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
-<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Dịch vụ và Vật tư - VisionCare Admin</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
-    <!-- Vendor CSS Files (from header.jsp) -->
-    <link href="${pageContext.request.contextPath}/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-    <link href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-    <link href="${pageContext.request.contextPath}/assets/vendor/aos/aos.css" rel="stylesheet">
-    <link href="${pageContext.request.contextPath}/assets/vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
-    
-    <!-- Main CSS File -->
-    <link href="${pageContext.request.contextPath}/assets/css/main.css" rel="stylesheet">
-    <link href="${pageContext.request.contextPath}/assets/css/dentalcare-public.css" rel="stylesheet">
-    <link href="${pageContext.request.contextPath}/assets/css/admin-catalog.css" rel="stylesheet">
+  <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
-    <jsp:include page="/views/admin/layout/admin-css.jsp" />
-</head>
-<body>
-    <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
-        <jsp:param name="activeNav" value="catalog" />
+    <jsp:include page="/views/common/header.jsp">
+      <jsp:param name="pageTitle" value="Quản lý Danh mục" />
+      <jsp:param name="pageDescription" value="Quản lý dịch vụ và vật tư" />
+      <jsp:param name="bodyClass" value="starter-page-page" />
     </jsp:include>
-    <main class="main-wrapper catalog-page">
-        <jsp:include page="/views/admin/layout/admin-header.jsp" />
-        <div class="page-content pb-0">
-            <div class="page-header">
-                <div class="page-title">
-                    <h2>Quản lý Danh mục</h2>
-                    <p>Dịch vụ &amp; Vật tư y tế</p>
-                </div>
-            </div>
+
+    <style>
+      .admin-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        padding: 24px;
+      }
+    </style>
+
+    <main class="main bg-light pb-5">
+      <div class="page-title">
+        <div class="container">
+          <h2 class="mb-0">Quản lý Danh mục (Dịch vụ & Vật tư)</h2>
+          <nav class="breadcrumbs">
+            <ol>
+              <li><a href="${pageContext.request.contextPath}/admin/dashboard">Dashboard</a></li>
+              <li class="current">Danh mục</li>
+            </ol>
+          </nav>
         </div>
-  <div class="container catalog-layout">
-    <aside class="catalog-sidebar" aria-label="Phân mục quản trị">
-      <div class="catalog-panel catalog-nav-panel">
-        <p class="catalog-eyebrow">Phân mục quản trị</p>
-        <button type="button" class="catalog-tab ${param.tab == 'supplies' ? '' : 'is-active'}" data-tab="services" aria-selected="${param.tab == 'supplies' ? 'false' : 'true'}"><span><i class="bi bi-clipboard2-pulse"></i> Dịch vụ phòng khám</span><b>${catalogServices.size()}</b></button>
-        <button type="button" class="catalog-tab ${param.tab == 'supplies' ? 'is-active' : ''}" data-tab="supplies" aria-selected="${param.tab == 'supplies' ? 'true' : 'false'}"><span><i class="bi bi-box-seam"></i> Vật tư &amp; Thiết bị</span><b>${catalogSupplies.size()}</b></button>
       </div>
 
       <section class="section pt-4">
@@ -183,20 +162,5 @@
         </div>
       </div>
     </div>
-  </div>
-</main>
-<dialog id="catalogDeleteDialog" class="catalog-delete-dialog" aria-labelledby="catalogDeleteTitle" aria-describedby="catalogDeleteDescription">
-  <div class="catalog-delete-dialog-icon" aria-hidden="true"><i class="bi bi-trash3"></i></div>
-  <h2 id="catalogDeleteTitle">Xác nhận xóa</h2>
-  <p id="catalogDeleteDescription">Bạn có chắc muốn xóa <span id="catalogDeleteKind"></span> <strong id="catalogDeleteName"></strong>?</p>
-  <p class="catalog-delete-dialog-note">Mục này sẽ bị xóa khỏi database và không thể khôi phục từ trang quản trị.</p>
-  <div class="catalog-delete-dialog-actions">
-    <button id="catalogDeleteCancel" type="button" class="catalog-delete-cancel">Hủy</button>
-    <button id="catalogDeleteConfirm" type="button" class="catalog-delete-confirm"><i class="bi bi-trash"></i> Xác nhận xóa</button>
-  </div>
-</dialog>
-<script src="${pageContext.request.contextPath}/assets/js/admin-catalog.js?v=2" defer></script>
-    </main>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+
+    <jsp:include page="/views/common/footer.jsp" />

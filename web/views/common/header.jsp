@@ -40,8 +40,6 @@
 
     <body class="${param.bodyClass}">
 
-      <c:set var="shouldHideHeader" value="${param.hideHeaderForAdmin == 'true' && sessionScope.user.role != 'patient' && not empty sessionScope.user}" />
-      <c:if test="${not shouldHideHeader}">
       <header id="header" class="header sticky-top">
 
         <div class="topbar d-flex align-items-center">
@@ -128,4 +126,3 @@
         </div>
 
       </header>
-      </c:if>
