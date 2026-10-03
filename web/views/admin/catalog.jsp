@@ -2,15 +2,46 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
-<jsp:include page="/views/common/header.jsp">
-  <jsp:param name="pageTitle" value="Quản lý Dịch vụ và Vật tư" />
-  <jsp:param name="pageDescription" value="Danh mục dịch vụ và vật tư VisionCare" />
-  <jsp:param name="bodyClass" value="admin-catalog-page" />
-</jsp:include>
 
-<main class="main catalog-page">
-  <div class="catalog-breadcrumb"><div class="container"><a href="${pageContext.request.contextPath}/home"><i class="bi bi-house-door"></i> Trang chủ</a><span>/</span><span>Quản lý</span><span>/</span><strong>Dịch vụ &amp; Vật tư y tế</strong></div></div>
-  <div class="container catalog-layout">
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Dịch vụ và Vật tư - VisionCare Admin</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Admin Layout CSS -->
+    <link href="${pageContext.request.contextPath}/assets/css/admin-layout.css" rel="stylesheet">
+    
+    <!-- Catalog specific CSS -->
+    <link href="${pageContext.request.contextPath}/assets/css/admin-catalog.css" rel="stylesheet">
+
+  <style>
+    .page-content { padding: 30px; }
+  </style>
+</head>
+<body>
+
+    <!-- Sidebar Include -->
+    <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
+        <jsp:param name="activeNav" value="catalog" />
+    </jsp:include>
+
+    <!-- Main Content -->
+    <main class="main-wrapper">
+        
+        <!-- Header Include -->
+        <jsp:include page="/views/admin/layout/admin-header.jsp" />
+
+        <div class="page-content catalog-page bg-light pb-5">
+  <div class="catalog-breadcrumb"><div class="container-fluid px-0"><a href="${pageContext.request.contextPath}/admin/dashboard"><i class="bi bi-house-door"></i> Dashboard</a><span>/</span><span>Quản lý</span><span>/</span><strong>Dịch vụ &amp; Vật tư y tế</strong></div></div>
+  <div class="container-fluid px-0 catalog-layout">
     <aside class="catalog-sidebar" aria-label="Phân mục quản trị">
       <div class="catalog-panel catalog-nav-panel">
         <p class="catalog-eyebrow">Phân mục quản trị</p>
@@ -48,6 +79,7 @@
       </section>
     </div>
   </div>
+        </div>
 </main>
 <dialog id="catalogDeleteDialog" class="catalog-delete-dialog" aria-labelledby="catalogDeleteTitle" aria-describedby="catalogDeleteDescription">
   <div class="catalog-delete-dialog-icon" aria-hidden="true"><i class="bi bi-trash3"></i></div>
@@ -60,4 +92,7 @@
   </div>
 </dialog>
 <script src="${pageContext.request.contextPath}/assets/js/admin-catalog.js?v=2" defer></script>
-<jsp:include page="/views/common/footer.jsp" />
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
