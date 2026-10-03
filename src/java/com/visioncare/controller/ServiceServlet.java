@@ -10,7 +10,15 @@ import java.io.IOException;
 public class ServiceServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
-        response.sendRedirect(request.getContextPath() + "/home#service");
+            throws ServletException, IOException {
+        try {
+            List<Service> listServices = serviceDAO.getAllServices();
+            request.setAttribute("services", listServices);
+            
+            request.getRequestDispatcher("/views/service/list.jsp").forward(request, response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.sendRedirect(request.getContextPath() + "/error-500.jsp");
+        }
     }
 }

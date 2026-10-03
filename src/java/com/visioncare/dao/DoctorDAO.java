@@ -92,8 +92,8 @@ public class DoctorDAO {
                               "<li>Đã thực hiện thành công hơn 5,000 ca phẫu thuật/điều trị phức tạp</li>" +
                               "</ul>");
         }
-        
-        int imgId = (rs.getInt("Employee_ID") % 4) + 1;
+
+        int imgId = (rs.getInt("Doctor_ID") % 4) + 1;
         d.setImage("doctors/doctors-" + imgId + ".jpg");
         d.setRating(5.0);
         if (hasColumn(rs, "Room_ID")) {

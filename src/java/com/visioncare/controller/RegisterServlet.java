@@ -45,6 +45,7 @@ public class RegisterServlet extends HttpServlet {
                     userDAO.register(pendingUser);
                     session.removeAttribute("registerOtp");
                     session.removeAttribute("pendingUser");
+                    
                     session.setAttribute("user", pendingUser);
                     response.sendRedirect(request.getContextPath() + "/home");
                 } catch (Exception e) {
@@ -75,20 +76,25 @@ public class RegisterServlet extends HttpServlet {
                 request.getRequestDispatcher("/views/auth/register.jsp").forward(request, response);
                 return;
             }
+
             String otp = String.format("%06d", new Random().nextInt(999999));
+            
             User user = new User();
             user.setFullName(fullName);
             user.setPhone(phone);
             user.setEmail(email);
             user.setPassword(password);
             user.setRole("patient");
+            
             session.setAttribute("pendingUser", user);
             session.setAttribute("registerOtp", otp);
+            
             try {
                 EmailUtil.sendOtpEmail(email, otp);
             } catch (Exception e) {
                 System.out.println("Could not send email, check credentials: " + e.getMessage());
             }
+            
             response.sendRedirect(request.getContextPath() + "/verify-otp");
         } catch (Exception e) {
             e.printStackTrace();

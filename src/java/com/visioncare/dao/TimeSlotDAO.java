@@ -8,8 +8,9 @@ import java.util.List;
 public class TimeSlotDAO {
     public List<TimeSlotConfig> getConfiguredSlots() throws Exception {
         List<TimeSlotConfig> list = new ArrayList<>();
-        String sql = "SELECT Slot, MIN(Start_Time) AS Start_Time, MIN(End_Time) AS End_Time, MAX(Status) AS Status " +
-                     "FROM Work_Schedule GROUP BY Slot ORDER BY Start_Time";
+        String sql = "SELECT DISTINCT Slot, Start_Time, End_Time, Session " +
+                     "FROM Work_Schedule " +
+                     "ORDER BY Start_Time";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -33,46 +34,16 @@ public class TimeSlotDAO {
                      "WHERE a.Role_ID = 3 AND a.Account_Status = 'Active'";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, date);       
-            ps.setString(2, slotName);   
-            ps.setString(3, startTime);  
-            ps.setString(4, endTime);    
+            ps.setString(1, date);
+            ps.setString(2, slotName);
+            ps.setString(3, startTime);
+            ps.setString(4, endTime);
+            ps.setString(5, session);
+            
             return ps.executeUpdate() > 0;
         }
     }
-    public boolean updateTimeSlotConfig(String oldSlotName, String newSlotName, String startTime, String endTime, String status) throws Exception {
-        try (Connection conn = DBContext.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                if ("Canceled".equals(status)) {
-                    // Delete all available (empty) slots with this name
-                    String sqlDelete = "DELETE FROM Work_Schedule WHERE Slot = ? AND Status = 'Available'";
-                    try (PreparedStatement ps = conn.prepareStatement(sqlDelete)) {
-                        ps.setString(1, oldSlotName);
-                        ps.executeUpdate();
-                    }
-                }
-                
-                // Update time and name for all remaining slots (e.g. booked ones, or all if status is Available)
-                String sqlUpdate = "UPDATE Work_Schedule SET Slot = ?, Start_Time = ?, End_Time = ? WHERE Slot = ?";
-                try (PreparedStatement ps = conn.prepareStatement(sqlUpdate)) {
-                    ps.setString(1, newSlotName);
-                    ps.setString(2, startTime);
-                    ps.setString(3, endTime);
-                    ps.setString(4, oldSlotName);
-                    ps.executeUpdate();
-                }
-                
-                conn.commit();
-                return true;
-            } catch (Exception e) {
-                conn.rollback();
-                throw e;
-            } finally {
-                conn.setAutoCommit(true);
-            }
-        }
-    }
+
     public boolean deleteTimeSlot(int scheduleId) throws Exception {
         String sql = "DELETE FROM Work_Schedule WHERE Schedule_ID = ? AND Status = 'Available'";
         try (Connection conn = DBContext.getConnection();

@@ -8,14 +8,16 @@ public class Appointment {
     private Date dob;
     private int doctorId;
     private Date appointmentDate;
-    private String timeSlot;       
-    private String department;     
-    private String payment;        
+    private String timeSlot;     
+    private String department;  
+    private String payment;       
     private String reason;         
-    private String status;         
-    private int userId;            
+    private String status;        
+    private int userId;           
+
     public Appointment() {
     }
+
     public int getId() {
         return id;
     }
