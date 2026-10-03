@@ -1,9 +1,9 @@
 package com.visioncare.model;
 public class Department {
     private int id;
-    private String key;         
-    private String name;        
-    private String icon;        
+    private String key;    
+    private String name;     
+    private String icon; 
     private String description;
     public Department() {
     }

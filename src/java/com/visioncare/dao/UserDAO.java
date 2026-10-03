@@ -4,7 +4,6 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class UserDAO {
     public User login(String email, String password) throws Exception {
         String sql =
@@ -41,6 +40,7 @@ public class UserDAO {
                     Date dobDate = rs.getDate("DOB");
                     u.setDob(dobDate != null ? dobDate.toString() : null);
                     u.setAddress(rs.getString("Address"));
+                    
                     String roleName = rs.getString("Role_Name");
                     if ("System_Admin".equalsIgnoreCase(roleName)) u.setRole("admin");
                     else if ("Doctor".equalsIgnoreCase(roleName)) u.setRole("doctor");
@@ -79,6 +79,7 @@ public class UserDAO {
         }
         return false;
     }
+
     public User getByEmail(String email) throws Exception {
         String sql = "SELECT a.*, p.Full_Name, p.Phone, p.DOB, p.Address FROM Account a LEFT JOIN Patient p ON a.Account_ID = p.Account_ID WHERE a.Email = ?";
         try (Connection conn = DBContext.getConnection();
@@ -101,6 +102,7 @@ public class UserDAO {
         }
         return null;
     }
+
     private User mapRow(ResultSet rs) throws SQLException {
         User u = new User();
         u.setId(rs.getInt("id"));
@@ -110,39 +112,6 @@ public class UserDAO {
         u.setPhone(rs.getString("phone"));
         u.setRole(rs.getString("role"));
         return u;
-    }
-
-    /**
-     * Cập nhật thông tin profile của Patient
-     */
-    public boolean updateProfile(User user) throws Exception {
-        String sql = "UPDATE Patient SET Full_Name = ?, Phone = ?, DOB = ?, Address = ? WHERE Account_ID = ?";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, user.getFullName());
-            ps.setString(2, user.getPhone());
-            if (user.getDob() != null && !user.getDob().isEmpty()) {
-                ps.setDate(3, java.sql.Date.valueOf(user.getDob()));
-            } else {
-                ps.setNull(3, java.sql.Types.DATE);
-            }
-            ps.setString(4, user.getAddress());
-            ps.setInt(5, user.getId());
-            return ps.executeUpdate() > 0;
-        }
-    }
-
-    /**
-     * Cập nhật mật khẩu
-     */
-    public boolean updatePassword(int accountId, String newPassword) throws Exception {
-        String sql = "UPDATE Account SET Password = ? WHERE Account_ID = ?";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, newPassword);
-            ps.setInt(2, accountId);
-            return ps.executeUpdate() > 0;
-        }
     }
 
     private static final String ADMIN_USER_SELECT =
@@ -177,15 +146,8 @@ public class UserDAO {
         }
         return users;
     }
+
     public User getUserById(int accountId) throws Exception {
-        String sql = "SELECT a.Account_ID, a.Email, a.Account_Status, r.Role_ID, r.Role_Name, " +
-                     "COALESCE(p.Full_Name, e.Full_Name) as Full_Name, " +
-                     "COALESCE(p.Phone, e.Phone) as Phone, p.DOB, p.Address " +
-                     "FROM Account a " +
-                     "JOIN Role r ON a.Role_ID = r.Role_ID " +
-                     "LEFT JOIN Patient p ON a.Account_ID = p.Account_ID " +
-                     "LEFT JOIN Employee_Profile e ON a.Account_ID = e.Account_ID " +
-                     "WHERE a.Account_ID = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(ADMIN_USER_SELECT + "WHERE a.Account_ID = ?")) {
             ps.setInt(1, accountId);
@@ -255,8 +217,8 @@ public class UserDAO {
                     ps.executeUpdate();
                 }
             }
-        } // Đã thêm đóng ngoặc của khối try
-    } // Đã thêm đóng ngoặc kết thúc hàm updateUserRole
+        }
+    }
 
     public boolean updateAccountStatus(int accountId, String status) throws Exception {
         try (Connection conn = DBContext.getConnection();
@@ -296,10 +258,15 @@ public class UserDAO {
                     }
                 } else {
                     try (PreparedStatement ps = conn.prepareStatement(
-                            "INSERT INTO Employee_Profile (Account_ID, Full_Name, Phone) VALUES (?, ?, ?)")) {
+                            "INSERT INTO Employee_Profile (Account_ID, Full_Name, Phone, License_Number) VALUES (?, ?, ?, ?)")) {
                         ps.setInt(1, accountId);
                         ps.setString(2, user.getFullName());
                         ps.setString(3, phone);
+                        if (user.getRoleId() == 3) {
+                            ps.setString(4, "DOC-" + accountId); 
+                        } else {
+                            ps.setNull(4, java.sql.Types.VARCHAR);
+                        }
                         ps.executeUpdate();
                     }
                 }

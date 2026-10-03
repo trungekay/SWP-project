@@ -36,7 +36,9 @@ public class DoctorScheduleServlet extends HttpServlet {
             } else {
                 doctors = doctorDAO.getAll();
             }
+
             List<Department> departments = departmentDAO.getAll();
+
             Map<Integer, List<TimeSlot>> doctorSlots = new LinkedHashMap<>();
             String[] morningSlots = {"08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00"};
             String[] afternoonSlots = {"13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"};
@@ -68,7 +70,7 @@ public class DoctorScheduleServlet extends HttpServlet {
             request.getRequestDispatcher("/views/doctor/doctor-schedules.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("error", "CÃ³ lá»—i xáº£y ra: " + e.getMessage());
+            request.setAttribute("error", "Có lỗi xảy ra: " + e.getMessage());
             request.getRequestDispatcher("/views/error/500.jsp").forward(request, response);
         }
     }

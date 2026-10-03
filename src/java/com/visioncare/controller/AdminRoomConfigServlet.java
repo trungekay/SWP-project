@@ -9,6 +9,7 @@ import java.io.IOException;
 @WebServlet(name = "AdminRoomConfigServlet", urlPatterns = {"/admin/room-config"})
 public class AdminRoomConfigServlet extends HttpServlet {
     private final RoomDAO roomDAO = new RoomDAO();
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -19,10 +20,13 @@ public class AdminRoomConfigServlet extends HttpServlet {
             e.printStackTrace();
         }
     }
+
+    // Xử lý Form Submit (Thêm/Xóa)
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String action = request.getParameter("action"); 
+        String action = request.getParameter("action"); // "add" hoặc "delete"
+
         try {
             if ("add".equals(action)) {
                 String roomName = request.getParameter("roomName");
@@ -63,6 +67,7 @@ public class AdminRoomConfigServlet extends HttpServlet {
             e.printStackTrace();
             request.getSession().setAttribute("errorMsg", "Không thể thực hiện thao tác. Có thể phòng đang được sử dụng.");
         }
-        response.sendRedirect(request.getContextPath() + "/admin/clinic-config");
+        
+        response.sendRedirect(request.getContextPath() + "/admin/room-config");
     }
 }

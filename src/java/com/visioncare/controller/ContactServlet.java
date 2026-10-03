@@ -19,7 +19,8 @@ public class ContactServlet extends HttpServlet {
         System.out.println("Email: " + email);
         System.out.println("Subject: " + subject);
         System.out.println("Message: " + message);
-        request.getSession().setAttribute("contactSuccess", "Tin nháº¯n cá»§a báº¡n Ä‘Ã£ Ä‘Æ°á»£c gá»­i. Cáº£m Æ¡n!");
+
+        request.getSession().setAttribute("contactSuccess", "Tin nhắn của bạn đã được gửi. Cảm ơn!");
         response.sendRedirect(request.getContextPath() + "/home#contact");
     }
 }

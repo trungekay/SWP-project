@@ -18,22 +18,15 @@ public class RoomDAO {
         }
         return list;
     }
-    public int addRoom(String roomName) throws Exception {
+    public boolean addRoom(String roomName) throws Exception {
         String sql = "INSERT INTO Room (Room_Name) VALUES (?)";
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, roomName); 
-            int affectedRows = ps.executeUpdate();
-            if (affectedRows > 0) {
-                try (ResultSet rs = ps.getGeneratedKeys()) {
-                    if (rs.next()) {
-                        return rs.getInt(1);
-                    }
-                }
-            }
-            return -1;
+            return ps.executeUpdate() > 0;
         }
     }
+
     public boolean deleteRoom(int roomId) throws Exception {
         String sql = "DELETE FROM Room WHERE Room_ID = ?";
         try (Connection conn = DBContext.getConnection();

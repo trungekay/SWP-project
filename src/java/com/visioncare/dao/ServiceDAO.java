@@ -6,9 +6,11 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 public class ServiceDAO {
+    
     public List<Service> getAllServices() throws Exception {
         List<Service> services = new ArrayList<>();
         String sql = "SELECT Service_ID, Service_Name, Price FROM Service_Catalog ORDER BY Service_Name ASC";
+        
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {

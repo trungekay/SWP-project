@@ -67,7 +67,7 @@
               </div>
             </c:if>
 
-            <form method="post" action="${pageContext.request.contextPath}/verify-otp">
+            <form method="post" action="${pageContext.request.contextPath}/forgot-password/verify">
               <div class="d-flex justify-content-center mb-4">
                 <input type="text" class="otp-input" name="otp1" maxlength="1" required>
                 <input type="text" class="otp-input" name="otp2" maxlength="1" required>
@@ -103,7 +103,7 @@
         timeLeft--;
         if (timeLeft <= 0) {
           clearInterval(countdownInterval);
-          resendContainer.innerHTML = 'Chưa nhận được mã? <a href="${pageContext.request.contextPath}/resend-otp" style="color: #0d9488; font-weight: 500;" class="text-decoration-none">Gửi lại mã</a>';
+          resendContainer.innerHTML = 'Chưa nhận được mã? <a href="${pageContext.request.contextPath}/forgot-password" style="color: #0d9488; font-weight: 500;" class="text-decoration-none">Nhập lại Email</a>';
         } else {
           timerElement.innerText = "Gửi lại (" + timeLeft + "s)";
         }
