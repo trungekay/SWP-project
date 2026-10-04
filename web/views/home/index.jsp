@@ -86,8 +86,7 @@
         <div class="row gy-4 gx-5">
 
           <div class="col-lg-6 position-relative align-self-start" data-aos="fade-up" data-aos-delay="200">
-            <img src="${pageContext.request.contextPath}/assets/img/about.jpg" class="img-fluid" alt="">
-            <a href="https://www.youtube.com/watch?v=Y7f98aduVJ8" class="glightbox pulsating-play-btn"></a>
+            <img src="${pageContext.request.contextPath}/assets/img/about.jpg" class="img-fluid rounded shadow" alt="VisionCare Clinic">
           </div>
 
           <div class="col-lg-6 content" data-aos="fade-up" data-aos-delay="100">
@@ -159,7 +158,7 @@
           <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
             <i class="fa-solid fa-user-doctor"></i>
             <div class="stats-item">
-              <span data-purecounter-start="0" data-purecounter-end="85" data-purecounter-duration="1" class="purecounter"></span>
+              <span data-purecounter-start="0" data-purecounter-end="${fn:length(doctors)}" data-purecounter-duration="1" class="purecounter"></span>
               <p>Bác sĩ</p>
             </div>
           </div><!-- End Stats Item -->
@@ -167,15 +166,15 @@
           <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
             <i class="fa-regular fa-hospital"></i>
             <div class="stats-item">
-              <span data-purecounter-start="0" data-purecounter-end="18" data-purecounter-duration="1" class="purecounter"></span>
+              <span data-purecounter-start="0" data-purecounter-end="${fn:length(catalogServices)}" data-purecounter-duration="1" class="purecounter"></span>
               <p>Chuyên khoa</p>
             </div>
           </div><!-- End Stats Item -->
 
           <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
-            <i class="fas fa-flask"></i>
+            <i class="fas fa-calendar-check"></i>
             <div class="stats-item">
-              <span data-purecounter-start="0" data-purecounter-end="12" data-purecounter-duration="1" class="purecounter"></span>
+              <span data-purecounter-start="0" data-purecounter-end="${fn:length(doctors) * 12}" data-purecounter-duration="1" class="purecounter"></span>
               <p>Ca khám / ngày</p>
             </div>
           </div><!-- End Stats Item -->
@@ -183,8 +182,8 @@
           <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
             <i class="fas fa-award"></i>
             <div class="stats-item">
-              <span data-purecounter-start="0" data-purecounter-end="150" data-purecounter-duration="1" class="purecounter"></span>
-              <p>Năm kinh nghiệm</p>
+              <span data-purecounter-start="0" data-purecounter-end="15" data-purecounter-duration="1" class="purecounter"></span>
+              <p>Năm hoạt động</p>
             </div>
           </div><!-- End Stats Item -->
 
