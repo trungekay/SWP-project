@@ -7,6 +7,7 @@
   <jsp:param name="pageDescription" value="Đổi mật khẩu tài khoản VisionCare" />
   <jsp:param name="bodyClass" value="starter-page-page" />
   <jsp:param name="activeNav" value="" />
+  <jsp:param name="hideHeaderForAdmin" value="true" />
 </jsp:include>
 
   <style>
@@ -44,16 +45,7 @@
   <main class="main bg-light pb-5">
 
     <div class="page-title">
-      <div class="heading">
-        <div class="container">
-          <div class="row d-flex justify-content-center text-center">
-            <div class="col-lg-8">
-              <h1>Đổi mật khẩu</h1>
-              <p class="mb-0">Bảo mật tài khoản của bạn bằng mật khẩu mạnh.</p>
-            </div>
-          </div>
-        </div>
-      </div>
+
       <nav class="breadcrumbs">
         <div class="container">
           <ol>
@@ -74,22 +66,33 @@
                 <span class="badge bg-light text-dark rounded-pill border px-3 py-1">Avatar</span>
               </div>
               <h4 class="fw-bold" style="color: #1c355e;">${not empty sessionScope.user.fullName ? sessionScope.user.fullName : 'Nguyễn Văn A'}</h4>
-              <p class="text-muted small">Bệnh nhân</p>
+              <p class="text-muted small">
+                <c:choose>
+                    <c:when test="${sessionScope.user.role == 'admin'}">Super Admin</c:when>
+                    <c:when test="${sessionScope.user.role == 'manager'}">Manager</c:when>
+                    <c:when test="${sessionScope.user.role == 'doctor'}">Bác sĩ</c:when>
+                    <c:when test="${sessionScope.user.role == 'medical_specialist'}">Bác sĩ Chuyên khoa</c:when>
+                    <c:when test="${sessionScope.user.role == 'staff'}">Nhân viên</c:when>
+                    <c:otherwise>Bệnh nhân</c:otherwise>
+                </c:choose>
+              </p>
               
               <hr class="mt-4 mb-0">
               <ul class="nav nav-pills flex-column text-start" id="profile-nav">
                 <li class="nav-item">
                   <a class="nav-link py-3 text-dark" href="${pageContext.request.contextPath}/views/profile/manage.jsp"><i class="bi bi-person me-3 text-muted"></i> Thông tin chung</a>
                 </li>
-                <li class="nav-item">
-                  <a class="nav-link py-3 text-dark" href="${pageContext.request.contextPath}/views/profile/appointment-history.jsp"><i class="bi bi-calendar-check me-3 text-muted"></i> Lịch sử hẹn khám</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link py-3 text-dark" href="${pageContext.request.contextPath}/views/profile/medical-history.jsp"><i class="bi bi-journal-medical me-3 text-muted"></i> Hồ sơ y tế & Thanh toán</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link py-3 text-dark" href="${pageContext.request.contextPath}/views/profile/refund-request.jsp"><i class="bi bi-cash-coin me-3 text-muted"></i> Yêu cầu hoàn tiền</a>
-                </li>
+                <c:if test="${sessionScope.user.role == 'patient'}">
+                    <li class="nav-item">
+                    <a class="nav-link py-3 text-dark" href="${pageContext.request.contextPath}/views/profile/appointment-history.jsp"><i class="bi bi-calendar-check me-3 text-muted"></i> Lịch sử hẹn khám</a>
+                    </li>
+                    <li class="nav-item">
+                    <a class="nav-link py-3 text-dark" href="${pageContext.request.contextPath}/views/profile/medical-history.jsp"><i class="bi bi-journal-medical me-3 text-muted"></i> Hồ sơ y tế & Thanh toán</a>
+                    </li>
+                    <li class="nav-item">
+                    <a class="nav-link py-3 text-dark" href="${pageContext.request.contextPath}/views/profile/refund-request.jsp"><i class="bi bi-cash-coin me-3 text-muted"></i> Yêu cầu hoàn tiền</a>
+                    </li>
+                </c:if>
                 <li class="nav-item">
                   <a class="nav-link active py-3" style="background: transparent; color: #0d9488; font-weight: 500;" href="${pageContext.request.contextPath}/views/profile/change-password.jsp"><i class="bi bi-key me-3"></i> Đổi mật khẩu</a>
                 </li>
