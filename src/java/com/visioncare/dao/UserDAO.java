@@ -301,6 +301,53 @@ public class UserDAO {
         }
     }
 
+    public boolean updatePassword(int accountId, String newPassword) throws Exception {
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement("UPDATE Account SET Password = ? WHERE Account_ID = ?")) {
+            ps.setString(1, newPassword);
+            ps.setInt(2, accountId);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    public boolean updateProfile(User user) throws Exception {
+        try (Connection conn = DBContext.getConnection()) {
+            String table;
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT CASE WHEN EXISTS (SELECT 1 FROM Patient WHERE Account_ID = ?) " +
+                    "THEN 'Patient' ELSE 'Employee_Profile' END")) {
+                ps.setInt(1, user.getId());
+                try (ResultSet rs = ps.executeQuery()) {
+                    rs.next();
+                    table = rs.getString(1);
+                }
+            }
+            if ("Patient".equals(table)) {
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "UPDATE Patient SET Full_Name = ?, Phone = ?, DOB = ?, Address = ? WHERE Account_ID = ?")) {
+                    ps.setString(1, user.getFullName());
+                    ps.setString(2, user.getPhone());
+                    if (user.getDob() != null && !user.getDob().isEmpty()) {
+                        ps.setDate(3, java.sql.Date.valueOf(user.getDob()));
+                    } else {
+                        ps.setNull(3, java.sql.Types.DATE);
+                    }
+                    ps.setString(4, user.getAddress());
+                    ps.setInt(5, user.getId());
+                    return ps.executeUpdate() > 0;
+                }
+            } else {
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "UPDATE Employee_Profile SET Full_Name = ?, Phone = ? WHERE Account_ID = ?")) {
+                    ps.setString(1, user.getFullName());
+                    ps.setString(2, user.getPhone());
+                    ps.setInt(3, user.getId());
+                    return ps.executeUpdate() > 0;
+                }
+            }
+        }
+    }
+
     public boolean deleteUser(int accountId) throws Exception {
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
