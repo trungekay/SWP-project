@@ -160,20 +160,36 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td class="py-3 fw-bold">#REF-001</td>
-                      <td class="py-3">#INV-00123</td>
-                      <td class="py-3 text-danger fw-bold">1,250,000 đ</td>
-                      <td class="py-3 text-truncate" style="max-width: 150px;">Hủy lịch khám do bận việc đột xuất</td>
-                      <td class="py-3"><span class="badge-warning-custom">Đang xử lý</span></td>
-                    </tr>
-                    <tr>
-                      <td class="py-3 fw-bold">#REF-002</td>
-                      <td class="py-3">#INV-00085</td>
-                      <td class="py-3 text-danger fw-bold">350,000 đ</td>
-                      <td class="py-3 text-truncate" style="max-width: 150px;">Bác sĩ dời lịch</td>
-                      <td class="py-3"><span class="badge-success-custom">Đã hoàn tiền</span></td>
-                    </tr>
+                    <c:choose>
+                      <c:when test="${not empty refunds}">
+                        <c:forEach var="refund" items="${refunds}">
+                          <tr>
+                            <td class="py-3 fw-bold">#REF-${refund.id}</td>
+                            <td class="py-3">#INV-${refund.invoiceId}</td>
+                            <td class="py-3 text-danger fw-bold">${refund.amount} đ</td>
+                            <td class="py-3 text-truncate" style="max-width: 150px;">${refund.reason}</td>
+                            <td class="py-3">
+                              <c:choose>
+                                <c:when test="${refund.status == 'Đang chờ'}">
+                                  <span class="badge-warning-custom">${refund.status}</span>
+                                </c:when>
+                                <c:when test="${refund.status == 'Đã hoàn tiền'}">
+                                  <span class="badge-success-custom">${refund.status}</span>
+                                </c:when>
+                                <c:otherwise>
+                                  <span class="badge-danger-custom">${refund.status}</span>
+                                </c:otherwise>
+                              </c:choose>
+                            </td>
+                          </tr>
+                        </c:forEach>
+                      </c:when>
+                      <c:otherwise>
+                        <tr>
+                          <td colspan="5" class="text-center py-4 text-muted">Chưa có dữ liệu</td>
+                        </tr>
+                      </c:otherwise>
+                    </c:choose>
                   </tbody>
                 </table>
               </div>
