@@ -23,59 +23,72 @@
       <c:remove var="errorMessage" scope="session" />
     </c:if>
 
-    <!-- Top Card: Profile & Context -->
-    <div class="register-header-card">
-      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-        
-        <!-- Left: User Info -->
-        <div class="d-flex align-items-center gap-3">
-          <div class="avatar-badge">
-            <i class="bi bi-calendar-plus-fill fs-3"></i>
-          </div>
-          <div>
-            <div class="d-flex align-items-center flex-wrap">
-              <h5 class="mb-0 fw-bold text-dark">
-                Đăng ký lịch: <c:out value="${actorProfile.fullName != null ? actorProfile.fullName : 'Nhân sự'}" />
-              </h5>
-              <span class="badge-code">
-                <c:choose>
-                  <c:when test="${actorProfile.role == 'doctor'}">Bác sĩ</c:when>
-                  <c:when test="${actorProfile.role == 'medical_specialist'}">Chuyên viên khúc xạ</c:when>
-                  <c:otherwise>Nhân viên</c:otherwise>
-                </c:choose>
-              </span>
-            </div>
-            <div class="text-muted small mt-1">
-              <i class="bi bi-info-circle me-1"></i>Tích chọn các khung giờ 30 phút bạn có thể làm việc trong tuần này.
-            </div>
-          </div>
-        </div>
-
-        <!-- Right: Stats -->
-        <div class="d-flex align-items-center flex-wrap gap-2">
-          <div>
-            <div class="stat-label text-md-end">Đã có sẵn</div>
-            <div class="stat-value text-md-end text-teal" style="color: var(--vc-primary);">${registeredCount} ca</div>
-          </div>
-          <div class="stat-divider d-none d-sm-block"></div>
-          <div>
-            <div class="stat-label text-md-end">Đang chọn thêm</div>
-            <div class="stat-value text-md-end text-primary" id="headerSelectedCount">0 ca</div>
-          </div>
-          <div class="stat-divider d-none d-sm-block"></div>
-          <div>
-            <div class="stat-label text-md-end">Tổng giờ dự kiến</div>
-            <div class="stat-value text-md-end" id="headerTotalHours">${registeredHours} giờ</div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
     <!-- Form Submit Lịch Làm Việc -->
     <form id="registerScheduleForm" method="POST" action="${pageContext.request.contextPath}/employee/register-schedule">
       <input type="hidden" name="year" value="${selectedYear}">
       <input type="hidden" name="week" value="${selectedWeek}">
+
+      <!-- Top Card: Profile, Stats & Actions -->
+      <div class="register-header-card">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+          
+          <!-- Left: User Info & Quy định -->
+          <div class="d-flex align-items-center gap-3">
+            <div class="avatar-badge">
+              <i class="bi bi-calendar-plus-fill fs-3"></i>
+            </div>
+            <div>
+              <div class="d-flex align-items-center flex-wrap">
+                <h5 class="mb-0 fw-bold text-dark">
+                  Đăng ký lịch: <c:out value="${actorProfile.fullName != null ? actorProfile.fullName : 'Nhân sự'}" />
+                </h5>
+                <span class="badge-code ms-2">
+                  <c:choose>
+                    <c:when test="${actorProfile.role == 'doctor'}">Bác sĩ</c:when>
+                    <c:when test="${actorProfile.role == 'medical_specialist'}">Chuyên viên khúc xạ</c:when>
+                    <c:otherwise>Nhân viên</c:otherwise>
+                  </c:choose>
+                </span>
+              </div>
+              <div class="text-muted small mt-1">
+                <i class="bi bi-info-circle me-1"></i><strong>Quy định:</strong> Đăng ký tối thiểu <strong>30.0 giờ / tuần</strong> (tương đương 60 ca)
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Stats & Submit Action Buttons -->
+          <div class="d-flex align-items-center flex-wrap gap-2">
+            <div>
+              <div class="stat-label text-lg-end">Đã có sẵn</div>
+              <div class="stat-value text-lg-end text-teal" style="color: var(--vc-primary);">${registeredCount} ca</div>
+            </div>
+            <div class="stat-divider d-none d-sm-block"></div>
+            <div>
+              <div class="stat-label text-lg-end">Đang chọn thêm</div>
+              <div class="stat-value text-lg-end text-primary" id="headerSelectedCount">0 ca</div>
+            </div>
+            <div class="stat-divider d-none d-sm-block"></div>
+            <div>
+              <div class="stat-label text-lg-end">Tổng giờ dự kiến</div>
+              <div class="stat-value text-lg-end" id="headerTotalHours">${registeredHours} giờ</div>
+            </div>
+            <div class="stat-divider d-none d-md-block"></div>
+
+            <!-- Actions -->
+            <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+              <a href="${pageContext.request.contextPath}/employee/schedule?year=${selectedYear}&week=${selectedWeek}" 
+                 class="btn btn-outline-secondary btn-sm px-3 py-2 fw-semibold rounded-pill">
+                <i class="bi bi-arrow-left me-1"></i> Xem lịch
+              </a>
+
+              <button type="submit" id="btnSubmitSchedule" class="btn-submit-schedule btn-sm px-3 py-2 rounded-pill" disabled>
+                <i class="bi bi-check-circle-fill"></i> Xác nhận đăng ký
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
 
       <!-- Toolbar: Chọn Tuần & Công cụ Chọn Nhanh -->
       <div class="register-toolbar">
@@ -83,7 +96,7 @@
         <!-- Left: Year & Week Selector -->
         <div class="week-selector-group">
           <!-- Dropdown Năm -->
-          <select id="yearSelect" class="form-select select-year-dropdown" onchange="changeWeekOrYear()">
+          <select id="yearSelect" class="select-year-dropdown" onchange="changeWeekOrYear()">
             <c:forEach var="yr" items="${availableYears}">
               <option value="${yr}" ${yr == selectedYear ? 'selected' : ''}>Năm ${yr}</option>
             </c:forEach>
@@ -105,7 +118,7 @@
           </c:choose>
 
           <!-- Dropdown Chọn Tuần -->
-          <select id="weekSelect" class="form-select select-week-dropdown" onchange="changeWeekOrYear()">
+          <select id="weekSelect" class="select-week-dropdown" onchange="changeWeekOrYear()">
             <c:forEach var="w" items="${weekOptions}">
               <option value="${w.weekNumber}" ${w.weekNumber == selectedWeek ? 'selected' : ''}>
                 ${w.label}
@@ -155,20 +168,20 @@
             <thead>
               <tr>
                 <th class="col-day-header">Thứ / Ngày</th>
+                <th class="col-select-all-header text-center">Cả ngày</th>
                 <c:forEach var="slot" items="${slots}">
                   <th class="col-slot-header">
                     <div>${slot.id}</div>
                     <span class="time-sub">${slot.timeRange}</span>
                   </th>
                 </c:forEach>
-                <th class="col-action-header text-center">Chọn ngày</th>
               </tr>
             </thead>
             <tbody>
               <c:forEach var="day" items="${weekDays}">
                 <tr class="${day.today ? 'row-today' : ''}">
                   
-                  <!-- Cột Ngày Trong Tuần -->
+                  <!-- Cột 1: Ngày Trong Tuần -->
                   <td class="day-cell">
                     <div class="d-flex align-items-center flex-wrap">
                       <span class="day-name">${day.dayName}</span>
@@ -177,6 +190,20 @@
                     <c:if test="${day.today}">
                       <span class="today-badge">Hôm nay</span>
                     </c:if>
+                  </td>
+
+                  <!-- Cột 2: Nút Chọn Cả Ngày -->
+                  <td class="text-center select-all-cell">
+                    <c:choose>
+                      <c:when test="${day.past}">
+                        <span class="text-muted small">-</span>
+                      </c:when>
+                      <c:otherwise>
+                        <button type="button" class="btn-select-day" onclick="toggleDay('${day.fullDate}')" title="Chọn / Bỏ chọn tất cả ca trong ngày">
+                          Tất cả
+                        </button>
+                      </c:otherwise>
+                    </c:choose>
                   </td>
 
                   <!-- 14 Cột Slot 30 phút -->
@@ -223,53 +250,10 @@
                     </td>
                   </c:forEach>
 
-                  <!-- Cột Nút Chọn Nhanh Cả Ngày -->
-                  <td class="text-center">
-                    <c:choose>
-                      <c:when test="${day.past}">
-                        <span class="text-muted small">-</span>
-                      </c:when>
-                      <c:otherwise>
-                        <button type="button" class="btn-select-day" onclick="toggleDay('${day.fullDate}')" title="Chọn/Bỏ chọn cả ngày">
-                          Tất cả
-                        </button>
-                      </c:otherwise>
-                    </c:choose>
-                  </td>
-
                 </tr>
               </c:forEach>
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <!-- Sticky Bottom Summary & Submission Bar -->
-      <div class="sticky-submit-bar">
-        <div class="sticky-bar-content">
-          
-          <!-- Left: Count Summary -->
-          <div class="d-flex align-items-center flex-wrap gap-2">
-            <i class="bi bi-calendar-check fs-4 text-teal" style="color: var(--vc-primary);"></i>
-            <div>
-              <span class="fw-bold text-dark">Đã chọn:</span>
-              <span class="selected-count-badge" id="barSelectedCount">0 ca (0.0 giờ)</span>
-              <span class="text-muted small ms-2 d-none d-md-inline">• Tuần ${selectedWeek} / ${selectedYear}</span>
-            </div>
-          </div>
-
-          <!-- Right: Actions -->
-          <div class="d-flex align-items-center gap-2">
-            <a href="${pageContext.request.contextPath}/employee/schedule?year=${selectedYear}&week=${selectedWeek}" 
-               class="btn btn-outline-secondary btn-sm px-3 py-2 fw-semibold rounded-pill">
-              <i class="bi bi-arrow-left me-1"></i> Xem lịch
-            </a>
-
-            <button type="submit" id="btnSubmitSchedule" class="btn-submit-schedule" disabled>
-              <i class="bi bi-check-circle-fill"></i> Xác nhận đăng ký
-            </button>
-          </div>
-
         </div>
       </div>
 
@@ -286,23 +270,37 @@
     window.location.href = "${pageContext.request.contextPath}/employee/register-schedule?year=" + year + "&week=" + week;
   }
 
-  // Cap nhat bo dem so ca da chon
+  // Cap nhat bo dem so ca da chon va kiem tra rang buoc toi thieu 30 gio (60 ca)
   function updateSelectionCount() {
     var checkboxes = document.querySelectorAll('.slot-check-input:checked');
-    var count = checkboxes.length;
-    var hours = (count * 0.5).toFixed(1);
-    var baseHours = ${registeredHours};
-    var totalHours = (baseHours + (count * 0.5)).toFixed(1);
+    var newlyCount = checkboxes.length;
 
-    document.getElementById('headerSelectedCount').innerText = count + " ca";
-    document.getElementById('headerTotalHours').innerText = totalHours + " giờ";
-    document.getElementById('barSelectedCount').innerText = count + " ca (" + hours + " giờ)";
+    var baseCount = ${registeredCount};
+    var baseHours = ${registeredHours};
+
+    var totalCount = baseCount + newlyCount;
+    var totalHours = totalCount * 0.5;
+
+    document.getElementById('headerSelectedCount').innerText = newlyCount + " ca";
+
+    var totalHoursEl = document.getElementById('headerTotalHours');
+    totalHoursEl.innerText = totalHours.toFixed(1) + " giờ";
 
     var submitBtn = document.getElementById('btnSubmitSchedule');
-    if (count > 0) {
-      submitBtn.disabled = false;
-    } else {
+
+    if (totalHours < 30.0) {
+      totalHoursEl.className = "stat-value text-lg-end text-danger";
       submitBtn.disabled = true;
+      submitBtn.title = "Cần đăng ký tối thiểu 30.0 giờ / tuần";
+    } else {
+      totalHoursEl.className = "stat-value text-lg-end text-success";
+      if (newlyCount > 0) {
+        submitBtn.disabled = false;
+        submitBtn.title = "Nhấn để xác nhận đăng ký lịch làm việc";
+      } else {
+        submitBtn.disabled = true;
+        submitBtn.title = "Vui lòng chọn ít nhất một ca mới để đăng ký";
+      }
     }
   }
 
