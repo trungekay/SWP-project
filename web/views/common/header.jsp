@@ -70,48 +70,56 @@
 
             <nav id="navmenu" class="navmenu">
               <ul>
-                <li><a href="${pageContext.request.contextPath}/home"
-                    class="${param.activeNav == 'home' ? 'active' : ''}">Trang chủ</a></li>
-                <li><a href="${pageContext.request.contextPath}/home#about">Giới thiệu</a></li>
-                <li><a href="${pageContext.request.contextPath}/home#services">Dịch vụ</a></li>
-                <li><a href="${pageContext.request.contextPath}/home#doctors"
-                    class="${param.activeNav == 'doctors' ? 'active' : ''}">Bác sĩ</a></li>
-                <li><a href="${pageContext.request.contextPath}/home#contact">Liên hệ</a></li>
-
                 <c:choose>
-                  <c:when test="${not empty sessionScope.user}">
-                    <!-- Admin Dropdown -->
-                    <!-- Employee Dropdown (Doctor, Specialist, Staff, Director) -->
-                    <c:if
-                      test="${sessionScope.user.role == 'doctor' || sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist' || sessionScope.user.role == 'staff' || sessionScope.user.role == 'director'}">
-                      <li class="dropdown">
-                        <a href="#"><span>Nhân viên</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
-                        <ul>
-                          <li><a href="${pageContext.request.contextPath}/employee/schedule">Lịch làm việc</a></li>
-                          <li><a href="${pageContext.request.contextPath}/employee/register-schedule">Đăng ký lịch</a>
-                          </li>
-                        </ul>
-                      </li>
-                    </c:if>
+                  <%-- Cho Patient và Khách vãng lai (Guest) --%>
+                  <c:when test="${empty sessionScope.user || sessionScope.user.role == 'patient'}">
+                    <li><a href="${pageContext.request.contextPath}/home"
+                        class="${param.activeNav == 'home' ? 'active' : ''}">Trang chủ</a></li>
+                    <li><a href="${pageContext.request.contextPath}/home#about">Giới thiệu</a></li>
+                    <li><a href="${pageContext.request.contextPath}/home#services">Dịch vụ</a></li>
+                    <li><a href="${pageContext.request.contextPath}/home#doctors"
+                        class="${param.activeNav == 'doctors' ? 'active' : ''}">Bác sĩ</a></li>
+                    <li><a href="${pageContext.request.contextPath}/home#contact">Liên hệ</a></li>
 
-                    <!-- User Profile Dropdown -->
+                    <c:choose>
+                      <c:when test="${not empty sessionScope.user}">
+                        <!-- Patient Profile Dropdown -->
+                        <li class="dropdown">
+                          <a href="#"><span><i class="bi bi-person-circle me-1"></i>${sessionScope.user.fullName != null ?
+                              sessionScope.user.fullName : 'Tài khoản'}</span> <i
+                              class="bi bi-chevron-down toggle-dropdown"></i></a>
+                          <ul>
+                            <li><a href="${pageContext.request.contextPath}/views/profile/manage.jsp">Hồ sơ cá nhân</a></li>
+                            <li><a href="${pageContext.request.contextPath}/views/profile/change-password.jsp">Đổi mật khẩu</a></li>
+                            <li><a href="${pageContext.request.contextPath}/views/profile/medical-history.jsp">Lịch sử khám bệnh</a></li>
+                            <li><a href="${pageContext.request.contextPath}/logout">Đăng xuất</a></li>
+                          </ul>
+                        </li>
+                      </c:when>
+                      <c:otherwise>
+                        <li><a href="${pageContext.request.contextPath}/login"
+                            class="${param.activeNav == 'login' ? 'active' : ''}">Đăng nhập</a></li>
+                      </c:otherwise>
+                    </c:choose>
+                  </c:when>
+
+                  <%-- Cho các Actor không phải Patient và Guest (Bác sĩ, Chuyên viên, Nhân viên, Giám đốc, Admin) --%>
+                  <c:otherwise>
+                    <!-- Employee Profile Dropdown (Chứa Lịch làm việc, Đăng ký lịch, Hồ sơ...) -->
                     <li class="dropdown">
                       <a href="#"><span><i class="bi bi-person-circle me-1"></i>${sessionScope.user.fullName != null ?
                           sessionScope.user.fullName : 'Tài khoản'}</span> <i
                           class="bi bi-chevron-down toggle-dropdown"></i></a>
                       <ul>
+                        <c:if test="${sessionScope.user.role == 'doctor' || sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist' || sessionScope.user.role == 'staff' || sessionScope.user.role == 'director'}">
+                          <li><a href="${pageContext.request.contextPath}/employee/schedule">Lịch làm việc</a></li>
+                          <li><a href="${pageContext.request.contextPath}/employee/register-schedule">Đăng ký lịch</a></li>
+                        </c:if>
                         <li><a href="${pageContext.request.contextPath}/views/profile/manage.jsp">Hồ sơ cá nhân</a></li>
-                        <li><a href="${pageContext.request.contextPath}/views/profile/change-password.jsp">Đổi mật
-                            khẩu</a></li>
-                        <li><a href="${pageContext.request.contextPath}/views/profile/medical-history.jsp">Lịch sử khám
-                            bệnh</a></li>
+                        <li><a href="${pageContext.request.contextPath}/views/profile/change-password.jsp">Đổi mật khẩu</a></li>
                         <li><a href="${pageContext.request.contextPath}/logout">Đăng xuất</a></li>
                       </ul>
                     </li>
-                  </c:when>
-                  <c:otherwise>
-                    <li><a href="${pageContext.request.contextPath}/login"
-                        class="${param.activeNav == 'login' ? 'active' : ''}">Đăng nhập</a></li>
                   </c:otherwise>
                 </c:choose>
               </ul>

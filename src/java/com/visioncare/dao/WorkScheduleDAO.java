@@ -66,6 +66,34 @@ public class WorkScheduleDAO {
         } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
             sql.append("AND Specialist_Employee_ID = ? ");
         }
+        sql.append("AND Status NOT IN ('Canceled', 'Inactive', 'Disabled', 'Closed') ");
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            ps.setString(1, startDate);
+            ps.setString(2, endDate);
+            if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
+                ps.setInt(3, actorId);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    set.add(rs.getString("Work_Date") + "_" + rs.getString("Slot"));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return set;
+    }
+
+    public Set<String> getClosedSlotKeys(int actorId, String role, String startDate, String endDate) {
+        Set<String> set = new HashSet<>();
+        StringBuilder sql = new StringBuilder("SELECT Work_Date, Slot FROM Work_Schedule WHERE Work_Date BETWEEN ? AND ? ");
+        if ("doctor".equalsIgnoreCase(role)) {
+            sql.append("AND Doctor_Employee_ID = ? ");
+        } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
+            sql.append("AND Specialist_Employee_ID = ? ");
+        }
+        sql.append("AND Status IN ('Canceled', 'Inactive', 'Disabled', 'Closed') ");
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             ps.setString(1, startDate);

@@ -60,6 +60,20 @@ body {
   margin-left: 8px;
 }
 
+.badge-room {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 6px;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .stat-divider {
   border-left: 1px solid #e2e8f0;
   height: 40px;
@@ -451,6 +465,33 @@ body {
   font-size: 11px;
   font-weight: 500;
   cursor: not-allowed;
+}
+
+/* Closed By Admin State (Disabled, Sky Blue) */
+.slot-closed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 48px;
+  border-radius: 8px;
+  background: #e0f2fe;
+  border: 1.5px solid #7dd3fc;
+  color: #0369a1;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: not-allowed;
+  line-height: 1.25;
+}
+
+.slot-closed .slot-title {
+  color: #0369a1;
+}
+
+.slot-closed .slot-sub {
+  color: #0284c7;
+  font-size: 9.5px;
 }
 
 /* Quick Select Day Button */
