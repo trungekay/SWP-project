@@ -1,8 +1,10 @@
 package com.visioncare.controller;
+import com.visioncare.dao.TimeSlotDAO;
 import com.visioncare.dao.WorkScheduleDAO;
 import com.visioncare.model.ScheduleDayDTO;
 import com.visioncare.model.ScheduleRegistrationDTO;
 import com.visioncare.model.ScheduleSlotDTO;
+import com.visioncare.model.TimeSlotConfig;
 import com.visioncare.model.User;
 import com.visioncare.model.WeekOptionDTO;
 import jakarta.servlet.ServletException;
@@ -21,6 +23,7 @@ import java.util.*;
 @WebServlet(name = "EmployeeRegisterScheduleServlet", urlPatterns = {"/employee/register-schedule"})
 public class EmployeeRegisterScheduleServlet extends HttpServlet {
     private final WorkScheduleDAO workScheduleDAO = new WorkScheduleDAO();
+    private final TimeSlotDAO timeSlotDAO = new TimeSlotDAO();
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -153,6 +156,11 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             for (String k : registeredKeys) {
                 registeredMap.put(k, Boolean.TRUE);
             }
+            Set<String> closedKeys = workScheduleDAO.getClosedSlotKeys(actorId, role, startDateStr, endDateStr);
+            Map<String, Boolean> closedMap = new HashMap<>();
+            for (String k : closedKeys) {
+                closedMap.put(k, Boolean.TRUE);
+            }
             boolean hasPrevWeek = true;
             int prevWeek = selectedWeek - 1;
             int prevYear = selectedYear;
@@ -195,8 +203,17 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             request.setAttribute("today", today.format(fullFormatter));
             request.setAttribute("weekDays", weekDays);
             request.setAttribute("slots", slots);
+            Map<String, String> slotStatusMap = new HashMap<>();
+            try {
+                List<TimeSlotConfig> cfgSlots = timeSlotDAO.getConfiguredSlots();
+                for (TimeSlotConfig cfg : cfgSlots) {
+                    slotStatusMap.put(cfg.getSlotName(), cfg.getStatus());
+                }
+            } catch (Exception ignored) {}
             request.setAttribute("registeredKeys", registeredKeys);
             request.setAttribute("registeredMap", registeredMap);
+            request.setAttribute("closedMap", closedMap);
+            request.setAttribute("slotStatusMap", slotStatusMap);
             request.setAttribute("registeredCount", registeredKeys.size());
             request.setAttribute("registeredHours", registeredKeys.size() * 0.5);
             request.getRequestDispatcher("/views/employee/register-schedule.jsp").forward(request, response);
