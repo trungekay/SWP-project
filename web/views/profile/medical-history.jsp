@@ -136,18 +136,23 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td class="py-3">10/09/2026</td>
-                      <td class="py-3">BS. Trần Thị B</td>
-                      <td class="py-3">Khám mắt tổng quát</td>
-                      <td class="py-3"><span class="badge-success-custom">Hoàn thành</span></td>
-                    </tr>
-                    <tr>
-                      <td class="py-3">15/08/2026</td>
-                      <td class="py-3">BS. Lê Văn C</td>
-                      <td class="py-3">Đo khúc xạ</td>
-                      <td class="py-3"><span class="badge-success-custom">Hoàn thành</span></td>
-                    </tr>
+                    <c:choose>
+                      <c:when test="${not empty records}">
+                        <c:forEach var="record" items="${records}">
+                          <tr>
+                            <td class="py-3">${record.date}</td>
+                            <td class="py-3">BS. ${record.doctorName}</td>
+                            <td class="py-3">${record.serviceName}</td>
+                            <td class="py-3"><span class="badge-success-custom">Hoàn thành</span></td>
+                          </tr>
+                        </c:forEach>
+                      </c:when>
+                      <c:otherwise>
+                        <tr>
+                          <td colspan="4" class="text-center py-4 text-muted">Chưa có dữ liệu</td>
+                        </tr>
+                      </c:otherwise>
+                    </c:choose>
                   </tbody>
                 </table>
               </div>
@@ -167,28 +172,28 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td class="py-3">10/09/2026</td>
-                      <td class="py-3">#INV-00123</td>
-                      <td class="py-3">Khám mắt tổng quát, Cắt kính cận</td>
-                      <td class="py-3">1,250,000 VNĐ</td>
-                      <td class="py-3">Chuyển khoản</td>
-                      <td class="py-3"><span class="badge-success-custom">Đã thanh toán</span></td>
-                      <td class="py-3">
-                        <a href="${pageContext.request.contextPath}/views/profile/invoice-detail.jsp" class="btn btn-sm btn-outline-primary" style="color: #0d9488; border-color: #0d9488;"><i class="bi bi-eye"></i> Xem</a>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td class="py-3">15/08/2026</td>
-                      <td class="py-3">#INV-00085</td>
-                      <td class="py-3">Đo khúc xạ, Thuốc nhỏ mắt</td>
-                      <td class="py-3">350,000 VNĐ</td>
-                      <td class="py-3">Tiền mặt</td>
-                      <td class="py-3"><span class="badge-success-custom">Đã thanh toán</span></td>
-                      <td class="py-3">
-                        <a href="${pageContext.request.contextPath}/views/profile/invoice-detail.jsp" class="btn btn-sm btn-outline-primary" style="color: #0d9488; border-color: #0d9488;"><i class="bi bi-eye"></i> Xem</a>
-                      </td>
-                    </tr>
+                    <c:choose>
+                      <c:when test="${not empty invoices}">
+                        <c:forEach var="invoice" items="${invoices}">
+                          <tr>
+                            <td class="py-3">${invoice.date}</td>
+                            <td class="py-3">#INV-${invoice.id}</td>
+                            <td class="py-3">${invoice.description}</td>
+                            <td class="py-3">${invoice.amount} VNĐ</td>
+                            <td class="py-3">${invoice.method}</td>
+                            <td class="py-3"><span class="badge-success-custom">${invoice.status}</span></td>
+                            <td class="py-3">
+                              <a href="${pageContext.request.contextPath}/views/profile/invoice-detail.jsp" class="btn btn-sm btn-outline-primary" style="color: #0d9488; border-color: #0d9488;"><i class="bi bi-eye"></i> Xem</a>
+                            </td>
+                          </tr>
+                        </c:forEach>
+                      </c:when>
+                      <c:otherwise>
+                        <tr>
+                          <td colspan="7" class="text-center py-4 text-muted">Chưa có dữ liệu</td>
+                        </tr>
+                      </c:otherwise>
+                    </c:choose>
                   </tbody>
                 </table>
               </div>
