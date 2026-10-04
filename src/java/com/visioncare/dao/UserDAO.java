@@ -7,7 +7,7 @@ import java.util.List;
 public class UserDAO {
     public User login(String email, String password) throws Exception {
         String sql =
-    "SELECT a.Account_ID, a.Email, r.Role_Name, " +
+    "SELECT a.Account_ID, a.Email, a.Account_Status, r.Role_Name, " +
     "COALESCE(e.Full_Name, p.Full_Name, a.Email) AS Display_Name, " +
     "COALESCE(e.Employee_ID, p.Patient_ID, 0) AS Actor_ID, " +
     "COALESCE(e.Specialty, N'Khúc xạ & Nhãn khoa') AS Specialty_Info, " +
@@ -30,6 +30,7 @@ public class UserDAO {
                     u.setId(rs.getInt("Account_ID"));
                     u.setEmail(rs.getString("Email"));
                     u.setPassword(password);
+                    u.setStatus(rs.getString("Account_Status"));
                     u.setFullName(rs.getString("Display_Name"));
                     u.setActorId(rs.getInt("Actor_ID"));
                     u.setSpecialty(rs.getString("Specialty_Info"));
