@@ -31,17 +31,113 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.05);
             padding: 24px;
         }
+        /* Modern Premium Table Styling with Borders */
+        .table-custom {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #cbd5e1; /* Visible outer border */
+        }
         .table-custom thead {
-            background-color: #0d6efd;
-            color: #fff;
+            background-color: #f0fdf4; /* Modern subtle green */
         }
         .table-custom thead th {
-            color: #fff;
-            font-weight: 600;
-            border-bottom: 2px solid #0a58ca;
+            color: #15803d; /* Crisp green text */
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 16px 24px;
+            border-bottom: 2px solid #dcfce7;
+            border-right: 1px solid #dcfce7; /* Vertical divider */
+            border-top: none;
+        }
+        .table-custom thead th:last-child {
+            border-right: none;
+        }
+        .table-custom tbody td {
+            padding: 18px 24px;
+            vertical-align: middle;
+            color: #334155;
+            font-size: 15px;
+            font-weight: 500;
+            border-bottom: 1px solid #f1f5f9;
+            border-right: 1px solid #f1f5f9; /* Vertical divider */
+        }
+        .table-custom tbody td:last-child {
+            border-right: none;
+        }
+        .table-custom tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .table-custom tbody tr {
+            transition: all 0.2s ease;
         }
         .table-custom tbody tr:hover {
-            background-color: #f8f9fa;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(24, 160, 94, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+        /* Bootstrap 5 applies background to td, so we must change td background on hover */
+        .table-custom tbody tr:hover td {
+            background-color: #18a05e !important; /* Logo green */
+            color: #ffffff !important;
+            border-bottom-color: #12824b !important;
+            border-right-color: #12824b !important;
+        }
+        /* Ensure bold text turns white */
+        .table-custom tbody tr:hover td strong {
+            color: #ffffff !important;
+        }
+        /* Adjust outline buttons to be visible on green background */
+        .table-custom tbody tr:hover .btn-outline-primary {
+            color: #ffffff !important;
+            border-color: #ffffff !important;
+        }
+        .table-custom tbody tr:hover .btn-outline-primary:hover {
+            background-color: #ffffff !important;
+            color: #18a05e !important;
+        }
+        /* Add a small white border to badges so they don't blend in */
+        .table-custom tbody tr:hover .badge {
+            box-shadow: 0 0 0 1px #ffffff;
+        }
+        .table-custom .badge {
+            padding: 8px 12px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            border-radius: 6px;
+        }
+        
+        /* Override Primary Colors to Logo Green */
+        .btn-primary {
+            background-color: #18a05e !important;
+            border-color: #18a05e !important;
+            color: #fff !important;
+        }
+        .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+            background-color: #12824b !important;
+            border-color: #12824b !important;
+            color: #fff !important;
+            box-shadow: 0 4px 12px rgba(24, 160, 94, 0.3) !important;
+        }
+        .btn-outline-primary {
+            color: #18a05e !important;
+            border-color: #18a05e !important;
+        }
+        .btn-outline-primary:hover, .btn-outline-primary:focus, .btn-outline-primary:active {
+            background-color: #18a05e !important;
+            border-color: #18a05e !important;
+            color: #fff !important;
+        }
+        .text-primary {
+            color: #18a05e !important;
+        }
+        .bg-primary {
+            background-color: #18a05e !important;
         }
     </style>
 </head>
@@ -67,7 +163,7 @@
                 <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addRoomModal"><i class="bi bi-plus"></i> Thêm phòng</button>
               </div>
               <div class="table-responsive">
-                <table class="table table-bordered align-middle table-custom">
+                <table class="table align-middle table-custom">
                   <thead>
                     <tr>
                       <th>Số phòng</th>
@@ -181,7 +277,7 @@
                 <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addSlotModal"><i class="bi bi-plus"></i> Thêm khung giờ</button>
               </div>
               <div class="table-responsive">
-                <table class="table table-bordered align-middle table-custom">
+                <table class="table align-middle table-custom">
                   <thead>
                     <tr>
                       <th>Ca</th>
