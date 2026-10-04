@@ -1,1 +1,0 @@
-import com.visioncare.dao.*; import java.util.*; public class TestDAO { public static void main(String[] args) { try { new DoctorDAO().getAll(); System.out.println("DoctorDAO OK"); new CatalogDAO().listServices(); System.out.println("CatalogDAO OK"); } catch(Exception e) { e.printStackTrace(); } } }
