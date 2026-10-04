@@ -48,6 +48,8 @@ public class ProfileServlet extends HttpServlet {
             }
             return;
         }
+
+
         String fullName = request.getParameter("fullName");
         String phone = request.getParameter("phone");
         String dob = request.getParameter("dob");
@@ -57,8 +59,11 @@ public class ProfileServlet extends HttpServlet {
             currentUser.setPhone(phone);
             currentUser.setDob(dob);
             currentUser.setAddress(address);
+            
             userDAO.updateProfile(currentUser);
+            
             session.setAttribute("user", currentUser);
+            
             request.getSession().setAttribute("success", "Cập nhật hồ sơ thành công!");
             response.sendRedirect(request.getContextPath() + "/views/profile/manage.jsp");
         } catch (Exception e) {

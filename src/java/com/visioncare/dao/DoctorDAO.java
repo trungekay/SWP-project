@@ -16,6 +16,19 @@ public class DoctorDAO {
         }
         return list;
     }
+    public List<Doctor> getSpecialists() throws Exception {
+        List<Doctor> list = new ArrayList<>();
+        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 4 ORDER BY e.Employee_ID";
+        try (Connection conn = DBContext.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(mapRow(rs));
+            }
+        }
+        return list;
+    }
+
     public Doctor getById(int id) throws Exception {
         String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 3 AND e.Employee_ID = ?";
         try (Connection conn = DBContext.getConnection();
@@ -92,7 +105,7 @@ public class DoctorDAO {
                               "<li>Đã thực hiện thành công hơn 5,000 ca phẫu thuật/điều trị phức tạp</li>" +
                               "</ul>");
         }
-        
+
         int imgId = (rs.getInt("Employee_ID") % 4) + 1;
         d.setImage("doctors/doctors-" + imgId + ".jpg");
         d.setRating(5.0);

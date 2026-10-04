@@ -2,6 +2,7 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <%-- Include Header --%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <jsp:include page="/views/common/header.jsp">
   <jsp:param name="pageTitle" value="Quên mật khẩu" />
   <jsp:param name="pageDescription" value="Khôi phục mật khẩu tài khoản VisionCare" />
@@ -71,7 +72,14 @@
               <p class="text-muted mb-4">Nhập email của bạn, chúng tôi sẽ gửi liên kết để đặt lại mật khẩu.</p>
             </div>
 
-            <form method="post" action="${pageContext.request.contextPath}/views/auth/verify-otp.jsp">
+            <c:if test="${not empty error}">
+              <div class="alert alert-danger alert-dismissible fade show small" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>${error}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            </c:if>
+
+            <form method="post" action="${pageContext.request.contextPath}/forgot-password">
               <div class="mb-4">
                 <label for="email" class="form-label fw-bold">Email đăng ký</label>
                 <div class="input-group">

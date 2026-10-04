@@ -34,6 +34,7 @@ public class RoomDAO {
             return -1;
         }
     }
+
     public boolean deleteRoom(int roomId) throws Exception {
         String sql = "DELETE FROM Room WHERE Room_ID = ?";
         try (Connection conn = DBContext.getConnection();

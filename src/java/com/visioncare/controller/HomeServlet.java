@@ -37,7 +37,7 @@ public class HomeServlet extends HttpServlet {
             request.getRequestDispatcher("/views/home/index.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("error", "CÃ³ lá»—i xáº£y ra: " + e.getMessage());
+            request.setAttribute("error", "Có lỗi xảy ra: " + e.getMessage());
             request.getRequestDispatcher("/views/error/500.jsp").forward(request, response);
         }
     }

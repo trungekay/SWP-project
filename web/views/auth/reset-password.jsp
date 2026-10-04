@@ -2,9 +2,10 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <%-- Include Header --%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <jsp:include page="/views/common/header.jsp">
-  <jsp:param name="pageTitle" value="Đặt lại mật khẩu" />
-  <jsp:param name="pageDescription" value="Đặt lại mật khẩu tài khoản VisionCare" />
+  <jsp:param name="pageTitle" value="Quên mật khẩu" />
+  <jsp:param name="pageDescription" value="Khôi phục mật khẩu tài khoản VisionCare" />
   <jsp:param name="bodyClass" value="starter-page-page" />
   <jsp:param name="activeNav" value="login" />
 </jsp:include>
@@ -54,7 +55,7 @@
         <div class="container">
           <div class="row d-flex justify-content-center text-center">
             <div class="col-lg-8">
-              <h1>Đặt lại mật khẩu mới</h1>
+              <h1>Đặt lại mật khẩu</h1>
             </div>
           </div>
         </div>
@@ -66,25 +67,29 @@
         <div class="auth-container">
           <div class="auth-card">
             <div class="text-center">
-              <div class="logo-icon"><i class="bi bi-shield-lock"></i></div>
+              <div class="logo-icon"><i class="bi bi-key"></i></div>
               <h3 class="mb-2" style="color: #0d9488;">Mật khẩu mới</h3>
-              <p class="text-muted mb-4">Nhập mật khẩu mới cho tài khoản của bạn.</p>
+              <p class="text-muted mb-4">Vui lòng nhập mật khẩu mới cho tài khoản của bạn.</p>
             </div>
 
-            <form method="post" action="${pageContext.request.contextPath}/reset-password">
-              <input type="hidden" name="token" value="${param.token}">
-              
+            <c:if test="${not empty error}">
+              <div class="alert alert-danger alert-dismissible fade show small" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>${error}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            </c:if>
+
+            <form method="post" action="${pageContext.request.contextPath}/forgot-password/reset">
               <div class="mb-3">
-                <label class="form-label fw-bold">Mật khẩu mới</label>
+                <label for="newPassword" class="form-label fw-bold">Mật khẩu mới</label>
                 <div class="input-group">
-                  <input type="password" class="form-control" name="newPassword" required placeholder="Nhập mật khẩu mới">
+                  <input type="password" class="form-control" id="newPassword" name="newPassword" required placeholder="Nhập mật khẩu mới...">
                 </div>
               </div>
-
               <div class="mb-4">
-                <label class="form-label fw-bold">Xác nhận mật khẩu</label>
+                <label for="confirmPassword" class="form-label fw-bold">Xác nhận mật khẩu</label>
                 <div class="input-group">
-                  <input type="password" class="form-control" name="confirmPassword" required placeholder="Nhập lại mật khẩu mới">
+                  <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required placeholder="Nhập lại mật khẩu mới...">
                 </div>
               </div>
 
@@ -92,6 +97,10 @@
                 Xác nhận
               </button>
             </form>
+
+            <div class="text-center mt-3">
+              <a href="${pageContext.request.contextPath}/login" class="text-decoration-none" style="color: #6c757d;"><i class="bi bi-arrow-left me-1"></i>Quay lại Đăng nhập</a>
+            </div>
 
           </div>
         </div>

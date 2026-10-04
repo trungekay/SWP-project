@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.sql.Date;
 import java.util.List;
 import jakarta.servlet.annotation.WebServlet;
+
 @WebServlet(name = "BookAppointmentServlet", urlPatterns = {"/book-appointment"})
 public class BookAppointmentServlet extends HttpServlet {
     private final DoctorDAO doctorDAO = new DoctorDAO();
@@ -38,7 +39,7 @@ public class BookAppointmentServlet extends HttpServlet {
             request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("error", "CÃ³ lá»—i xáº£y ra: " + e.getMessage());
+            request.setAttribute("error", "Có lỗi xảy ra: " + e.getMessage());
             request.getRequestDispatcher("/views/error/500.jsp").forward(request, response);
         }
     }
@@ -54,10 +55,14 @@ public class BookAppointmentServlet extends HttpServlet {
             appointment.setPayment(request.getParameter("payment"));
             appointment.setReason(request.getParameter("visitReason"));
             appointment.setStatus("pending");
+
+            // Parse doctor ID
             String doctorIdStr = request.getParameter("doctorId");
             if (doctorIdStr != null && !doctorIdStr.isEmpty()) {
                 appointment.setDoctorId(Integer.parseInt(doctorIdStr));
             }
+
+            // Parse dates
             String dateStr = request.getParameter("appointmentDate");
             if (dateStr != null && !dateStr.isEmpty()) {
                 appointment.setAppointmentDate(Date.valueOf(dateStr));
@@ -67,33 +72,36 @@ public class BookAppointmentServlet extends HttpServlet {
                 appointment.setDob(Date.valueOf(dobStr));
             }
             appointment.setTimeSlot(request.getParameter("timeSlot"));
+
             HttpSession session = request.getSession(false);
             if (session != null && session.getAttribute("user") != null) {
                 User user = (User) session.getAttribute("user");
                 appointment.setUserId(user.getId());
             }
+
             boolean alreadyBooked = appointmentDAO.isSlotBooked(
                     appointment.getDoctorId(),
                     appointment.getAppointmentDate(),
                     appointment.getTimeSlot()
             );
             if (alreadyBooked) {
-                request.setAttribute("error", "Khung giá» nÃ y Ä‘Ã£ Ä‘Æ°á»£c Ä‘áº·t. Vui lÃ²ng chá»n khung giá» khÃ¡c.");
+                request.setAttribute("error", "Khung giờ này đã được đặt. Vui lòng chọn khung giờ khác.");
                 doGet(request, response);
                 return;
             }
+
             int newId = appointmentDAO.create(appointment);
             if (newId > 0) {
                 request.setAttribute("success", true);
                 request.setAttribute("appointmentId", newId);
                 request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);
             } else {
-                request.setAttribute("error", "KhÃ´ng thá»ƒ Ä‘áº·t lá»‹ch. Vui lÃ²ng thá»­ láº¡i.");
+                request.setAttribute("error", "Không thể đặt lịch. Vui lòng thử lại.");
                 doGet(request, response);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("error", "CÃ³ lá»—i xáº£y ra: " + e.getMessage());
+            request.setAttribute("error", "Có lỗi xảy ra: " + e.getMessage());
             doGet(request, response);
         }
     }

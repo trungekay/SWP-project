@@ -39,6 +39,7 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
             e.printStackTrace();
             request.getSession().setAttribute("errorMsg", "Lỗi cấu hình Slot: " + e.getMessage());
         }
+
         response.sendRedirect(request.getContextPath() + "/admin/clinic-config");
     }
 }

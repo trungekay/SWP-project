@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 public class ServiceDAO {
+    
     public List<Service> getAllServices() throws Exception {
         List<Service> services = new ArrayList<>();
         String sql = "SELECT Service_ID, Service_Name, Actual_Price AS Price FROM Service ORDER BY Service_Name ASC";
