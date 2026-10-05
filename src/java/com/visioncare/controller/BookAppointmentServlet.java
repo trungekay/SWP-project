@@ -72,6 +72,14 @@ public class BookAppointmentServlet extends HttpServlet {
             }
             String dobStr = request.getParameter("patientDob");
             if (dobStr != null && !dobStr.isEmpty()) {
+                dobStr = dobStr.trim();
+                if (dobStr.matches("\\d{2}/\\d{2}/\\d{4}")) {
+                    String[] parts = dobStr.split("/");
+                    dobStr = parts[2] + "-" + parts[1] + "-" + parts[0];
+                } else if (dobStr.matches("\\d{2}-\\d{2}-\\d{4}")) {
+                    String[] parts = dobStr.split("-");
+                    dobStr = parts[2] + "-" + parts[1] + "-" + parts[0];
+                }
                 appointment.setDob(Date.valueOf(dobStr));
             }
             appointment.setTimeSlot(request.getParameter("timeSlot"));

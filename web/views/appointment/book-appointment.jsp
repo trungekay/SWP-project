@@ -253,7 +253,7 @@
                     </div>
                     <div class="col-md-6">
                       <label class="form-label" for="patientDob">Ngày sinh</label>
-                      <input type="date" class="form-control" id="patientDob" name="patientDob" required>
+                      <input type="text" class="form-control" id="patientDob" name="patientDob" placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Nhập ngày sinh theo định dạng dd/mm/yyyy" required>
                     </div>
                     <div class="col-12">
                       <label class="form-label" for="visitReason">Lý do khám / Triệu chứng mắt (tùy chọn)</label>
