@@ -63,6 +63,7 @@ public class Appointment {
     public void setDoctorName(String doctorName) {
         this.doctorName = doctorName;
     }
+
     public Date getAppointmentDate() {
         return appointmentDate;
     }

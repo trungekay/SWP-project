@@ -167,7 +167,7 @@
                             <td class="py-3 fw-bold">#REF-${refund.id}</td>
                             <td class="py-3">#INV-${refund.invoiceId}</td>
                             <td class="py-3 text-danger fw-bold">${refund.amount} đ</td>
-                            <td class="py-3 text-truncate" style="max-width: 150px;">${refund.reason}</td>
+                            <td class="py-3">${refund.reason}</td>
                             <td class="py-3">
                               <c:choose>
                                 <c:when test="${refund.status == 'Đang chờ'}">
