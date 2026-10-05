@@ -295,10 +295,21 @@
 
           <%-- Render bác sĩ từ database (Sử dụng cấu trúc Card hiện đại) --%>
           <c:forEach var="doc" items="${doctors}" varStatus="loop">
+            <c:choose>
+              <c:when test="${not empty doc.image && (fn:startsWith(doc.image, 'http') || fn:startsWith(doc.image, '/'))}">
+                <c:set var="docImgUrl" value="${doc.image}" />
+              </c:when>
+              <c:when test="${not empty doc.image && fn:startsWith(doc.image, 'assets/')}">
+                <c:set var="docImgUrl" value="${pageContext.request.contextPath}/${doc.image}" />
+              </c:when>
+              <c:otherwise>
+                <c:set var="docImgUrl" value="${pageContext.request.contextPath}/assets/img/${not empty doc.image ? doc.image : 'doctors/doctors-1.jpg'}" />
+              </c:otherwise>
+            </c:choose>
             <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="${(loop.index + 1) * 100}">
               <div class="card doctor-card border-0 shadow-sm h-100 text-center">
                 <div class="card-img-top overflow-hidden mt-4 mx-auto" style="width: 180px; height: 180px; border-radius: 50%; box-shadow: 0px 4px 10px rgba(0,0,0,0.1);">
-                  <img src="${pageContext.request.contextPath}/assets/img/${not empty doc.image ? doc.image : 'doctors/doctors-1.jpg'}" class="img-fluid w-100 h-100" style="object-fit: cover;" alt="${doc.name}">
+                  <img src="${docImgUrl}" class="img-fluid w-100 h-100" style="object-fit: cover; object-position: top center;" alt="${doc.name}">
                 </div>
                 <div class="card-body p-4">
                   <h4 class="card-title fw-bold mb-1" style="color: var(--heading-color);">${doc.name}</h4>
@@ -322,7 +333,7 @@
                   <div class="modal-body p-4 pt-0">
                     <div class="row">
                       <div class="col-md-4 text-center border-end">
-                        <img src="${pageContext.request.contextPath}/assets/img/${not empty doc.image ? doc.image : 'doctors/doctors-1.jpg'}" class="img-fluid rounded-circle shadow-sm mb-3" style="width: 180px; height: 180px; object-fit: cover;" alt="${doc.name}">
+                        <img src="${docImgUrl}" class="img-fluid rounded-circle shadow-sm mb-3" style="width: 180px; height: 180px; object-fit: cover; object-position: top center;" alt="${doc.name}">
                         <h4 class="fw-bold text-primary mb-1">${doc.name}</h4>
                         <p class="text-muted mb-3"><i class="bi bi-award me-1"></i> ${doc.specialty}</p>
                         <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}" class="btn btn-primary rounded-pill w-100 mt-2">Đặt lịch ngay</a>

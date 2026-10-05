@@ -106,8 +106,32 @@ public class DoctorDAO {
                               "</ul>");
         }
 
-        int imgId = (rs.getInt("Employee_ID") % 4) + 1;
-        d.setImage("doctors/doctors-" + imgId + ".jpg");
+        String imgPath = null;
+        if (hasColumn(rs, "Avatar") && rs.getString("Avatar") != null && !rs.getString("Avatar").trim().isEmpty()) {
+            imgPath = rs.getString("Avatar").trim();
+        } else if (hasColumn(rs, "Image") && rs.getString("Image") != null && !rs.getString("Image").trim().isEmpty()) {
+            imgPath = rs.getString("Image").trim();
+        }
+        
+        if (imgPath == null) {
+            int empId = rs.getInt("Employee_ID");
+            String lowerName = fullName.toLowerCase();
+            boolean isFemale = lowerName.contains("lan") || lowerName.contains("ngọc") || lowerName.contains("ngoc") 
+                            || lowerName.contains("thị") || lowerName.contains("thi") || lowerName.contains("mai") 
+                            || lowerName.contains("hoa") || lowerName.contains("phương") || lowerName.contains("phuong")
+                            || lowerName.contains("trang") || lowerName.contains("thảo") || lowerName.contains("thao")
+                            || lowerName.contains("linh") || lowerName.contains("hương") || lowerName.contains("huong")
+                            || lowerName.contains("nhung") || lowerName.contains("thủy") || lowerName.contains("thuy")
+                            || lowerName.contains("hằng") || lowerName.contains("hang") || lowerName.contains("yến")
+                            || lowerName.contains("yen") || lowerName.contains("quỳnh") || lowerName.contains("quynh")
+                            || lowerName.contains("chi") || lowerName.contains("vân") || lowerName.contains("van");
+            if (isFemale) {
+                imgPath = (empId % 2 == 0) ? "doctors/doctors-2.jpg" : "doctors/doctors-4.jpg";
+            } else {
+                imgPath = (empId % 2 == 0) ? "doctors/doctors-1.jpg" : "doctors/doctors-3.jpg";
+            }
+        }
+        d.setImage(imgPath);
         d.setRating(5.0);
         if (hasColumn(rs, "Room_ID")) {
             d.setRoomId(rs.getInt("Room_ID"));
