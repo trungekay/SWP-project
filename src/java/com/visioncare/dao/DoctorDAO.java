@@ -123,27 +123,26 @@ public class DoctorDAO {
         }
 
         if (imgPath == null) {
-            // Gán cố định từng ảnh chuẩn theo từng bác sĩ cụ thể
+            // Gán cố định từng ảnh chuẩn độc nhất cho từng bác sĩ (không trùng lặp)
             if (fullName.contains("Trần Văn Nam")) {
                 imgPath = "doctors/doctors-1.jpg";
-            } else if (fullName.contains("Nguyễn Xuân Tịnh")) {
-                imgPath = "doctors/doctors-3.jpg";
             } else if (fullName.contains("Lê Hoàng Lan")) {
                 imgPath = "doctors/doctors-2.jpg";
+            } else if (fullName.contains("Nguyễn Xuân Tịnh")) {
+                imgPath = "doctors/doctors-3.jpg";
             } else if (fullName.contains("Phạm Bảo Ngọc")) {
                 imgPath = "doctors/doctors-4.jpg";
             } else if (fullName.contains("Trần Quang Huy")) {
-                imgPath = "doctors/doctors-1.jpg";
+                imgPath = "doctors/doctors-5.jpg";
             } else if (fullName.contains("Ngô Tiến Dũng")) {
-                imgPath = "doctors/doctors-3.jpg";
+                imgPath = "doctors/doctors-6.jpg";
             } else if (fullName.contains("Lê Văn C")) {
-                imgPath = "doctors/doctors-3.jpg";
+                imgPath = "doctors/doctors-7.jpg";
             } else {
                 // Mặc định cho bác sĩ mới tạo nếu chưa chọn ảnh lúc đăng ký
-                boolean isFemale = fullName.contains("Thi") || fullName.contains("Thị") || fullName.contains("Lan") 
-                                || fullName.contains("Ngọc") || fullName.contains("Mai") || fullName.contains("Hoa") 
-                                || fullName.contains("Phương") || fullName.contains("Trang") || fullName.contains("Linh");
-                imgPath = isFemale ? "doctors/doctors-2.jpg" : "doctors/doctors-1.jpg";
+                int empId = rs.getInt("Employee_ID");
+                int imgIndex = ((empId - 1) % 7) + 1;
+                imgPath = "doctors/doctors-" + imgIndex + ".jpg";
             }
         }
         d.setImage(imgPath);
