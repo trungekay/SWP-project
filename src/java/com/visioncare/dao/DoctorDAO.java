@@ -1,8 +1,10 @@
 package com.visioncare.dao;
+
 import com.visioncare.model.Doctor;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+
 public class DoctorDAO {
     public List<Doctor> getAll() throws Exception {
         List<Doctor> list = new ArrayList<>();
@@ -16,6 +18,7 @@ public class DoctorDAO {
         }
         return list;
     }
+
     public List<Doctor> getSpecialists() throws Exception {
         List<Doctor> list = new ArrayList<>();
         String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 4 ORDER BY e.Employee_ID";
@@ -42,15 +45,17 @@ public class DoctorDAO {
         }
         return null;
     }
+
     public List<Doctor> getByDepartment(String departmentKey) throws Exception {
         return getAll();
     }
+
     public boolean assignDoctorToRoom(int doctorId, int roomId) throws Exception {
         String sql = "UPDATE Employee_Profile SET Room_ID = ? WHERE Employee_ID = ?";
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             if (roomId <= 0) {
-                ps.setNull(1, Types.INTEGER); 
+                ps.setNull(1, Types.INTEGER);
             } else {
                 ps.setInt(1, roomId);
             }
@@ -58,14 +63,16 @@ public class DoctorDAO {
             return ps.executeUpdate() > 0;
         }
     }
+
     public boolean unassignDoctorFromRoom(int roomId) throws Exception {
         String sql = "UPDATE Employee_Profile SET Room_ID = NULL WHERE Room_ID = ?";
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, roomId);
             return ps.executeUpdate() > 0;
         }
     }
+
     private Doctor mapRow(ResultSet rs) throws SQLException {
         Doctor d = new Doctor();
         d.setId(rs.getInt("Employee_ID"));
@@ -81,39 +88,71 @@ public class DoctorDAO {
         else if (fullName.startsWith("BSCKI."))
             title = "Bác sĩ CKI";
         d.setTitle(title);
-        
-        String specialty = hasColumn(rs, "Specialty") && rs.getString("Specialty") != null ? rs.getString("Specialty") : "Khám mắt tổng quát";
+
+        String specialty = hasColumn(rs, "Specialty") && rs.getString("Specialty") != null ? rs.getString("Specialty")
+                : "Khám mắt tổng quát";
         d.setSpecialty(specialty);
         d.setDepartmentKey("general");
         d.setDescription("Bác sĩ chuyên khoa tại phòng khám VisionCare.");
-        
+
         if (hasColumn(rs, "Biography") && rs.getString("Biography") != null) {
             d.setBiography(rs.getString("Biography"));
         } else {
             // Mock data phong phú nếu DB chưa có cột Biography
-            d.setBiography("Bác sĩ " + fullName + " là một trong những chuyên gia hàng đầu trong lĩnh vực " + specialty + ". Với hơn 10 năm kinh nghiệm làm việc tại các bệnh viện lớn trong và ngoài nước, bác sĩ luôn tận tâm và mang đến giải pháp điều trị tối ưu nhất cho từng bệnh nhân.");
+            d.setBiography("Bác sĩ " + fullName + " là một trong những chuyên gia hàng đầu trong lĩnh vực " + specialty
+                    + ". Với hơn 10 năm kinh nghiệm làm việc tại các bệnh viện lớn trong và ngoài nước, bác sĩ luôn tận tâm và mang đến giải pháp điều trị tối ưu nhất cho từng bệnh nhân.");
         }
-        
+
         if (hasColumn(rs, "Achievements") && rs.getString("Achievements") != null) {
             d.setAchievements(rs.getString("Achievements"));
         } else {
             // Mock data phong phú nếu DB chưa có cột Achievements
             d.setAchievements("<ul class='mb-0'>" +
-                              "<li>Tốt nghiệp loại Giỏi Đại học Y Dược TP.HCM</li>" +
-                              "<li>Tu nghiệp chuyên sâu về " + specialty + " tại Singapore (2018)</li>" +
-                              "<li>Thành viên Hội Nhãn khoa Việt Nam</li>" +
-                              "<li>Đã thực hiện thành công hơn 5,000 ca phẫu thuật/điều trị phức tạp</li>" +
-                              "</ul>");
+                    "<li>Tốt nghiệp loại Giỏi Đại học Y Dược TP.HCM</li>" +
+                    "<li>Tu nghiệp chuyên sâu về " + specialty + " tại Singapore (2018)</li>" +
+                    "<li>Thành viên Hội Nhãn khoa Việt Nam</li>" +
+                    "<li>Đã thực hiện thành công hơn 5,000 ca phẫu thuật/điều trị phức tạp</li>" +
+                    "</ul>");
         }
 
-        int imgId = (rs.getInt("Employee_ID") % 4) + 1;
-        d.setImage("doctors/doctors-" + imgId + ".jpg");
+        String imgPath = null;
+        if (hasColumn(rs, "Avatar") && rs.getString("Avatar") != null && !rs.getString("Avatar").trim().isEmpty()) {
+            imgPath = rs.getString("Avatar").trim();
+        } else if (hasColumn(rs, "Image") && rs.getString("Image") != null && !rs.getString("Image").trim().isEmpty()) {
+            imgPath = rs.getString("Image").trim();
+        }
+
+        if (imgPath == null) {
+            // Gán cố định từng ảnh chuẩn độc nhất cho từng bác sĩ (không trùng lặp)
+            if (fullName.contains("Trần Văn Nam")) {
+                imgPath = "doctors/doctors-1.jpg";
+            } else if (fullName.contains("Lê Hoàng Lan")) {
+                imgPath = "doctors/doctors-2.jpg";
+            } else if (fullName.contains("Nguyễn Xuân Tịnh")) {
+                imgPath = "doctors/doctors-3.jpg";
+            } else if (fullName.contains("Phạm Bảo Ngọc")) {
+                imgPath = "doctors/doctors-4.jpg";
+            } else if (fullName.contains("Trần Quang Huy")) {
+                imgPath = "doctors/doctors-5.jpg";
+            } else if (fullName.contains("Ngô Tiến Dũng")) {
+                imgPath = "doctors/doctors-6.jpg";
+            } else if (fullName.contains("Lê Văn C")) {
+                imgPath = "doctors/doctors-7.jpg";
+            } else {
+                // Mặc định cho bác sĩ mới tạo nếu chưa chọn ảnh lúc đăng ký
+                int empId = rs.getInt("Employee_ID");
+                int imgIndex = ((empId - 1) % 7) + 1;
+                imgPath = "doctors/doctors-" + imgIndex + ".jpg";
+            }
+        }
+        d.setImage(imgPath);
         d.setRating(5.0);
         if (hasColumn(rs, "Room_ID")) {
             d.setRoomId(rs.getInt("Room_ID"));
         }
         return d;
     }
+
     private boolean hasColumn(ResultSet rs, String columnName) throws SQLException {
         ResultSetMetaData rsmd = rs.getMetaData();
         int columns = rsmd.getColumnCount();
