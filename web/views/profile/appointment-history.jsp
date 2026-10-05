@@ -151,7 +151,6 @@
                       <th class="py-3">Bác sĩ</th>
                       <th class="py-3">Dịch vụ</th>
                       <th class="py-3">Trạng thái</th>
-                      <th class="py-3">Hành động</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -176,22 +175,12 @@
                                 </c:otherwise>
                               </c:choose>
                             </td>
-                            <td class="py-3">
-                              <c:choose>
-                                <c:when test="${appt.status == 'Pending'}">
-                                  <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">Hủy lịch</button>
-                                </c:when>
-                                <c:otherwise>
-                                  <button type="button" class="btn btn-sm btn-outline-secondary" disabled>Đã kết thúc</button>
-                                </c:otherwise>
-                              </c:choose>
-                            </td>
                           </tr>
                         </c:forEach>
                       </c:when>
                       <c:otherwise>
                         <tr>
-                          <td colspan="6" class="text-center py-4 text-muted">Chưa có dữ liệu</td>
+                          <td colspan="5" class="text-center py-4 text-muted">Chưa có dữ liệu</td>
                         </tr>
                       </c:otherwise>
                     </c:choose>

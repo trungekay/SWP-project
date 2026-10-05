@@ -14,7 +14,7 @@ public class HistoryDAO {
     // For medical-history.jsp (Lịch sử khám)
     public List<Map<String, Object>> getMedicalRecords(int accountId) throws Exception {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT m.Created_At AS Date, e.Full_Name AS DoctorName, m.Clinical_Diagnosis AS ServiceName " +
+        String sql = "SELECT a.Appointment_ID, m.Created_At AS Date, e.Full_Name AS DoctorName " +
                      "FROM Medical_Record m " +
                      "JOIN Appointment a ON m.Appointment_ID = a.Appointment_ID " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
@@ -28,7 +28,8 @@ public class HistoryDAO {
                     Map<String, Object> map = new HashMap<>();
                     map.put("date", rs.getDate("Date"));
                     map.put("doctorName", rs.getString("DoctorName"));
-                    map.put("serviceName", rs.getString("ServiceName"));
+                    map.put("id", rs.getInt("Appointment_ID"));
+                    map.put("serviceName", "Khám chuyên khoa");
                     list.add(map);
                 }
             }
@@ -77,17 +78,17 @@ public class HistoryDAO {
     // For refund-request.jsp
     public List<Map<String, Object>> getRefunds(int accountId) throws Exception {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT r.Request_ID, r.Invoice_ID, r.Refund_Amount, r.Reason, r.Status " +
+        String sql = "SELECT r.Refund_ID, r.Invoice_ID, r.Refund_Amount, r.Reason, r.Status " +
                      "FROM Refund_Request r " +
                      "JOIN Patient p ON r.Patient_ID = p.Patient_ID " +
-                     "WHERE p.Account_ID = ? ORDER BY r.Request_ID DESC";
+                     "WHERE p.Account_ID = ? ORDER BY r.Refund_ID DESC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Map<String, Object> map = new HashMap<>();
-                    map.put("id", rs.getInt("Request_ID"));
+                    map.put("id", rs.getInt("Refund_ID"));
                     map.put("invoiceId", rs.getInt("Invoice_ID"));
                     map.put("amount", String.format("%,d", rs.getLong("Refund_Amount")));
                     map.put("reason", rs.getString("Reason"));
