@@ -200,7 +200,8 @@
                         </c:choose>
                       </td>
                       <td class="text-end">
-                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editRoomModal${room.id}"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal" data-bs-target="#editRoomModal${room.id}" title="Sửa phòng"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteRoomModal${room.id}" title="Xóa phòng"><i class="bi bi-trash"></i></button>
                       </td>
                     </tr>
                     
@@ -262,6 +263,31 @@
                       </div>
                     </div>
                     <!-- End Edit Modal -->
+
+                    <!-- Delete Room Modal -->
+                    <div class="modal fade" id="deleteRoomModal${room.id}" tabindex="-1">
+                      <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow">
+                          <form action="${pageContext.request.contextPath}/admin/room-config" method="post">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="roomId" value="${room.id}">
+                            <div class="modal-header border-0 pb-0">
+                              <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Xác nhận Xóa Phòng Khám</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-4 text-center">
+                              <p class="mb-2 fs-6">Bạn có chắc chắn muốn xóa phòng <strong>${room.name}</strong> không?</p>
+                              <p class="text-muted small mb-0">Hành động này sẽ xóa phòng khỏi hệ thống.</p>
+                            </div>
+                            <div class="modal-footer border-0 justify-content-center pt-0">
+                              <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Hủy</button>
+                              <button type="submit" class="btn btn-danger px-4 rounded-pill">Xóa phòng</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- End Delete Room Modal -->
                   </c:forEach>
                   </tbody>
                 </table>

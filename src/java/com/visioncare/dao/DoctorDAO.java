@@ -123,7 +123,6 @@ public class DoctorDAO {
         }
 
         if (imgPath == null) {
-            // Gán cố định từng ảnh chuẩn độc nhất cho từng bác sĩ (không trùng lặp)
             if (fullName.contains("Trần Văn Nam")) {
                 imgPath = "doctors/doctors-1.jpg";
             } else if (fullName.contains("Lê Hoàng Lan")) {
