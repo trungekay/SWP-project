@@ -103,7 +103,7 @@
     <section class="section pt-4">
       <div class="container">
         <div class="row">
-          <div class="col-lg-4">
+          <div class="col-lg-3">
             <div class="profile-card text-center border-0 shadow-sm" style="border-right: 1px solid #eee !important; border-radius: 0;">
               <div class="mb-3">
                 <span class="badge bg-light text-dark rounded-pill border px-3 py-1">Avatar</span>
@@ -135,7 +135,7 @@
             </div>
           </div>
           
-          <div class="col-lg-8 ps-lg-5">
+          <div class="col-lg-9 ps-lg-5">
             <div class="pt-2">
               <h4 class="fw-bold" style="color: #1c355e;">Lịch sử hẹn khám</h4>
               <p class="text-muted small mb-4">Xem chi tiết các lịch hẹn khám bệnh và thực hiện yêu cầu hủy lịch</p>
