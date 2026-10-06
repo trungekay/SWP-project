@@ -137,10 +137,11 @@ public class AppointmentDAO {
     }
     public List<Appointment> getByUserId(int userId) throws Exception {
         List<Appointment> list = new ArrayList<>();
-        String sql = "SELECT a.Appointment_ID, a.Status, p.Full_Name, p.Phone, p.DOB, ws.Start_Time, ws.Doctor_Employee_ID, p.Account_ID, ws.Work_Date " +
+        String sql = "SELECT a.Appointment_ID, a.Status, p.Full_Name, p.Phone, p.DOB, ws.Start_Time, ws.Doctor_Employee_ID, p.Account_ID, ws.Work_Date, e.Full_Name AS Doctor_Name " +
                      "FROM Appointment a " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
                      "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
+                     "LEFT JOIN Employee_Profile e ON ws.Doctor_Employee_ID = e.Employee_ID " +
                      "WHERE p.Account_ID = ? ORDER BY ws.Work_Date DESC, ws.Start_Time";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -185,6 +186,11 @@ public class AppointmentDAO {
             a.setUserId(rs.getInt("Account_ID"));
         } catch (SQLException e) {
             a.setUserId(0);
+        }
+        try {
+            a.setDoctorName(rs.getString("Doctor_Name"));
+        } catch (SQLException e) {
+            // Field not present in this query
         }
         return a;
     }

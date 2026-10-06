@@ -55,16 +55,6 @@
   <main class="main bg-light">
 
     <div class="page-title">
-      <div class="heading">
-        <div class="container">
-          <div class="row d-flex justify-content-center text-center">
-            <div class="col-lg-8">
-              <h1>Đăng nhập</h1>
-              <p class="mb-0">Đăng nhập để quản lý lịch hẹn và thông tin cá nhân.</p>
-            </div>
-          </div>
-        </div>
-      </div>
       <nav class="breadcrumbs">
         <div class="container">
           <ol>

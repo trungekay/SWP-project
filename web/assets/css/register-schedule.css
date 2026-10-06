@@ -16,7 +16,6 @@
 
 body {
   background-color: #f1f5f9;
-  padding-bottom: 80px; /* Khoang dem cho sticky bar phia duoi */
 }
 
 .register-container {
@@ -61,6 +60,20 @@ body {
   margin-left: 8px;
 }
 
+.badge-room {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 6px;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .stat-divider {
   border-left: 1px solid #e2e8f0;
   height: 40px;
@@ -94,8 +107,9 @@ body {
 .week-selector-group {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .btn-nav-arrow {
@@ -104,8 +118,10 @@ body {
   color: #334155;
   width: 36px;
   height: 36px;
+  min-width: 36px;
+  flex: 0 0 36px;
   border-radius: 8px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
@@ -125,10 +141,21 @@ body {
   font-size: 13.5px;
   font-weight: 700;
   color: #0f172a;
-  padding: 4px 10px;
+  padding: 4px 28px 4px 10px;
   background-color: #ffffff;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px 10px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: auto !important;
   min-width: 110px;
+  max-width: 130px;
+  flex: 0 0 auto !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
 }
 
 .select-week-dropdown {
@@ -138,10 +165,20 @@ body {
   font-size: 13px;
   font-weight: 600;
   color: #1e293b;
-  padding: 4px 12px;
+  padding: 4px 28px 4px 12px;
   background-color: #ffffff;
-  min-width: 290px;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 10px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: auto !important;
+  min-width: 280px;
+  flex: 0 0 auto !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
 }
 
 .select-year-dropdown:focus,
@@ -219,24 +256,24 @@ body {
 }
 
 .col-day-header {
-  width: 140px;
-  min-width: 140px;
-  max-width: 140px;
+  width: 125px;
+  min-width: 125px;
+  max-width: 125px;
   text-align: left !important;
-  padding-left: 14px !important;
+  padding-left: 12px !important;
+}
+
+.col-select-all-header {
+  width: 75px;
+  min-width: 75px;
+  max-width: 75px;
+  text-align: center !important;
 }
 
 .col-slot-header {
   width: 105px;
   min-width: 105px;
   max-width: 105px;
-}
-
-.col-action-header {
-  width: 95px;
-  min-width: 95px;
-  max-width: 95px;
-  border-right: none !important;
 }
 
 .table-register thead th .time-sub {
@@ -430,23 +467,60 @@ body {
   cursor: not-allowed;
 }
 
+/* Closed By Admin State (Disabled, Sky Blue) */
+.slot-closed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 48px;
+  border-radius: 8px;
+  background: #e0f2fe;
+  border: 1.5px solid #7dd3fc;
+  color: #0369a1;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: not-allowed;
+  line-height: 1.25;
+}
+
+.slot-closed .slot-title {
+  color: #0369a1;
+}
+
+.slot-closed .slot-sub {
+  color: #0284c7;
+  font-size: 9.5px;
+}
+
 /* Quick Select Day Button */
+.select-all-cell {
+  background: #ffffff !important;
+  padding: 6px 4px !important;
+  text-align: center;
+}
+
 .btn-select-day {
   background: #f1f5f9;
   border: 1px solid var(--vc-border);
-  color: #475569;
-  font-size: 11px;
+  color: #334155;
+  font-size: 11.5px;
   font-weight: 600;
-  padding: 4px 8px;
+  padding: 5px 8px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  width: 100%;
+  max-width: 60px;
+  display: inline-block;
 }
 
 .btn-select-day:hover {
   background: #e2e8f0;
-  color: #0f172a;
+  border-color: var(--vc-primary);
+  color: var(--vc-primary);
 }
 
 /* ==========================================================================
@@ -484,6 +558,19 @@ body {
   font-size: 13px;
   margin-left: 6px;
   border: 1px solid #99f6e4;
+  transition: all 0.2s ease;
+}
+
+.selected-count-badge.warning {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.selected-count-badge.success {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
 }
 
 .btn-submit-schedule {

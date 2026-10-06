@@ -12,6 +12,7 @@ public class Appointment {
     private String department;  
     private String payment;       
     private String reason;         
+    private String doctorName;
     private String status;        
     private int userId;           
 
@@ -54,6 +55,15 @@ public class Appointment {
     public void setDoctorId(int doctorId) {
         this.doctorId = doctorId;
     }
+
+    public String getDoctorName() {
+        return doctorName;
+    }
+
+    public void setDoctorName(String doctorName) {
+        this.doctorName = doctorName;
+    }
+
     public Date getAppointmentDate() {
         return appointmentDate;
     }

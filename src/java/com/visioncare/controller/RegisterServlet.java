@@ -46,7 +46,8 @@ public class RegisterServlet extends HttpServlet {
                     session.removeAttribute("registerOtp");
                     session.removeAttribute("pendingUser");
                     
-                    session.setAttribute("user", pendingUser);
+                    User fullUser = userDAO.getByEmail(pendingUser.getEmail());
+                    session.setAttribute("user", fullUser);
                     response.sendRedirect(request.getContextPath() + "/home");
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -89,10 +90,24 @@ public class RegisterServlet extends HttpServlet {
             request.getRequestDispatcher("/views/auth/register.jsp").forward(request, response);
             return;
         }
+        
+        if (password.length() < 8 || !password.matches(".*[A-Z].*") || !password.matches(".*[a-z].*")) {
+            request.setAttribute("error", "Mật khẩu phải dài tối thiểu 8 ký tự, bao gồm ít nhất 1 chữ hoa và 1 chữ thường.");
+            request.getRequestDispatcher("/views/auth/register.jsp").forward(request, response);
+            return;
+        }
+        
         try {
-            User existing = userDAO.getByEmail(email);
-            if (existing != null) {
+            User existingEmail = userDAO.getByEmail(email);
+            if (existingEmail != null) {
                 request.setAttribute("error", "Email đã tồn tại trong hệ thống.");
+                request.getRequestDispatcher("/views/auth/register.jsp").forward(request, response);
+                return;
+            }
+            
+            User existingPhone = userDAO.getByPhone(phone);
+            if (existingPhone != null) {
+                request.setAttribute("error", "Số điện thoại đã tồn tại trong hệ thống.");
                 request.getRequestDispatcher("/views/auth/register.jsp").forward(request, response);
                 return;
             }

@@ -1,8 +1,10 @@
 package com.visioncare.controller;
+import com.visioncare.dao.TimeSlotDAO;
 import com.visioncare.dao.WorkScheduleDAO;
 import com.visioncare.model.ScheduleDayDTO;
 import com.visioncare.model.ScheduleRegistrationDTO;
 import com.visioncare.model.ScheduleSlotDTO;
+import com.visioncare.model.TimeSlotConfig;
 import com.visioncare.model.User;
 import com.visioncare.model.WeekOptionDTO;
 import jakarta.servlet.ServletException;
@@ -21,6 +23,7 @@ import java.util.*;
 @WebServlet(name = "EmployeeRegisterScheduleServlet", urlPatterns = {"/employee/register-schedule"})
 public class EmployeeRegisterScheduleServlet extends HttpServlet {
     private final WorkScheduleDAO workScheduleDAO = new WorkScheduleDAO();
+    private final TimeSlotDAO timeSlotDAO = new TimeSlotDAO();
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -153,6 +156,11 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             for (String k : registeredKeys) {
                 registeredMap.put(k, Boolean.TRUE);
             }
+            Set<String> closedKeys = workScheduleDAO.getClosedSlotKeys(actorId, role, startDateStr, endDateStr);
+            Map<String, Boolean> closedMap = new HashMap<>();
+            for (String k : closedKeys) {
+                closedMap.put(k, Boolean.TRUE);
+            }
             boolean hasPrevWeek = true;
             int prevWeek = selectedWeek - 1;
             int prevYear = selectedYear;
@@ -195,8 +203,17 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             request.setAttribute("today", today.format(fullFormatter));
             request.setAttribute("weekDays", weekDays);
             request.setAttribute("slots", slots);
+            Map<String, String> slotStatusMap = new HashMap<>();
+            try {
+                List<TimeSlotConfig> cfgSlots = timeSlotDAO.getConfiguredSlots();
+                for (TimeSlotConfig cfg : cfgSlots) {
+                    slotStatusMap.put(cfg.getSlotName(), cfg.getStatus());
+                }
+            } catch (Exception ignored) {}
             request.setAttribute("registeredKeys", registeredKeys);
             request.setAttribute("registeredMap", registeredMap);
+            request.setAttribute("closedMap", closedMap);
+            request.setAttribute("slotStatusMap", slotStatusMap);
             request.setAttribute("registeredCount", registeredKeys.size());
             request.setAttribute("registeredHours", registeredKeys.size() * 0.5);
             request.getRequestDispatcher("/views/employee/register-schedule.jsp").forward(request, response);
@@ -247,6 +264,31 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
                 return;
             }
+
+            int year = Integer.parseInt(yearParam);
+            int week = Integer.parseInt(weekParam);
+            LocalDate firstDayOfYear = LocalDate.of(year, 1, 1);
+            LocalDate firstMonday = firstDayOfYear.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            if (firstMonday.getYear() < year && firstDayOfYear.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR) > 50) {
+                firstMonday = firstMonday.plusWeeks(1);
+            }
+            LocalDate startOfWeek = firstMonday.plusWeeks(week - 1);
+            LocalDate endOfWeek = startOfWeek.plusDays(6);
+            DateTimeFormatter dbFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            Set<String> existingKeys = workScheduleDAO.getRegisteredSlotKeys(actorId, role, startOfWeek.format(dbFmt), endOfWeek.format(dbFmt));
+
+            Set<String> allKeysThisWeek = new HashSet<>(existingKeys);
+            for (ScheduleRegistrationDTO item : registrationList) {
+                allKeysThisWeek.add(item.getWorkDate() + "_" + item.getSlot());
+            }
+            double totalWeeklyHours = allKeysThisWeek.size() * 0.5;
+
+            if (totalWeeklyHours < 30.0) {
+                session.setAttribute("errorMessage", "Quy định: Bạn cần đăng ký tối thiểu 30.0 giờ / tuần (hiện tại mới có: " + String.format("%.1f", totalWeeklyHours) + "h). Vui lòng chọn thêm!");
+                response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
+                return;
+            }
+
             boolean success = workScheduleDAO.registerScheduleBatch(actorId, role, registrationList);
             if (success) {
                 session.setAttribute("successMessage", "Đăng ký thành công " + registrationList.size() + " ca làm việc mới!");

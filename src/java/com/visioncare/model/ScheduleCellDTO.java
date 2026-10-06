@@ -24,7 +24,13 @@ public class ScheduleCellDTO {
         return "Available".equalsIgnoreCase(status) && !isBooked();
     }
     public boolean isOnLeave() {
-        return "On_Leave".equalsIgnoreCase(status) || "Canceled".equalsIgnoreCase(status);
+        return "On_Leave".equalsIgnoreCase(status);
+    }
+    public boolean isClosed() {
+        return "Canceled".equalsIgnoreCase(status) || "Inactive".equalsIgnoreCase(status) || "Disabled".equalsIgnoreCase(status) || "Closed".equalsIgnoreCase(status);
+    }
+    public boolean isInactive() {
+        return isClosed();
     }
     public boolean isOff() {
         return scheduleId <= 0 || "Off".equalsIgnoreCase(status);

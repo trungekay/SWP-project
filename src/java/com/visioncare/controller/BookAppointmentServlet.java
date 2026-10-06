@@ -26,11 +26,8 @@ public class BookAppointmentServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-          
-            
-            request.setAttribute("doctors", new java.util.ArrayList<Doctor>());
-            request.setAttribute("departments", new java.util.ArrayList<Department>());
-
+            request.setAttribute("doctors", doctorDAO.getAll());
+            request.setAttribute("departments", departmentDAO.getAll());
             String docParam = request.getParameter("doc");
             if (docParam != null) {
                 request.setAttribute("selectedDoctor", docParam);
@@ -42,7 +39,7 @@ public class BookAppointmentServlet extends HttpServlet {
             request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("error", "CÃ³ lá»—i xáº£y ra: " + e.getMessage());
+            request.setAttribute("error", "Có lỗi xảy ra: " + e.getMessage());
             request.getRequestDispatcher("/views/error/500.jsp").forward(request, response);
         }
     }
