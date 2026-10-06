@@ -103,7 +103,7 @@
     <section class="section pt-4">
       <div class="container">
         <div class="row">
-          <div class="col-lg-4">
+          <div class="col-lg-3">
             <div class="profile-card text-center border-0 shadow-sm" style="border-right: 1px solid #eee !important; border-radius: 0;">
               <div class="mb-3">
                 <span class="badge bg-light text-dark rounded-pill border px-3 py-1">Avatar</span>
@@ -135,7 +135,7 @@
             </div>
           </div>
           
-          <div class="col-lg-8 ps-lg-5">
+          <div class="col-lg-9 ps-lg-5">
             <div class="pt-2">
               <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
@@ -167,7 +167,7 @@
                             <td class="py-3 fw-bold">#REF-${refund.id}</td>
                             <td class="py-3">#INV-${refund.invoiceId}</td>
                             <td class="py-3 text-danger fw-bold">${refund.amount} đ</td>
-                            <td class="py-3 text-truncate" style="max-width: 150px;">${refund.reason}</td>
+                            <td class="py-3">${refund.reason}</td>
                             <td class="py-3">
                               <c:choose>
                                 <c:when test="${refund.status == 'Đang chờ'}">

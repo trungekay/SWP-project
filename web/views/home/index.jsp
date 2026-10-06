@@ -595,10 +595,8 @@
                         <i class="bi bi-envelope fs-1"></i>
                       </div>
                       <h4 class="fw-bold mb-3" style="color: var(--heading-color);">Email</h4>
-                      <p class="text-muted mb-0"><a href="mailto:hotro@visioncare.vn"
-                          class="text-muted text-decoration-none">hotro@visioncare.vn</a><br><a
-                          href="mailto:contact@visioncare.vn"
-                          class="text-muted text-decoration-none">contact@visioncare.vn</a></p>
+                      <p class="text-muted mb-0"><a href="mailto:hotro.visioncare@gmail.com"
+                          class="text-muted text-decoration-none">hotro.visioncare@gmail.com</a></p>
                     </div>
                   </div>
 

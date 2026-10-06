@@ -81,6 +81,12 @@ public class ForgotPasswordServlet extends HttpServlet {
                 return;
             }
             
+            if (newPassword.length() < 8 || !newPassword.matches(".*[A-Z].*") || !newPassword.matches(".*[a-z].*")) {
+                request.setAttribute("error", "Mật khẩu phải dài tối thiểu 8 ký tự, bao gồm ít nhất 1 chữ hoa và 1 chữ thường.");
+                request.getRequestDispatcher("/views/auth/reset-password.jsp").forward(request, response);
+                return;
+            }
+            
             try {
                 User u = userDAO.getByEmail(email);
                 if (u != null) {

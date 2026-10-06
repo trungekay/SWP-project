@@ -7,13 +7,13 @@ import java.util.List;
 public class UserDAO {
     public User login(String email, String password) throws Exception {
         String sql =
-    "SELECT a.Account_ID, a.Email, a.Account_Status, r.Role_Name, " +
+    "SELECT a.Account_ID, a.Email, r.Role_Name, " +
     "COALESCE(e.Full_Name, p.Full_Name, a.Email) AS Display_Name, " +
     "COALESCE(e.Employee_ID, p.Patient_ID, 0) AS Actor_ID, " +
     "COALESCE(e.Specialty, N'Khúc xạ & Nhãn khoa') AS Specialty_Info, " +
     "COALESCE(rm.Room_Name, N'P.101 (Tầng 1)') AS Room_Info, " +
     "e.License_Number, CAST(NULL AS NVARCHAR(100)) AS Position, " +
-    "p.Phone, p.DOB, p.Address " +
+    "p.Phone, p.DOB, p.Address, a.Account_Status " +
     "FROM Account a " +
     "JOIN Role r ON a.Role_ID = r.Role_ID " +
     "LEFT JOIN Patient p ON a.Account_ID = p.Account_ID " +
@@ -30,7 +30,6 @@ public class UserDAO {
                     u.setId(rs.getInt("Account_ID"));
                     u.setEmail(rs.getString("Email"));
                     u.setPassword(password);
-                    u.setStatus(rs.getString("Account_Status"));
                     u.setFullName(rs.getString("Display_Name"));
                     u.setActorId(rs.getInt("Actor_ID"));
                     u.setSpecialty(rs.getString("Specialty_Info"));
@@ -41,6 +40,7 @@ public class UserDAO {
                     Date dobDate = rs.getDate("DOB");
                     u.setDob(dobDate != null ? dobDate.toString() : null);
                     u.setAddress(rs.getString("Address"));
+                    u.setStatus(rs.getString("Account_Status"));
                     
                     String roleName = rs.getString("Role_Name");
                     if ("System_Admin".equalsIgnoreCase(roleName)) u.setRole("admin");
@@ -59,23 +59,62 @@ public class UserDAO {
 
     public boolean register(User user) throws Exception {
         String insertAccount = "INSERT INTO Account (Role_ID, Email, Password) VALUES ((SELECT TOP 1 Role_ID FROM Role WHERE Role_Name = 'Patient'), ?, ?)";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(insertAccount, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, user.getEmail());
-            ps.setString(2, user.getPassword());
-            ps.executeUpdate();
-            try (ResultSet rs = ps.getGeneratedKeys()) {
-                if (rs.next()) {
-                    int accId = rs.getInt(1);
-                    String insertPatient = "INSERT INTO Patient (Account_ID, Phone, Full_Name) VALUES (?, ?, ?)";
-                    try (PreparedStatement ps2 = conn.prepareStatement(insertPatient)) {
-                        ps2.setInt(1, accId);
-                        ps2.setString(2, user.getPhone());
-                        ps2.setString(3, user.getFullName());
-                        ps2.executeUpdate();
+        try (Connection conn = DBContext.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(insertAccount, Statement.RETURN_GENERATED_KEYS)) {
+                ps.setString(1, user.getEmail());
+                ps.setString(2, user.getPassword());
+                ps.executeUpdate();
+                try (ResultSet rs = ps.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        int accId = rs.getInt(1);
+                        
+                        String checkPatient = "SELECT Patient_ID, Account_ID FROM Patient WHERE Phone = ?";
+                        boolean patientExists = false;
+                        boolean hasAccount = false;
+                        try (PreparedStatement psCheck = conn.prepareStatement(checkPatient)) {
+                            psCheck.setString(1, user.getPhone());
+                            try (ResultSet rsCheck = psCheck.executeQuery()) {
+                                if (rsCheck.next()) {
+                                    patientExists = true;
+                                    if (rsCheck.getObject("Account_ID") != null) {
+                                        hasAccount = true;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (patientExists) {
+                            if (hasAccount) {
+                                conn.rollback();
+                                throw new Exception("Số điện thoại đã liên kết với tài khoản khác.");
+                            } else {
+                                String updatePatient = "UPDATE Patient SET Account_ID = ?, Full_Name = ? WHERE Phone = ?";
+                                try (PreparedStatement psUpdate = conn.prepareStatement(updatePatient)) {
+                                    psUpdate.setInt(1, accId);
+                                    psUpdate.setString(2, user.getFullName());
+                                    psUpdate.setString(3, user.getPhone());
+                                    psUpdate.executeUpdate();
+                                }
+                            }
+                        } else {
+                            String insertPatient = "INSERT INTO Patient (Account_ID, Phone, Full_Name) VALUES (?, ?, ?)";
+                            try (PreparedStatement psInsert = conn.prepareStatement(insertPatient)) {
+                                psInsert.setInt(1, accId);
+                                psInsert.setString(2, user.getPhone());
+                                psInsert.setString(3, user.getFullName());
+                                psInsert.executeUpdate();
+                            }
+                        }
+                        conn.commit();
+                        return true;
                     }
-                    return true;
                 }
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
             }
         }
         return false;
@@ -97,6 +136,39 @@ public class UserDAO {
                     Date dobDate = rs.getDate("DOB");
                     u.setDob(dobDate != null ? dobDate.toString() : null);
                     u.setAddress(rs.getString("Address"));
+                    return u;
+                }
+            }
+        }
+        return null;
+    }
+
+    public User getByPhone(String phone) throws Exception {
+        String sql = "SELECT p.*, a.Email FROM Patient p JOIN Account a ON p.Account_ID = a.Account_ID WHERE p.Phone = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, phone);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    User u = new User();
+                    u.setId(rs.getInt("Account_ID"));
+                    u.setPhone(rs.getString("Phone"));
+                    u.setEmail(rs.getString("Email"));
+                    return u;
+                }
+            }
+        }
+        
+        String sqlEmp = "SELECT e.*, a.Email FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE e.Phone = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sqlEmp)) {
+            ps.setString(1, phone);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    User u = new User();
+                    u.setId(rs.getInt("Account_ID"));
+                    u.setPhone(rs.getString("Phone"));
+                    u.setEmail(rs.getString("Email"));
                     return u;
                 }
             }
@@ -251,10 +323,12 @@ public class UserDAO {
                 String phone = user.getPhone();
                 if (user.getRoleId() == 6) {
                     try (PreparedStatement ps = conn.prepareStatement(
-                            "INSERT INTO Patient (Account_ID, Full_Name, Phone) VALUES (?, ?, ?)")) {
+                            "INSERT INTO Patient (Account_ID, Full_Name, Phone, DOB, Address) VALUES (?, ?, ?, ?, ?)")) {
                         ps.setInt(1, accountId);
                         ps.setString(2, user.getFullName());
                         ps.setString(3, phone == null || phone.trim().isEmpty() ? "000" + accountId : phone);
+                        ps.setDate(4, user.getDob() != null && !user.getDob().isEmpty() ? java.sql.Date.valueOf(user.getDob()) : java.sql.Date.valueOf("2000-01-01"));
+                        ps.setString(5, user.getAddress() != null && !user.getAddress().trim().isEmpty() ? user.getAddress().trim() : "");
                         ps.executeUpdate();
                     }
                 } else {
@@ -280,7 +354,7 @@ public class UserDAO {
         }
     }
 
-    public boolean updateUserProfile(int accountId, String fullName, String phone) throws Exception {
+    public boolean updateUserProfile(int accountId, String fullName, String phone, String dob, String address) throws Exception {
         try (Connection conn = DBContext.getConnection()) {
             String table;
             try (PreparedStatement ps = conn.prepareStatement(
@@ -292,12 +366,28 @@ public class UserDAO {
                     table = rs.getString(1);
                 }
             }
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "UPDATE " + table + " SET Full_Name = ?, Phone = ? WHERE Account_ID = ?")) {
-                ps.setString(1, fullName);
-                ps.setString(2, phone);
-                ps.setInt(3, accountId);
-                return ps.executeUpdate() > 0;
+            if ("Patient".equals(table)) {
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "UPDATE Patient SET Full_Name = ?, Phone = ?, DOB = ?, Address = ? WHERE Account_ID = ?")) {
+                    ps.setString(1, fullName);
+                    ps.setString(2, phone);
+                    if (dob != null && !dob.trim().isEmpty()) {
+                        ps.setDate(3, java.sql.Date.valueOf(dob));
+                    } else {
+                        ps.setNull(3, java.sql.Types.DATE);
+                    }
+                    ps.setString(4, address != null ? address : "");
+                    ps.setInt(5, accountId);
+                    return ps.executeUpdate() > 0;
+                }
+            } else {
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "UPDATE Employee_Profile SET Full_Name = ?, Phone = ? WHERE Account_ID = ?")) {
+                    ps.setString(1, fullName);
+                    ps.setString(2, phone);
+                    ps.setInt(3, accountId);
+                    return ps.executeUpdate() > 0;
+                }
             }
         }
     }
@@ -376,4 +466,19 @@ public class UserDAO {
         }
     }
 
+    public boolean updateDoctorProfile(int accountId, String license, String specialty, String roomIdStr) throws Exception {
+        String sql = "UPDATE Employee_Profile SET License_Number = ?, Specialty = ?, Room_ID = ? WHERE Account_ID = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, license);
+            ps.setString(2, specialty);
+            if (roomIdStr == null || roomIdStr.trim().isEmpty()) {
+                ps.setNull(3, java.sql.Types.INTEGER);
+            } else {
+                ps.setInt(3, Integer.parseInt(roomIdStr.trim()));
+            }
+            ps.setInt(4, accountId);
+            return ps.executeUpdate() > 0;
+        }
+    }
 }

@@ -13,7 +13,7 @@
             <p>456 Lê Thị Riêng, Quận 10</p>
             <p>TP. Hồ Chí Minh</p>
             <p class="mt-3"><strong>Hotline:</strong> <span>1800 599 988</span></p>
-            <p><strong>Email:</strong> <span>hotro@visioncare.vn</span></p>
+            <p><strong>Email:</strong> <span>hotro.visioncare@gmail.com</span></p>
           </div>
           <div class="social-links d-flex mt-4">
             <a href=""><i class="bi bi-twitter-x"></i></a>

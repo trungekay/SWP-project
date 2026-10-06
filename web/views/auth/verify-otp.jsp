@@ -67,17 +67,25 @@
               </div>
             </c:if>
 
-            <form method="post" action="${pageContext.request.contextPath}/verify-otp">
-              <div class="d-flex justify-content-center mb-4">
-                <input type="text" class="otp-input" name="otp1" maxlength="1" required>
-                <input type="text" class="otp-input" name="otp2" maxlength="1" required>
-                <input type="text" class="otp-input" name="otp3" maxlength="1" required>
-                <input type="text" class="otp-input" name="otp4" maxlength="1" required>
-                <input type="text" class="otp-input" name="otp5" maxlength="1" required>
-                <input type="text" class="otp-input" name="otp6" maxlength="1" required>
+            <form method="post" action="${pageContext.request.contextPath}/verify-otp" id="otpForm">
+              <input type="hidden" name="otp1" id="otp1">
+              <input type="hidden" name="otp2" id="otp2">
+              <input type="hidden" name="otp3" id="otp3">
+              <input type="hidden" name="otp4" id="otp4">
+              <input type="hidden" name="otp5" id="otp5">
+              <input type="hidden" name="otp6" id="otp6">
+              <div class="d-flex justify-content-center mb-4 otp-container" style="gap: 10px; position: relative;">
+                <input type="text" class="otp-input" maxlength="1" readonly style="pointer-events: none;">
+                <input type="text" class="otp-input" maxlength="1" readonly style="pointer-events: none;">
+                <input type="text" class="otp-input" maxlength="1" readonly style="pointer-events: none;">
+                <input type="text" class="otp-input" maxlength="1" readonly style="pointer-events: none;">
+                <input type="text" class="otp-input" maxlength="1" readonly style="pointer-events: none;">
+                <input type="text" class="otp-input" maxlength="1" readonly style="pointer-events: none;">
+                
+                <input type="text" id="realOtpInput" maxlength="6" style="position: absolute; width: 100%; height: 100%; opacity: 0; cursor: text; z-index: 10; font-size: 1px;" autocomplete="one-time-code">
               </div>
 
-              <button type="submit" class="btn w-100 py-2 mb-4 text-white" style="border-radius: 8px; font-size: 16px; font-weight: 500; background-color: #0d9488; border-color: #0d9488;">
+              <button type="submit" class="btn w-100 py-2 mb-4 text-white" style="border-radius: 8px; font-size: 16px; font-weight: 500; background-color: #0d9488; border-color: #0d9488;" id="btnSubmit">
                 Xác thực
               </button>
             </form>
@@ -93,8 +101,60 @@
   </main>
 
   <script>
-    // OTP Countdown Script
     document.addEventListener("DOMContentLoaded", function() {
+      const realInput = document.getElementById('realOtpInput');
+      const fakeInputs = document.querySelectorAll('.otp-input');
+      
+      // Auto focus
+      realInput.focus();
+
+      // Setup hidden inputs on submit
+      document.getElementById('otpForm').addEventListener('submit', function() {
+          const val = realInput.value;
+          for(let i=1; i<=6; i++) {
+              document.getElementById('otp'+i).value = val[i-1] || '';
+          }
+      });
+
+      // Update fake inputs when typing
+      realInput.addEventListener('input', function(e) {
+          const val = this.value.replace(/[^0-9]/g, '');
+          this.value = val;
+          
+          fakeInputs.forEach((input, index) => {
+              if (index < val.length) {
+                  input.value = val[index];
+                  input.style.borderColor = '#0d9488';
+              } else {
+                  input.value = '';
+                  input.style.borderColor = '#e2e8f0';
+              }
+          });
+          
+          // Highlight active box
+          fakeInputs.forEach(i => i.style.boxShadow = 'none');
+          if (val.length < 6) {
+              fakeInputs[val.length].style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.2)';
+              fakeInputs[val.length].style.borderColor = '#0d9488';
+          }
+      });
+
+      realInput.addEventListener('focus', function() {
+          const val = this.value;
+          fakeInputs.forEach(i => i.style.boxShadow = 'none');
+          if (val.length < 6) {
+              fakeInputs[val.length].style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.2)';
+              fakeInputs[val.length].style.borderColor = '#0d9488';
+          } else {
+              fakeInputs[5].style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.2)';
+          }
+      });
+
+      realInput.addEventListener('blur', function() {
+          fakeInputs.forEach(i => i.style.boxShadow = 'none');
+      });
+
+      // Timer logic
       let timeLeft = 59;
       const timerElement = document.getElementById("resendTimer");
       const resendContainer = document.getElementById("resendContainer");
@@ -108,47 +168,6 @@
           timerElement.innerText = "Gửi lại (" + timeLeft + "s)";
         }
       }, 1000);
-      
-      // Auto move focus and handle paste
-      const inputs = document.querySelectorAll(".otp-input");
-      
-      inputs.forEach((input, index) => {
-        // Handle normal typing
-        input.addEventListener("input", function(e) {
-          this.value = this.value.replace(/[^0-9]/g, '');
-          if (this.value.length > 1) {
-             this.value = this.value.substring(this.value.length - 1);
-          }
-
-          if (this.value.length === 1 && index < inputs.length - 1) {
-            inputs[index + 1].focus();
-          }
-        });
-        
-        // Handle backspace
-        input.addEventListener("keydown", function(e) {
-          if (e.key === "Backspace" && index > 0 && this.value.length === 0) {
-            inputs[index - 1].focus();
-            inputs[index - 1].value = '';
-          }
-        });
-        
-        // Handle paste
-        input.addEventListener("paste", function(e) {
-          e.preventDefault();
-          const pastedData = (e.clipboardData || window.clipboardData).getData("text").trim();
-          if (/^\d{1,6}$/.test(pastedData)) {
-            for (let i = 0; i < pastedData.length; i++) {
-              if (index + i < inputs.length) {
-                inputs[index + i].value = pastedData[i];
-                if (index + i < inputs.length - 1) {
-                  inputs[index + i + 1].focus();
-                }
-              }
-            }
-          }
-        });
-      });
     });
   </script>
 

@@ -86,7 +86,7 @@
     <section class="section pt-4">
       <div class="container">
         <div class="row">
-          <div class="col-lg-4">
+          <div class="col-lg-3">
             <div class="profile-card text-center border-0 shadow-sm" style="border-right: 1px solid #eee !important; border-radius: 0;">
               <div class="mb-3">
                 <span class="badge bg-light text-dark rounded-pill border px-3 py-1">Avatar</span>
@@ -118,7 +118,7 @@
             </div>
           </div>
           
-          <div class="col-lg-8 ps-lg-5">
+          <div class="col-lg-9 ps-lg-5">
             <div class="pt-2">
               <h4 class="fw-bold" style="color: #1c355e;">Hồ sơ y tế & Thanh toán</h4>
               <p class="text-muted small mb-4">Xem chi tiết lịch sử khám bệnh và các hóa đơn thanh toán của bạn</p>
@@ -133,6 +133,7 @@
                       <th class="py-3">Bác sĩ</th>
                       <th class="py-3">Dịch vụ</th>
                       <th class="py-3">Trạng thái</th>
+                      <th class="py-3">Chi tiết</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -144,12 +145,17 @@
                             <td class="py-3">BS. ${record.doctorName}</td>
                             <td class="py-3">${record.serviceName}</td>
                             <td class="py-3"><span class="badge-success-custom">Hoàn thành</span></td>
+                            <td class="py-3">
+                              <a href="${pageContext.request.contextPath}/profile/medical-record?id=${record.id}" class="btn btn-sm btn-outline-primary" style="color: #0d9488; border-color: #0d9488;">
+                                <i class="bi bi-eye"></i> Xem
+                              </a>
+                            </td>
                           </tr>
                         </c:forEach>
                       </c:when>
                       <c:otherwise>
                         <tr>
-                          <td colspan="4" class="text-center py-4 text-muted">Chưa có dữ liệu</td>
+                          <td colspan="5" class="text-center py-4 text-muted">Chưa có dữ liệu</td>
                         </tr>
                       </c:otherwise>
                     </c:choose>

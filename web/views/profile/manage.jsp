@@ -1,5 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <%-- Include Header --%>
 <jsp:include page="/views/common/header.jsp">
@@ -59,7 +60,7 @@
     <section class="section pt-4">
       <div class="container">
         <div class="row">
-          <div class="col-lg-4">
+          <div class="col-lg-3">
             <div class="profile-card text-center border-0 shadow-sm" style="border-right: 1px solid #eee !important; border-radius: 0;">
               <div class="mb-3">
                 <span class="badge bg-light text-dark rounded-pill border px-3 py-1">Avatar</span>
@@ -102,7 +103,7 @@
             </div>
           </div>
           
-          <div class="col-lg-8 ps-lg-5">
+          <div class="col-lg-9 ps-lg-5">
             <div class="pt-2">
               <h4 class="fw-bold" style="color: #1c355e;">Thông tin chung</h4>
               <p class="text-muted small mb-4">Quản lý và cập nhật thông tin cá nhân của bạn</p>
@@ -132,7 +133,7 @@
                   </div>
                   <div class="col-md-6 mt-3 mt-md-0">
                     <label class="form-label text-muted small fw-bold">Số điện thoại</label>
-                    <input type="text" class="form-control" name="phone" value="${not empty sessionScope.user.phone ? sessionScope.user.phone : ''}">
+                    <input type="text" class="form-control" name="phone" value="${not empty sessionScope.user.phone ? sessionScope.user.phone : ''}" pattern="[0-9]{10}" maxlength="10" minlength="10" title="Số điện thoại phải gồm đúng 10 chữ số" required>
                   </div>
                 </div>
                 
@@ -143,7 +144,17 @@
                   </div>
                   <div class="col-md-6 mt-3 mt-md-0">
                     <label class="form-label text-muted small fw-bold">Ngày sinh</label>
-                    <input type="date" class="form-control" name="dob" value="${not empty sessionScope.user.dob ? sessionScope.user.dob : ''}">
+                    <c:set var="displayDob" value=""/>
+                    <c:if test="${not empty sessionScope.user.dob}">
+                        <c:set var="parts" value="${fn:split(sessionScope.user.dob, '-')}"/>
+                        <c:if test="${fn:length(parts) == 3}">
+                            <c:set var="displayDob" value="${parts[2]}/${parts[1]}/${parts[0]}"/>
+                        </c:if>
+                        <c:if test="${fn:length(parts) != 3}">
+                            <c:set var="displayDob" value="${sessionScope.user.dob}"/>
+                        </c:if>
+                    </c:if>
+                    <input type="text" class="form-control" name="dob" placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Nhập ngày sinh theo định dạng dd/mm/yyyy" value="${displayDob}">
                   </div>
                 </div>
 

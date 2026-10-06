@@ -106,7 +106,15 @@
                 <label for="phone" class="form-label fw-bold">Số điện thoại</label>
                 <div class="input-group">
                   <input type="text" class="form-control" id="phone" name="phone"
-                         placeholder="Nhập số điện thoại" required>
+                         placeholder="Nhập số điện thoại" pattern="[0-9]{10}" maxlength="10" minlength="10" title="Số điện thoại phải gồm đúng 10 chữ số" required>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="dob" class="form-label fw-bold">Ngày sinh</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="dob" name="dob"
+                         placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Nhập ngày sinh theo định dạng dd/mm/yyyy" required>
                 </div>
               </div>
 

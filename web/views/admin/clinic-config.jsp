@@ -55,9 +55,9 @@
             color: #15803d;
             /* Crisp green text */
             font-size: 13px;
-            font-weight: 700;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.5px;
             padding: 16px 24px;
             border-bottom: 2px solid #dcfce7;
             border-right: 1px solid #dcfce7;

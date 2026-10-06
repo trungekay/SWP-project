@@ -103,7 +103,7 @@
     <section class="section pt-4">
       <div class="container">
         <div class="row">
-          <div class="col-lg-4">
+          <div class="col-lg-3">
             <div class="profile-card text-center border-0 shadow-sm" style="border-right: 1px solid #eee !important; border-radius: 0;">
               <div class="mb-3">
                 <span class="badge bg-light text-dark rounded-pill border px-3 py-1">Avatar</span>
@@ -135,7 +135,7 @@
             </div>
           </div>
           
-          <div class="col-lg-8 ps-lg-5">
+          <div class="col-lg-9 ps-lg-5">
             <div class="pt-2">
               <h4 class="fw-bold" style="color: #1c355e;">Lịch sử hẹn khám</h4>
               <p class="text-muted small mb-4">Xem chi tiết các lịch hẹn khám bệnh và thực hiện yêu cầu hủy lịch</p>
@@ -151,7 +151,6 @@
                       <th class="py-3">Bác sĩ</th>
                       <th class="py-3">Dịch vụ</th>
                       <th class="py-3">Trạng thái</th>
-                      <th class="py-3">Hành động</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -176,22 +175,12 @@
                                 </c:otherwise>
                               </c:choose>
                             </td>
-                            <td class="py-3">
-                              <c:choose>
-                                <c:when test="${appt.status == 'Pending'}">
-                                  <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">Hủy lịch</button>
-                                </c:when>
-                                <c:otherwise>
-                                  <button type="button" class="btn btn-sm btn-outline-secondary" disabled>Đã kết thúc</button>
-                                </c:otherwise>
-                              </c:choose>
-                            </td>
                           </tr>
                         </c:forEach>
                       </c:when>
                       <c:otherwise>
                         <tr>
-                          <td colspan="6" class="text-center py-4 text-muted">Chưa có dữ liệu</td>
+                          <td colspan="5" class="text-center py-4 text-muted">Chưa có dữ liệu</td>
                         </tr>
                       </c:otherwise>
                     </c:choose>
