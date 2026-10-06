@@ -15,12 +15,17 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
         String action = request.getParameter("action");
         try {
             if ("add".equals(action)) {
-                String workDate = request.getParameter("workDate");
                 String slotName = request.getParameter("slotName");
                 String startTime = request.getParameter("startTime");
                 String endTime = request.getParameter("endTime");
-                String session = request.getParameter("session");
-                timeSlotDAO.addTimeSlot(workDate, slotName, startTime, endTime, session);
+
+                if (!timeSlotDAO.isStartTimeValid(startTime)) {
+                    request.getSession().setAttribute("errorMsg", "Không thể thêm ca. Ca mới phải bắt đầu sau khi các ca hiện tại kết thúc!");
+                    response.sendRedirect(request.getContextPath() + "/admin/clinic-config");
+                    return;
+                }
+
+                timeSlotDAO.addTimeSlot(slotName, startTime, endTime);
             } else if ("edit".equals(action)) {
                 String oldSlotName = request.getParameter("oldSlotName");
                 String newSlotName = request.getParameter("slotName");
