@@ -47,6 +47,7 @@ public class RegisterServlet extends HttpServlet {
                     session.removeAttribute("pendingUser");
                     
                     User fullUser = userDAO.getByEmail(pendingUser.getEmail());
+                    fullUser.setRole("patient");
                     session.setAttribute("user", fullUser);
                     response.sendRedirect(request.getContextPath() + "/home");
                 } catch (Exception e) {
@@ -62,6 +63,14 @@ public class RegisterServlet extends HttpServlet {
         }
         String fullName = request.getParameter("fullName");
         String phone = request.getParameter("phone");
+        if (phone != null) {
+            phone = phone.trim().replaceAll("\\s+", "");
+            if (!phone.matches("\\d{10}")) {
+                request.setAttribute("error", "Số điện thoại không hợp lệ. Phải bao gồm đúng 10 chữ số.");
+                request.getRequestDispatcher("/views/auth/register.jsp").forward(request, response);
+                return;
+            }
+        }
         String email = request.getParameter("email");
         String password = request.getParameter("password");
         String confirmPassword = request.getParameter("confirmPassword");
@@ -97,6 +106,7 @@ public class RegisterServlet extends HttpServlet {
             User user = new User();
             user.setFullName(fullName);
             user.setPhone(phone);
+
             user.setEmail(email);
             user.setPassword(password);
             user.setRole("patient");

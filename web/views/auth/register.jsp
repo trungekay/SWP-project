@@ -106,7 +106,7 @@
                 <label for="phone" class="form-label fw-bold">Số điện thoại</label>
                 <div class="input-group">
                   <input type="text" class="form-control" id="phone" name="phone"
-                         placeholder="Nhập số điện thoại" required>
+                         placeholder="Nhập số điện thoại" pattern="[0-9]{10}" maxlength="10" minlength="10" title="Số điện thoại phải gồm đúng 10 chữ số" required>
                 </div>
               </div>
 
