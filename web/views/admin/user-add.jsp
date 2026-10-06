@@ -141,7 +141,17 @@
                     
                     <div class="mb-4">
                         <label class="form-label">Số điện thoại</label>
-                        <input type="text" name="phone" class="form-control" placeholder="09xx xxx xxx">
+                        <input type="text" name="phone" class="form-control" placeholder="09xx xxx xxx" pattern="[0-9]{10}" maxlength="10" minlength="10" title="Số điện thoại phải gồm đúng 10 chữ số" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Ngày sinh (DOB)</label>
+                        <input type="text" name="dob" class="form-control" placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Nhập ngày sinh theo định dạng dd/mm/yyyy">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Địa chỉ</label>
+                        <input type="text" name="address" class="form-control" placeholder="Nhập địa chỉ của bạn">
                     </div>
                     
                     <div class="mb-4">
@@ -151,17 +161,44 @@
 
                     <div class="mb-4">
                         <label class="form-label">Vai trò (Role)</label>
-                        <select name="roleId" class="form-select">
-                            <option value="6">Patient (Khách hàng cơ bản)</option>
-                            <option value="5">Staff (Nhân viên)</option>
-                            <option value="3">Doctor (Bác sĩ)</option>
-                            <option value="4">Medical Specialist (Kỹ thuật viên)</option>
-                            <option value="2">Director (Quản lý)</option>
-                            <option value="1">System Admin (Toàn quyền)</option>
+                        <select name="roleId" class="form-select" ${param.type == 'patient' ? 'readonly style="pointer-events: none; background-color: #f8fafc;"' : ''}>
+                            <c:choose>
+                                <c:when test="${param.type == 'patient'}">
+                                    <option value="6" selected>Patient (Khách hàng cơ bản)</option>
+                                </c:when>
+                                <c:otherwise>
+                                    <option value="5">Staff (Nhân viên)</option>
+                                    <option value="3">Doctor (Bác sĩ)</option>
+                                    <option value="4">Medical Specialist (Kỹ thuật viên)</option>
+                                    <option value="2">Director (Quản lý)</option>
+                                    <option value="1">System Admin (Toàn quyền)</option>
+                                </c:otherwise>
+                            </c:choose>
                         </select>
+                        <c:if test="${param.type == 'patient'}">
+                            <div class="form-text text-muted">Bạn đang tạo hồ sơ cho Bệnh nhân mới.</div>
+                        </c:if>
                     </div>
 
-                    <div class="form-actions">
+                    <c:if test="${param.type == 'employee'}">
+                        <div id="doctorFields" style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0;">
+                            <h4 class="mb-3" style="font-size: 16px; color: #0f172a;"><i class="bi bi-briefcase-medical"></i> Thông tin Chuyên môn (Dành cho Bác sĩ)</h4>
+                            <div class="mb-3">
+                                <label class="form-label">Mã Chứng chỉ hành nghề (License)</label>
+                                <input type="text" name="licenseNumber" class="form-control" placeholder="VD: BS-12345/EYE">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Chuyên khoa</label>
+                                <input type="text" name="specialty" class="form-control" placeholder="VD: Nhãn khoa tổng quát">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Phòng làm việc (ID)</label>
+                                <input type="number" name="roomId" class="form-control" placeholder="Nhập ID phòng (ví dụ: 1, 2, 3...)">
+                            </div>
+                        </div>
+                    </c:if>
+
+                    <div class="form-actions mt-4">
                         <a href="${pageContext.request.contextPath}/admin/users" class="btn-cancel">Hủy bỏ</a>
                         <button type="submit" class="btn-submit">
                             <i class="bi bi-plus-square"></i> Thêm Người dùng
@@ -172,5 +209,26 @@
         </div>
     </main>
 
+    <script>
+        function checkRole() {
+            var roleSelect = document.querySelector('select[name="roleId"]');
+            var doctorFields = document.getElementById('doctorFields');
+            if (roleSelect && doctorFields) {
+                var val = roleSelect.value;
+                if (val == '3' || val == '4') {
+                    doctorFields.style.display = 'block';
+                } else {
+                    doctorFields.style.display = 'none';
+                }
+            }
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            var roleSelect = document.querySelector('select[name="roleId"]');
+            if(roleSelect) {
+                roleSelect.addEventListener('change', checkRole);
+                checkRole();
+            }
+        });
+    </script>
 </body>
 </html>

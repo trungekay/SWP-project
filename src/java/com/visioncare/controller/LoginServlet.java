@@ -33,6 +33,12 @@ public class LoginServlet extends HttpServlet {
         try {
             User user = userDAO.login(email, password);
             if (user != null) {
+                if ("Inactive".equalsIgnoreCase(user.getStatus())) {
+                    request.setAttribute("error", "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
+                    request.setAttribute("email", email);
+                    request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
+                    return;
+                }
                 HttpSession session = request.getSession();
                 session.setAttribute("user", user);
                 session.setMaxInactiveInterval(30 * 60);

@@ -1,8 +1,10 @@
 package com.visioncare.controller;
+import com.visioncare.dao.TimeSlotDAO;
 import com.visioncare.dao.WorkScheduleDAO;
 import com.visioncare.model.ScheduleCellDTO;
 import com.visioncare.model.ScheduleDayDTO;
 import com.visioncare.model.ScheduleSlotDTO;
+import com.visioncare.model.TimeSlotConfig;
 import com.visioncare.model.User;
 import com.visioncare.model.WeekOptionDTO;
 import jakarta.servlet.ServletException;
@@ -21,6 +23,7 @@ import java.util.*;
 @WebServlet(name = "EmployeeScheduleServlet", urlPatterns = {"/employee/schedule"})
 public class EmployeeScheduleServlet extends HttpServlet {
     private final WorkScheduleDAO workScheduleDAO = new WorkScheduleDAO();
+    private final TimeSlotDAO timeSlotDAO = new TimeSlotDAO();
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -122,32 +125,41 @@ public class EmployeeScheduleServlet extends HttpServlet {
                 ));
             }
             List<ScheduleSlotDTO> slots = new ArrayList<>();
-            slots.add(new ScheduleSlotDTO("Slot 1", "08:00 - 08:30", "Morning"));
-            slots.add(new ScheduleSlotDTO("Slot 2", "08:30 - 09:00", "Morning"));
-            slots.add(new ScheduleSlotDTO("Slot 3", "09:00 - 09:30", "Morning"));
-            slots.add(new ScheduleSlotDTO("Slot 4", "09:30 - 10:00", "Morning"));
-            slots.add(new ScheduleSlotDTO("Slot 5", "10:00 - 10:30", "Morning"));
-            slots.add(new ScheduleSlotDTO("Slot 6", "10:30 - 11:00", "Morning"));
-            slots.add(new ScheduleSlotDTO("Slot 7", "11:00 - 11:30", "Morning"));
-            slots.add(new ScheduleSlotDTO("Slot 8", "13:30 - 14:00", "Afternoon"));
-            slots.add(new ScheduleSlotDTO("Slot 9", "14:00 - 14:30", "Afternoon"));
-            slots.add(new ScheduleSlotDTO("Slot 10", "14:30 - 15:00", "Afternoon"));
-            slots.add(new ScheduleSlotDTO("Slot 11", "15:00 - 15:30", "Afternoon"));
-            slots.add(new ScheduleSlotDTO("Slot 12", "15:30 - 16:00", "Afternoon"));
-            slots.add(new ScheduleSlotDTO("Slot 13", "16:00 - 16:30", "Afternoon"));
-            slots.add(new ScheduleSlotDTO("Slot 14", "16:30 - 17:00", "Afternoon"));
+            try {
+                com.visioncare.dao.TimeSlotDAO timeSlotDAO = new com.visioncare.dao.TimeSlotDAO();
+                for (com.visioncare.model.TimeSlotConfig cfg : timeSlotDAO.getConfiguredSlots()) {
+                    String startStr = cfg.getStartTime();
+                    if (startStr != null && startStr.length() >= 5) startStr = startStr.substring(0, 5);
+                    String endStr = cfg.getEndTime();
+                    if (endStr != null && endStr.length() >= 5) endStr = endStr.substring(0, 5);
+                    String timeRange = startStr + " - " + endStr;
+                    slots.add(new ScheduleSlotDTO(cfg.getSlotName(), timeRange, cfg.getSession()));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             String startDateStr = startOfSelectedWeek.format(fullFormatter);
             String endDateStr = endOfSelectedWeek.format(fullFormatter);
             Map<String, ScheduleCellDTO> scheduleMatrix = workScheduleDAO.getScheduleMatrix(
                     effectiveActorId, effectiveRole, startDateStr, endDateStr
             );
+            Map<String, String> slotStatusMap = new HashMap<>();
+            try {
+                List<TimeSlotConfig> cfgSlots = timeSlotDAO.getConfiguredSlots();
+                for (TimeSlotConfig cfg : cfgSlots) {
+                    slotStatusMap.put(cfg.getSlotName(), cfg.getStatus());
+                }
+            } catch (Exception ignored) {}
             int totalWeeklySlots = 0;
             for (ScheduleDayDTO day : weekDays) {
                 int daySlotsCount = 0;
                 for (ScheduleSlotDTO slot : slots) {
                     String key = day.getFullDate() + "_" + slot.getId();
                     ScheduleCellDTO cell = scheduleMatrix.get(key);
-                    if (cell != null && !cell.isOff() && !cell.isOnLeave()) {
+                    boolean isGloballyClosed = "Canceled".equalsIgnoreCase(slotStatusMap.get(slot.getId())) 
+                            || "Inactive".equalsIgnoreCase(slotStatusMap.get(slot.getId())) 
+                            || "Disabled".equalsIgnoreCase(slotStatusMap.get(slot.getId()));
+                    if (!isGloballyClosed && cell != null && !cell.isOff() && !cell.isOnLeave() && !cell.isClosed()) {
                         daySlotsCount++;
                         totalWeeklySlots++;
                     }
@@ -198,7 +210,7 @@ public class EmployeeScheduleServlet extends HttpServlet {
             request.setAttribute("viewedActor", viewedActor);
             request.setAttribute("effectiveActorId", effectiveActorId);
             request.setAttribute("effectiveRole", effectiveRole);
-            request.setAttribute("staffAndDoctorList", staffAndDoctorList);
+            request.setAttribute("slotStatusMap", slotStatusMap);
             request.setAttribute("todayStr", LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm • dd/MM/yyyy")));
             request.getRequestDispatcher("/views/employee/schedule.jsp").forward(request, response);
         } catch (Exception e) {

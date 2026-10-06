@@ -368,12 +368,31 @@
                     <h2>Danh sách Người dùng</h2>
                     <p>Quản lý toàn bộ người dùng trong hệ thống (Xem, Xóa, Khóa, Mở khóa)</p>
                 </div>
-                <a href="${pageContext.request.contextPath}/admin/users/add" class="btn-primary-custom">
-                    <i class="bi bi-plus-lg"></i> Thêm Người dùng
-                </a>
+                <div class="dropdown">
+                    <button class="btn-primary-custom dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-plus-lg"></i> Thêm Người dùng
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                        <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/admin/users/add?type=patient"><i class="bi bi-person me-2"></i>Thêm Bệnh nhân (Patient)</a></li>
+                        <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/admin/users/add?type=employee"><i class="bi bi-person-badge me-2"></i>Thêm Nhân sự (Employee)</a></li>
+                    </ul>
+                </div>
             </div>
 
-            <div class="content-card">
+            <!-- Nav Tabs -->
+            <ul class="nav nav-tabs mb-3" id="userTabs" role="tablist" style="border-bottom: 2px solid #e2e8f0;">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-bold" id="staff-tab" data-bs-toggle="tab" data-bs-target="#staff-pane" type="button" role="tab" style="color: #475569; padding: 12px 24px;">Danh sách Nội bộ</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold" id="patient-tab" data-bs-toggle="tab" data-bs-target="#patient-pane" type="button" role="tab" style="color: #475569; padding: 12px 24px;">Danh sách Khách hàng</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="userTabsContent">
+                <!-- STAFF TAB -->
+                <div class="tab-pane fade show active" id="staff-pane" role="tabpanel">
+                    <div class="content-card">
                 <div class="table-toolbar">
                     <div class="filter-group">
                         <select class="filter-select" id="roleFilter" onchange="filterTable()">
@@ -397,7 +416,7 @@
                 </div>
 
                 <div class="table-responsive">
-                    <table class="custom-table">
+                    <table class="custom-table" id="staffTable">
                         <thead>
                             <tr>
                                 <th>THÔNG TIN USER</th>
@@ -409,6 +428,7 @@
                         </thead>
                         <tbody>
                             <c:forEach var="user" items="${users}">
+                              <c:if test="${user.role != 'Patient' && user.role != 'patient'}">
                                 <tr data-role="${user.role == 'admin' ? 'System_Admin' : user.role}" data-status="${user.status}">
                                     <td>
                                         <div class="user-cell">
@@ -493,12 +513,13 @@
                                         </div>
                                     </td>
                                 </tr>
+                              </c:if>
                             </c:forEach>
                         </tbody>
                     </table>
                 </div>
                 
-                <div class="pagination-container">
+                <div class="pagination-container" id="staffPagination">
                     <div class="pagination-info">
                         Hiển thị 1 - ${fn:length(users)} của ${fn:length(users)} người dùng
                     </div>
@@ -510,7 +531,112 @@
                         <li><a href="#"><i class="bi bi-chevron-right"></i></a></li>
                     </ul>
                 </div>
-            </div>
+                </div>
+            </div> <!-- End Staff Tab -->
+
+            <!-- PATIENT TAB -->
+            <div class="tab-pane fade" id="patient-pane" role="tabpanel">
+                <div class="content-card">
+                    <div class="table-toolbar">
+                        <div class="filter-group">
+                            <select class="filter-select" id="statusFilterPatient" onchange="filterTablePatient()">
+                                <option value="">Trạng thái</option>
+                                <option value="Active">Hoạt động</option>
+                                <option value="Inactive">Đã khóa</option>
+                            </select>
+                            <div class="search-bar" style="display: inline-flex; align-items: center; margin-left: 15px;">
+                                <input type="text" id="searchInputPatient" placeholder="Tìm kiếm bệnh nhân..." onkeyup="filterTablePatient()" style="border: 1px solid #e2e8f0; border-radius: 20px; padding: 6px 12px; outline: none;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="custom-table" id="patientTable">
+                            <thead>
+                                <tr>
+                                    <th>THÔNG TIN BỆNH NHÂN</th>
+                                    <th>SỐ ĐIỆN THOẠI</th>
+                                    <th>VAI TRÒ (ROLE)</th>
+                                    <th>TRẠNG THÁI</th>
+                                    <th class="text-end">THAO TÁC</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <c:forEach var="user" items="${users}">
+                                  <c:if test="${user.role == 'Patient' || user.role == 'patient'}">
+                                    <tr data-status="${user.status}">
+                                        <td>
+                                            <div class="user-cell">
+                                                <c:set var="initials" value="${fn:substring(user.fullName, 0, 1)}"/>
+                                                <c:set var="words" value="${fn:split(user.fullName, ' ')}"/>
+                                                <c:if test="${fn:length(words) > 1}">
+                                                    <c:set var="initials" value="${fn:substring(words[0], 0, 1)}${fn:substring(words[fn:length(words)-1], 0, 1)}"/>
+                                                </c:if>
+                                                <c:set var="colorClass" value="avatar-blue"/>
+                                                <c:if test="${user.id % 5 == 1}"><c:set var="colorClass" value="avatar-red"/></c:if>
+                                                <c:if test="${user.id % 5 == 2}"><c:set var="colorClass" value="avatar-orange"/></c:if>
+                                                <c:if test="${user.id % 5 == 3}"><c:set var="colorClass" value="avatar-green"/></c:if>
+                                                <c:if test="${user.id % 5 == 4}"><c:set var="colorClass" value="avatar-purple"/></c:if>
+
+                                                <div class="avatar-initial ${colorClass}">
+                                                    ${fn:toUpperCase(initials)}
+                                                </div>
+                                                <div class="user-details">
+                                                    <p class="name">${user.fullName}</p>
+                                                    <p class="email">${user.email}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>${not empty user.phone ? user.phone : '—'}</td>
+                                        <td><span class="badge-role role-user">Patient</span></td>
+                                        <td>
+                                            <c:choose>
+                                                <c:when test="${user.status == 'Active'}">
+                                                    <span class="badge-status status-active">Hoạt động</span>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <span class="badge-status status-inactive">Đã khóa</span>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </td>
+                                        <td>
+                                            <div class="action-btns justify-content-end">
+                                                <a href="${pageContext.request.contextPath}/admin/users/detail?id=${user.id}" class="action-btn" title="Xem chi tiết">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <c:choose>
+                                                    <c:when test="${user.status == 'Active'}">
+                                                        <button type="button" class="action-btn" title="Vô hiệu hóa" onclick="openDeactivateModal(${user.id})">
+                                                            <i class="bi bi-lock"></i>
+                                                        </button>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <button type="button" class="action-btn" title="Kích hoạt" onclick="openActivateModal(${user.id})">
+                                                            <i class="bi bi-unlock"></i>
+                                                        </button>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                                <button type="button" class="action-btn delete" title="Xóa" onclick="openDeleteModal(${user.id})">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                  </c:if>
+                                </c:forEach>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-container" id="patientPagination">
+                        <div class="pagination-info">
+                            Hiển thị 0 - 0 của 0 người dùng
+                        </div>
+                        <ul class="custom-pagination">
+                        </ul>
+                    </div>
+                </div>
+            </div> <!-- End Patient Tab -->
+            </div> <!-- End Tab Content -->
         </div>
     </main>
 
@@ -595,11 +721,77 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        const rowsPerPage = 10;
+
+        function renderPagination(tableId, containerId, currentPage) {
+            const table = document.getElementById(tableId);
+            const tbody = table.querySelector("tbody");
+            const allRows = Array.from(tbody.querySelectorAll("tr"));
+            const visibleRows = allRows.filter(row => row.getAttribute("data-filtered") !== "false");
+            
+            const totalRows = visibleRows.length;
+            const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            allRows.forEach(row => {
+                row.style.display = "none";
+            });
+            
+            const startIdx = (currentPage - 1) * rowsPerPage;
+            const endIdx = Math.min(startIdx + rowsPerPage, totalRows);
+            for (let i = startIdx; i < endIdx; i++) {
+                visibleRows[i].style.display = "";
+            }
+
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const info = container.querySelector(".pagination-info");
+            if (totalRows === 0) {
+                info.textContent = 'Không tìm thấy kết quả nào';
+            } else {
+                info.textContent = 'Hiển thị ' + (startIdx + 1) + ' - ' + endIdx + ' của ' + totalRows + ' người dùng';
+            }
+
+            const ul = container.querySelector(".custom-pagination");
+            ul.innerHTML = "";
+
+            const liPrev = document.createElement("li");
+            const aPrev = document.createElement("a");
+            aPrev.href = "javascript:void(0)";
+            aPrev.innerHTML = '<i class="bi bi-chevron-left"></i>';
+            if (currentPage === 1) liPrev.style.opacity = "0.5";
+            else aPrev.onclick = () => renderPagination(tableId, containerId, currentPage - 1);
+            liPrev.appendChild(aPrev);
+            ul.appendChild(liPrev);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const li = document.createElement("li");
+                const a = document.createElement("a");
+                a.href = "javascript:void(0)";
+                a.textContent = i;
+                if (i === currentPage) a.className = "active";
+                a.onclick = () => renderPagination(tableId, containerId, i);
+                li.appendChild(a);
+                ul.appendChild(li);
+            }
+
+            const liNext = document.createElement("li");
+            const aNext = document.createElement("a");
+            aNext.href = "javascript:void(0)";
+            aNext.innerHTML = '<i class="bi bi-chevron-right"></i>';
+            if (currentPage === totalPages) liNext.style.opacity = "0.5";
+            else aNext.onclick = () => renderPagination(tableId, containerId, currentPage + 1);
+            liNext.appendChild(aNext);
+            ul.appendChild(liNext);
+        }
+
         function filterTable() {
             var roleFilter = document.getElementById("roleFilter").value;
             var statusFilter = document.getElementById("statusFilter").value;
             var searchFilter = document.getElementById("searchInput").value.toLowerCase();
-            var rows = document.querySelectorAll("tbody tr");
+            var rows = document.querySelectorAll("#staffTable tbody tr");
 
             rows.forEach(function(row) {
                 var role = row.getAttribute("data-role");
@@ -617,11 +809,39 @@
                                    phoneText.includes(searchFilter));
 
                 if (matchRole && matchStatus && matchSearch) {
-                    row.style.display = "";
+                    row.setAttribute("data-filtered", "true");
                 } else {
-                    row.style.display = "none";
+                    row.setAttribute("data-filtered", "false");
                 }
             });
+            renderPagination("staffTable", "staffPagination", 1);
+        }
+        
+        function filterTablePatient() {
+            var statusFilter = document.getElementById("statusFilterPatient").value;
+            var searchFilter = document.getElementById("searchInputPatient").value.toLowerCase();
+            var rows = document.querySelectorAll("#patientTable tbody tr");
+
+            rows.forEach(function(row) {
+                var status = row.getAttribute("data-status");
+                
+                var nameText = row.querySelector(".name").textContent.toLowerCase();
+                var emailText = row.querySelector(".email").textContent.toLowerCase();
+                var phoneText = row.children[1].textContent.toLowerCase();
+                
+                var matchStatus = (statusFilter === "" || status === statusFilter);
+                var matchSearch = (searchFilter === "" || 
+                                   nameText.includes(searchFilter) || 
+                                   emailText.includes(searchFilter) || 
+                                   phoneText.includes(searchFilter));
+
+                if (matchStatus && matchSearch) {
+                    row.setAttribute("data-filtered", "true");
+                } else {
+                    row.setAttribute("data-filtered", "false");
+                }
+            });
+            renderPagination("patientTable", "patientPagination", 1);
         }
 
         function openDeactivateModal(id) {
@@ -636,6 +856,11 @@
             document.getElementById('deleteUserId').value = id;
             new bootstrap.Modal(document.getElementById('deleteModal')).show();
         }
+        
+        document.addEventListener("DOMContentLoaded", function() {
+            filterTable();
+            filterTablePatient();
+        });
     </script>
 </body>
 </html>

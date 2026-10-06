@@ -13,7 +13,7 @@ public class UserDAO {
     "COALESCE(e.Specialty, N'Khúc xạ & Nhãn khoa') AS Specialty_Info, " +
     "COALESCE(rm.Room_Name, N'P.101 (Tầng 1)') AS Room_Info, " +
     "e.License_Number, CAST(NULL AS NVARCHAR(100)) AS Position, " +
-    "p.Phone, p.DOB, p.Address " +
+    "p.Phone, p.DOB, p.Address, a.Account_Status " +
     "FROM Account a " +
     "JOIN Role r ON a.Role_ID = r.Role_ID " +
     "LEFT JOIN Patient p ON a.Account_ID = p.Account_ID " +
@@ -40,6 +40,7 @@ public class UserDAO {
                     Date dobDate = rs.getDate("DOB");
                     u.setDob(dobDate != null ? dobDate.toString() : null);
                     u.setAddress(rs.getString("Address"));
+                    u.setStatus(rs.getString("Account_Status"));
                     
                     String roleName = rs.getString("Role_Name");
                     if ("System_Admin".equalsIgnoreCase(roleName)) u.setRole("admin");
@@ -322,10 +323,12 @@ public class UserDAO {
                 String phone = user.getPhone();
                 if (user.getRoleId() == 6) {
                     try (PreparedStatement ps = conn.prepareStatement(
-                            "INSERT INTO Patient (Account_ID, Full_Name, Phone) VALUES (?, ?, ?)")) {
+                            "INSERT INTO Patient (Account_ID, Full_Name, Phone, DOB, Address) VALUES (?, ?, ?, ?, ?)")) {
                         ps.setInt(1, accountId);
                         ps.setString(2, user.getFullName());
                         ps.setString(3, phone == null || phone.trim().isEmpty() ? "000" + accountId : phone);
+                        ps.setDate(4, user.getDob() != null && !user.getDob().isEmpty() ? java.sql.Date.valueOf(user.getDob()) : java.sql.Date.valueOf("2000-01-01"));
+                        ps.setString(5, user.getAddress() != null && !user.getAddress().trim().isEmpty() ? user.getAddress().trim() : "");
                         ps.executeUpdate();
                     }
                 } else {
@@ -351,7 +354,7 @@ public class UserDAO {
         }
     }
 
-    public boolean updateUserProfile(int accountId, String fullName, String phone) throws Exception {
+    public boolean updateUserProfile(int accountId, String fullName, String phone, String dob, String address) throws Exception {
         try (Connection conn = DBContext.getConnection()) {
             String table;
             try (PreparedStatement ps = conn.prepareStatement(
@@ -363,12 +366,28 @@ public class UserDAO {
                     table = rs.getString(1);
                 }
             }
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "UPDATE " + table + " SET Full_Name = ?, Phone = ? WHERE Account_ID = ?")) {
-                ps.setString(1, fullName);
-                ps.setString(2, phone);
-                ps.setInt(3, accountId);
-                return ps.executeUpdate() > 0;
+            if ("Patient".equals(table)) {
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "UPDATE Patient SET Full_Name = ?, Phone = ?, DOB = ?, Address = ? WHERE Account_ID = ?")) {
+                    ps.setString(1, fullName);
+                    ps.setString(2, phone);
+                    if (dob != null && !dob.trim().isEmpty()) {
+                        ps.setDate(3, java.sql.Date.valueOf(dob));
+                    } else {
+                        ps.setNull(3, java.sql.Types.DATE);
+                    }
+                    ps.setString(4, address != null ? address : "");
+                    ps.setInt(5, accountId);
+                    return ps.executeUpdate() > 0;
+                }
+            } else {
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "UPDATE Employee_Profile SET Full_Name = ?, Phone = ? WHERE Account_ID = ?")) {
+                    ps.setString(1, fullName);
+                    ps.setString(2, phone);
+                    ps.setInt(3, accountId);
+                    return ps.executeUpdate() > 0;
+                }
             }
         }
     }
@@ -447,4 +466,19 @@ public class UserDAO {
         }
     }
 
+    public boolean updateDoctorProfile(int accountId, String license, String specialty, String roomIdStr) throws Exception {
+        String sql = "UPDATE Employee_Profile SET License_Number = ?, Specialty = ?, Room_ID = ? WHERE Account_ID = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, license);
+            ps.setString(2, specialty);
+            if (roomIdStr == null || roomIdStr.trim().isEmpty()) {
+                ps.setNull(3, java.sql.Types.INTEGER);
+            } else {
+                ps.setInt(3, Integer.parseInt(roomIdStr.trim()));
+            }
+            ps.setInt(4, accountId);
+            return ps.executeUpdate() > 0;
+        }
+    }
 }

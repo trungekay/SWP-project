@@ -199,8 +199,46 @@
                             
                             <div class="mb-4">
                                 <label class="form-label">Số điện thoại</label>
-                                <input type="text" name="phone" class="form-control" value="${not empty user.phone ? user.phone : ''}">
+                                <input type="text" name="phone" class="form-control" value="${not empty user.phone ? user.phone : ''}" pattern="[0-9]{10}" maxlength="10" minlength="10" title="Số điện thoại phải gồm đúng 10 chữ số" required>
                             </div>
+                            
+                            <c:if test="${user.roleId == 6}">
+                                <div class="mb-4">
+                                    <label class="form-label">Ngày sinh (DOB)</label>
+                                    <c:set var="formattedDob" value="" />
+                                    <c:if test="${not empty user.dob}">
+                                        <c:set var="parts" value="${fn:split(user.dob, '-')}" />
+                                        <c:if test="${fn:length(parts) == 3}">
+                                            <c:set var="formattedDob" value="${parts[2]}/${parts[1]}/${parts[0]}" />
+                                        </c:if>
+                                    </c:if>
+                                    <input type="text" name="dob" class="form-control" value="${formattedDob}" placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}" maxlength="10" title="Nhập ngày sinh theo định dạng dd/mm/yyyy">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label">Địa chỉ</label>
+                                    <input type="text" name="address" class="form-control" value="${user.address}" placeholder="Nhập địa chỉ">
+                                </div>
+                            </c:if>
+                            
+                            <c:if test="${user.roleId == 3 || user.roleId == 4}">
+                                <h4 class="section-title mt-4 pt-3 border-top"><i class="bi bi-briefcase-medical"></i> Thông tin Chuyên môn (Dành cho Bác sĩ)</h4>
+                                
+                                <div class="mb-4">
+                                    <label class="form-label">Mã Chứng chỉ hành nghề (License)</label>
+                                    <input type="text" name="licenseNumber" class="form-control" value="${user.licenseNumber}" placeholder="VD: BS-12345/EYE">
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label class="form-label">Chuyên khoa</label>
+                                    <input type="text" name="specialty" class="form-control" value="${user.specialty}" placeholder="VD: Nhãn khoa tổng quát">
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label class="form-label">Phòng làm việc (ID)</label>
+                                    <input type="number" name="roomId" class="form-control" value="${user.roomName}" placeholder="Nhập ID phòng (ví dụ: 1, 2, 3...)">
+                                    <div class="form-text">Nhập mã ID của phòng khám.</div>
+                                </div>
+                            </c:if>
                         </div>
 
                         <!-- Right Column: Role Assignment -->

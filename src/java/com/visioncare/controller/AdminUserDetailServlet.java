@@ -57,8 +57,39 @@ public class AdminUserDetailServlet extends HttpServlet {
                 String fullName = request.getParameter("fullName");
                 String phone = request.getParameter("phone");
                 
+                if (phone != null) {
+                    phone = phone.trim().replaceAll("\\s+", "");
+                    if (!phone.matches("\\d{10}")) {
+                        request.getSession().setAttribute("error", "Số điện thoại không hợp lệ. Phải bao gồm đúng 10 chữ số.");
+                        response.sendRedirect(request.getContextPath() + "/admin/users/detail?id=" + accountId);
+                        return;
+                    }
+                }
+                
                 userDAO.updateUserRole(accountId, newRoleId);
-                userDAO.updateUserProfile(accountId, fullName, phone);
+                
+                String dob = request.getParameter("dob");
+                if (dob != null && !dob.trim().isEmpty()) {
+                    dob = dob.trim();
+                    if (dob.matches("\\d{2}/\\d{2}/\\d{4}")) {
+                        String[] parts = dob.split("/");
+                        dob = parts[2] + "-" + parts[1] + "-" + parts[0];
+                    } else if (dob.matches("\\d{2}-\\d{2}-\\d{4}")) {
+                        String[] parts = dob.split("-");
+                        dob = parts[2] + "-" + parts[1] + "-" + parts[0];
+                    }
+                }
+                String address = request.getParameter("address");
+                
+                userDAO.updateUserProfile(accountId, fullName, phone, dob, address);
+                
+                // If it's a doctor (3) or medical specialist (4), also update their specific profile info
+                if (newRoleId == 3 || newRoleId == 4) {
+                    String license = request.getParameter("licenseNumber");
+                    String specialty = request.getParameter("specialty");
+                    String roomIdStr = request.getParameter("roomId");
+                    userDAO.updateDoctorProfile(accountId, license, specialty, roomIdStr);
+                }
                 
                 request.getSession().setAttribute("success", "Cập nhật thông tin và quyền thành công.");
             }
