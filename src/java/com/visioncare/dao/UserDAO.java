@@ -466,68 +466,6 @@ public class UserDAO {
         }
     }
 
-    public boolean updatePassword(int accountId, String newPassword) throws Exception {
-        String sql = "UPDATE Account SET Password = ? WHERE Account_ID = ?";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, newPassword);
-            ps.setInt(2, accountId);
-            return ps.executeUpdate() > 0;
-        }
-    }
-
-    public boolean updateProfile(User user) throws Exception {
-        try (Connection conn = DBContext.getConnection()) {
-            String table;
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT CASE WHEN EXISTS (SELECT 1 FROM Patient WHERE Account_ID = ?) " +
-                    "THEN 'Patient' ELSE 'Employee_Profile' END")) {
-                ps.setInt(1, user.getId());
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        table = rs.getString(1);
-                    } else {
-                        return false;
-                    }
-                }
-            }
-            if ("Patient".equals(table)) {
-                try (PreparedStatement ps = conn.prepareStatement(
-                        "UPDATE Patient SET Full_Name = ?, Phone = ?, DOB = ?, Address = ? WHERE Account_ID = ?")) {
-                    ps.setString(1, user.getFullName());
-                    ps.setString(2, user.getPhone());
-                    if (user.getDob() != null && !user.getDob().isEmpty()) {
-                        ps.setDate(3, java.sql.Date.valueOf(user.getDob()));
-                    } else {
-                        ps.setNull(3, java.sql.Types.DATE);
-                    }
-                    ps.setString(4, user.getAddress() != null ? user.getAddress() : "");
-                    ps.setInt(5, user.getId());
-                    return ps.executeUpdate() > 0;
-                }
-            } else {
-                try (PreparedStatement ps = conn.prepareStatement(
-                        "UPDATE Employee_Profile SET Full_Name = ?, Phone = ? WHERE Account_ID = ?")) {
-                    ps.setString(1, user.getFullName());
-                    ps.setString(2, user.getPhone());
-                    ps.setInt(3, user.getId());
-                    return ps.executeUpdate() > 0;
-                }
-            }
-        }
-    }
-
-    public User getByPhone(String phone) throws Exception {
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(ADMIN_USER_SELECT + "WHERE p.Phone = ? OR e.Phone = ?")) {
-            ps.setString(1, phone);
-            ps.setString(2, phone);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? mapAdminUser(rs) : null;
-            }
-        }
-    }
-
     public boolean updateDoctorProfile(int accountId, String license, String specialty, String roomIdStr) throws Exception {
         String sql = "UPDATE Employee_Profile SET License_Number = ?, Specialty = ?, Room_ID = ? WHERE Account_ID = ?";
         try (Connection conn = DBContext.getConnection();

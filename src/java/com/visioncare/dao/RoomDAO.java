@@ -33,7 +33,6 @@ public class RoomDAO {
             }
             return -1;
         }
-        return -1;
     }
 
     public boolean deleteRoom(int roomId) throws Exception {

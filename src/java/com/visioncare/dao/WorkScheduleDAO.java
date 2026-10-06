@@ -23,14 +23,14 @@ public class WorkScheduleDAO {
            .append("WHERE ws.Work_Date BETWEEN ? AND ? ");
         if ("doctor".equalsIgnoreCase(role)) {
             sql.append("AND ws.Doctor_Employee_ID = ? ");
-        } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
+        } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
             sql.append("AND ws.Specialist_Employee_ID = ? ");
         }
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             ps.setString(1, startDate);
             ps.setString(2, endDate);
-            if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
+            if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
                 ps.setInt(3, actorId);
             }
             try (ResultSet rs = ps.executeQuery()) {
@@ -63,7 +63,7 @@ public class WorkScheduleDAO {
         StringBuilder sql = new StringBuilder("SELECT Work_Date, Slot FROM Work_Schedule WHERE Work_Date BETWEEN ? AND ? ");
         if ("doctor".equalsIgnoreCase(role)) {
             sql.append("AND Doctor_Employee_ID = ? ");
-        } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
+        } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
             sql.append("AND Specialist_Employee_ID = ? ");
         }
         sql.append("AND Status NOT IN ('Canceled', 'Inactive', 'Disabled', 'Closed') ");
@@ -71,7 +71,7 @@ public class WorkScheduleDAO {
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             ps.setString(1, startDate);
             ps.setString(2, endDate);
-            if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
+            if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
                 ps.setInt(3, actorId);
             }
             try (ResultSet rs = ps.executeQuery()) {
@@ -90,7 +90,7 @@ public class WorkScheduleDAO {
         StringBuilder sql = new StringBuilder("SELECT Work_Date, Slot FROM Work_Schedule WHERE Work_Date BETWEEN ? AND ? ");
         if ("doctor".equalsIgnoreCase(role)) {
             sql.append("AND Doctor_Employee_ID = ? ");
-        } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
+        } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
             sql.append("AND Specialist_Employee_ID = ? ");
         }
         sql.append("AND Status IN ('Canceled', 'Inactive', 'Disabled', 'Closed') ");
@@ -98,7 +98,7 @@ public class WorkScheduleDAO {
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             ps.setString(1, startDate);
             ps.setString(2, endDate);
-            if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
+            if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
                 ps.setInt(3, actorId);
             }
             try (ResultSet rs = ps.executeQuery()) {
@@ -119,7 +119,7 @@ public class WorkScheduleDAO {
         sql.append("IF NOT EXISTS (SELECT 1 FROM Work_Schedule WHERE Work_Date = ? AND Slot = ? ");
         if ("doctor".equalsIgnoreCase(role)) {
             sql.append("AND Doctor_Employee_ID = ?) ");
-        } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
+        } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
             sql.append("AND Specialist_Employee_ID = ?) ");
         } else {
             sql.append(") ");
@@ -132,27 +132,26 @@ public class WorkScheduleDAO {
             conn.setAutoCommit(false);
             try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
                 for (ScheduleRegistrationDTO item : list) {
-                    ps.setString(1, item.getWorkDate());
-                    ps.setString(2, item.getSlot());
-                    if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
-                        ps.setInt(3, actorId);
-                    } else {
-                        ps.setNull(3, java.sql.Types.INTEGER);
+                    int pIndex = 1;
+                    ps.setString(pIndex++, item.getWorkDate());
+                    ps.setString(pIndex++, item.getSlot());
+                    if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
+                        ps.setInt(pIndex++, actorId);
                     }
                     if ("doctor".equalsIgnoreCase(role)) {
-                        ps.setInt(4, actorId);
-                        ps.setNull(5, java.sql.Types.INTEGER);
-                    } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
-                        ps.setNull(4, java.sql.Types.INTEGER);
-                        ps.setInt(5, actorId);
+                        ps.setInt(pIndex++, actorId);
+                        ps.setNull(pIndex++, java.sql.Types.INTEGER);
+                    } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
+                        ps.setNull(pIndex++, java.sql.Types.INTEGER);
+                        ps.setInt(pIndex++, actorId);
                     } else {
-                        ps.setNull(4, java.sql.Types.INTEGER);
-                        ps.setNull(5, java.sql.Types.INTEGER);
+                        ps.setNull(pIndex++, java.sql.Types.INTEGER);
+                        ps.setNull(pIndex++, java.sql.Types.INTEGER);
                     }
-                    ps.setString(6, item.getWorkDate());
-                    ps.setString(7, item.getSlot());
-                    ps.setString(8, item.getStartTime());
-                    ps.setString(9, item.getEndTime());
+                    ps.setString(pIndex++, item.getWorkDate());
+                    ps.setString(pIndex++, item.getSlot());
+                    ps.setString(pIndex++, item.getStartTime());
+                    ps.setString(pIndex++, item.getEndTime());
                     ps.addBatch();
                 }
                 ps.executeBatch();

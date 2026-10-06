@@ -189,6 +189,8 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             if (actorProfile == null) {
                 actorProfile = currentUser;
             }
+            boolean isShiftOnlyRole = !"doctor".equalsIgnoreCase(role);
+            request.setAttribute("isShiftOnlyRole", isShiftOnlyRole);
             request.setAttribute("actorProfile", actorProfile);
             request.setAttribute("selectedYear", selectedYear);
             request.setAttribute("availableYears", availableYears);
@@ -267,15 +269,51 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
 
             int year = Integer.parseInt(yearParam);
             int week = Integer.parseInt(weekParam);
-            LocalDate firstDayOfYear = LocalDate.of(year, 1, 1);
-            LocalDate firstMonday = firstDayOfYear.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            if (firstMonday.getYear() < year && firstDayOfYear.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR) > 50) {
-                firstMonday = firstMonday.plusWeeks(1);
-            }
-            LocalDate startOfWeek = firstMonday.plusWeeks(week - 1);
+            LocalDate firstMondayOfSelectedYear = LocalDate.of(year, 1, 4).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            LocalDate startOfWeek = firstMondayOfSelectedYear.plusWeeks(week - 1);
             LocalDate endOfWeek = startOfWeek.plusDays(6);
             DateTimeFormatter dbFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             Set<String> existingKeys = workScheduleDAO.getRegisteredSlotKeys(actorId, role, startOfWeek.format(dbFmt), endOfWeek.format(dbFmt));
+
+            boolean isShiftOnlyRole = !"doctor".equalsIgnoreCase(role);
+            if (isShiftOnlyRole) {
+                Map<String, List<ScheduleRegistrationDTO>> shiftGroups = new HashMap<>();
+                for (ScheduleRegistrationDTO item : registrationList) {
+                    String groupKey = item.getWorkDate() + "#" + item.getSession();
+                    shiftGroups.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(item);
+                }
+
+                Set<String> closedKeys = workScheduleDAO.getClosedSlotKeys(actorId, role, startOfWeek.format(dbFmt), endOfWeek.format(dbFmt));
+
+                for (Map.Entry<String, List<ScheduleRegistrationDTO>> entry : shiftGroups.entrySet()) {
+                    String[] parts = entry.getKey().split("#");
+                    String date = parts[0];
+                    String sessionType = parts[1];
+                    List<ScheduleRegistrationDTO> shiftItems = entry.getValue();
+
+                    int expectedSlotStart = "Morning".equalsIgnoreCase(sessionType) ? 1 : 8;
+                    int expectedSlotEnd = "Morning".equalsIgnoreCase(sessionType) ? 7 : 14;
+
+                    Set<String> submittedSlots = new HashSet<>();
+                    for (ScheduleRegistrationDTO s : shiftItems) {
+                        submittedSlots.add(s.getSlot());
+                    }
+
+                    for (int slotNum = expectedSlotStart; slotNum <= expectedSlotEnd; slotNum++) {
+                        String slotName = "Slot " + slotNum;
+                        String slotKey = date + "_" + slotName;
+                        boolean isSubmitted = submittedSlots.contains(slotName);
+                        boolean isAlreadyRegistered = existingKeys.contains(slotKey);
+                        boolean isClosed = closedKeys.contains(slotKey);
+
+                        if (!isSubmitted && !isAlreadyRegistered && !isClosed) {
+                            session.setAttribute("errorMessage", "Quy định bắt buộc: Chuyên viên và Nhân viên phải đăng ký trọn vẹn theo Ca Sáng (08:00 - 11:30) hoặc Ca Chiều (13:30 - 17:00)! Vui lòng không chọn lẻ từng slot.");
+                            response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
+                            return;
+                        }
+                    }
+                }
+            }
 
             Set<String> allKeysThisWeek = new HashSet<>(existingKeys);
             for (ScheduleRegistrationDTO item : registrationList) {
