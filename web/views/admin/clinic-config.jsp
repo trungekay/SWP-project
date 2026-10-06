@@ -31,30 +31,28 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.05);
             padding: 24px;
         }
-        /* Modern Premium Table Styling with Borders */
+        /* Modern Premium Table Styling */
         .table-custom {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
             border-radius: 12px;
             overflow: hidden;
-            border: 1px solid #cbd5e1; /* Visible outer border */
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
         }
         .table-custom thead {
-            background-color: #f0fdf4; /* Modern subtle green */
+            background-color: #f8fafc;
         }
         .table-custom thead th {
-            color: #15803d; /* Crisp green text */
+            color: #475569;
             font-size: 13px;
-            font-weight: 700;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.5px;
             padding: 16px 24px;
-            border-bottom: 2px solid #dcfce7;
-            border-right: 1px solid #dcfce7; /* Vertical divider */
+            border-bottom: 2px solid #e2e8f0;
             border-top: none;
-        }
-        .table-custom thead th:last-child {
             border-right: none;
         }
         .table-custom tbody td {
@@ -64,46 +62,19 @@
             font-size: 15px;
             font-weight: 500;
             border-bottom: 1px solid #f1f5f9;
-            border-right: 1px solid #f1f5f9; /* Vertical divider */
-        }
-        .table-custom tbody td:last-child {
             border-right: none;
+            background-color: #ffffff;
+            transition: all 0.3s ease;
         }
         .table-custom tbody tr:last-child td {
             border-bottom: none;
         }
-        .table-custom tbody tr {
-            transition: all 0.2s ease;
-        }
-        .table-custom tbody tr:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(24, 160, 94, 0.3);
-            position: relative;
-            z-index: 1;
-        }
-        /* Bootstrap 5 applies background to td, so we must change td background on hover */
         .table-custom tbody tr:hover td {
-            background-color: #18a05e !important; /* Logo green */
-            color: #ffffff !important;
-            border-bottom-color: #12824b !important;
-            border-right-color: #12824b !important;
+            background-color: #f0fdf4 !important; /* Lighter green background */
+            color: #166534 !important;
         }
-        /* Ensure bold text turns white */
         .table-custom tbody tr:hover td strong {
-            color: #ffffff !important;
-        }
-        /* Adjust outline buttons to be visible on green background */
-        .table-custom tbody tr:hover .btn-outline-primary {
-            color: #ffffff !important;
-            border-color: #ffffff !important;
-        }
-        .table-custom tbody tr:hover .btn-outline-primary:hover {
-            background-color: #ffffff !important;
-            color: #18a05e !important;
-        }
-        /* Add a small white border to badges so they don't blend in */
-        .table-custom tbody tr:hover .badge {
-            box-shadow: 0 0 0 1px #ffffff;
+            color: #15803d !important;
         }
         .table-custom .badge {
             padding: 8px 12px;
