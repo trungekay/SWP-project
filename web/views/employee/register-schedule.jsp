@@ -75,12 +75,14 @@
               </div>
 
               <!-- Right: Stats & Submit Action Buttons -->
-              <div class="header-right-panel d-flex flex-wrap align-items-center justify-content-start justify-content-lg-end gap-3">
+              <div
+                class="header-right-panel d-flex flex-wrap align-items-center justify-content-start justify-content-lg-end gap-3">
                 <!-- Group 1: Stats Cluster -->
                 <div class="header-stats-cluster d-flex align-items-center">
                   <div class="stat-item text-start text-sm-end">
                     <div class="stat-label">Đã có sẵn</div>
-                    <div class="stat-value text-teal" style="color: var(--vc-primary);">${registeredCount} ca (${registeredHours}h)</div>
+                    <div class="stat-value text-teal" style="color: var(--vc-primary);">${registeredCount} ca
+                      (${registeredHours}h)</div>
                   </div>
                   <div class="stat-divider"></div>
                   <div class="stat-item text-start text-sm-end">
@@ -304,7 +306,8 @@
 
                                 <c:when test="${mRegCount >= 7}">
                                   <div class="slot-registered" title="Bạn đã có lịch làm việc ở ca này">
-                                    <span class="slot-title"><i class="bi bi-check-circle-fill me-1"></i>Đã đăng ký</span>
+                                    <span class="slot-title"><i class="bi bi-check-circle-fill me-1"></i>Đã đăng
+                                      ký</span>
                                   </div>
                                 </c:when>
 
@@ -317,8 +320,10 @@
                                 <c:otherwise>
                                   <div class="slot-check-wrapper" id="shift_wrapper_${day.fullDate}_Morning"
                                     onclick="toggleShiftCard('${day.fullDate}', 'Morning')">
-                                    <label class="slot-check-label" id="shift_label_${day.fullDate}_Morning" style="cursor: pointer;">
-                                      <span class="slot-title" id="shift_title_${day.fullDate}_Morning"><i class="bi bi-plus-lg me-1"></i>Chọn</span>
+                                    <label class="slot-check-label" id="shift_label_${day.fullDate}_Morning"
+                                      style="cursor: pointer;">
+                                      <span class="slot-title" id="shift_title_${day.fullDate}_Morning"><i
+                                          class="bi bi-plus-lg me-1"></i>Chọn</span>
                                     </label>
 
                                     <!-- Hidden inputs cho 7 Slot Sáng -->
@@ -351,7 +356,8 @@
 
                                 <c:when test="${aRegCount >= 7}">
                                   <div class="slot-registered" title="Bạn đã có lịch làm việc ở ca này">
-                                    <span class="slot-title"><i class="bi bi-check-circle-fill me-1"></i>Đã đăng ký</span>
+                                    <span class="slot-title"><i class="bi bi-check-circle-fill me-1"></i>Đã đăng
+                                      ký</span>
                                   </div>
                                 </c:when>
 
@@ -364,8 +370,10 @@
                                 <c:otherwise>
                                   <div class="slot-check-wrapper" id="shift_wrapper_${day.fullDate}_Afternoon"
                                     onclick="toggleShiftCard('${day.fullDate}', 'Afternoon')">
-                                    <label class="slot-check-label" id="shift_label_${day.fullDate}_Afternoon" style="cursor: pointer;">
-                                      <span class="slot-title" id="shift_title_${day.fullDate}_Afternoon"><i class="bi bi-plus-lg me-1"></i>Chọn</span>
+                                    <label class="slot-check-label" id="shift_label_${day.fullDate}_Afternoon"
+                                      style="cursor: pointer;">
+                                      <span class="slot-title" id="shift_title_${day.fullDate}_Afternoon"><i
+                                          class="bi bi-plus-lg me-1"></i>Chọn</span>
                                     </label>
 
                                     <!-- Hidden inputs cho 7 Slot Chiều -->
