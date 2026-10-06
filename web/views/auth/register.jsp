@@ -111,14 +111,6 @@
               </div>
 
               <div class="mb-3">
-                <label for="dob" class="form-label fw-bold">Ngày sinh</label>
-                <div class="input-group">
-                  <input type="text" class="form-control" id="dob" name="dob"
-                         placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Nhập ngày sinh theo định dạng dd/mm/yyyy" required>
-                </div>
-              </div>
-
-              <div class="mb-3">
                 <label for="email" class="form-label fw-bold">Email</label>
                 <div class="input-group">
                   <input type="email" class="form-control" id="email" name="email"
