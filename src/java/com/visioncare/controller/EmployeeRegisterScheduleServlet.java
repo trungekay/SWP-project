@@ -135,20 +135,19 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                 weekDays.add(dayDto);
             }
             List<ScheduleSlotDTO> slots = new ArrayList<>();
-            slots.add(new ScheduleSlotDTO("Slot 1", "08:00 - 08:30", "Morning", "08:00", "08:30"));
-            slots.add(new ScheduleSlotDTO("Slot 2", "08:30 - 09:00", "Morning", "08:30", "09:00"));
-            slots.add(new ScheduleSlotDTO("Slot 3", "09:00 - 09:30", "Morning", "09:00", "09:30"));
-            slots.add(new ScheduleSlotDTO("Slot 4", "09:30 - 10:00", "Morning", "09:30", "10:00"));
-            slots.add(new ScheduleSlotDTO("Slot 5", "10:00 - 10:30", "Morning", "10:00", "10:30"));
-            slots.add(new ScheduleSlotDTO("Slot 6", "10:30 - 11:00", "Morning", "10:30", "11:00"));
-            slots.add(new ScheduleSlotDTO("Slot 7", "11:00 - 11:30", "Morning", "11:00", "11:30"));
-            slots.add(new ScheduleSlotDTO("Slot 8", "13:30 - 14:00", "Afternoon", "13:30", "14:00"));
-            slots.add(new ScheduleSlotDTO("Slot 9", "14:00 - 14:30", "Afternoon", "14:00", "14:30"));
-            slots.add(new ScheduleSlotDTO("Slot 10", "14:30 - 15:00", "Afternoon", "14:30", "15:00"));
-            slots.add(new ScheduleSlotDTO("Slot 11", "15:00 - 15:30", "Afternoon", "15:00", "15:30"));
-            slots.add(new ScheduleSlotDTO("Slot 12", "15:30 - 16:00", "Afternoon", "15:30", "16:00"));
-            slots.add(new ScheduleSlotDTO("Slot 13", "16:00 - 16:30", "Afternoon", "16:00", "16:30"));
-            slots.add(new ScheduleSlotDTO("Slot 14", "16:30 - 17:00", "Afternoon", "16:30", "17:00"));
+            try {
+                List<TimeSlotConfig> cfgSlots = timeSlotDAO.getConfiguredSlots();
+                for (TimeSlotConfig cfg : cfgSlots) {
+                    String startStr = cfg.getStartTime();
+                    if (startStr != null && startStr.length() >= 5) startStr = startStr.substring(0, 5);
+                    String endStr = cfg.getEndTime();
+                    if (endStr != null && endStr.length() >= 5) endStr = endStr.substring(0, 5);
+                    String timeRange = startStr + " - " + endStr;
+                    slots.add(new ScheduleSlotDTO(cfg.getSlotName(), timeRange, cfg.getSession(), startStr, endStr));
+                }
+            } catch (Exception e) {
+                System.err.println("Error loading configured slots: " + e.getMessage());
+            }
             String startDateStr = startOfSelectedWeek.format(fullFormatter);
             String endDateStr = endOfSelectedWeek.format(fullFormatter);
             Set<String> registeredKeys = workScheduleDAO.getRegisteredSlotKeys(actorId, role, startDateStr, endDateStr);
