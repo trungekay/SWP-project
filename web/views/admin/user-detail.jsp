@@ -202,7 +202,9 @@
                                 <input type="text" name="phone" class="form-control" value="${not empty user.phone ? user.phone : ''}" pattern="[0-9]{10}" maxlength="10" minlength="10" title="Số điện thoại phải gồm đúng 10 chữ số" required>
                             </div>
                             
-                            <c:if test="${user.roleId == 6}">
+                            <!-- Patient fields (Patient only) -->
+                            <div id="patient-fields" style="display: ${user.roleId == 6 ? 'block' : 'none'};">
+                                <h4 class="section-title mt-4 pt-3 border-top"><i class="bi bi-person-lines-fill"></i> Thông tin Bệnh nhân</h4>
                                 <div class="mb-4">
                                     <label class="form-label">Ngày sinh (DOB)</label>
                                     <c:set var="formattedDob" value="" />
@@ -218,9 +220,10 @@
                                     <label class="form-label">Địa chỉ</label>
                                     <input type="text" name="address" class="form-control" value="${user.address}" placeholder="Nhập địa chỉ">
                                 </div>
-                            </c:if>
+                            </div>
                             
-                            <c:if test="${user.roleId == 3 || user.roleId == 4}">
+                            <!-- Professional fields (Doctor/Specialist only) -->
+                            <div id="employee-fields" style="display: ${user.roleId == 3 || user.roleId == 4 ? 'block' : 'none'};">
                                 <h4 class="section-title mt-4 pt-3 border-top"><i class="bi bi-briefcase-medical"></i> Thông tin Chuyên môn (Dành cho Bác sĩ)</h4>
                                 
                                 <div class="mb-4">
@@ -238,7 +241,7 @@
                                     <input type="number" name="roomId" class="form-control" value="${user.roomName}" placeholder="Nhập ID phòng (ví dụ: 1, 2, 3...)">
                                     <div class="form-text">Nhập mã ID của phòng khám.</div>
                                 </div>
-                            </c:if>
+                            </div>
                         </div>
 
                         <!-- Right Column: Role Assignment -->
@@ -341,6 +344,26 @@
             });
             // Thêm class 'selected' cho card được click
             element.classList.add('selected');
+            
+            // Lấy giá trị của radio vừa được click
+            const radio = element.querySelector('input[type="radio"]');
+            const roleId = parseInt(radio.value);
+            const employeeFields = document.getElementById('employee-fields');
+            const patientFields = document.getElementById('patient-fields');
+            
+            // Hiển thị form chứng chỉ chuyên môn nếu là Bác sĩ (3) hoặc Chuyên viên Y tế (4)
+            if (roleId === 3 || roleId === 4) {
+                employeeFields.style.display = 'block';
+            } else {
+                employeeFields.style.display = 'none';
+            }
+            
+            // Hiển thị form bệnh nhân nếu là Patient (6)
+            if (roleId === 6) {
+                patientFields.style.display = 'block';
+            } else {
+                patientFields.style.display = 'none';
+            }
         }
     </script>
 </body>

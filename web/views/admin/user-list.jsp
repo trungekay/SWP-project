@@ -368,24 +368,26 @@
                     <h2>Danh sách Người dùng</h2>
                     <p>Quản lý toàn bộ người dùng trong hệ thống (Xem, Xóa, Khóa, Mở khóa)</p>
                 </div>
-                <div class="dropdown">
-                    <button class="btn-primary-custom dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-plus-lg"></i> Thêm Người dùng
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                        <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/admin/users/add?type=patient"><i class="bi bi-person me-2"></i>Thêm Bệnh nhân (Patient)</a></li>
-                        <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/admin/users/add?type=employee"><i class="bi bi-person-badge me-2"></i>Thêm Nhân sự (Employee)</a></li>
-                    </ul>
-                </div>
             </div>
 
             <!-- Nav Tabs -->
-            <ul class="nav nav-tabs mb-3" id="userTabs" role="tablist" style="border-bottom: 2px solid #e2e8f0;">
+            <ul class="nav nav-tabs mb-3 align-items-center" id="userTabs" role="tablist" style="border-bottom: 2px solid #e2e8f0; display: flex;">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active fw-bold" id="staff-tab" data-bs-toggle="tab" data-bs-target="#staff-pane" type="button" role="tab" style="color: #475569; padding: 12px 24px;">Danh sách Nội bộ</button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link fw-bold" id="patient-tab" data-bs-toggle="tab" data-bs-target="#patient-pane" type="button" role="tab" style="color: #475569; padding: 12px 24px;">Danh sách Khách hàng</button>
+                </li>
+                <li class="ms-auto" style="padding-bottom: 8px;">
+                    <div class="dropdown">
+                        <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #18a05e; color: white; border: none; font-size: 14px; padding: 6px 12px; border-radius: 6px; box-shadow: 0 2px 4px rgba(24, 160, 94, 0.2);">
+                            <i class="bi bi-plus" style="font-size: 16px; margin-right: 2px;"></i> Thêm Người dùng
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                            <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/admin/users/add?type=patient"><i class="bi bi-person me-2"></i>Thêm Bệnh nhân (Patient)</a></li>
+                            <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/admin/users/add?type=employee"><i class="bi bi-person-badge me-2"></i>Thêm Nhân sự (Employee)</a></li>
+                        </ul>
+                    </div>
                 </li>
             </ul>
 
@@ -704,13 +706,13 @@
                         <i class="bi bi-trash"></i>
                     </div>
                     <h3 class="modal-title-custom">Xóa tài khoản?</h3>
-                    <p class="modal-text">Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản này?<br>Hành động này không thể hoàn tác.</p>
+                    <p class="modal-text">Bạn có chắc chắn muốn xóa tài khoản này?<br>Tài khoản sẽ được chuyển sang trạng thái đã xóa.</p>
                     <form action="${pageContext.request.contextPath}/admin/users" method="post" id="deleteForm">
                         <input type="hidden" name="id" id="deleteUserId">
                         <input type="hidden" name="action" value="delete">
                         <div class="modal-actions">
                             <button type="button" class="btn btn-modal-cancel" data-bs-dismiss="modal">Hủy</button>
-                            <button type="submit" class="btn btn-modal-danger">Xóa vĩnh viễn</button>
+                            <button type="submit" class="btn btn-modal-danger">Xóa tài khoản</button>
                         </div>
                     </form>
                 </div>

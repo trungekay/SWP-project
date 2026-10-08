@@ -15,6 +15,7 @@ public class User {
     private String roomName;        
     private String licenseNumber;   
     private String position;        
+    private boolean isFirstLogin;
     public User() {
     }
     public User(int id, String fullName, String email, String password,
@@ -107,4 +108,7 @@ public class User {
 
     public String getPosition() { return position; }
     public void setPosition(String position) { this.position = position; }
+
+    public boolean isFirstLogin() { return isFirstLogin; }
+    public void setFirstLogin(boolean firstLogin) { isFirstLogin = firstLogin; }
 }

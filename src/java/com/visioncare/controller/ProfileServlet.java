@@ -25,7 +25,7 @@ public class ProfileServlet extends HttpServlet {
             String oldPassword = request.getParameter("oldPassword");
             String newPassword = request.getParameter("newPassword");
             String confirmPassword = request.getParameter("confirmPassword");
-            if (!currentUser.getPassword().equals(oldPassword)) {
+            if (!currentUser.getPassword().equals(oldPassword) && !currentUser.getPassword().equals("NEW_" + oldPassword)) {
                 request.getSession().setAttribute("error", "Mật khẩu hiện tại không đúng!");
                 response.sendRedirect(request.getContextPath() + "/views/profile/change-password.jsp");
                 return;
@@ -38,9 +38,10 @@ public class ProfileServlet extends HttpServlet {
             try {
                 userDAO.updatePassword(currentUser.getId(), newPassword);
                 currentUser.setPassword(newPassword);
+                currentUser.setFirstLogin(false);
                 session.setAttribute("user", currentUser);
                 request.getSession().setAttribute("success", "Đổi mật khẩu thành công!");
-                response.sendRedirect(request.getContextPath() + "/views/profile/change-password.jsp");
+                response.sendRedirect(request.getContextPath() + "/home");
             } catch (Exception e) {
                 e.printStackTrace();
                 request.getSession().setAttribute("error", "Lỗi: " + e.getMessage());

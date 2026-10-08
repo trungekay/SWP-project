@@ -8,7 +8,7 @@ import java.util.List;
 public class DoctorDAO {
     public List<Doctor> getAll() throws Exception {
         List<Doctor> list = new ArrayList<>();
-        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 3 ORDER BY e.Employee_ID";
+        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 3 AND a.Account_Status != 'Deleted' ORDER BY e.Employee_ID";
         try (Connection conn = DBContext.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
@@ -21,7 +21,7 @@ public class DoctorDAO {
 
     public List<Doctor> getSpecialists() throws Exception {
         List<Doctor> list = new ArrayList<>();
-        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 4 ORDER BY e.Employee_ID";
+        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 4 AND a.Account_Status != 'Deleted' ORDER BY e.Employee_ID";
         try (Connection conn = DBContext.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
@@ -33,7 +33,7 @@ public class DoctorDAO {
     }
 
     public Doctor getById(int id) throws Exception {
-        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 3 AND e.Employee_ID = ?";
+        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 3 AND a.Account_Status != 'Deleted' AND e.Employee_ID = ?";
         try (Connection conn = DBContext.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
