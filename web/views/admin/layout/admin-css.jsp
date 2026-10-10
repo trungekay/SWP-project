@@ -61,6 +61,26 @@
         background-color: #f0f7f6;
         color: var(--primary-color);
     }
+    .sidebar-submenu {
+        list-style: none;
+        padding-left: 20px;
+        margin: 4px 0 8px 0;
+    }
+    .sidebar-submenu li a {
+        padding: 8px 14px 8px 30px;
+        font-size: 13.5px;
+        color: #64748b;
+        border-radius: 6px;
+    }
+    .sidebar-submenu li a:hover {
+        color: var(--primary-color);
+        background-color: #f8fafc;
+    }
+    .sidebar-submenu li a.active-sub {
+        color: var(--primary-color);
+        font-weight: 600;
+        background-color: #e6f4f1;
+    }
 
     /* --- Main Content --- */
     .main-wrapper {

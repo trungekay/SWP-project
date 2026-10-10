@@ -33,4 +33,31 @@ public class EmailUtil {
         Transport.send(message);
         System.out.println("====== OTP SENT TO " + recipientEmail + " : " + otp + " ======");
     }
+    public static void sendAccountCredentialsEmail(String recipientEmail, String password) throws Exception {
+        Properties properties = new Properties();
+        properties.put("mail.smtp.auth", "true");
+        properties.put("mail.smtp.starttls.enable", "true");
+        properties.put("mail.smtp.host", "smtp.gmail.com");
+        properties.put("mail.smtp.port", "587");
+        Session session = Session.getInstance(properties, new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(SENDER_EMAIL, SENDER_PASSWORD);
+            }
+        });
+        MimeMessage message = new MimeMessage(session);
+        message.setFrom(new InternetAddress(SENDER_EMAIL));
+        message.setRecipient(Message.RecipientType.TO, new InternetAddress(recipientEmail));
+        message.setSubject("Thông tin tài khoản VisionCare", "UTF-8");
+        String htmlContent = "<div style='font-family: Arial, sans-serif; padding: 20px; text-align: center;'>"
+                + "<h2 style='color: #0d9488;'>Chào mừng bạn đến với VisionCare</h2>"
+                + "<p>Tài khoản của bạn đã được tạo thành công.</p>"
+                + "<p><b>Tài khoản (Email):</b> " + recipientEmail + "</p>"
+                + "<p><b>Mật khẩu:</b> " + password + "</p>"
+                + "<p>Vui lòng đăng nhập và đổi mật khẩu để bảo mật tài khoản.</p>"
+                + "</div>";
+        message.setContent(htmlContent, "text/html; charset=UTF-8");
+        Transport.send(message);
+        System.out.println("====== CREDENTIALS SENT TO " + recipientEmail + " ======");
+    }
 }

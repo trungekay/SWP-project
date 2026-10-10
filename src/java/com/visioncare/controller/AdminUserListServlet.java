@@ -62,7 +62,7 @@ public class AdminUserListServlet extends HttpServlet {
             }
         } catch (Exception ex) {
             ex.printStackTrace();
-            request.getSession().setAttribute("error", "Lỗi xử lý yêu cầu.");
+            request.getSession().setAttribute("error", ex.getMessage());
         }
         
         response.sendRedirect(request.getContextPath() + "/admin/users");

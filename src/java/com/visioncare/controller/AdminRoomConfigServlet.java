@@ -75,6 +75,10 @@ public class AdminRoomConfigServlet extends HttpServlet {
             request.getSession().setAttribute("errorMsg", "Không thể thực hiện thao tác. Có thể phòng đang được sử dụng.");
         }
         
-        response.sendRedirect(request.getContextPath() + "/admin/clinic-config");
+        String redirectTab = request.getParameter("tab");
+        if (redirectTab == null || redirectTab.trim().isEmpty()) {
+            redirectTab = "rooms";
+        }
+        response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=" + redirectTab);
     }
 }
