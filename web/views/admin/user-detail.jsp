@@ -241,6 +241,11 @@
                                     <input type="number" name="roomId" class="form-control" value="${user.roomName}" min="1" placeholder="Nhập ID phòng (ví dụ: 1, 2, 3...)">
                                     <div class="form-text">Nhập mã ID của phòng khám.</div>
                                 </div>
+                                
+                                <div class="mb-4">
+                                    <label class="form-label">Tiểu sử (Biography)</label>
+                                    <textarea name="biography" class="form-control" rows="3" placeholder="Nhập thông tin giới thiệu, tiểu sử...">${user.biography}</textarea>
+                                </div>
                             </div>
                         </div>
 

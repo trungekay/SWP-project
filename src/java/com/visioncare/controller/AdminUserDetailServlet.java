@@ -88,6 +88,7 @@ public class AdminUserDetailServlet extends HttpServlet {
                     String license = request.getParameter("licenseNumber");
                     String specialty = request.getParameter("specialty");
                     String roomIdStr = request.getParameter("roomId");
+                    String biography = request.getParameter("biography");
                     if (roomIdStr != null && !roomIdStr.trim().isEmpty()) {
                         try {
                             int rId = Integer.parseInt(roomIdStr.trim());
@@ -102,7 +103,7 @@ public class AdminUserDetailServlet extends HttpServlet {
                             return;
                         }
                     }
-                    userDAO.updateDoctorProfile(accountId, license, specialty, roomIdStr);
+                    userDAO.updateDoctorProfile(accountId, license, specialty, roomIdStr, biography);
                 }
                 
                 request.getSession().setAttribute("success", "Cập nhật thông tin và quyền thành công.");

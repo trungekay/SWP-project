@@ -7,7 +7,7 @@ import java.util.List;
 public class UserDAO {
     public User login(String email, String password) throws Exception {
         String sql =
-    "SELECT a.Account_ID, a.Email, r.Role_Name, " +
+    "SELECT a.Account_ID, a.Email, a.Role_ID, r.Role_Name, " +
     "COALESCE(e.Full_Name, p.Full_Name, a.Email) AS Display_Name, " +
     "COALESCE(e.Employee_ID, p.Patient_ID, 0) AS Actor_ID, " +
     "COALESCE(e.Specialty, N'Khúc xạ & Nhãn khoa') AS Specialty_Info, " +
@@ -44,6 +44,7 @@ public class UserDAO {
                     u.setAddress(rs.getString("Address"));
                     u.setStatus(rs.getString("Account_Status"));
                     u.setFirstLogin(dbPassword != null && dbPassword.startsWith("NEW_"));
+                    u.setRoleId(rs.getInt("Role_ID"));
                     
                     String roleName = rs.getString("Role_Name");
                     if ("System_Admin".equalsIgnoreCase(roleName)) u.setRole("admin");
@@ -195,7 +196,7 @@ public class UserDAO {
             "COALESCE(p.Full_Name, e.Full_Name, a.Email) AS Full_Name, " +
             "COALESCE(e.Employee_ID, p.Patient_ID, 0) AS Actor_ID, " +
             "COALESCE(p.Phone, e.Phone) AS Phone, p.DOB, p.Address, " +
-            "e.License_Number, e.Specialty, e.Room_ID " +
+            "e.License_Number, e.Specialty, e.Room_ID, e.Biography " +
             "FROM Account a JOIN Role r ON a.Role_ID = r.Role_ID " +
             "LEFT JOIN Patient p ON a.Account_ID = p.Account_ID " +
             "LEFT JOIN Employee_Profile e ON a.Account_ID = e.Account_ID ";
@@ -214,6 +215,8 @@ public class UserDAO {
             user.setFirstLogin(dbPassword.startsWith("NEW_"));
         }
         
+        user.setBiography(rs.getString("Biography"));
+
         user.setRoleId(rs.getInt("Role_ID"));
         String roleName = rs.getString("Role_Name");
         if ("System_Admin".equalsIgnoreCase(roleName)) user.setRole("admin");
@@ -429,7 +432,7 @@ public class UserDAO {
                     }
                 } else {
                     try (PreparedStatement ps = conn.prepareStatement(
-                            "INSERT INTO Employee_Profile (Account_ID, Full_Name, Phone, License_Number, Specialty, Room_ID, DOB, Address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
+                            "INSERT INTO Employee_Profile (Account_ID, Full_Name, Phone, License_Number, Specialty, Room_ID, DOB, Address, Biography) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
                         ps.setInt(1, accountId);
                         ps.setString(2, user.getFullName());
                         ps.setString(3, phone);
@@ -466,6 +469,12 @@ public class UserDAO {
                             ps.setString(8, user.getAddress().trim());
                         } else {
                             ps.setString(8, "");
+                        }
+                        
+                        if (user.getBiography() != null && !user.getBiography().trim().isEmpty()) {
+                            ps.setString(9, user.getBiography().trim());
+                        } else {
+                            ps.setNull(9, java.sql.Types.VARCHAR);
                         }
 
                         ps.executeUpdate();
@@ -639,8 +648,8 @@ public class UserDAO {
         return false;
     }
 
-    public boolean updateDoctorProfile(int accountId, String license, String specialty, String roomIdStr) throws Exception {
-        String sql = "UPDATE Employee_Profile SET License_Number = ?, Specialty = ?, Room_ID = ? WHERE Account_ID = ?";
+    public boolean updateDoctorProfile(int accountId, String license, String specialty, String roomIdStr, String biography) throws Exception {
+        String sql = "UPDATE Employee_Profile SET License_Number = ?, Specialty = ?, Room_ID = ?, Biography = ? WHERE Account_ID = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, license);
@@ -650,7 +659,8 @@ public class UserDAO {
             } else {
                 ps.setInt(3, Integer.parseInt(roomIdStr.trim()));
             }
-            ps.setInt(4, accountId);
+            ps.setString(4, biography);
+            ps.setInt(5, accountId);
             return ps.executeUpdate() > 0;
         }
     }

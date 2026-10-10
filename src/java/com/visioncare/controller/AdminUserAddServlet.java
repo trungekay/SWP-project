@@ -86,6 +86,11 @@ public class AdminUserAddServlet extends HttpServlet {
                     return;
                 }
             }
+            
+            String biography = request.getParameter("biography");
+            if (biography != null && !biography.trim().isEmpty()) {
+                user.setBiography(biography.trim());
+            }
         }
         
         try {

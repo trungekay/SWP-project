@@ -339,6 +339,13 @@
                                                 placeholder="Nhập ID phòng (ví dụ: 1, 2, 3...)" value="${param.roomId}">
                                         </div>
                                     </div>
+                                    <div class="col-md-12 mt-3">
+                                        <label class="form-label">Tiểu sử (Biography)</label>
+                                        <div class="input-group">
+                                            <textarea name="biography" class="form-control" rows="3"
+                                                placeholder="Nhập thông tin giới thiệu, tiểu sử...">${param.biography}</textarea>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
