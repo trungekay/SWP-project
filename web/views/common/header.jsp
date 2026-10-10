@@ -36,6 +36,45 @@
       <c:if test="${param.bodyClass == 'admin-catalog-page'}">
         <link href="${pageContext.request.contextPath}/assets/css/admin-catalog.css" rel="stylesheet">
       </c:if>
+
+      <style>
+        .custom-dropdown-menu {
+            border: none !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08) !important;
+            border-radius: 10px !important;
+            padding: 8px 0 !important;
+            min-width: 200px !important;
+            margin-top: 5px !important;
+            background-color: #fff !important;
+        }
+        .custom-dropdown-menu li {
+            padding: 0;
+            margin: 0;
+        }
+        .custom-dropdown-menu li a {
+            padding: 10px 20px !important;
+            color: #1e293b !important;
+            font-size: 15px !important;
+            font-weight: 500 !important;
+            transition: all 0.2s !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            text-align: left !important;
+            width: 100% !important;
+        }
+        .custom-dropdown-menu li a:hover {
+            background-color: #f8fafc !important;
+            color: #008b74 !important;
+        }
+        .custom-dropdown-menu li a.text-danger {
+            color: #ef4444 !important;
+        }
+        .custom-dropdown-menu li a.text-danger:hover {
+            background-color: #fef2f2 !important;
+            color: #dc2626 !important;
+        }
+      </style>
     </head>
 
     <body class="${param.bodyClass}">
@@ -82,11 +121,11 @@
                           <a href="#"><span><i class="bi bi-person-circle me-1"></i>${sessionScope.user.fullName != null ?
                               sessionScope.user.fullName : 'Tài khoản'}</span> <i
                               class="bi bi-chevron-down toggle-dropdown"></i></a>
-                          <ul>
-                            <li><a href="${pageContext.request.contextPath}/views/profile/manage.jsp">Hồ sơ cá nhân</a></li>
-                            <li><a href="${pageContext.request.contextPath}/views/profile/change-password.jsp">Đổi mật khẩu</a></li>
-                            <li><a href="${pageContext.request.contextPath}/views/profile/medical-history.jsp">Lịch sử khám bệnh</a></li>
-                            <li><a href="${pageContext.request.contextPath}/logout">Đăng xuất</a></li>
+                          <ul class="custom-dropdown-menu">
+                            <li><a href="${pageContext.request.contextPath}/views/profile/manage.jsp"><i class="bi bi-person me-2" style="font-size: 16px;"></i> Hồ sơ cá nhân</a></li>
+                            <li><a href="${pageContext.request.contextPath}/views/profile/change-password.jsp"><i class="bi bi-key me-2" style="font-size: 16px;"></i> Đổi mật khẩu</a></li>
+                            <li><a href="${pageContext.request.contextPath}/views/profile/medical-history.jsp"><i class="bi bi-journal-medical me-2" style="font-size: 16px;"></i> Lịch sử khám bệnh</a></li>
+                            <li><a href="${pageContext.request.contextPath}/logout" class="text-danger"><i class="bi bi-box-arrow-right me-2" style="font-size: 16px;"></i> Đăng xuất</a></li>
                           </ul>
                         </li>
                       </c:when>
@@ -104,14 +143,14 @@
                       <a href="#"><span><i class="bi bi-person-circle me-1"></i>${sessionScope.user.fullName != null ?
                           sessionScope.user.fullName : 'Tài khoản'}</span> <i
                           class="bi bi-chevron-down toggle-dropdown"></i></a>
-                      <ul>
+                      <ul class="custom-dropdown-menu">
                         <c:if test="${sessionScope.user.role == 'doctor' || sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist' || sessionScope.user.role == 'staff' || sessionScope.user.role == 'director'}">
-                          <li><a href="${pageContext.request.contextPath}/employee/schedule">Lịch làm việc</a></li>
-                          <li><a href="${pageContext.request.contextPath}/employee/register-schedule">Đăng ký lịch</a></li>
+                          <li><a href="${pageContext.request.contextPath}/employee/schedule"><i class="bi bi-calendar-week me-2" style="font-size: 16px;"></i> Lịch làm việc</a></li>
+                          <li><a href="${pageContext.request.contextPath}/employee/register-schedule"><i class="bi bi-calendar-plus me-2" style="font-size: 16px;"></i> Đăng ký lịch</a></li>
                         </c:if>
-                        <li><a href="${pageContext.request.contextPath}/views/profile/manage.jsp">Hồ sơ cá nhân</a></li>
-                        <li><a href="${pageContext.request.contextPath}/views/profile/change-password.jsp">Đổi mật khẩu</a></li>
-                        <li><a href="${pageContext.request.contextPath}/logout">Đăng xuất</a></li>
+                        <li><a href="${pageContext.request.contextPath}/views/profile/manage.jsp"><i class="bi bi-person me-2" style="font-size: 16px;"></i> Hồ sơ cá nhân</a></li>
+                        <li><a href="${pageContext.request.contextPath}/views/profile/change-password.jsp"><i class="bi bi-key me-2" style="font-size: 16px;"></i> Đổi mật khẩu</a></li>
+                        <li><a href="${pageContext.request.contextPath}/logout" class="text-danger"><i class="bi bi-box-arrow-right me-2" style="font-size: 16px;"></i> Đăng xuất</a></li>
                       </ul>
                     </li>
                   </c:otherwise>
