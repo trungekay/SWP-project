@@ -172,21 +172,89 @@
           .bg-primary {
             background-color: #18a05e !important;
           }
+
+          .config-select-box {
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+            border-radius: 10px;
+            padding: 9px 16px;
+            min-width: 260px;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+          }
+
+          .config-select-box:focus {
+            border-color: #18a05e;
+            box-shadow: 0 0 0 3px rgba(24, 160, 94, 0.15);
+            outline: none;
+          }
+
+          .config-tab-btn {
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            color: #475569;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+          }
+
+          .config-tab-btn:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+          }
+
+          .config-tab-btn.active {
+            background: #18a05e;
+            color: #fff;
+            border-color: #18a05e;
+            box-shadow: 0 3px 10px rgba(24, 160, 94, 0.25);
+          }
         </style>
       </head>
 
       <body>
+        <c:set var="currentTab" value="${empty param.tab ? 'rooms' : param.tab}" />
         <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
           <jsp:param name="activeNav" value="clinic-config" />
+          <jsp:param name="activeSub" value="${currentTab}" />
         </jsp:include>
         <main class="main-wrapper">
           <jsp:include page="/views/admin/layout/admin-header.jsp" />
           <div class="page-content">
-            <div class="page-header">
+            <div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-3">
               <div class="page-title">
-                <h2>Cấu hình Phòng Khám</h2>
-                <p>Cấu hình phòng khám và khung giờ</p>
+                <c:choose>
+                  <c:when test="${currentTab == 'slots'}">
+                    <h2>Cấu hình Khung Giờ Khám</h2>
+                    <p class="text-muted">Quản lý các ca khám bệnh và thời gian làm việc trong ngày</p>
+                  </c:when>
+                  <c:otherwise>
+                    <h2>Cấu hình Phòng Khám</h2>
+                    <p class="text-muted">Quản lý danh sách phòng khám và phân công nhân sự phụ trách</p>
+                  </c:otherwise>
+                </c:choose>
               </div>
+
+            </div>
+
+            <!-- Tab Navigation Buttons for Quick Switching -->
+            <div class="d-flex gap-2 mb-4">
+              <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=rooms" class="config-tab-btn ${currentTab != 'slots' ? 'active' : ''}">
+                <i class="bi bi-door-open"></i> Cấu hình phòng
+              </a>
+              <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=slots" class="config-tab-btn ${currentTab == 'slots' ? 'active' : ''}">
+                <i class="bi bi-clock-history"></i> Cấu hình khung giờ khám
+              </a>
             </div>
 
             <c:if test="${not empty sessionScope.errorMsg}">
@@ -205,11 +273,12 @@
             </c:if>
 
             <div class="row g-4">
-              <!-- Clinic Rooms -->
+              <c:if test="${currentTab != 'slots'}">
+              <!-- Clinic Rooms Screen -->
               <div class="col-lg-12">
                 <div class="admin-card">
                   <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="mb-0">Danh sách Phòng Khám</h5>
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-door-open me-2 text-primary"></i>Danh sách Phòng Khám</h5>
                     <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addRoomModal"><i
                         class="bi bi-plus"></i> Thêm phòng</button>
                   </div>
@@ -218,8 +287,8 @@
                       <thead>
                         <tr>
                           <th>Số phòng</th>
-                          <th>Loại phòng</th>
-                          <th>Người trực</th>
+                          <th>Tên phòng</th>
+                          <th>Người phụ trách</th>
                           <th class="text-end">Thao tác</th>
                         </tr>
                       </thead>
@@ -269,17 +338,17 @@
                           <!-- Edit Room Modal -->
                           <div class="modal fade" id="editRoomModal${room.id}" tabindex="-1">
                             <div class="modal-dialog">
-                              <div class="modal-content">
-                                <form action="${pageContext.request.contextPath}/admin/room-config" method="post">
+                                                 <form action="${pageContext.request.contextPath}/admin/room-config" method="post">
                                   <input type="hidden" name="action" value="edit">
                                   <input type="hidden" name="roomId" value="${room.id}">
+                                  <input type="hidden" name="tab" value="rooms">
                                   <div class="modal-header border-0 pb-0">
                                     <h5 class="modal-title fw-bold text-primary">Sửa Tên Phòng Khám</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                   </div>
                                   <div class="modal-body p-4">
                                     <div class="mb-3">
-                                      <label class="form-label fw-semibold">Loại phòng (Tên phòng)</label>
+                                      <label class="form-label fw-semibold">Tên phòng</label>
                                       <input type="text" name="roomName" class="form-control" value="${room.name}"
                                         required oninput="checkRoomTypeForEdit(this, ${room.id})">
                                     </div>
@@ -289,7 +358,7 @@
 
                                     <div id="docDivEdit${room.id}" class="mb-3"
                                       style="display: ${isSurgery ? 'none' : 'block'};">
-                                      <label class="form-label fw-semibold">Chỉ định Bác sĩ trực</label>
+                                      <label class="form-label fw-semibold">Người phụ trách (Bác sĩ)</label>
                                       <select name="doctorId" class="form-select">
                                         <option value="">-- Không có / Bỏ trống --</option>
                                         <c:forEach var="doctor" items="${doctors}">
@@ -307,7 +376,7 @@
 
                                     <div id="specDivEdit${room.id}" class="mb-3"
                                       style="display: ${isSurgery ? 'block' : 'none'};">
-                                      <label class="form-label fw-semibold">Chỉ định Chuyên viên y tế</label>
+                                      <label class="form-label fw-semibold">Người phụ trách (Chuyên viên y tế)</label>
                                       <select name="specialistId" class="form-select">
                                         <option value="">-- Không có / Bỏ trống --</option>
                                         <c:forEach var="specialist" items="${specialists}">
@@ -342,6 +411,7 @@
                                 <form action="${pageContext.request.contextPath}/admin/room-config" method="post">
                                   <input type="hidden" name="action" value="delete">
                                   <input type="hidden" name="roomId" value="${room.id}">
+                                  <input type="hidden" name="tab" value="rooms">
                                   <div class="modal-header border-0 pb-0">
                                     <h5 class="modal-title fw-bold text-danger"><i
                                         class="bi bi-exclamation-triangle me-2"></i>Xác nhận Xóa Phòng Khám</h5>
@@ -368,12 +438,14 @@
                   </div>
                 </div>
               </div>
+              </c:if>
 
-              <!-- Appointment Time Slots -->
-              <div class="col-lg-12 mt-4">
+              <c:if test="${currentTab == 'slots'}">
+              <!-- Appointment Time Slots Screen -->
+              <div class="col-lg-12">
                 <div class="admin-card">
                   <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="mb-0">Cấu hình Khung giờ khám</h5>
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>Cấu hình Khung giờ khám</h5>
                     <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addSlotModal"><i
                         class="bi bi-plus"></i> Thêm khung giờ</button>
                   </div>
@@ -463,6 +535,7 @@
                   </div>
                 </div>
               </div>
+              </c:if>
             </div>
 
             <!-- Add Room Modal -->
@@ -471,18 +544,19 @@
                 <div class="modal-content">
                   <form action="${pageContext.request.contextPath}/admin/room-config" method="post">
                     <input type="hidden" name="action" value="add">
+                    <input type="hidden" name="tab" value="rooms">
                     <div class="modal-header border-0 pb-0">
                       <h5 class="modal-title fw-bold text-primary">Thêm Phòng Khám Mới</h5>
                       <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body p-4">
                       <div class="mb-3">
-                        <label class="form-label fw-semibold">Tên phòng khám</label>
+                        <label class="form-label fw-semibold">Tên phòng</label>
                         <input type="text" name="roomName" class="form-control" required
                           placeholder="VD: Phòng Khám 102" oninput="checkRoomTypeForAdd(this)">
                       </div>
                       <div id="docDivAdd" class="mb-3" style="display: block;">
-                        <label class="form-label fw-semibold">Phân công Bác sĩ trực (Tùy chọn)</label>
+                        <label class="form-label fw-semibold">Người phụ trách - Bác sĩ (Tùy chọn)</label>
                         <select name="doctorId" class="form-select">
                           <option value="">-- Bỏ qua / Sắp xếp sau --</option>
                           <c:forEach var="doctor" items="${doctors}">
@@ -494,7 +568,7 @@
                         <div class="form-text text-muted small">Chỉ phòng khám mắt mới chọn được Bác sĩ.</div>
                       </div>
                       <div id="specDivAdd" class="mb-3" style="display: none;">
-                        <label class="form-label fw-semibold">Phân công Chuyên viên y tế (Tùy chọn)</label>
+                        <label class="form-label fw-semibold">Người phụ trách - Chuyên viên y tế (Tùy chọn)</label>
                         <select name="specialistId" class="form-select">
                           <option value="">-- Bỏ qua / Sắp xếp sau --</option>
                           <c:forEach var="specialist" items="${specialists}">

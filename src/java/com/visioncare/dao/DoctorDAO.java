@@ -95,12 +95,8 @@ public class DoctorDAO {
         d.setDepartmentKey("general");
         d.setDescription("Bác sĩ chuyên khoa tại phòng khám VisionCare.");
 
-        if (hasColumn(rs, "Biography") && rs.getString("Biography") != null) {
+        if (hasColumn(rs, "Biography")) {
             d.setBiography(rs.getString("Biography"));
-        } else {
-            // Mock data phong phú nếu DB chưa có cột Biography
-            d.setBiography("Bác sĩ " + fullName + " là một trong những chuyên gia hàng đầu trong lĩnh vực " + specialty
-                    + ". Với hơn 10 năm kinh nghiệm làm việc tại các bệnh viện lớn trong và ngoài nước, bác sĩ luôn tận tâm và mang đến giải pháp điều trị tối ưu nhất cho từng bệnh nhân.");
         }
 
         if (hasColumn(rs, "Achievements") && rs.getString("Achievements") != null) {

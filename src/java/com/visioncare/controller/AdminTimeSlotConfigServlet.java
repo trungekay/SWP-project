@@ -21,7 +21,7 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
 
                 if (!timeSlotDAO.isStartTimeValid(startTime)) {
                     request.getSession().setAttribute("errorMsg", "Không thể thêm ca. Ca mới phải bắt đầu sau khi các ca hiện tại kết thúc!");
-                    response.sendRedirect(request.getContextPath() + "/admin/clinic-config");
+                    response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=slots");
                     return;
                 }
 
@@ -45,6 +45,6 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
             request.getSession().setAttribute("errorMsg", "Lỗi cấu hình Slot: " + e.getMessage());
         }
 
-        response.sendRedirect(request.getContextPath() + "/admin/clinic-config");
+        response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=slots");
     }
 }

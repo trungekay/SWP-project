@@ -20,10 +20,24 @@
                 </a>
             </li>
             <li>
-                <a href="${pageContext.request.contextPath}/admin/clinic-config" class="${param.activeNav == 'clinic-config' ? 'active' : ''}">
+                <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=rooms" class="${param.activeNav == 'clinic-config' || param.activeNav == 'clinic-rooms' || param.activeNav == 'clinic-slots' ? 'active' : ''}">
                     <i class="bi bi-gear"></i>
                     Cấu hình Phòng Khám
                 </a>
+                <c:if test="${param.activeNav == 'clinic-config' || param.activeNav == 'clinic-rooms' || param.activeNav == 'clinic-slots'}">
+                    <ul class="sidebar-submenu">
+                        <li>
+                            <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=rooms" class="${empty param.activeSub || param.activeSub == 'rooms' ? 'active-sub' : ''}">
+                                <i class="bi bi-door-open me-2" style="font-size: 14px;"></i>Cấu hình phòng
+                            </a>
+                        </li>
+                        <li>
+                            <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=slots" class="${param.activeSub == 'slots' ? 'active-sub' : ''}">
+                                <i class="bi bi-clock me-2" style="font-size: 14px;"></i>Cấu hình khung giờ khám
+                            </a>
+                        </li>
+                    </ul>
+                </c:if>
             </li>
             <li>
                 <a href="${pageContext.request.contextPath}/admin/catalog" class="${param.activeNav == 'catalog' ? 'active' : ''}">
