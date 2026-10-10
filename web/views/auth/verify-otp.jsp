@@ -155,7 +155,7 @@
       });
 
       // Timer logic
-      let timeLeft = 59;
+      let timeLeft = 119;
       const timerElement = document.getElementById("resendTimer");
       const resendContainer = document.getElementById("resendContainer");
       

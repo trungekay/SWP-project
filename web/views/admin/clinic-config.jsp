@@ -238,6 +238,10 @@
                     <h2>Cấu hình Khung Giờ Khám</h2>
                     <p class="text-muted">Quản lý các ca khám bệnh và thời gian làm việc trong ngày</p>
                   </c:when>
+                  <c:when test="${currentTab == 'intro'}">
+                    <h2>Cấu hình Giới thiệu Phòng Khám</h2>
+                    <p class="text-muted">Quản lý và thay đổi 8 hình ảnh giới thiệu phòng khám hiển thị trên trang chủ</p>
+                  </c:when>
                   <c:otherwise>
                     <h2>Cấu hình Phòng Khám</h2>
                     <p class="text-muted">Quản lý danh sách phòng khám và phân công nhân sự phụ trách</p>
@@ -248,12 +252,15 @@
             </div>
 
             <!-- Tab Navigation Buttons for Quick Switching -->
-            <div class="d-flex gap-2 mb-4">
-              <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=rooms" class="config-tab-btn ${currentTab != 'slots' ? 'active' : ''}">
+            <div class="d-flex flex-wrap gap-2 mb-4">
+              <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=rooms" class="config-tab-btn ${currentTab == 'rooms' || (currentTab != 'slots' && currentTab != 'intro') ? 'active' : ''}">
                 <i class="bi bi-door-open"></i> Cấu hình phòng
               </a>
               <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=slots" class="config-tab-btn ${currentTab == 'slots' ? 'active' : ''}">
                 <i class="bi bi-clock-history"></i> Cấu hình khung giờ khám
+              </a>
+              <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=intro" class="config-tab-btn ${currentTab == 'intro' ? 'active' : ''}">
+                <i class="bi bi-images"></i> Cấu hình giới thiệu
               </a>
             </div>
 
@@ -273,7 +280,7 @@
             </c:if>
 
             <div class="row g-4">
-              <c:if test="${currentTab != 'slots'}">
+              <c:if test="${currentTab == 'rooms' || (currentTab != 'slots' && currentTab != 'intro')}">
               <!-- Clinic Rooms Screen -->
               <div class="col-lg-12">
                 <div class="admin-card">
@@ -536,6 +543,225 @@
                 </div>
               </div>
               </c:if>
+
+              <c:if test="${currentTab == 'intro'}">
+              <!-- Clinic Introduction / Gallery Configuration Screen (Full CRUD) -->
+              <div class="col-lg-12">
+                <div class="admin-card">
+                  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                    <div>
+                      <h5 class="mb-1 fw-bold"><i class="bi bi-images me-2 text-primary"></i>Danh sách Hình ảnh Giới thiệu Phòng Khám</h5>
+                      <p class="text-muted small mb-0">Quản lý toàn diện các hình ảnh giới thiệu (Thêm, Xem, Sửa, Xóa ảnh) hiển thị trực tiếp trên trang chủ.</p>
+                    </div>
+                    <div>
+                      <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addGalleryModal">
+                        <i class="bi bi-plus-lg me-1"></i> Thêm hình ảnh
+                      </button>
+                    </div>
+                  </div>
+
+                  <c:choose>
+                    <c:when test="${empty galleryItems}">
+                      <div class="text-center py-5">
+                        <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">Chưa có hình ảnh giới thiệu nào.</p>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addGalleryModal">
+                          <i class="bi bi-plus-lg me-1"></i> Thêm ảnh đầu tiên
+                        </button>
+                      </div>
+                    </c:when>
+                    <c:otherwise>
+                      <div class="row g-4">
+                        <c:forEach var="item" items="${galleryItems}">
+                          <div class="col-sm-6 col-lg-4 col-xl-3">
+                            <div class="card h-100 border rounded-3 overflow-hidden shadow-sm d-flex flex-column" style="transition: transform 0.2s, box-shadow 0.2s;">
+                              <div class="position-relative" style="height: 190px; background-color: #f1f5f9; overflow: hidden;">
+                                <img src="${pageContext.request.contextPath}/clinic-gallery-image?id=${item.id}&t=${not empty item.updatedAt ? item.updatedAt : '0'}" 
+                                     alt="${item.title}" 
+                                     class="w-100 h-100 object-fit-cover"
+                                     onerror="this.onerror=null; this.src='${pageContext.request.contextPath}/assets/img/gallery/${not empty item.defaultFilename ? item.defaultFilename : 'gallery-1.jpg'}';">
+                                <span class="position-absolute top-0 start-0 m-2 badge ${item.hasCustomImage ? 'bg-success' : 'bg-secondary'} shadow-sm">
+                                  <i class="bi ${item.hasCustomImage ? 'bi-check-circle' : 'bi-image'} me-1"></i>
+                                  #${item.id} (Thứ tự: ${item.displayOrder})
+                                </span>
+                              </div>
+                              <div class="card-body p-3 d-flex flex-column justify-content-between flex-grow-1">
+                                <div>
+                                  <h6 class="fw-bold mb-1 text-truncate" title="${item.title}">${item.title}</h6>
+                                  <p class="text-muted small mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 38px;">
+                                    ${empty item.description ? 'Hình ảnh giới thiệu cơ sở vật chất phòng khám VisionCare.' : item.description}
+                                  </p>
+                                </div>
+                                <div class="pt-2 border-top d-flex gap-2">
+                                  <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1" data-bs-toggle="modal" data-bs-target="#editGalleryModal${item.id}">
+                                    <i class="bi bi-pencil me-1"></i> Sửa
+                                  </button>
+                                  <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteGalleryModal${item.id}" title="Xóa hình ảnh này">
+                                    <i class="bi bi-trash"></i>
+                                  </button>
+                                  <c:if test="${item.hasCustomImage && not empty item.defaultFilename}">
+                                    <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#resetGalleryModal${item.id}" title="Khôi phục ảnh gốc mặc định">
+                                      <i class="bi bi-arrow-counterclockwise"></i>
+                                    </button>
+                                  </c:if>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- Edit Gallery Modal -->
+                          <div class="modal fade" id="editGalleryModal${item.id}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                              <div class="modal-content border-0 shadow">
+                                <form action="${pageContext.request.contextPath}/admin/clinic-intro-config" method="post" enctype="multipart/form-data">
+                                  <input type="hidden" name="action" value="update">
+                                  <input type="hidden" name="itemId" value="${item.id}">
+                                  <div class="modal-header border-0 pb-0">
+                                    <h5 class="modal-title fw-bold text-primary"><i class="bi bi-pencil-square me-2"></i>Chỉnh sửa Hình ảnh #${item.id}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                  </div>
+                                  <div class="modal-body p-4">
+                                    <div class="mb-3 text-center">
+                                      <label class="form-label d-block text-start fw-semibold">Ảnh hiện tại:</label>
+                                      <img id="previewImg${item.id}" 
+                                           src="${pageContext.request.contextPath}/clinic-gallery-image?id=${item.id}&t=${not empty item.updatedAt ? item.updatedAt : '0'}" 
+                                           alt="${item.title}" 
+                                           class="img-thumbnail rounded shadow-sm w-100" 
+                                           style="max-height: 200px; object-fit: cover;"
+                                           onerror="this.onerror=null; this.src='${pageContext.request.contextPath}/assets/img/gallery/${not empty item.defaultFilename ? item.defaultFilename : 'gallery-1.jpg'}';">
+                                    </div>
+                                    <div class="mb-3">
+                                      <label class="form-label fw-semibold">Chọn ảnh mới để thay thế (Tùy chọn)</label>
+                                      <input type="file" name="imageFile" class="form-control" accept="image/*" 
+                                             onchange="previewGalleryImage(this, 'previewImg${item.id}')">
+                                      <div class="form-text small text-muted">Hỗ trợ JPG, PNG, WEBP (tối đa 10MB). Giữ trống nếu không muốn đổi file ảnh.</div>
+                                    </div>
+                                    <div class="mb-3">
+                                      <label class="form-label fw-semibold">Tiêu đề ảnh <span class="text-danger">*</span></label>
+                                      <input type="text" name="title" class="form-control" value="${item.title}" required placeholder="VD: Phòng khám mắt hiện đại">
+                                    </div>
+                                    <div class="row mb-3">
+                                      <div class="col-6">
+                                        <label class="form-label fw-semibold">Thứ tự hiển thị</label>
+                                        <input type="number" name="displayOrder" class="form-control" value="${item.displayOrder}" min="1">
+                                      </div>
+                                    </div>
+                                    <div class="mb-3">
+                                      <label class="form-label fw-semibold">Mô tả ngắn</label>
+                                      <textarea name="description" class="form-control" rows="2" placeholder="VD: Trang thiết bị nhãn khoa tiên tiến...">${item.description}</textarea>
+                                    </div>
+                                  </div>
+                                  <div class="modal-footer border-0 pt-0">
+                                    <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Hủy</button>
+                                    <button type="submit" class="btn btn-primary px-4 rounded-pill"><i class="bi bi-cloud-upload me-1"></i> Lưu thay đổi</button>
+                                  </div>
+                                </form>
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- Delete Gallery Modal -->
+                          <div class="modal fade" id="deleteGalleryModal${item.id}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                              <div class="modal-content border-0 shadow">
+                                <form action="${pageContext.request.contextPath}/admin/clinic-intro-config" method="post">
+                                  <input type="hidden" name="action" value="delete">
+                                  <input type="hidden" name="itemId" value="${item.id}">
+                                  <div class="modal-header border-0 pb-0">
+                                    <h5 class="modal-title fw-bold text-danger"><i class="bi bi-trash me-2"></i>Xác nhận Xóa Hình ảnh</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                  </div>
+                                  <div class="modal-body p-4 text-center">
+                                    <p class="mb-2 fs-6">Bạn có chắc chắn muốn xóa hình ảnh <strong>${item.title}</strong> (Mã #${item.id}) không?</p>
+                                    <p class="text-muted small mb-0">Hành động này sẽ xóa vĩnh viễn hình ảnh này khỏi hệ thống.</p>
+                                  </div>
+                                  <div class="modal-footer border-0 justify-content-center pt-0">
+                                    <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Hủy</button>
+                                    <button type="submit" class="btn btn-danger px-4 rounded-pill">Xóa hình ảnh</button>
+                                  </div>
+                                </form>
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- Reset Gallery Modal -->
+                          <c:if test="${item.hasCustomImage && not empty item.defaultFilename}">
+                            <div class="modal fade" id="resetGalleryModal${item.id}" tabindex="-1" aria-hidden="true">
+                              <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow">
+                                  <form action="${pageContext.request.contextPath}/admin/clinic-intro-config" method="post">
+                                    <input type="hidden" name="action" value="reset">
+                                    <input type="hidden" name="itemId" value="${item.id}">
+                                    <div class="modal-header border-0 pb-0">
+                                      <h5 class="modal-title fw-bold text-warning"><i class="bi bi-arrow-counterclockwise me-2"></i>Đặt lại ảnh mặc định</h5>
+                                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body p-4 text-center">
+                                      <p class="mb-2">Bạn có chắc chắn muốn đặt lại hình ảnh vị trí <strong>#${item.id}</strong> về ảnh mặc định ban đầu?</p>
+                                      <p class="text-muted small mb-0">Hệ thống sẽ xóa ảnh đã tải lên và khôi phục hiển thị file gốc (${item.defaultFilename}).</p>
+                                    </div>
+                                    <div class="modal-footer border-0 justify-content-center pt-0">
+                                      <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Hủy</button>
+                                      <button type="submit" class="btn btn-warning px-4 rounded-pill text-white">Xác nhận đặt lại</button>
+                                    </div>
+                                  </form>
+                                </div>
+                              </div>
+                            </div>
+                          </c:if>
+                        </c:forEach>
+                      </div>
+                    </c:otherwise>
+                  </c:choose>
+                </div>
+              </div>
+              </c:if>
+
+              <!-- Add Gallery Item Modal -->
+              <div class="modal fade" id="addGalleryModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content border-0 shadow">
+                    <form action="${pageContext.request.contextPath}/admin/clinic-intro-config" method="post" enctype="multipart/form-data">
+                      <input type="hidden" name="action" value="add">
+                      <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold text-primary"><i class="bi bi-plus-circle me-2"></i>Thêm Hình ảnh Giới thiệu Mới</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body p-4">
+                        <div class="mb-3 text-center">
+                          <img id="previewImgAdd" src="" alt="Xem trước ảnh" 
+                               class="img-thumbnail rounded shadow-sm w-100" 
+                               style="max-height: 200px; object-fit: cover; display: none;">
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label fw-semibold">Chọn tệp hình ảnh <span class="text-danger">*</span></label>
+                          <input type="file" name="imageFile" class="form-control" accept="image/*" required
+                                 onchange="previewGalleryImage(this, 'previewImgAdd'); document.getElementById('previewImgAdd').style.display='block';">
+                          <div class="form-text small text-muted">Hỗ trợ định dạng JPG, PNG, WEBP (tối đa 10MB).</div>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label fw-semibold">Tiêu đề ảnh <span class="text-danger">*</span></label>
+                          <input type="text" name="title" class="form-control" required placeholder="VD: Phòng phẫu thuật Lasik hiện đại">
+                        </div>
+                        <div class="row mb-3">
+                          <div class="col-6">
+                            <label class="form-label fw-semibold">Thứ tự hiển thị</label>
+                            <input type="number" name="displayOrder" class="form-control" value="${fn:length(galleryItems) + 1}" min="1">
+                          </div>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label fw-semibold">Mô tả ngắn</label>
+                          <textarea name="description" class="form-control" rows="2" placeholder="VD: Trang thiết bị nhãn khoa tiên tiến..."></textarea>
+                        </div>
+                      </div>
+                      <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary px-4 rounded-pill"><i class="bi bi-check-lg me-1"></i> Thêm ảnh</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Add Room Modal -->
@@ -656,6 +882,19 @@
               document.getElementById('specDivAdd').style.display = 'none';
               document.getElementById('specDivAdd').querySelector('select').value = '';
               document.getElementById('docDivAdd').style.display = 'block';
+            }
+          }
+
+          function previewGalleryImage(input, imgId) {
+            if (input.files && input.files[0]) {
+              const reader = new FileReader();
+              reader.onload = function(e) {
+                const target = document.getElementById(imgId);
+                if (target) {
+                  target.src = e.target.result;
+                }
+              };
+              reader.readAsDataURL(input.files[0]);
             }
           }
         </script>
