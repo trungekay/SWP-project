@@ -95,4 +95,12 @@ public class Doctor {
     public void setRoomId(int roomId) {
         this.roomId = roomId;
     }
+
+    private String roomName;
+    public String getRoomName() {
+        return roomName;
+    }
+    public void setRoomName(String roomName) {
+        this.roomName = roomName;
+    }
 }

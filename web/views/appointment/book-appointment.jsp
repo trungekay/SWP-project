@@ -403,6 +403,9 @@
                         <label class="d-block h-100">
                           <input type="radio" class="d-none service-radio" name="serviceId" value="${svc.id}"
                             data-specialty="${svc.specialty}"
+                            data-name="${svc.name}"
+                            data-price="${svc.price}"
+                            onchange="filterDoctorsByService(this)"
                             ${(selectedServiceId == svc.id or (empty selectedServiceId and status.first)) ? 'checked' : ''}>
                           <div class="service-card d-flex flex-column justify-content-between">
                             <div>
@@ -425,16 +428,45 @@
 
                   <div class="row g-3">
                     <div class="col-md-12">
-                      <label for="doctorSelect" class="form-label fw-bold">Chọn Bác sĩ điều trị phụ trách <span class="text-danger">*</span></label>
-                      <select class="form-select form-select-lg rounded-3" id="doctorSelect" name="doctorId" required onchange="onDoctorOrDateChange()">
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label for="doctorSelect" class="form-label fw-bold mb-0">Bác sĩ điều trị phụ trách <span class="text-danger">*</span></label>
+                        <span id="doctorFilterTag" class="badge bg-teal text-white small d-none" style="background:#0d9488;">
+                          <i class="bi bi-funnel-fill me-1"></i>Lọc theo chuyên khoa
+                        </span>
+                      </div>
+                      <div id="doctorFilterNotice" class="alert alert-light border rounded-3 p-2 px-3 mb-2 small d-none text-muted"></div>
+                      
+                      <select class="form-select form-select-lg rounded-3" id="doctorSelect" name="doctorId" required onchange="onDoctorSelectChange()">
                         <option value="">— Vui lòng chọn bác sĩ nhãn khoa —</option>
                         <c:forEach var="doc" items="${doctors}">
-                          <option value="${doc.id}" data-dept="${doc.departmentKey}"
+                          <option value="${doc.id}"
+                            data-dept="${doc.departmentKey}"
+                            data-specialty="${doc.specialty}"
+                            data-name="${doc.fullName}"
+                            data-room="${doc.roomName != null ? doc.roomName : 'Phòng khám chuyên khoa'}"
+                            data-avatar="${pageContext.request.contextPath}/assets/img/${not empty doc.image ? doc.image : 'doctors/doctors-1.jpg'}"
                             ${(selectedDoctorId == doc.id or doc.id == appointment.doctorId) ? 'selected' : ''}>
                             ${doc.fullName} — Chuyên khoa: ${doc.specialty} ${doc.roomName != null ? ('(' + doc.roomName + ')') : ''}
                           </option>
                         </c:forEach>
                       </select>
+
+                      <%-- Doctor Preview Card --%>
+                      <div id="doctorPreviewCard" class="card border-0 shadow-sm rounded-4 p-3 mt-3 bg-light d-none">
+                        <div class="d-flex align-items-center">
+                          <img id="docPreviewAvatar" src="" alt="Bác sĩ" class="rounded-circle border me-3 shadow-sm" style="width: 60px; height: 60px; object-fit: cover;">
+                          <div class="flex-grow-1">
+                            <div class="d-flex align-items-center justify-content-between">
+                              <h6 class="fw-bold mb-0 text-dark" id="docPreviewName"></h6>
+                              <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">
+                                <i class="bi bi-check-circle me-1"></i>Đúng chuyên khoa
+                              </span>
+                            </div>
+                            <p class="text-primary small mb-1 fw-semibold" id="docPreviewSpecialty"></p>
+                            <span class="badge bg-white border text-secondary small" id="docPreviewRoom"></span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -588,6 +620,123 @@
     }
   }
 
+  // Lọc bác sĩ theo chuyên khoa khi người dùng nhấn chọn dịch vụ / bệnh lý
+  function filterDoctorsByService(radioElement) {
+    if (!radioElement) return;
+    const specialtyCode = (radioElement.dataset.specialty || '').toLowerCase().trim();
+    const serviceName = radioElement.dataset.name || 'Dịch vụ đã chọn';
+    const doctorSelect = document.getElementById('doctorSelect');
+    if (!doctorSelect) return;
+
+    const filterTag = document.getElementById('doctorFilterTag');
+    const filterNotice = document.getElementById('doctorFilterNotice');
+
+    let matchedCount = 0;
+    let firstMatchedValue = '';
+    let currentStillValid = false;
+    const currentVal = doctorSelect.value;
+
+    Array.from(doctorSelect.options).forEach(opt => {
+      if (!opt.value) return; // Bỏ qua option placeholder
+      const docDept = (opt.dataset.dept || '').toLowerCase().trim();
+      const docSpecialty = (opt.dataset.specialty || '').toLowerCase().trim();
+
+      // Kiểm tra xem bác sĩ có đúng chuyên khoa với dịch vụ được chọn không
+      let isMatch = false;
+      if (!specialtyCode || specialtyCode === 'all') {
+        isMatch = true;
+      } else if (docDept === specialtyCode) {
+        isMatch = true;
+      } else if (docSpecialty.includes(specialtyCode)) {
+        isMatch = true;
+      } else if (specialtyCode === 'general' && (docDept === 'general' || docSpecialty.includes('tổng quát'))) {
+        isMatch = true;
+      } else if (specialtyCode === 'refraction' && (docDept === 'refraction' || docSpecialty.includes('khúc xạ'))) {
+        isMatch = true;
+      } else if (specialtyCode === 'lasik' && (docDept === 'lasik' || docSpecialty.includes('lasik'))) {
+        isMatch = true;
+      } else if (specialtyCode === 'children' && (docDept === 'children' || docSpecialty.includes('trẻ em'))) {
+        isMatch = true;
+      } else if (specialtyCode === 'cataract' && (docDept === 'cataract' || docSpecialty.includes('thủy tinh thể'))) {
+        isMatch = true;
+      } else if (specialtyCode === 'retina' && (docDept === 'retina' || docSpecialty.includes('võng mạc') || docSpecialty.includes('glaucoma'))) {
+        isMatch = true;
+      }
+
+      if (isMatch) {
+        opt.hidden = false;
+        opt.disabled = false;
+        opt.style.display = '';
+        matchedCount++;
+        if (!firstMatchedValue) firstMatchedValue = opt.value;
+        if (opt.value === currentVal) currentStillValid = true;
+      } else {
+        opt.hidden = true;
+        opt.disabled = true;
+        opt.style.display = 'none';
+      }
+    });
+
+    // Nếu không tìm thấy bác sĩ chuyên khoa riêng, mở tất cả để bệnh nhân không bị trống
+    if (matchedCount === 0) {
+      Array.from(doctorSelect.options).forEach(opt => {
+        opt.hidden = false;
+        opt.disabled = false;
+        opt.style.display = '';
+        if (opt.value && !firstMatchedValue) firstMatchedValue = opt.value;
+      });
+      matchedCount = doctorSelect.options.length - 1;
+    }
+
+    // Tự động chọn bác sĩ phù hợp đầu tiên nếu bác sĩ đang chọn không thuộc chuyên khoa này
+    if (!currentStillValid && firstMatchedValue) {
+      doctorSelect.value = firstMatchedValue;
+    }
+
+    // Cập nhật thông báo trực quan
+    if (filterTag) filterTag.classList.remove('d-none');
+    if (filterNotice) {
+      filterNotice.innerHTML = '<i class="bi bi-funnel-fill text-teal me-2" style="color:#0d9488;"></i>' +
+        'Đã lọc <b>' + matchedCount + ' bác sĩ</b> đúng chuyên khoa cho dịch vụ: <b class="text-dark">' + serviceName + '</b>';
+      filterNotice.classList.remove('d-none');
+    }
+
+    // Cập nhật card xem trước bác sĩ và tải lại khung giờ trực
+    updateDoctorPreview();
+    onDoctorOrDateChange();
+  }
+
+  // Khi người dùng đổi bác sĩ trong dropdown
+  function onDoctorSelectChange() {
+    updateDoctorPreview();
+    onDoctorOrDateChange();
+  }
+
+  // Cập nhật thông tin chi tiết bác sĩ được chọn vào card xem trước
+  function updateDoctorPreview() {
+    const doctorSelect = document.getElementById('doctorSelect');
+    const previewCard = document.getElementById('doctorPreviewCard');
+    if (!doctorSelect || !previewCard) return;
+
+    const selectedOpt = doctorSelect.selectedOptions[0];
+    if (!selectedOpt || !selectedOpt.value) {
+      previewCard.classList.add('d-none');
+      return;
+    }
+
+    const docName = selectedOpt.dataset.name || selectedOpt.text;
+    const docSpecialty = selectedOpt.dataset.specialty || '';
+    const docRoom = selectedOpt.dataset.room || 'Phòng khám chuyên khoa';
+    const docAvatar = selectedOpt.dataset.avatar || '${pageContext.request.contextPath}/assets/img/doctors/doctors-1.jpg';
+
+    document.getElementById('docPreviewName').textContent = docName;
+    document.getElementById('docPreviewSpecialty').textContent = 'Chuyên khoa: ' + docSpecialty;
+    document.getElementById('docPreviewRoom').textContent = 'Vị trí: ' + docRoom;
+    document.getElementById('docPreviewAvatar').src = docAvatar;
+
+    previewCard.classList.remove('d-none');
+  }
+
   // Tải danh sách slots qua AJAX khi người dùng thay đổi Bác sĩ hoặc Ngày
   function onDoctorOrDateChange() {
     const docSelect = document.getElementById('doctorSelect');
@@ -678,11 +827,17 @@
       });
   }
 
-  // Tự động kích hoạt tải slot khi trang sẵn sàng nếu đã có sẵn Doctor & Date
+  // Tự động khởi tạo và lọc bác sĩ theo dịch vụ đang được chọn khi tải trang
   document.addEventListener('DOMContentLoaded', function () {
-    const docSelect = document.getElementById('doctorSelect');
-    if (docSelect && docSelect.value) {
-      onDoctorOrDateChange();
+    const checkedSvc = document.querySelector('input[name="serviceId"]:checked');
+    if (checkedSvc) {
+      filterDoctorsByService(checkedSvc);
+    } else {
+      updateDoctorPreview();
+      const docSelect = document.getElementById('doctorSelect');
+      if (docSelect && docSelect.value) {
+        onDoctorOrDateChange();
+      }
     }
   });
 </script>

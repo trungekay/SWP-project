@@ -8,7 +8,11 @@ import java.util.List;
 public class DoctorDAO {
     public List<Doctor> getAll() throws Exception {
         List<Doctor> list = new ArrayList<>();
-        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 3 AND a.Account_Status != 'Deleted' ORDER BY e.Employee_ID";
+        String sql = "SELECT e.*, rm.Room_Name FROM Employee_Profile e " +
+                     "JOIN Account a ON e.Account_ID = a.Account_ID " +
+                     "LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID " +
+                     "WHERE a.Role_ID = 3 AND a.Account_Status != 'Deleted' " +
+                     "ORDER BY e.Employee_ID";
         try (Connection conn = DBContext.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
@@ -21,7 +25,11 @@ public class DoctorDAO {
 
     public List<Doctor> getSpecialists() throws Exception {
         List<Doctor> list = new ArrayList<>();
-        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 4 AND a.Account_Status != 'Deleted' ORDER BY e.Employee_ID";
+        String sql = "SELECT e.*, rm.Room_Name FROM Employee_Profile e " +
+                     "JOIN Account a ON e.Account_ID = a.Account_ID " +
+                     "LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID " +
+                     "WHERE a.Role_ID = 4 AND a.Account_Status != 'Deleted' " +
+                     "ORDER BY e.Employee_ID";
         try (Connection conn = DBContext.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
@@ -33,7 +41,10 @@ public class DoctorDAO {
     }
 
     public Doctor getById(int id) throws Exception {
-        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 3 AND a.Account_Status != 'Deleted' AND e.Employee_ID = ?";
+        String sql = "SELECT e.*, rm.Room_Name FROM Employee_Profile e " +
+                     "JOIN Account a ON e.Account_ID = a.Account_ID " +
+                     "LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID " +
+                     "WHERE a.Role_ID = 3 AND a.Account_Status != 'Deleted' AND e.Employee_ID = ?";
         try (Connection conn = DBContext.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -171,6 +182,9 @@ public class DoctorDAO {
         d.setRating(5.0);
         if (hasColumn(rs, "Room_ID")) {
             d.setRoomId(rs.getInt("Room_ID"));
+        }
+        if (hasColumn(rs, "Room_Name") && rs.getString("Room_Name") != null) {
+            d.setRoomName(rs.getString("Room_Name"));
         }
         return d;
     }
