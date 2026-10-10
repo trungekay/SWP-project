@@ -109,6 +109,12 @@
               <p class="text-muted small mb-4">Đảm bảo tài khoản của bạn đang sử dụng mật khẩu an toàn</p>
               <hr class="mb-4">
               
+              <c:if test="${param.force == 'true' || sessionScope.user.firstLogin}">
+                <div class="alert alert-warning alert-dismissible fade show small" role="alert">
+                  <i class="bi bi-shield-lock me-2"></i>Vì lý do bảo mật, bạn bắt buộc phải đổi mật khẩu trong lần đăng nhập đầu tiên.
+                </div>
+              </c:if>
+              
               <c:if test="${not empty sessionScope.success}">
                 <div class="alert alert-success alert-dismissible fade show small" role="alert">
                   <i class="bi bi-check-circle me-2"></i>${sessionScope.success}

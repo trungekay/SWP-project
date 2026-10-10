@@ -44,7 +44,9 @@ public class LoginServlet extends HttpServlet {
                 session.setMaxInactiveInterval(30 * 60);
 
                 String redirect = (String) session.getAttribute("redirectAfterLogin");
-                if (redirect != null) {
+                if (user.isFirstLogin()) {
+                    response.sendRedirect(request.getContextPath() + "/views/profile/change-password.jsp?force=true");
+                } else if (redirect != null) {
                     session.removeAttribute("redirectAfterLogin");
                     response.sendRedirect(redirect);
                 } else {

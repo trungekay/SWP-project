@@ -20,7 +20,7 @@ public class AdminUserAddServlet extends HttpServlet {
             throws ServletException, IOException {
         String fullName = request.getParameter("fullName");
         String email = request.getParameter("email");
-        String password = request.getParameter("password");
+        String password = "NEW_" + request.getParameter("password");
         String phone = request.getParameter("phone");
         if (phone != null) {
             phone = phone.trim();
@@ -76,8 +76,28 @@ public class AdminUserAddServlet extends HttpServlet {
         }
         
         try {
+            // Check if email exists
+            if (userDAO.getByEmail(email) != null) {
+                request.setAttribute("error", "Lỗi: Email '" + email + "' đã được sử dụng trong hệ thống. Vui lòng nhập một email khác.");
+                request.getRequestDispatcher("/views/admin/user-add.jsp").forward(request, response);
+                return;
+            }
+            
+            // Check if phone exists
+            if (userDAO.getByPhone(phone) != null) {
+                request.setAttribute("error", "Lỗi: Số điện thoại '" + phone + "' đã tồn tại trong hệ thống. Vui lòng kiểm tra lại.");
+                request.getRequestDispatcher("/views/admin/user-add.jsp").forward(request, response);
+                return;
+            }
+            
             boolean success = userDAO.addSystemUser(user);
             if (success) {
+                try {
+                    com.visioncare.util.EmailUtil.sendAccountCredentialsEmail(email, password);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.out.println("Failed to send credentials email to: " + email);
+                }
                 request.getSession().setAttribute("success", "Thêm người dùng thành công!");
                 response.sendRedirect(request.getContextPath() + "/admin/users");
             } else {
@@ -86,7 +106,13 @@ public class AdminUserAddServlet extends HttpServlet {
             }
         } catch (Exception ex) {
             ex.printStackTrace();
-            request.setAttribute("error", "Lỗi hệ thống: " + ex.getMessage());
+            String errorMsg = ex.getMessage();
+            if (errorMsg != null && (errorMsg.contains("UNIQUE KEY") || errorMsg.contains("duplicate key"))) {
+                errorMsg = "Lỗi: Email '" + email + "' đã được sử dụng trong hệ thống. Vui lòng nhập một email khác.";
+            } else {
+                errorMsg = "Lỗi hệ thống: " + errorMsg;
+            }
+            request.setAttribute("error", errorMsg);
             request.getRequestDispatcher("/views/admin/user-add.jsp").forward(request, response);
         }
     }
