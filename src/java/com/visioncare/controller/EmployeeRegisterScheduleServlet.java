@@ -135,20 +135,19 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                 weekDays.add(dayDto);
             }
             List<ScheduleSlotDTO> slots = new ArrayList<>();
-            slots.add(new ScheduleSlotDTO("Slot 1", "08:00 - 08:30", "Morning", "08:00", "08:30"));
-            slots.add(new ScheduleSlotDTO("Slot 2", "08:30 - 09:00", "Morning", "08:30", "09:00"));
-            slots.add(new ScheduleSlotDTO("Slot 3", "09:00 - 09:30", "Morning", "09:00", "09:30"));
-            slots.add(new ScheduleSlotDTO("Slot 4", "09:30 - 10:00", "Morning", "09:30", "10:00"));
-            slots.add(new ScheduleSlotDTO("Slot 5", "10:00 - 10:30", "Morning", "10:00", "10:30"));
-            slots.add(new ScheduleSlotDTO("Slot 6", "10:30 - 11:00", "Morning", "10:30", "11:00"));
-            slots.add(new ScheduleSlotDTO("Slot 7", "11:00 - 11:30", "Morning", "11:00", "11:30"));
-            slots.add(new ScheduleSlotDTO("Slot 8", "13:30 - 14:00", "Afternoon", "13:30", "14:00"));
-            slots.add(new ScheduleSlotDTO("Slot 9", "14:00 - 14:30", "Afternoon", "14:00", "14:30"));
-            slots.add(new ScheduleSlotDTO("Slot 10", "14:30 - 15:00", "Afternoon", "14:30", "15:00"));
-            slots.add(new ScheduleSlotDTO("Slot 11", "15:00 - 15:30", "Afternoon", "15:00", "15:30"));
-            slots.add(new ScheduleSlotDTO("Slot 12", "15:30 - 16:00", "Afternoon", "15:30", "16:00"));
-            slots.add(new ScheduleSlotDTO("Slot 13", "16:00 - 16:30", "Afternoon", "16:00", "16:30"));
-            slots.add(new ScheduleSlotDTO("Slot 14", "16:30 - 17:00", "Afternoon", "16:30", "17:00"));
+            try {
+                List<TimeSlotConfig> cfgSlots = timeSlotDAO.getConfiguredSlots();
+                for (TimeSlotConfig cfg : cfgSlots) {
+                    String startStr = cfg.getStartTime();
+                    if (startStr != null && startStr.length() >= 5) startStr = startStr.substring(0, 5);
+                    String endStr = cfg.getEndTime();
+                    if (endStr != null && endStr.length() >= 5) endStr = endStr.substring(0, 5);
+                    String timeRange = startStr + " - " + endStr;
+                    slots.add(new ScheduleSlotDTO(cfg.getSlotName(), timeRange, cfg.getSession(), startStr, endStr));
+                }
+            } catch (Exception e) {
+                System.err.println("Error loading configured slots: " + e.getMessage());
+            }
             String startDateStr = startOfSelectedWeek.format(fullFormatter);
             String endDateStr = endOfSelectedWeek.format(fullFormatter);
             Set<String> registeredKeys = workScheduleDAO.getRegisteredSlotKeys(actorId, role, startDateStr, endDateStr);
@@ -189,6 +188,8 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             if (actorProfile == null) {
                 actorProfile = currentUser;
             }
+            boolean isShiftOnlyRole = "doctor".equalsIgnoreCase(role);
+            request.setAttribute("isShiftOnlyRole", isShiftOnlyRole);
             request.setAttribute("actorProfile", actorProfile);
             request.setAttribute("selectedYear", selectedYear);
             request.setAttribute("availableYears", availableYears);
@@ -267,15 +268,51 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
 
             int year = Integer.parseInt(yearParam);
             int week = Integer.parseInt(weekParam);
-            LocalDate firstDayOfYear = LocalDate.of(year, 1, 1);
-            LocalDate firstMonday = firstDayOfYear.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            if (firstMonday.getYear() < year && firstDayOfYear.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR) > 50) {
-                firstMonday = firstMonday.plusWeeks(1);
-            }
-            LocalDate startOfWeek = firstMonday.plusWeeks(week - 1);
+            LocalDate firstMondayOfSelectedYear = LocalDate.of(year, 1, 4).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            LocalDate startOfWeek = firstMondayOfSelectedYear.plusWeeks(week - 1);
             LocalDate endOfWeek = startOfWeek.plusDays(6);
             DateTimeFormatter dbFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             Set<String> existingKeys = workScheduleDAO.getRegisteredSlotKeys(actorId, role, startOfWeek.format(dbFmt), endOfWeek.format(dbFmt));
+
+            boolean isShiftOnlyRole = "doctor".equalsIgnoreCase(role);
+            if (isShiftOnlyRole) {
+                Map<String, List<ScheduleRegistrationDTO>> shiftGroups = new HashMap<>();
+                for (ScheduleRegistrationDTO item : registrationList) {
+                    String groupKey = item.getWorkDate() + "#" + item.getSession();
+                    shiftGroups.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(item);
+                }
+
+                Set<String> closedKeys = workScheduleDAO.getClosedSlotKeys(actorId, role, startOfWeek.format(dbFmt), endOfWeek.format(dbFmt));
+
+                for (Map.Entry<String, List<ScheduleRegistrationDTO>> entry : shiftGroups.entrySet()) {
+                    String[] parts = entry.getKey().split("#");
+                    String date = parts[0];
+                    String sessionType = parts[1];
+                    List<ScheduleRegistrationDTO> shiftItems = entry.getValue();
+
+                    int expectedSlotStart = "Morning".equalsIgnoreCase(sessionType) ? 1 : 8;
+                    int expectedSlotEnd = "Morning".equalsIgnoreCase(sessionType) ? 7 : 14;
+
+                    Set<String> submittedSlots = new HashSet<>();
+                    for (ScheduleRegistrationDTO s : shiftItems) {
+                        submittedSlots.add(s.getSlot());
+                    }
+
+                    for (int slotNum = expectedSlotStart; slotNum <= expectedSlotEnd; slotNum++) {
+                        String slotName = "Slot " + slotNum;
+                        String slotKey = date + "_" + slotName;
+                        boolean isSubmitted = submittedSlots.contains(slotName);
+                        boolean isAlreadyRegistered = existingKeys.contains(slotKey);
+                        boolean isClosed = closedKeys.contains(slotKey);
+
+                        if (!isSubmitted && !isAlreadyRegistered && !isClosed) {
+                            session.setAttribute("errorMessage", "Quy định bắt buộc: Bác sĩ phải đăng ký trọn vẹn theo buổi: Ca Sáng (08:00 - 11:30) hoặc Ca Chiều (13:30 - 17:00)! Vui lòng không chọn lẻ từng slot.");
+                            response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
+                            return;
+                        }
+                    }
+                }
+            }
 
             Set<String> allKeysThisWeek = new HashSet<>(existingKeys);
             for (ScheduleRegistrationDTO item : registrationList) {

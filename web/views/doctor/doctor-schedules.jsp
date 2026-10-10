@@ -203,7 +203,7 @@
                           <div class="col-md-8 px-4">
                             <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Tiểu sử chuyên môn</h5>
                             <p class="text-muted mb-4" style="line-height: 1.6;">${not empty doc.biography ?
-                              doc.biography : doc.description}</p>
+                              doc.biography : 'Đang cập nhật...'}</p>
 
                             <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Thành tích & Học vấn</h5>
                             <div class="text-muted" style="line-height: 1.8;">

@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
- * Servlet xá»­ lÃ½ mÃ n hÃ¬nh Cáº¥u hÃ¬nh phÃ²ng khÃ¡m (Admin)
+ 
  */
 @WebServlet(name = "AdminClinicConfigServlet", urlPatterns = {"/admin/clinic-config"})
 public class AdminClinicConfigServlet extends HttpServlet {
@@ -22,9 +22,11 @@ public class AdminClinicConfigServlet extends HttpServlet {
             com.visioncare.dao.DoctorDAO doctorDAO = new com.visioncare.dao.DoctorDAO();
             request.setAttribute("doctors", doctorDAO.getAll());
             request.setAttribute("specialists", doctorDAO.getSpecialists());
+            com.visioncare.dao.ClinicGalleryDAO galleryDAO = new com.visioncare.dao.ClinicGalleryDAO();
+            request.setAttribute("galleryItems", galleryDAO.getAll());
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("error", "Lá»—i táº£i cáº¥u hÃ¬nh: " + e.getMessage());
+            request.setAttribute("error", "Lỗi tải cấu hình: " + e.getMessage());
         }
         request.getRequestDispatcher("/views/admin/clinic-config.jsp").forward(request, response);
     }
