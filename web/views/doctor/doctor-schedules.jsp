@@ -150,29 +150,95 @@
                       </p>
 
                       <div class="text-start mt-auto">
-                        <h6 class="text-secondary mb-2 border-bottom pb-1" style="font-size: 0.9rem;"><i
-                            class="bi bi-clock me-1"></i> Lịch trống (${selectedDate})</h6>
-                        <div class="d-flex flex-wrap gap-2 mb-4 justify-content-center">
-                          <c:forEach var="slot" items="${doctorSlots[doc.id]}">
-                            <c:choose>
-                              <c:when test="${slot.booked}">
-                                <span
-                                  class="badge bg-light text-muted border p-2 text-decoration-line-through">${slot.startTime}</span>
-                              </c:when>
-                              <c:otherwise>
-                                <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}&time=${slot.startTime}"
-                                  class="badge bg-white border border-primary text-primary p-2 text-decoration-none time-slot-hover"
-                                  style="transition: 0.2s;">${slot.startTime}</a>
-                              </c:otherwise>
-                            </c:choose>
-                          </c:forEach>
-                          <c:if test="${empty doctorSlots[doc.id]}">
-                            <span class="text-muted small">Không có lịch trống</span>
-                          </c:if>
+                        <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
+                          <h6 class="text-secondary mb-0" style="font-size: 0.9rem;"><i
+                              class="bi bi-clock me-1"></i> Lịch trống (${selectedDate})</h6>
+                          <c:choose>
+                            <c:when test="${doctorShiftSummary[doc.id] == 'FULL'}">
+                              <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.72rem;"><i class="bi bi-brightness-high me-1"></i>Full ngày</span>
+                            </c:when>
+                            <c:when test="${doctorShiftSummary[doc.id] == 'MORNING'}">
+                              <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.72rem;"><i class="bi bi-sunrise me-1"></i>Chỉ ca Sáng</span>
+                            </c:when>
+                            <c:when test="${doctorShiftSummary[doc.id] == 'AFTERNOON'}">
+                              <span class="badge bg-warning-subtle text-warning border border-warning-subtle" style="font-size: 0.72rem;"><i class="bi bi-sun me-1"></i>Chỉ ca Chiều</span>
+                            </c:when>
+                            <c:otherwise>
+                              <span class="badge bg-secondary-subtle text-secondary border" style="font-size: 0.72rem;">Nghỉ / Chưa có lịch</span>
+                            </c:otherwise>
+                          </c:choose>
                         </div>
+
+                        <c:choose>
+                          <c:when test="${empty doctorSlots[doc.id]}">
+                            <div class="text-center py-3 text-muted small">
+                              <i class="bi bi-calendar-x d-block fs-4 text-secondary mb-1"></i>
+                              Bác sĩ không có ca trực vào ngày này
+                            </div>
+                          </c:when>
+                          <c:otherwise>
+                            <%-- Nhóm ca sáng --%>
+                            <c:set var="hasMorning" value="false" />
+                            <c:forEach var="slot" items="${doctorSlots[doc.id]}">
+                              <c:if test="${slot.session == 'Morning'}"><c:set var="hasMorning" value="true" /></c:if>
+                            </c:forEach>
+                            <c:if test="${hasMorning}">
+                              <div class="mb-2">
+                                <small class="text-muted fw-bold d-block mb-1" style="font-size: 0.78rem;">
+                                  <i class="bi bi-sunrise me-1 text-warning"></i>Ca Sáng (08:00 - 11:30):
+                                </small>
+                                <div class="d-flex flex-wrap gap-1">
+                                  <c:forEach var="slot" items="${doctorSlots[doc.id]}">
+                                    <c:if test="${slot.session == 'Morning'}">
+                                      <c:choose>
+                                        <c:when test="${slot.booked}">
+                                          <span class="badge bg-light text-muted border p-2 text-decoration-line-through" title="Đã có người đặt">${slot.startTime}</span>
+                                        </c:when>
+                                        <c:otherwise>
+                                          <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}&date=${selectedDate}&time=${slot.startTime}"
+                                             class="badge bg-white border border-primary text-primary p-2 text-decoration-none time-slot-hover"
+                                             title="Chọn khung giờ ${slot.startTime}">${slot.startTime}</a>
+                                        </c:otherwise>
+                                      </c:choose>
+                                    </c:if>
+                                  </c:forEach>
+                                </div>
+                              </div>
+                            </c:if>
+
+                            <%-- Nhóm ca chiều --%>
+                            <c:set var="hasAfternoon" value="false" />
+                            <c:forEach var="slot" items="${doctorSlots[doc.id]}">
+                              <c:if test="${slot.session == 'Afternoon'}"><c:set var="hasAfternoon" value="true" /></c:if>
+                            </c:forEach>
+                            <c:if test="${hasAfternoon}">
+                              <div class="mb-3">
+                                <small class="text-muted fw-bold d-block mb-1" style="font-size: 0.78rem;">
+                                  <i class="bi bi-sun me-1 text-primary"></i>Ca Chiều (13:30 - 16:30):
+                                </small>
+                                <div class="d-flex flex-wrap gap-1">
+                                  <c:forEach var="slot" items="${doctorSlots[doc.id]}">
+                                    <c:if test="${slot.session == 'Afternoon'}">
+                                      <c:choose>
+                                        <c:when test="${slot.booked}">
+                                          <span class="badge bg-light text-muted border p-2 text-decoration-line-through" title="Đã có người đặt">${slot.startTime}</span>
+                                        </c:when>
+                                        <c:otherwise>
+                                          <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}&date=${selectedDate}&time=${slot.startTime}"
+                                             class="badge bg-white border border-primary text-primary p-2 text-decoration-none time-slot-hover"
+                                             title="Chọn khung giờ ${slot.startTime}">${slot.startTime}</a>
+                                        </c:otherwise>
+                                      </c:choose>
+                                    </c:if>
+                                  </c:forEach>
+                                </div>
+                              </div>
+                            </c:if>
+                          </c:otherwise>
+                        </c:choose>
                       </div>
 
-                      <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}"
+                      <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}&date=${selectedDate}"
                         class="btn btn-primary rounded-pill px-4 shadow-sm w-100 mt-2">Đặt lịch khám</a>
                       <button type="button" class="btn btn-outline-info rounded-pill px-4 shadow-sm w-100 mt-2"
                         data-bs-toggle="modal" data-bs-target="#doctorModal${doc.id}">Xem thông tin chi tiết</button>

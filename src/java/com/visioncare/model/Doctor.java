@@ -35,6 +35,9 @@ public class Doctor {
     public String getName() {
         return name;
     }
+    public String getFullName() {
+        return name;
+    }
     public void setName(String name) {
         this.name = name;
     }

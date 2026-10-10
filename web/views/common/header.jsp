@@ -73,6 +73,8 @@
                     <li><a href="${pageContext.request.contextPath}/home#services">Dịch vụ</a></li>
                     <li><a href="${pageContext.request.contextPath}/home#doctors"
                         class="${param.activeNav == 'doctors' ? 'active' : ''}">Bác sĩ</a></li>
+                    <li><a href="${pageContext.request.contextPath}/doctor-schedules"
+                        class="${param.activeNav == 'schedules' ? 'active' : ''}">Lịch khám bác sĩ</a></li>
                     <li><a href="${pageContext.request.contextPath}/home#contact">Liên hệ</a></li>
 
                     <c:choose>

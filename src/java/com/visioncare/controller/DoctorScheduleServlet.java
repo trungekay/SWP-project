@@ -38,33 +38,20 @@ public class DoctorScheduleServlet extends HttpServlet {
             }
 
             List<Department> departments = departmentDAO.getAll();
+            com.visioncare.dao.WorkScheduleDAO workScheduleDAO = new com.visioncare.dao.WorkScheduleDAO();
 
             Map<Integer, List<TimeSlot>> doctorSlots = new LinkedHashMap<>();
-            String[] morningSlots = {"08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00"};
-            String[] afternoonSlots = {"13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"};
+            Map<Integer, String> doctorShiftSummary = new LinkedHashMap<>();
             for (Doctor doc : doctors) {
-                List<TimeSlot> slots = new ArrayList<>();
-                for (String time : morningSlots) {
-                    TimeSlot ts = new TimeSlot();
-                    ts.setDoctorId(doc.getId());
-                    ts.setDate(selectedDate);
-                    ts.setStartTime(time);
-                    ts.setBooked(appointmentDAO.isSlotBooked(doc.getId(), selectedDate, time));
-                    slots.add(ts);
-                }
-                for (String time : afternoonSlots) {
-                    TimeSlot ts = new TimeSlot();
-                    ts.setDoctorId(doc.getId());
-                    ts.setDate(selectedDate);
-                    ts.setStartTime(time);
-                    ts.setBooked(appointmentDAO.isSlotBooked(doc.getId(), selectedDate, time));
-                    slots.add(ts);
-                }
+                List<TimeSlot> slots = workScheduleDAO.getDoctorSlotsForDate(doc.getId(), selectedDate.toString());
                 doctorSlots.put(doc.getId(), slots);
+                doctorShiftSummary.put(doc.getId(), workScheduleDAO.getDoctorWorkShiftSummary(doc.getId(), selectedDate.toString()));
             }
+
             request.setAttribute("doctors", doctors);
             request.setAttribute("departments", departments);
             request.setAttribute("doctorSlots", doctorSlots);
+            request.setAttribute("doctorShiftSummary", doctorShiftSummary);
             request.setAttribute("selectedDate", selectedDate.toString());
             request.setAttribute("selectedSpecialty", specialty != null ? specialty : "all");
             request.getRequestDispatcher("/views/doctor/doctor-schedules.jsp").forward(request, response);

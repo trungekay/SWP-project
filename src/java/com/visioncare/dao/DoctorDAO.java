@@ -47,7 +47,18 @@ public class DoctorDAO {
     }
 
     public List<Doctor> getByDepartment(String departmentKey) throws Exception {
-        return getAll();
+        List<Doctor> all = getAll();
+        if (departmentKey == null || departmentKey.isEmpty() || "all".equalsIgnoreCase(departmentKey)) {
+            return all;
+        }
+        List<Doctor> filtered = new ArrayList<>();
+        for (Doctor d : all) {
+            if (departmentKey.equalsIgnoreCase(d.getDepartmentKey()) ||
+                (d.getSpecialty() != null && d.getSpecialty().toLowerCase().contains(departmentKey.toLowerCase()))) {
+                filtered.add(d);
+            }
+        }
+        return filtered.isEmpty() ? all : filtered;
     }
 
     public boolean assignDoctorToRoom(int doctorId, int roomId) throws Exception {
@@ -92,8 +103,24 @@ public class DoctorDAO {
         String specialty = hasColumn(rs, "Specialty") && rs.getString("Specialty") != null ? rs.getString("Specialty")
                 : "Khám mắt tổng quát";
         d.setSpecialty(specialty);
-        d.setDepartmentKey("general");
-        d.setDescription("Bác sĩ chuyên khoa tại phòng khám VisionCare.");
+
+        String deptKey = "general";
+        if (specialty != null) {
+            String sLower = specialty.toLowerCase();
+            if (sLower.contains("khúc xạ") || sLower.contains("kính")) {
+                deptKey = "refraction";
+            } else if (sLower.contains("lasik") || sLower.contains("phẫu thuật")) {
+                deptKey = "lasik";
+            } else if (sLower.contains("trẻ em") || sLower.contains("nhược thị")) {
+                deptKey = "children";
+            } else if (sLower.contains("thủy tinh thể") || sLower.contains("phaco")) {
+                deptKey = "cataract";
+            } else if (sLower.contains("glaucoma") || sLower.contains("võng mạc")) {
+                deptKey = "retina";
+            }
+        }
+        d.setDepartmentKey(deptKey);
+        d.setDescription("Bác sĩ chuyên khoa " + specialty + " tại phòng khám VisionCare.");
 
         if (hasColumn(rs, "Biography")) {
             d.setBiography(rs.getString("Biography"));
