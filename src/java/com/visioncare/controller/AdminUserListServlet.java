@@ -65,6 +65,10 @@ public class AdminUserListServlet extends HttpServlet {
             request.getSession().setAttribute("error", ex.getMessage());
         }
         
-        response.sendRedirect(request.getContextPath() + "/admin/users");
+        String type = request.getParameter("type");
+        if (type == null || type.trim().isEmpty()) {
+            type = "staff"; // Fallback default
+        }
+        response.sendRedirect(request.getContextPath() + "/admin/users?type=" + type);
     }
 }

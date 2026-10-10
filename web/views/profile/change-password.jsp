@@ -140,6 +140,7 @@
                 <div class="mb-4">
                   <label class="form-label text-muted small fw-bold">Mật khẩu mới</label>
                   <input type="password" class="form-control" name="newPassword" placeholder="Nhập mật khẩu mới" required>
+                  <div class="form-text text-danger small"><i class="bi bi-info-circle me-1"></i>Mật khẩu phải có <strong>tối thiểu 8 ký tự</strong>, bắt đầu bằng <strong>chữ in hoa</strong> và phải có <strong>cả chữ cái và số</strong>.</div>
                 </div>
 
                 <div class="mb-4">

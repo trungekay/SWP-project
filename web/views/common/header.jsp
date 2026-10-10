@@ -105,6 +105,9 @@
                           sessionScope.user.fullName : 'Tài khoản'}</span> <i
                           class="bi bi-chevron-down toggle-dropdown"></i></a>
                       <ul>
+                        <c:if test="${sessionScope.user.role == 'admin' || sessionScope.user.role == 'director'}">
+                          <li><a href="${pageContext.request.contextPath}/admin/users">Quản lý Hệ thống (Admin)</a></li>
+                        </c:if>
                         <c:if test="${sessionScope.user.role == 'doctor' || sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist' || sessionScope.user.role == 'staff' || sessionScope.user.role == 'director'}">
                           <li><a href="${pageContext.request.contextPath}/employee/schedule">Lịch làm việc</a></li>
                           <li><a href="${pageContext.request.contextPath}/employee/register-schedule">Đăng ký lịch</a></li>

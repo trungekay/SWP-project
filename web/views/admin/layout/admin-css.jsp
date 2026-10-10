@@ -61,6 +61,30 @@
         background-color: #f0f7f6;
         color: var(--primary-color);
     }
+    .sidebar-dropdown {
+        position: relative;
+    }
+    .sidebar-submenu {
+        display: none;
+        list-style: none;
+        padding: 5px 0 5px 35px;
+        margin: 0;
+        background-color: #fcfcfc;
+        border-radius: 0 0 8px 8px;
+    }
+    .sidebar-submenu.show {
+        display: block;
+    }
+    .sidebar-submenu li a {
+        padding: 8px 16px;
+        font-size: 13px;
+        color: var(--text-muted);
+        border-radius: 6px;
+    }
+    .sidebar-submenu li a:hover, .sidebar-submenu li a.active {
+        color: var(--primary-color);
+        background-color: #f0f7f6;
+    }
 
     /* --- Main Content --- */
     .main-wrapper {

@@ -238,7 +238,7 @@
                                 
                                 <div class="mb-4">
                                     <label class="form-label">Phòng làm việc (ID)</label>
-                                    <input type="number" name="roomId" class="form-control" value="${user.roomName}" placeholder="Nhập ID phòng (ví dụ: 1, 2, 3...)">
+                                    <input type="number" name="roomId" class="form-control" value="${user.roomName}" min="1" placeholder="Nhập ID phòng (ví dụ: 1, 2, 3...)">
                                     <div class="form-text">Nhập mã ID của phòng khám.</div>
                                 </div>
                             </div>

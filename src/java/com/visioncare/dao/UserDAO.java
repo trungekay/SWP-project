@@ -191,8 +191,9 @@ public class UserDAO {
     }
 
     private static final String ADMIN_USER_SELECT = 
-            "SELECT a.Account_ID, a.Email, a.Account_Status, a.Role_ID, r.Role_Name, " +
+            "SELECT a.Account_ID, a.Email, a.Account_Status, a.Role_ID, a.Password, r.Role_Name, " +
             "COALESCE(p.Full_Name, e.Full_Name, a.Email) AS Full_Name, " +
+            "COALESCE(e.Employee_ID, p.Patient_ID, 0) AS Actor_ID, " +
             "COALESCE(p.Phone, e.Phone) AS Phone, p.DOB, p.Address, " +
             "e.License_Number, e.Specialty, e.Room_ID " +
             "FROM Account a JOIN Role r ON a.Role_ID = r.Role_ID " +
@@ -204,9 +205,24 @@ public class UserDAO {
         user.setId(rs.getInt("Account_ID"));
         user.setEmail(rs.getString("Email"));
         user.setFullName(rs.getString("Full_Name"));
+        user.setActorId(rs.getInt("Actor_ID"));
         user.setPhone(rs.getString("Phone"));
+        
+        String dbPassword = rs.getString("Password");
+        if (dbPassword != null) {
+            user.setPassword(dbPassword);
+            user.setFirstLogin(dbPassword.startsWith("NEW_"));
+        }
+        
         user.setRoleId(rs.getInt("Role_ID"));
-        user.setRole(rs.getString("Role_Name"));
+        String roleName = rs.getString("Role_Name");
+        if ("System_Admin".equalsIgnoreCase(roleName)) user.setRole("admin");
+        else if ("Doctor".equalsIgnoreCase(roleName)) user.setRole("doctor");
+        else if ("Medical_Specialist".equalsIgnoreCase(roleName)) user.setRole("medical_specialist");
+        else if ("Staff".equalsIgnoreCase(roleName)) user.setRole("staff");
+        else if ("Director".equalsIgnoreCase(roleName)) user.setRole("director");
+        else if ("Patient".equalsIgnoreCase(roleName)) user.setRole("patient");
+        else user.setRole(roleName != null ? roleName.toLowerCase() : "");
         user.setStatus(rs.getString("Account_Status"));
         Date dob = rs.getDate("DOB");
         user.setDob(dob == null ? null : dob.toString());
@@ -246,7 +262,11 @@ public class UserDAO {
         try (Connection conn = DBContext.getConnection()) {
             String fullName = "";
             String phone = "";
-            String getInfo = "SELECT COALESCE(p.Full_Name, e.Full_Name) as fn, COALESCE(p.Phone, e.Phone) as ph " +
+            java.sql.Date dob = null;
+            String address = "";
+            int currentRoleId = 0;
+            String getInfo = "SELECT a.Role_ID, COALESCE(p.Full_Name, e.Full_Name) as fn, COALESCE(p.Phone, e.Phone) as ph, " +
+                             "COALESCE(p.DOB, e.DOB) as dob, COALESCE(p.Address, e.Address) as addr " +
                              "FROM Account a " +
                              "LEFT JOIN Patient p ON a.Account_ID = p.Account_ID " +
                              "LEFT JOIN Employee_Profile e ON a.Account_ID = e.Account_ID " +
@@ -255,11 +275,35 @@ public class UserDAO {
                 ps.setInt(1, accountId);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
+                        currentRoleId = rs.getInt("Role_ID");
                         fullName = rs.getString("fn");
                         phone = rs.getString("ph");
+                        dob = rs.getDate("dob");
+                        address = rs.getString("addr");
                     }
                 }
             }
+
+            conn.setAutoCommit(false);
+            try {
+                if (currentRoleId != newRoleId && currentRoleId != 0) {
+                    String checkSchedule = "SELECT COUNT(*) FROM Work_Schedule ws " +
+                                           "JOIN Employee_Profile ep ON ws.Doctor_Employee_ID = ep.Employee_ID OR ws.Specialist_Employee_ID = ep.Employee_ID OR ws.Staff_Employee_ID = ep.Employee_ID " +
+                                           "WHERE ep.Account_ID = ? AND ws.Work_Date >= CAST(GETDATE() AS DATE)";
+                    try (PreparedStatement psCheck = conn.prepareStatement(checkSchedule)) {
+                        psCheck.setInt(1, accountId);
+                        try (ResultSet rsCheck = psCheck.executeQuery()) {
+                            if (rsCheck.next() && rsCheck.getInt(1) > 0) {
+                                String reason = "đang có lịch làm việc sắp tới";
+                                if (currentRoleId == 3 || currentRoleId == 4) {
+                                    reason = "đang có ca khám bệnh hoặc lịch làm việc sắp tới";
+                                }
+                                String roleName = (currentRoleId == 3 || currentRoleId == 4) ? "Bác sĩ" : "Nhân sự";
+                                throw new Exception("Không thể thay đổi quyền vì " + roleName + " này " + reason + ". Hãy xóa hoặc hoàn tất lịch trước.");
+                            }
+                        }
+                    }
+                }
 
             String sql = "UPDATE Account SET Role_ID = ? WHERE Account_ID = ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -275,11 +319,13 @@ public class UserDAO {
                 }
                 try (PreparedStatement ps = conn.prepareStatement(
                     "IF NOT EXISTS (SELECT 1 FROM Patient WHERE Account_ID = ?) " +
-                    "INSERT INTO Patient (Account_ID, Full_Name, Phone) VALUES (?, ?, ?)")) {
+                    "INSERT INTO Patient (Account_ID, Full_Name, Phone, DOB, Address) VALUES (?, ?, ?, ?, ?)")) {
                     ps.setInt(1, accountId);
                     ps.setInt(2, accountId);
                     ps.setString(3, fullName);
                     ps.setString(4, phone);
+                    ps.setDate(5, dob);
+                    ps.setString(6, address);
                     ps.executeUpdate();
                 }
             } else { // Employee
@@ -289,25 +335,67 @@ public class UserDAO {
                 }
                 try (PreparedStatement ps = conn.prepareStatement(
                     "IF NOT EXISTS (SELECT 1 FROM Employee_Profile WHERE Account_ID = ?) " +
-                    "INSERT INTO Employee_Profile (Account_ID, Full_Name, Phone, License_Number) VALUES (?, ?, ?, ?)")) {
+                    "INSERT INTO Employee_Profile (Account_ID, Full_Name, Phone, DOB, Address, License_Number) VALUES (?, ?, ?, ?, ?, ?)")) {
                     ps.setInt(1, accountId);
                     ps.setInt(2, accountId);
                     ps.setString(3, fullName);
                     ps.setString(4, phone);
-                    ps.setNull(5, java.sql.Types.VARCHAR);
+                    ps.setDate(5, dob);
+                    ps.setString(6, address);
+                    ps.setNull(7, java.sql.Types.VARCHAR);
                     ps.executeUpdate();
                 }
+            }
+            conn.commit();
+            } catch (java.sql.SQLException ex) {
+                conn.rollback();
+                if (ex.getMessage() != null && ex.getMessage().contains("REFERENCE constraint")) {
+                    throw new Exception("Không thể chuyển đổi quyền này vì người dùng đã có dữ liệu lịch sử. Bạn chỉ có thể chuyển đổi các tài khoản chưa phát sinh dữ liệu.");
+                }
+                throw ex;
+            } finally {
+                conn.setAutoCommit(true);
             }
         }
     }
 
     public boolean updateAccountStatus(int accountId, String status) throws Exception {
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(
+        try (Connection conn = DBContext.getConnection()) {
+            if ("Inactive".equals(status)) {
+                int roleId = 0;
+                try (PreparedStatement psRole = conn.prepareStatement("SELECT Role_ID FROM Account WHERE Account_ID = ?")) {
+                    psRole.setInt(1, accountId);
+                    try (ResultSet rsRole = psRole.executeQuery()) {
+                        if (rsRole.next()) {
+                            roleId = rsRole.getInt(1);
+                        }
+                    }
+                }
+                
+                String checkSchedule = "SELECT COUNT(*) FROM Work_Schedule ws " +
+                                       "JOIN Employee_Profile ep ON ws.Doctor_Employee_ID = ep.Employee_ID OR ws.Specialist_Employee_ID = ep.Employee_ID OR ws.Staff_Employee_ID = ep.Employee_ID " +
+                                       "WHERE ep.Account_ID = ? AND ws.Work_Date >= CAST(GETDATE() AS DATE)";
+                try (PreparedStatement psCheck = conn.prepareStatement(checkSchedule)) {
+                    psCheck.setInt(1, accountId);
+                    try (ResultSet rsCheck = psCheck.executeQuery()) {
+                        if (rsCheck.next() && rsCheck.getInt(1) > 0) {
+                            String reason = "đang có lịch làm việc sắp tới";
+                            if (roleId == 3 || roleId == 4) {
+                                reason = "đang có ca khám bệnh hoặc lịch làm việc sắp tới";
+                            }
+                            String roleName = (roleId == 3 || roleId == 4) ? "Bác sĩ" : "Nhân sự";
+                            throw new Exception("Không thể vô hiệu hóa vì " + roleName + " này " + reason + ". Hãy xóa hoặc hoàn tất lịch trước.");
+                        }
+                    }
+                }
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(
                      "UPDATE Account SET Account_Status = ? WHERE Account_ID = ?")) {
-            ps.setString(1, status);
-            ps.setInt(2, accountId);
-            return ps.executeUpdate() > 0;
+                ps.setString(1, status);
+                ps.setInt(2, accountId);
+                return ps.executeUpdate() > 0;
+            }
         }
     }
 
@@ -341,7 +429,7 @@ public class UserDAO {
                     }
                 } else {
                     try (PreparedStatement ps = conn.prepareStatement(
-                            "INSERT INTO Employee_Profile (Account_ID, Full_Name, Phone, License_Number, Specialty, Room_ID) VALUES (?, ?, ?, ?, ?, ?)")) {
+                            "INSERT INTO Employee_Profile (Account_ID, Full_Name, Phone, License_Number, Specialty, Room_ID, DOB, Address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
                         ps.setInt(1, accountId);
                         ps.setString(2, user.getFullName());
                         ps.setString(3, phone);
@@ -368,6 +456,18 @@ public class UserDAO {
                             ps.setNull(6, java.sql.Types.INTEGER);
                         }
                         
+                        if (user.getDob() != null && !user.getDob().isEmpty()) {
+                            ps.setDate(7, java.sql.Date.valueOf(user.getDob()));
+                        } else {
+                            ps.setNull(7, java.sql.Types.DATE);
+                        }
+
+                        if (user.getAddress() != null && !user.getAddress().trim().isEmpty()) {
+                            ps.setString(8, user.getAddress().trim());
+                        } else {
+                            ps.setString(8, "");
+                        }
+
                         ps.executeUpdate();
                     }
                 }
@@ -408,10 +508,16 @@ public class UserDAO {
                 }
             } else {
                 try (PreparedStatement ps = conn.prepareStatement(
-                        "UPDATE Employee_Profile SET Full_Name = ?, Phone = ? WHERE Account_ID = ?")) {
+                        "UPDATE Employee_Profile SET Full_Name = ?, Phone = ?, DOB = ?, Address = ? WHERE Account_ID = ?")) {
                     ps.setString(1, fullName);
                     ps.setString(2, phone);
-                    ps.setInt(3, accountId);
+                    if (dob != null && !dob.trim().isEmpty()) {
+                        ps.setDate(3, java.sql.Date.valueOf(dob));
+                    } else {
+                        ps.setNull(3, java.sql.Types.DATE);
+                    }
+                    ps.setString(4, address != null ? address : "");
+                    ps.setInt(5, accountId);
                     return ps.executeUpdate() > 0;
                 }
             }
@@ -455,10 +561,16 @@ public class UserDAO {
                 }
             } else {
                 try (PreparedStatement ps = conn.prepareStatement(
-                        "UPDATE Employee_Profile SET Full_Name = ?, Phone = ? WHERE Account_ID = ?")) {
+                        "UPDATE Employee_Profile SET Full_Name = ?, Phone = ?, DOB = ?, Address = ? WHERE Account_ID = ?")) {
                     ps.setString(1, user.getFullName());
                     ps.setString(2, user.getPhone());
-                    ps.setInt(3, user.getId());
+                    if (user.getDob() != null && !user.getDob().isEmpty()) {
+                        ps.setDate(3, java.sql.Date.valueOf(user.getDob()));
+                    } else {
+                        ps.setNull(3, java.sql.Types.DATE);
+                    }
+                    ps.setString(4, user.getAddress());
+                    ps.setInt(5, user.getId());
                     return ps.executeUpdate() > 0;
                 }
             }
@@ -467,7 +579,24 @@ public class UserDAO {
 
     public boolean deleteUser(int accountId) throws Exception {
         if (hasActiveAppointments(accountId)) {
-            throw new Exception("Không thể xóa: người dùng này đang có lịch hẹn khám chưa hoàn thành hoặc có lịch làm việc sắp tới.");
+            int roleId = 0;
+            try (Connection conn = DBContext.getConnection();
+                 PreparedStatement ps = conn.prepareStatement("SELECT Role_ID FROM Account WHERE Account_ID = ?")) {
+                ps.setInt(1, accountId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) roleId = rs.getInt(1);
+                }
+            }
+            String reason = "đang có lịch làm việc sắp tới";
+            String roleName = "Nhân sự";
+            if (roleId == 3 || roleId == 4) {
+                roleName = "Bác sĩ";
+                reason = "đang có ca khám bệnh hoặc lịch làm việc sắp tới";
+            } else if (roleId == 6) {
+                roleName = "Bệnh nhân";
+                reason = "đang có lịch hẹn khám chưa hoàn thành";
+            }
+            throw new Exception("Không thể xóa vì " + roleName + " này " + reason + ". Hãy xử lý lịch trình trước.");
         }
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(
@@ -482,13 +611,13 @@ public class UserDAO {
             "SELECT COUNT(*) FROM Appointment a " +
             "LEFT JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
             "LEFT JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
-            "LEFT JOIN Employee_Profile e ON ws.Doctor_Employee_ID = e.Employee_ID OR ws.Specialist_Employee_ID = e.Employee_ID " +
+            "LEFT JOIN Employee_Profile e ON ws.Doctor_Employee_ID = e.Employee_ID OR ws.Specialist_Employee_ID = e.Employee_ID OR ws.Staff_Employee_ID = e.Employee_ID " +
             "WHERE (p.Account_ID = ? OR e.Account_ID = ?) " +
             "AND a.Status NOT IN ('Canceled', 'Completed')";
             
         String scheduleSql = 
             "SELECT COUNT(*) FROM Work_Schedule ws " +
-            "JOIN Employee_Profile e ON ws.Doctor_Employee_ID = e.Employee_ID OR ws.Specialist_Employee_ID = e.Employee_ID " +
+            "JOIN Employee_Profile e ON ws.Doctor_Employee_ID = e.Employee_ID OR ws.Specialist_Employee_ID = e.Employee_ID OR ws.Staff_Employee_ID = e.Employee_ID " +
             "WHERE e.Account_ID = ? AND ws.Work_Date >= CAST(GETDATE() AS DATE) " +
             "AND ws.Status = 'Available'";
             
@@ -508,68 +637,6 @@ public class UserDAO {
             }
         }
         return false;
-    }
-
-    public boolean updatePassword(int accountId, String newPassword) throws Exception {
-        String sql = "UPDATE Account SET Password = ? WHERE Account_ID = ?";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, newPassword);
-            ps.setInt(2, accountId);
-            return ps.executeUpdate() > 0;
-        }
-    }
-
-    public boolean updateProfile(User user) throws Exception {
-        try (Connection conn = DBContext.getConnection()) {
-            String table;
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT CASE WHEN EXISTS (SELECT 1 FROM Patient WHERE Account_ID = ?) " +
-                    "THEN 'Patient' ELSE 'Employee_Profile' END")) {
-                ps.setInt(1, user.getId());
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        table = rs.getString(1);
-                    } else {
-                        return false;
-                    }
-                }
-            }
-            if ("Patient".equals(table)) {
-                try (PreparedStatement ps = conn.prepareStatement(
-                        "UPDATE Patient SET Full_Name = ?, Phone = ?, DOB = ?, Address = ? WHERE Account_ID = ?")) {
-                    ps.setString(1, user.getFullName());
-                    ps.setString(2, user.getPhone());
-                    if (user.getDob() != null && !user.getDob().isEmpty()) {
-                        ps.setDate(3, java.sql.Date.valueOf(user.getDob()));
-                    } else {
-                        ps.setNull(3, java.sql.Types.DATE);
-                    }
-                    ps.setString(4, user.getAddress() != null ? user.getAddress() : "");
-                    ps.setInt(5, user.getId());
-                    return ps.executeUpdate() > 0;
-                }
-            } else {
-                try (PreparedStatement ps = conn.prepareStatement(
-                        "UPDATE Employee_Profile SET Full_Name = ?, Phone = ? WHERE Account_ID = ?")) {
-                    ps.setString(1, user.getFullName());
-                    ps.setString(2, user.getPhone());
-                    ps.setInt(3, user.getId());
-                    return ps.executeUpdate() > 0;
-                }
-            }
-        }
-    }
-
-    public User getByPhone(String phone) throws Exception {
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(ADMIN_USER_SELECT + "WHERE p.Phone = ? OR e.Phone = ?")) {
-            ps.setString(1, phone);
-            ps.setString(2, phone);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? mapAdminUser(rs) : null;
-            }
-        }
     }
 
     public boolean updateDoctorProfile(int accountId, String license, String specialty, String roomIdStr) throws Exception {

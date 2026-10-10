@@ -88,6 +88,20 @@ public class AdminUserDetailServlet extends HttpServlet {
                     String license = request.getParameter("licenseNumber");
                     String specialty = request.getParameter("specialty");
                     String roomIdStr = request.getParameter("roomId");
+                    if (roomIdStr != null && !roomIdStr.trim().isEmpty()) {
+                        try {
+                            int rId = Integer.parseInt(roomIdStr.trim());
+                            if (rId <= 0) {
+                                request.getSession().setAttribute("error", "Lỗi: ID Phòng làm việc không được nhỏ hơn hoặc bằng 0!");
+                                response.sendRedirect(request.getContextPath() + "/admin/users/detail?id=" + accountId);
+                                return;
+                            }
+                        } catch (NumberFormatException e) {
+                            request.getSession().setAttribute("error", "Lỗi: ID Phòng làm việc phải là một số nguyên!");
+                            response.sendRedirect(request.getContextPath() + "/admin/users/detail?id=" + accountId);
+                            return;
+                        }
+                    }
                     userDAO.updateDoctorProfile(accountId, license, specialty, roomIdStr);
                 }
                 
@@ -98,7 +112,11 @@ public class AdminUserDetailServlet extends HttpServlet {
             
         } catch (Exception ex) {
             ex.printStackTrace();
-            request.getSession().setAttribute("error", "Lỗi khi cập nhật.");
+            String errMsg = ex.getMessage();
+            if (errMsg == null || errMsg.trim().isEmpty()) {
+                errMsg = "Lỗi khi cập nhật.";
+            }
+            request.getSession().setAttribute("error", errMsg);
             response.sendRedirect(request.getContextPath() + "/admin/users/detail?id=" + idParam);
         }
     }
