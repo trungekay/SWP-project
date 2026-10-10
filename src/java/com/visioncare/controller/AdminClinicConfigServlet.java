@@ -22,6 +22,8 @@ public class AdminClinicConfigServlet extends HttpServlet {
             com.visioncare.dao.DoctorDAO doctorDAO = new com.visioncare.dao.DoctorDAO();
             request.setAttribute("doctors", doctorDAO.getAll());
             request.setAttribute("specialists", doctorDAO.getSpecialists());
+            com.visioncare.dao.ClinicGalleryDAO galleryDAO = new com.visioncare.dao.ClinicGalleryDAO();
+            request.setAttribute("galleryItems", galleryDAO.getAll());
         } catch (Exception e) {
             e.printStackTrace();
             request.setAttribute("error", "Lá»—i táº£i cáº¥u hÃ¬nh: " + e.getMessage());

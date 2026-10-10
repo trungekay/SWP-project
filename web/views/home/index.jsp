@@ -145,17 +145,33 @@
 
                 <div class="container-fluid" data-aos="fade-up" data-aos-delay="100">
                   <div class="row g-0">
-                    <c:forEach var="i" begin="1" end="8">
-                      <div class="col-lg-3 col-md-4">
-                        <div class="gallery-item">
-                          <a href="${pageContext.request.contextPath}/assets/img/gallery/gallery-${i}.jpg"
-                            class="glightbox" data-gallery="images-gallery">
-                            <img src="${pageContext.request.contextPath}/assets/img/gallery/gallery-${i}.jpg" alt=""
-                              class="img-fluid">
-                          </a>
-                        </div>
-                      </div><!-- End Gallery Item -->
-                    </c:forEach>
+                    <c:choose>
+                      <c:when test="${not empty galleryItems}">
+                        <c:forEach var="item" items="${galleryItems}">
+                          <c:set var="imgUrl" value="${pageContext.request.contextPath}/clinic-gallery-image?id=${item.id}&t=${item.updatedAt}" />
+                          <div class="col-lg-3 col-md-4">
+                            <div class="gallery-item">
+                              <a href="${imgUrl}" class="glightbox" data-gallery="images-gallery" title="${not empty item.title ? item.title : 'VisionCare Gallery'}">
+                                <img src="${imgUrl}" alt="${item.title}" class="img-fluid" style="width: 100%; height: 260px; object-fit: cover;">
+                              </a>
+                            </div>
+                          </div><!-- End Gallery Item -->
+                        </c:forEach>
+                      </c:when>
+                      <c:otherwise>
+                        <c:forEach var="i" begin="1" end="8">
+                          <div class="col-lg-3 col-md-4">
+                            <div class="gallery-item">
+                              <a href="${pageContext.request.contextPath}/assets/img/gallery/gallery-${i}.jpg"
+                                class="glightbox" data-gallery="images-gallery">
+                                <img src="${pageContext.request.contextPath}/assets/img/gallery/gallery-${i}.jpg" alt=""
+                                  class="img-fluid" style="width: 100%; height: 260px; object-fit: cover;">
+                              </a>
+                            </div>
+                          </div><!-- End Gallery Item -->
+                        </c:forEach>
+                      </c:otherwise>
+                    </c:choose>
                   </div>
                 </div>
               </div>

@@ -36,6 +36,11 @@
                                 <i class="bi bi-clock me-2" style="font-size: 14px;"></i>Cấu hình khung giờ khám
                             </a>
                         </li>
+                        <li>
+                            <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=intro" class="${param.activeSub == 'intro' ? 'active-sub' : ''}">
+                                <i class="bi bi-images me-2" style="font-size: 14px;"></i>Cấu hình giới thiệu
+                            </a>
+                        </li>
                     </ul>
                 </c:if>
             </li>
