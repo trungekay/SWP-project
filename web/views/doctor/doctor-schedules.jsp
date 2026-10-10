@@ -263,8 +263,8 @@
                               style="width: 180px; height: 180px; object-fit: cover;" alt="${doc.name}">
                             <h4 class="fw-bold text-primary mb-1">${doc.name}</h4>
                             <p class="text-muted mb-3"><i class="bi bi-award me-1"></i> ${doc.specialty}</p>
-                            <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}"
-                              class="btn btn-primary rounded-pill w-100 mt-2">Đặt lịch ngay</a>
+                            <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}&date=${selectedDate}"
+                              class="btn btn-primary rounded-pill w-100 mt-2"><i class="bi bi-calendar-check me-1"></i>Đặt lịch ngay</a>
                           </div>
                           <div class="col-md-8 px-4">
                             <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Tiểu sử chuyên môn</h5>

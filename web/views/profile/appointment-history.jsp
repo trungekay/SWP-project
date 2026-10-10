@@ -137,8 +137,15 @@
           
           <div class="col-lg-9 ps-lg-5">
             <div class="pt-2">
-              <h4 class="fw-bold" style="color: #1c355e;">Lịch sử hẹn khám</h4>
-              <p class="text-muted small mb-4">Xem chi tiết các lịch hẹn khám bệnh và thực hiện yêu cầu hủy lịch</p>
+              <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                  <h4 class="fw-bold mb-1" style="color: #1c355e;">Lịch sử hẹn khám</h4>
+                  <p class="text-muted small mb-0">Xem chi tiết các lịch hẹn khám bệnh và thực hiện yêu cầu hủy lịch</p>
+                </div>
+                <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-primary rounded-pill px-4 shadow-sm" style="background:#0d9488; border-color:#0d9488;">
+                  <i class="bi bi-calendar-plus me-1"></i>Đặt lịch khám mới
+                </a>
+              </div>
               <hr class="mb-4">
 
               <h6 class="fw-bold mb-3" style="color: #0d9488;"><i class="bi bi-calendar2-week me-2"></i>Danh sách lịch hẹn</h6>

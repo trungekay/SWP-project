@@ -83,18 +83,67 @@ public class BookAppointmentServlet extends HttpServlet {
 
             // Xử lý params truyền vào từ trang khác (vd: trang bác sĩ, dịch vụ)
             String docParam = request.getParameter("doc");
+            String serviceParam = request.getParameter("serviceId");
+            @SuppressWarnings("unchecked")
+            List<CatalogService> services = (List<CatalogService>) request.getAttribute("services");
+            @SuppressWarnings("unchecked")
+            List<Doctor> doctors = (List<Doctor>) request.getAttribute("doctors");
+
             if (docParam != null && !docParam.isEmpty()) {
                 request.setAttribute("selectedDoctorId", docParam);
+                // Nếu chưa có serviceId, tự động tìm dịch vụ tương ứng với chuyên khoa của bác sĩ này
+                if (serviceParam == null || serviceParam.isEmpty()) {
+                    try {
+                        int dId = Integer.parseInt(docParam);
+                        Doctor targetDoc = null;
+                        if (doctors != null) {
+                            for (Doctor d : doctors) {
+                                if (d.getId() == dId) { targetDoc = d; break; }
+                            }
+                        }
+                        if (targetDoc != null && services != null) {
+                            for (CatalogService cs : services) {
+                                if (cs.getSpecialty() != null && (cs.getSpecialty().equalsIgnoreCase(targetDoc.getDepartmentKey()) ||
+                                    (targetDoc.getSpecialty() != null && targetDoc.getSpecialty().toLowerCase().contains(cs.getSpecialty().toLowerCase())))) {
+                                    request.setAttribute("selectedServiceId", String.valueOf(cs.getId()));
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
             }
-            String serviceParam = request.getParameter("serviceId");
+
             if (serviceParam != null && !serviceParam.isEmpty()) {
                 request.setAttribute("selectedServiceId", serviceParam);
+                // Nếu chưa có doctorId, tự động tìm bác sĩ đầu tiên thuộc đúng chuyên khoa của dịch vụ này
+                if (docParam == null || docParam.isEmpty()) {
+                    try {
+                        int sId = Integer.parseInt(serviceParam);
+                        CatalogService targetSvc = null;
+                        if (services != null) {
+                            for (CatalogService cs : services) {
+                                if (cs.getId() == sId) { targetSvc = cs; break; }
+                            }
+                        }
+                        if (targetSvc != null && targetSvc.getSpecialty() != null && doctors != null) {
+                            for (Doctor d : doctors) {
+                                if (targetSvc.getSpecialty().equalsIgnoreCase(d.getDepartmentKey()) ||
+                                    (d.getSpecialty() != null && d.getSpecialty().toLowerCase().contains(targetSvc.getSpecialty().toLowerCase()))) {
+                                    request.setAttribute("selectedDoctorId", String.valueOf(d.getId()));
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
             }
+
             String dateParam = request.getParameter("date");
             if (dateParam != null && !dateParam.isEmpty()) {
                 request.setAttribute("selectedDate", dateParam);
             } else {
-                // Mặc định ngày mai hoặc hôm nay
+                // Mặc định ngày hôm nay
                 request.setAttribute("selectedDate", LocalDate.now().toString());
             }
             String timeParam = request.getParameter("time");

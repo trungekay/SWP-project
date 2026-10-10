@@ -37,11 +37,13 @@
                         Bạn có thể xem lịch bác sĩ, chọn khung giờ phù hợp và đặt lịch chỉ trong vài phút — không cần
                         gọi điện chờ đợi.
                       </p>
-                      <div class="text-center hero-booking-cta">
+                      <div class="text-center hero-booking-cta d-flex flex-wrap justify-content-center gap-2">
                         <a href="#about" class="more-btn"><span>Tìm hiểu thêm</span> <i
                             class="bi bi-chevron-right"></i></a>
                         <a href="${pageContext.request.contextPath}/book-appointment"
-                          class="btn btn-dental ms-2 mt-2 mt-md-0 d-inline-block">Đặt lịch ngay</a>
+                          class="btn btn-dental d-inline-block"><i class="bi bi-calendar-plus me-1"></i>Đặt lịch ngay</a>
+                        <a href="${pageContext.request.contextPath}/doctor-schedules"
+                          class="btn btn-outline-light d-inline-block"><i class="bi bi-calendar3 me-1"></i>Xem lịch bác sĩ</a>
                       </div>
                     </div>
                   </div><!-- End Why Box -->
@@ -260,12 +262,16 @@
                           <p class="card-text text-muted mb-2">
                             <c:out value="${service.summary}" />
                           </p>
-                          <p class="fw-semibold mb-4">
+                          <p class="fw-semibold mb-4 text-teal" style="color: #0d9488;">
                             <fmt:formatNumber value="${service.price}" pattern="#,##0" /> VNĐ
                           </p>
-                          <a href="#departments"
-                            onclick="document.getElementById('department-link-${service.id}').click();"
-                            class="btn btn-outline-primary rounded-pill px-4">Tìm hiểu thêm</a>
+                          <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <a href="#departments"
+                              onclick="document.getElementById('department-link-${service.id}').click();"
+                              class="btn btn-outline-secondary rounded-pill px-3">Chi tiết</a>
+                            <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${service.id}"
+                              class="btn btn-dental rounded-pill px-3 shadow-sm"><i class="bi bi-calendar-check me-1"></i>Đặt lịch khám</a>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -335,6 +341,12 @@
                               <p>
                                 <c:out value="${service.description}" />
                               </p>
+                              <div class="mt-4">
+                                <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${service.id}"
+                                   class="btn btn-dental rounded-pill px-4 py-2 shadow-sm">
+                                  <i class="bi bi-calendar-check me-2"></i>Đặt lịch khám chuyên khoa này
+                                </a>
+                              </div>
                             </div>
                             <div class="col-lg-4 text-center order-1 order-lg-2">
                               <c:choose>
@@ -423,9 +435,9 @@
                                   <h4 class="fw-bold text-primary mb-1">${doc.name}</h4>
                                   <p class="text-muted mb-3"><i class="bi bi-award me-1"></i> ${doc.specialty}</p>
                                   <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}"
-                                    class="btn btn-primary rounded-pill w-100 mt-2">Đặt lịch ngay</a>
-                                  <a href="${pageContext.request.contextPath}/doctor-schedules?specialty=all"
-                                    class="btn btn-outline-primary rounded-pill w-100 mt-2">Xem lịch khám</a>
+                                    class="btn btn-primary rounded-pill w-100 mt-2"><i class="bi bi-calendar-check me-1"></i>Đặt lịch với bác sĩ</a>
+                                  <a href="${pageContext.request.contextPath}/doctor-schedules?specialty=${doc.departmentKey}"
+                                    class="btn btn-outline-primary rounded-pill w-100 mt-2"><i class="bi bi-clock-history me-1"></i>Xem ca trực bác sĩ</a>
                                 </div>
                                 <div class="col-md-8 px-4 text-start">
                                   <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Tiểu sử chuyên môn</h5>
