@@ -61,7 +61,7 @@
                   <div class="text-muted small mt-1">
                     <c:choose>
                       <c:when test="${isShiftOnlyRole}">
-                        <i class="bi bi-info-circle me-1 text-primary"></i><strong>Quy định:</strong> Bắt buộc đăng ký
+                        <i class="bi bi-info-circle me-1 text-primary"></i><strong>Quy định:</strong> Bác sĩ bắt buộc đăng ký
                         trọn vẹn theo <strong>Ca Sáng (08:00 - 11:30)</strong> hoặc <strong>Ca Chiều (13:30 -
                           17:00)</strong>. Tối thiểu <strong>30.0 giờ / tuần</strong>.
                       </c:when>
@@ -205,9 +205,7 @@
           </div>
 
           <c:choose>
-            <%--=========================================================================A. GIAO DIỆN ĐĂNG KÝ THEO CA
-              CHO SPECIALIST VÀ STAFF (BẮT BUỘC THEO
-              CA)=========================================================================--%>
+            <%--=========================================================================A. GIAO DIỆN ĐĂNG KÝ THEO BUỔI/CA CHO BÁC SĨ (DOCTOR) (BẮT BUỘC THEO CA)=========================================================================--%>
               <c:when test="${isShiftOnlyRole}">
                 <div class="register-card">
                   <div class="table-responsive">
@@ -408,9 +406,7 @@
                 </div>
               </c:when>
 
-              <%--=========================================================================B. GIAO DIỆN ĐĂNG KÝ THEO
-                SLOT (14 CỘT) DÀNH CHO BÁC SĨ
-                (DOCTOR)=========================================================================--%>
+              <%--=========================================================================B. GIAO DIỆN ĐĂNG KÝ THEO SLOT (14 CỘT) DÀNH CHO SPECIALIST VÀ STAFF=========================================================================--%>
                 <c:otherwise>
                   <div class="register-card">
                     <div class="table-responsive">
