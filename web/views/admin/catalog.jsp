@@ -20,7 +20,7 @@
     <jsp:include page="/views/admin/layout/admin-css.jsp" />
     
     <!-- Catalog specific CSS -->
-    <link href="${pageContext.request.contextPath}/assets/css/admin-catalog.css" rel="stylesheet">
+    <link href="${pageContext.request.contextPath}/assets/css/admin-catalog.css?v=5" rel="stylesheet">
 
 </head>
 <body>
@@ -66,7 +66,7 @@
               <td><strong><c:out value="${service.name}" /></strong></td>
               <td><c:out value="${service.categoryName}" /></td>
               <td><fmt:formatNumber value="${service.price}" pattern="#,##0" /> VNĐ</td>
-              <td><div class="catalog-supply-actions"><a class="catalog-supply-edit" href="${pageContext.request.contextPath}/admin/catalog/service?id=${service.id}"><i class="bi bi-pencil"></i> Sửa</a><form class="catalog-delete-form" method="post" action="${pageContext.request.contextPath}/admin/catalog/service" data-kind="dịch vụ" data-name="${fn:escapeXml(service.name)}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="${service.id}"><input type="hidden" name="csrf" value="${sessionScope.catalogCsrf}"><button class="catalog-delete" type="button"><i class="bi bi-trash"></i> Xóa</button></form></div></td>
+              <td><div class="catalog-supply-actions"><a class="catalog-supply-edit" href="${pageContext.request.contextPath}/admin/catalog/service?id=${service.id}" aria-label="Sửa dịch vụ ${fn:escapeXml(service.name)}" title="Sửa dịch vụ"><i class="bi bi-pencil" aria-hidden="true"></i></a><form class="catalog-delete-form" method="post" action="${pageContext.request.contextPath}/admin/catalog/service" data-kind="dịch vụ" data-name="${fn:escapeXml(service.name)}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="${service.id}"><input type="hidden" name="csrf" value="${sessionScope.catalogCsrf}"><button class="catalog-delete" type="button" aria-label="Xóa dịch vụ ${fn:escapeXml(service.name)}" title="Xóa dịch vụ"><i class="bi bi-trash" aria-hidden="true"></i></button></form></div></td>
             </tr>
           </c:forEach>
         </tbody></table></div><p class="catalog-empty" id="serviceEmpty" hidden>Không tìm thấy dịch vụ phù hợp.</p>
@@ -75,7 +75,7 @@
       <section class="catalog-view" id="suppliesView" role="tabpanel" aria-labelledby="suppliesTab" ${param.tab == 'supplies' ? '' : 'hidden'}>
         <div class="catalog-panel catalog-heading"><h5><i class="bi bi-box-seam me-2 text-primary"></i>Danh sách Vật tư &amp; Thiết bị</h5><a class="catalog-primary" href="${pageContext.request.contextPath}/admin/catalog/supply?new=1"><i class="bi bi-plus-lg"></i> Thêm vật tư</a></div>
         <div class="catalog-panel catalog-supply-panel"><div class="catalog-supply-toolbar"><label class="catalog-search"><i class="bi bi-search"></i><input type="search" id="supplySearch" placeholder="Tìm tên vật tư, dược phẩm..." aria-label="Tìm vật tư"></label></div><div class="table-responsive catalog-table-wrap"><table class="table align-middle table-custom catalog-table"><thead><tr><th>Tên vật tư / Dược phẩm</th><th>Phân loại</th><th>Đơn giá</th><th class="text-end">Thao tác</th></tr></thead><tbody>
-          <c:forEach items="${catalogSupplies}" var="supply"><tr><td><strong><c:out value="${supply.name}" /></strong></td><td><c:out value="${supply.category}" /></td><td><fmt:formatNumber value="${supply.price}" pattern="#,##0" /> VNĐ</td><td><div class="catalog-supply-actions"><a class="catalog-supply-edit" href="${pageContext.request.contextPath}/admin/catalog/supply?id=${supply.id}"><i class="bi bi-pencil"></i> Sửa</a><form class="catalog-delete-form" method="post" action="${pageContext.request.contextPath}/admin/catalog/supply" data-kind="vật tư" data-name="${fn:escapeXml(supply.name)}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="${supply.id}"><input type="hidden" name="csrf" value="${sessionScope.catalogCsrf}"><button class="catalog-delete" type="button"><i class="bi bi-trash"></i> Xóa</button></form></div></td></tr></c:forEach>
+          <c:forEach items="${catalogSupplies}" var="supply"><tr><td><strong><c:out value="${supply.name}" /></strong></td><td><c:out value="${supply.category}" /></td><td><fmt:formatNumber value="${supply.price}" pattern="#,##0" /> VNĐ</td><td><div class="catalog-supply-actions"><a class="catalog-supply-edit" href="${pageContext.request.contextPath}/admin/catalog/supply?id=${supply.id}" aria-label="Sửa vật tư ${fn:escapeXml(supply.name)}" title="Sửa vật tư"><i class="bi bi-pencil" aria-hidden="true"></i></a><form class="catalog-delete-form" method="post" action="${pageContext.request.contextPath}/admin/catalog/supply" data-kind="vật tư" data-name="${fn:escapeXml(supply.name)}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="${supply.id}"><input type="hidden" name="csrf" value="${sessionScope.catalogCsrf}"><button class="catalog-delete" type="button" aria-label="Xóa vật tư ${fn:escapeXml(supply.name)}" title="Xóa vật tư"><i class="bi bi-trash" aria-hidden="true"></i></button></form></div></td></tr></c:forEach>
         </tbody></table></div><p class="catalog-empty" id="supplyEmpty" hidden>Không tìm thấy vật tư phù hợp.</p></div>
       </section>
     </div>

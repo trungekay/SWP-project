@@ -212,7 +212,7 @@
 .catalog-layout .catalog-supply-panel { border: 1px solid #cbd5e1; border-radius: 12px; }
 .catalog-supply-toolbar { padding: 14px 16px; }
 .catalog-table { font-size: 14px; }
-.catalog-table th { background: #f0fdf4; color: #15803d; font-size: 12px; font-weight: 600; }
+.catalog-table th { background: #fff; color: #15803d; font-size: 12px; font-weight: 600; }
 .catalog-table th, .catalog-table td { padding: 16px; }
 .catalog-table tbody tr:hover td { background: #f8fafc; }
 .catalog-table td small { font-size: 12px; }
@@ -247,7 +247,7 @@
 }
 .catalog-page .table-custom thead th {
   padding: 16px 24px;
-  background: #f0fdf4;
+  background: #fff;
   color: #15803d;
   font-size: 13px;
   font-weight: 600;
@@ -273,7 +273,8 @@
 .catalog-page tr.catalog-service { display: table-row; border: 0; border-radius: 0; box-shadow: none; }
 .catalog-page .table-custom td strong { color: #334155; font-size: 15px; }
 .catalog-page .catalog-supply-actions { justify-content: flex-end; }
-.catalog-page .catalog-supply-edit, .catalog-page .catalog-delete { font-size: 12px; padding: 7px 10px; }
+.catalog-page .catalog-supply-edit, .catalog-page .catalog-delete { width: 34px; height: 34px; justify-content: center; padding: 0; font-size: 15px; }
+.catalog-page .catalog-supply-edit:focus-visible, .catalog-page .catalog-delete:focus-visible { outline: 3px solid #86d5c8; outline-offset: 2px; }
 .catalog-page .catalog-stock, .catalog-page .catalog-tag { display: inline-block; padding: 7px 10px; border-radius: 6px; font-size: 12px; }
 .catalog-page .table-custom tr[hidden] { display: none !important; }
 @media (max-width: 680px) {
