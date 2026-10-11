@@ -65,6 +65,8 @@ public class WorkScheduleDAO {
             sql.append("AND Doctor_Employee_ID = ? ");
         } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
             sql.append("AND Specialist_Employee_ID = ? ");
+        } else if ("staff".equalsIgnoreCase(role)) {
+            sql.append("AND Staff_Employee_ID = ? ");
         }
         sql.append("AND Status NOT IN ('Canceled', 'Inactive', 'Disabled', 'Closed') ");
         try (Connection conn = DBContext.getConnection();
@@ -92,6 +94,8 @@ public class WorkScheduleDAO {
             sql.append("AND Doctor_Employee_ID = ? ");
         } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
             sql.append("AND Specialist_Employee_ID = ? ");
+        } else if ("staff".equalsIgnoreCase(role)) {
+            sql.append("AND Staff_Employee_ID = ? ");
         }
         sql.append("AND Status IN ('Canceled', 'Inactive', 'Disabled', 'Closed') ");
         try (Connection conn = DBContext.getConnection();
@@ -119,14 +123,16 @@ public class WorkScheduleDAO {
         sql.append("IF NOT EXISTS (SELECT 1 FROM Work_Schedule WHERE Work_Date = ? AND Slot = ? ");
         if ("doctor".equalsIgnoreCase(role)) {
             sql.append("AND Doctor_Employee_ID = ?) ");
-        } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
+        } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
             sql.append("AND Specialist_Employee_ID = ?) ");
+        } else if ("staff".equalsIgnoreCase(role)) {
+            sql.append("AND Staff_Employee_ID = ?) ");
         } else {
             sql.append(") ");
         }
         sql.append("BEGIN ")
-           .append("INSERT INTO Work_Schedule (Doctor_Employee_ID, Specialist_Employee_ID, Work_Date, Slot, Start_Time, End_Time, Status) ")
-           .append("VALUES (?, ?, ?, ?, ?, ?, 'Available') ")
+           .append("INSERT INTO Work_Schedule (Doctor_Employee_ID, Specialist_Employee_ID, Staff_Employee_ID, Work_Date, Slot, Start_Time, End_Time, Status) ")
+           .append("VALUES (?, ?, ?, ?, ?, ?, ?, 'Available') ")
            .append("END");
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
@@ -141,10 +147,17 @@ public class WorkScheduleDAO {
                     if ("doctor".equalsIgnoreCase(role)) {
                         ps.setInt(pIndex++, actorId);
                         ps.setNull(pIndex++, java.sql.Types.INTEGER);
-                    } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
+                        ps.setNull(pIndex++, java.sql.Types.INTEGER);
+                    } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
+                        ps.setNull(pIndex++, java.sql.Types.INTEGER);
+                        ps.setInt(pIndex++, actorId);
+                        ps.setNull(pIndex++, java.sql.Types.INTEGER);
+                    } else if ("staff".equalsIgnoreCase(role)) {
+                        ps.setNull(pIndex++, java.sql.Types.INTEGER);
                         ps.setNull(pIndex++, java.sql.Types.INTEGER);
                         ps.setInt(pIndex++, actorId);
                     } else {
+                        ps.setNull(pIndex++, java.sql.Types.INTEGER);
                         ps.setNull(pIndex++, java.sql.Types.INTEGER);
                         ps.setNull(pIndex++, java.sql.Types.INTEGER);
                     }

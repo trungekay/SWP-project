@@ -13,17 +13,40 @@
                     Dashboard Doanh thu
                 </a>
             </li>
-            <li>
-                <a href="${pageContext.request.contextPath}/admin/users" class="${param.activeNav == 'users' ? 'active' : ''}">
+            <li class="sidebar-dropdown">
+                <a href="javascript:void(0);" onclick="document.getElementById('user-submenu').classList.toggle('show');" class="${param.activeNav == 'users' ? 'active' : ''}">
                     <i class="bi bi-person"></i>
                     Quản lý Người dùng
                 </a>
+                <ul class="sidebar-submenu ${param.activeNav == 'users' ? 'show' : ''}" id="user-submenu">
+                    <li><a href="${pageContext.request.contextPath}/admin/users?type=staff" class="${param.type == 'staff' || empty param.type ? 'active' : ''}"><i class="bi bi-person-badge"></i> Danh sách nội bộ</a></li>
+                    <li><a href="${pageContext.request.contextPath}/admin/users?type=patient" class="${param.type == 'patient' ? 'active' : ''}"><i class="bi bi-people"></i> Danh sách khách hàng</a></li>
+                </ul>
             </li>
             <li>
-                <a href="${pageContext.request.contextPath}/admin/clinic-config" class="${param.activeNav == 'clinic-config' ? 'active' : ''}">
+                <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=rooms" class="${param.activeNav == 'clinic-config' || param.activeNav == 'clinic-rooms' || param.activeNav == 'clinic-slots' ? 'active' : ''}">
                     <i class="bi bi-gear"></i>
                     Cấu hình Phòng Khám
                 </a>
+                <c:if test="${param.activeNav == 'clinic-config' || param.activeNav == 'clinic-rooms' || param.activeNav == 'clinic-slots'}">
+                    <ul class="sidebar-submenu">
+                        <li>
+                            <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=rooms" class="${empty param.activeSub || param.activeSub == 'rooms' ? 'active-sub' : ''}">
+                                <i class="bi bi-door-open me-2" style="font-size: 14px;"></i>Cấu hình phòng
+                            </a>
+                        </li>
+                        <li>
+                            <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=slots" class="${param.activeSub == 'slots' ? 'active-sub' : ''}">
+                                <i class="bi bi-clock me-2" style="font-size: 14px;"></i>Cấu hình khung giờ khám
+                            </a>
+                        </li>
+                        <li>
+                            <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=intro" class="${param.activeSub == 'intro' ? 'active-sub' : ''}">
+                                <i class="bi bi-images me-2" style="font-size: 14px;"></i>Cấu hình giới thiệu
+                            </a>
+                        </li>
+                    </ul>
+                </c:if>
             </li>
             <li>
                 <a href="${pageContext.request.contextPath}/admin/catalog" class="${param.activeNav == 'catalog' ? 'active' : ''}">

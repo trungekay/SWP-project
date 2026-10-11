@@ -20,7 +20,8 @@ public class AdminUserAddServlet extends HttpServlet {
             throws ServletException, IOException {
         String fullName = request.getParameter("fullName");
         String email = request.getParameter("email");
-        String password = request.getParameter("password");
+        String rawPassword = "123";
+        String password = "NEW_" + rawPassword;
         String phone = request.getParameter("phone");
         if (phone != null) {
             phone = phone.trim();
@@ -71,22 +72,69 @@ public class AdminUserAddServlet extends HttpServlet {
             }
             String roomId = request.getParameter("roomId");
             if (roomId != null && !roomId.trim().isEmpty()) {
-                user.setRoomName(roomId.trim());
+                try {
+                    int rId = Integer.parseInt(roomId.trim());
+                    if (rId <= 0) {
+                        request.getSession().setAttribute("error", "Lỗi: ID Phòng làm việc không được nhỏ hơn hoặc bằng 0!");
+                        response.sendRedirect(request.getContextPath() + "/admin/users?action=add");
+                        return;
+                    }
+                    user.setRoomName(String.valueOf(rId));
+                } catch (NumberFormatException e) {
+                    request.getSession().setAttribute("error", "Lỗi: ID Phòng làm việc phải là một số nguyên!");
+                    response.sendRedirect(request.getContextPath() + "/admin/users?action=add");
+                    return;
+                }
+            }
+            
+            String biography = request.getParameter("biography");
+            if (biography != null && !biography.trim().isEmpty()) {
+                user.setBiography(biography.trim());
             }
         }
         
         try {
+            // Check if email exists
+            if (userDAO.getByEmail(email) != null) {
+                request.setAttribute("error", "Lỗi: Email '" + email + "' đã được sử dụng trong hệ thống. Vui lòng nhập một email khác.");
+                request.getRequestDispatcher("/views/admin/user-add.jsp").forward(request, response);
+                return;
+            }
+            
+            // Check if phone exists
+            if (userDAO.getByPhone(phone) != null) {
+                request.setAttribute("error", "Lỗi: Số điện thoại '" + phone + "' đã tồn tại trong hệ thống. Vui lòng kiểm tra lại.");
+                request.getRequestDispatcher("/views/admin/user-add.jsp").forward(request, response);
+                return;
+            }
+            
             boolean success = userDAO.addSystemUser(user);
             if (success) {
+                try {
+                    com.visioncare.util.EmailUtil.sendAccountCredentialsEmail(email, rawPassword);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.out.println("Failed to send credentials email to: " + email);
+                }
                 request.getSession().setAttribute("success", "Thêm người dùng thành công!");
-                response.sendRedirect(request.getContextPath() + "/admin/users");
+                if (roleId == 6) {
+                    response.sendRedirect(request.getContextPath() + "/admin/users?type=patient");
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/admin/users?type=staff");
+                }
             } else {
                 request.setAttribute("error", "Lỗi khi thêm người dùng.");
                 request.getRequestDispatcher("/views/admin/user-add.jsp").forward(request, response);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
-            request.setAttribute("error", "Lỗi hệ thống: " + ex.getMessage());
+            String errorMsg = ex.getMessage();
+            if (errorMsg != null && (errorMsg.contains("UNIQUE KEY") || errorMsg.contains("duplicate key"))) {
+                errorMsg = "Lỗi: Email '" + email + "' đã được sử dụng trong hệ thống. Vui lòng nhập một email khác.";
+            } else {
+                errorMsg = "Lỗi hệ thống: " + errorMsg;
+            }
+            request.setAttribute("error", errorMsg);
             request.getRequestDispatcher("/views/admin/user-add.jsp").forward(request, response);
         }
     }

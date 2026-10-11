@@ -1,4 +1,4 @@
-﻿USE master;
+USE master;
 GO
 IF EXISTS (SELECT name FROM sys.databases WHERE name = N'eye_clinic_db')
 BEGIN
@@ -80,8 +80,11 @@ CREATE TABLE Employee_Profile (
     Room_ID         INT NULL,
     Full_Name       NVARCHAR(150) NOT NULL,
     Phone           NVARCHAR(20) NULL,
+    DOB         DATE NULL,
+    Address     NVARCHAR(255) NULL,
     Specialty       NVARCHAR(100) NULL,
     License_Number  NVARCHAR(100) NULL,
+    Biography       NVARCHAR(MAX) NULL,
     FOREIGN KEY (Account_ID) REFERENCES Account(Account_ID),
     FOREIGN KEY (Room_ID)    REFERENCES Room(Room_ID)
 );
@@ -90,6 +93,7 @@ CREATE TABLE Work_Schedule (
     Schedule_ID             INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     Doctor_Employee_ID      INT NULL,
     Specialist_Employee_ID  INT NULL,
+    Staff_Employee_ID       INT NULL,
     Work_Date               DATE NOT NULL,
     Start_Time              TIME(0) NOT NULL,
     End_Time                TIME(0) NOT NULL,
@@ -216,7 +220,7 @@ CREATE TABLE Refund_Request (
 GO
 
 ALTER TABLE Account ADD CONSTRAINT CHK_Account_Status
-    CHECK (Account_Status IN (N'Active', N'Inactive', N'Banned', N'Locked'));
+    CHECK (Account_Status IN (N'Active', N'Inactive', N'Banned', N'Locked','Deleted'));
 ALTER TABLE Work_Schedule ADD CONSTRAINT CHK_WS_Has_Employee
     CHECK (Doctor_Employee_ID IS NOT NULL OR Specialist_Employee_ID IS NOT NULL);
 ALTER TABLE Work_Schedule ADD CONSTRAINT CHK_WS_Time CHECK (End_Time > Start_Time);
@@ -281,19 +285,19 @@ INSERT INTO Patient (Account_ID, Full_Name, Phone, DOB, Address) VALUES
 (13,   N'Nguyễn Văn An',  N'0901234567', '1995-05-15', N'123 Lê Lợi, Q.1, TP.HCM'),
 (NULL, N'Trần Thị Bình',  N'0918765432', '1988-10-20', N'456 Nguyễn Huệ, Q.1, TP.HCM');
 
-INSERT INTO Employee_Profile (Account_ID, Room_ID, Full_Name, Phone, Specialty, License_Number) VALUES
-(1,  NULL, N'Quản trị viên Hệ thống',     NULL, N'Quản trị hệ thống',     NULL),
-(2,  NULL, N'Nguyễn Văn Giám Đốc',        NULL, N'Giám đốc',              NULL),
-(3,  1,    N'BS. Trần Văn Nam',           NULL, N'Nhãn khoa tổng quát',            N'BS-12345/EYE'),
-(4,  2,    N'TS.BS. Nguyễn Xuân Tịnh',    NULL, N'Đo Khúc xạ & Kính',              N'BS-56789/EYE'),
-(5,  3,    N'BS. Lê Hoàng Lan',           NULL, N'Phẫu thuật LASIK',               N'BS-98765/EYE'),
-(6,  4,    N'BS. Phạm Bảo Ngọc',          NULL, N'Nhãn khoa trẻ em & Nhược thị',   N'BS-34567/EYE'),
-(7,  5,    N'BS. Trần Quang Huy',         NULL, N'Đục thủy tinh thể (Phaco)',      N'BS-45678/EYE'),
-(8,  6,    N'BS. Ngô Tiến Dũng',          NULL, N'Glaucoma & Võng mạc',            N'BS-99999/EYE'),
-(9,  7,    N'ThS.BS. Lê Hoàng Lan',       NULL, N'Medical Specialist tiểu phẫu',   N'BS-11111/EYE'),
-(10, 8,    N'BSCKII. Trần Quang Huy',     NULL, N'Medical Specialist tiểu phẫu',   N'BS-22222/EYE'),
-(11, 9,    N'ThS. Lê Văn C',              NULL, N'Medical Specialist tiểu phẫu',   N'BS-33333/EYE'),
-(12, NULL, N'Lễ Tân Phạm Thị Lan',        NULL, N'Thu Ngân & Tiếp Đón',            NULL);
+INSERT INTO Employee_Profile (Account_ID, Room_ID, Full_Name, Phone, Specialty, License_Number, Biography) VALUES
+(1,  NULL, N'Quản trị viên Hệ thống',     NULL, N'Quản trị hệ thống',     NULL,            NULL),
+(2,  NULL, N'Nguyễn Văn Giám Đốc',        NULL, N'Giám đốc',              NULL,            NULL),
+(3,  1,    N'BS. Trần Văn Nam',           NULL, N'Nhãn khoa tổng quát',            N'BS-12345/EYE', N'Hơn 12 năm kinh nghiệm trong chẩn đoán và điều trị toàn diện các bệnh lý mắt. Từng công tác tại Bệnh viện Mắt TP.HCM và tích cực tham gia các hội thảo nhãn khoa quốc tế.'),
+(4,  2,    N'TS.BS. Nguyễn Xuân Tịnh',    NULL, N'Đo Khúc xạ & Kính',              N'BS-56789/EYE', N'Tiến sĩ Nhãn khoa với hơn 15 năm chuyên sâu về tật khúc xạ, kiểm soát tiến triển cận thị học đường và ứng dụng công nghệ đo thị lực hiện đại từ Đức.'),
+(5,  3,    N'BS. Lê Hoàng Lan',           NULL, N'Phẫu thuật LASIK',               N'BS-98765/EYE', N'Chuyên gia phẫu thuật khúc xạ hàng đầu, thực hiện thành công hơn 6,000 ca phẫu thuật Femto-LASIK và SMILE. Tận tâm, chu đáo và luôn đồng hành cùng bệnh nhân.'),
+(6,  4,    N'BS. Phạm Bảo Ngọc',          NULL, N'Nhãn khoa trẻ em & Nhược thị',   N'BS-34567/EYE', N'Bác sĩ giàu kinh nghiệm trong điều trị nhược thị, lác mắt và các bệnh lý mắt bẩm sinh ở trẻ em. Được đào tạo chuyên sâu tại Bệnh viện Mắt Trung ương và Singapore.'),
+(7,  5,    N'BS. Trần Quang Huy',         NULL, N'Đục thủy tinh thể (Phaco)',      N'BS-45678/EYE', N'Bàn tay vàng trong phẫu thuật Phaco tán nhuyễn thể thủy tinh đục, phục hồi thị lực sáng rõ cho hàng ngàn bệnh nhân cao tuổi với kỹ thuật đường mổ siêu nhỏ.'),
+(8,  6,    N'BS. Ngô Tiến Dũng',          NULL, N'Glaucoma & Võng mạc',            N'BS-99999/EYE', NULL),
+(9,  7,    N'ThS.BS. Lê Hoàng Lan',       NULL, N'Medical Specialist tiểu phẫu',   N'BS-11111/EYE', NULL),
+(10, 8,    N'BSCKII. Trần Quang Huy',     NULL, N'Medical Specialist tiểu phẫu',   N'BS-22222/EYE', NULL),
+(11, 9,    N'ThS. Lê Văn C',              NULL, N'Medical Specialist tiểu phẫu',   N'BS-33333/EYE', NULL),
+(12, NULL, N'Lễ Tân Phạm Thị Lan',        NULL, N'Thu Ngân & Tiếp Đón',            NULL,            NULL);
 
 INSERT INTO Work_Schedule
     (Doctor_Employee_ID, Specialist_Employee_ID, Work_Date, Slot, Start_Time, End_Time, Status)
@@ -330,8 +334,8 @@ VALUES
 ('NK-01', N'Nhãn khoa tổng quát', 250000, 'general', N'Gói cơ bản', N'Khám và chẩn đoán toàn diện các bệnh lý về mắt, phù hợp với mọi lứa tuổi.', N'Bao gồm đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt, đánh giá tình trạng giác mạc và thủy tinh thể.', 'departments-1.jpg'),
 ('KX-02', N'Đo Khúc xạ & Kính', 150000, 'refraction', N'Khúc xạ kế', N'Khám sàng lọc và đo độ khúc xạ với hệ thống đo tự động chuẩn xác.', N'Đo khúc xạ chính xác bằng máy tự động, thử thị lực và tư vấn tròng kính phù hợp.', 'departments-2.jpg'),
 ('LS-03', N'Phẫu thuật LASIK', 18000000, 'lasik', N'Kỹ thuật cao', N'Xóa cận không dao, thời gian phục hồi nhanh chóng.', N'Phẫu thuật khúc xạ laser LASIK/SMILE điều trị cận thị, viễn thị và loạn thị với công nghệ hiện đại.', 'departments-3.jpg'),
-('PE-04', N'Nhãn khoa trẻ em & Nhược thị', 300000, 'children', N'Trẻ em & Học đường', N'Sàng lọc sớm các tật khúc xạ tiến triển, tật lé và suy giảm thị lực ở trẻ nhỏ.', N'Sàng lọc cận thị sớm, điều trị nhược thị và lác mắt trong không gian khám thân thiện.', 'departments-4.jpg'),
-('TT-05', N'Đục thủy tinh thể (Phaco)', 12000000, 'cataract', N'Phẫu thuật Phaco', N'Tái tạo tầm nhìn trong sáng bằng phương pháp tán nhuyễn Phaco tiên tiến.', N'Phẫu thuật thay thể thủy tinh nhân tạo điều trị đục thủy tinh thể an toàn, đường mổ siêu nhỏ.', 'departments-5.jpg'),
+('PE-04', N'Nhãn khoa trẻ em & Nhược thị', 300000, 'children', N'Trẻ em & Học đường', N'Sàng lọc sớm các tật khúc xạ tiến triển, tật lác và suy giảm thị lực ở trẻ nhỏ.', N'Sàng lọc cận thị sớm, điều trị nhược thị và lác mắt trong không gian khám thân thiện.', 'departments-4.jpg'),
+('TT-05', N'Đục thủy tinh thể (Phaco)', 12000000, 'cataract', N'Phẫu thuật Phaco', N'Tái tạo tầm nhìn trong sáng bằng phương pháp tán nhuyễn Phaco tiên tiến.', N'Phẫu thuật thay thế thủy tinh nhân tạo điều trị đục thủy tinh thể an toàn, đường mổ siêu nhỏ.', 'departments-5.jpg'),
 ('GL-06', N'Glaucoma & Võng mạc', 500000, 'retina', N'Đáy mắt chuyên sâu', N'Kiểm soát nhãn áp, bảo tồn thị trường thần kinh mắt và ngăn ngừa biến chứng mù lòa.', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.', 'gallery/gallery-1.jpg');
 
 INSERT INTO Medical_Supply (Supply_Name, Category, Batch_Code, Unit, Quantity, Price) VALUES

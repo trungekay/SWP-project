@@ -8,7 +8,7 @@ import java.util.List;
 public class DoctorDAO {
     public List<Doctor> getAll() throws Exception {
         List<Doctor> list = new ArrayList<>();
-        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 3 ORDER BY e.Employee_ID";
+        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 3 AND a.Account_Status != 'Deleted' ORDER BY e.Employee_ID";
         try (Connection conn = DBContext.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
@@ -21,7 +21,7 @@ public class DoctorDAO {
 
     public List<Doctor> getSpecialists() throws Exception {
         List<Doctor> list = new ArrayList<>();
-        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 4 ORDER BY e.Employee_ID";
+        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 4 AND a.Account_Status != 'Deleted' ORDER BY e.Employee_ID";
         try (Connection conn = DBContext.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
@@ -33,7 +33,7 @@ public class DoctorDAO {
     }
 
     public Doctor getById(int id) throws Exception {
-        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 3 AND e.Employee_ID = ?";
+        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 3 AND a.Account_Status != 'Deleted' AND e.Employee_ID = ?";
         try (Connection conn = DBContext.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -95,12 +95,8 @@ public class DoctorDAO {
         d.setDepartmentKey("general");
         d.setDescription("Bác sĩ chuyên khoa tại phòng khám VisionCare.");
 
-        if (hasColumn(rs, "Biography") && rs.getString("Biography") != null) {
+        if (hasColumn(rs, "Biography")) {
             d.setBiography(rs.getString("Biography"));
-        } else {
-            // Mock data phong phú nếu DB chưa có cột Biography
-            d.setBiography("Bác sĩ " + fullName + " là một trong những chuyên gia hàng đầu trong lĩnh vực " + specialty
-                    + ". Với hơn 10 năm kinh nghiệm làm việc tại các bệnh viện lớn trong và ngoài nước, bác sĩ luôn tận tâm và mang đến giải pháp điều trị tối ưu nhất cho từng bệnh nhân.");
         }
 
         if (hasColumn(rs, "Achievements") && rs.getString("Achievements") != null) {

@@ -33,6 +33,8 @@ public class HomeServlet extends HttpServlet {
             List<Doctor> doctors = doctorDAO.getAll();
             request.setAttribute("doctors", doctors);
             request.setAttribute("catalogServices", catalogDAO.listServices());
+            com.visioncare.dao.ClinicGalleryDAO galleryDAO = new com.visioncare.dao.ClinicGalleryDAO();
+            request.setAttribute("galleryItems", galleryDAO.getAll());
 
             request.getRequestDispatcher("/views/home/index.jsp").forward(request, response);
         } catch (Exception e) {
