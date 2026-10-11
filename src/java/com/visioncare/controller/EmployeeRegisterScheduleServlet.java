@@ -217,6 +217,7 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             request.setAttribute("slotStatusMap", slotStatusMap);
             request.setAttribute("registeredCount", registeredKeys.size());
             request.setAttribute("registeredHours", registeredKeys.size() * 0.5);
+            request.setAttribute("minWeeklyHours", timeSlotDAO.getMinWeeklyWorkingHours());
             request.getRequestDispatcher("/views/employee/register-schedule.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
@@ -320,8 +321,9 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             }
             double totalWeeklyHours = allKeysThisWeek.size() * 0.5;
 
-            if (totalWeeklyHours < 30.0) {
-                session.setAttribute("errorMessage", "Quy định: Bạn cần đăng ký tối thiểu 30.0 giờ / tuần (hiện tại mới có: " + String.format("%.1f", totalWeeklyHours) + "h). Vui lòng chọn thêm!");
+            double minWeeklyHours = timeSlotDAO.getMinWeeklyWorkingHours();
+            if (totalWeeklyHours < minWeeklyHours) {
+                session.setAttribute("errorMessage", "Quy định: Bạn cần đăng ký tối thiểu " + String.format("%.1f", minWeeklyHours) + " giờ / tuần (hiện tại mới có: " + String.format("%.1f", totalWeeklyHours) + "h). Vui lòng chọn thêm!");
                 response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
                 return;
             }

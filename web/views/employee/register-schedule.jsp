@@ -63,11 +63,11 @@
                       <c:when test="${isShiftOnlyRole}">
                         <i class="bi bi-info-circle me-1 text-primary"></i><strong>Quy định:</strong> Bác sĩ bắt buộc đăng ký
                         trọn vẹn theo <strong>Ca Sáng (08:00 - 11:30)</strong> hoặc <strong>Ca Chiều (13:30 -
-                          17:00)</strong>. Tối thiểu <strong>30.0 giờ / tuần</strong>.
+                          17:00)</strong>. Tối thiểu <strong>${not empty minWeeklyHours ? minWeeklyHours : 30.0} giờ / tuần</strong>.
                       </c:when>
                       <c:otherwise>
                         <i class="bi bi-info-circle me-1"></i><strong>Quy định:</strong> Đăng ký linh hoạt theo từng
-                        slot hoặc theo ca làm việc. Tối thiểu <strong>30.0 giờ / tuần</strong>.
+                        slot hoặc theo ca làm việc. Tối thiểu <strong>${not empty minWeeklyHours ? minWeeklyHours : 30.0} giờ / tuần</strong>.
                       </c:otherwise>
                     </c:choose>
                   </div>
@@ -604,11 +604,12 @@
         totalHoursEl.innerText = totalHours.toFixed(1) + " giờ";
 
         var submitBtn = document.getElementById('btnSubmitSchedule');
+        var minRequiredHours = ${not empty minWeeklyHours ? minWeeklyHours : 30.0};
 
-        if (totalHours < 30.0) {
+        if (totalHours < minRequiredHours) {
           totalHoursEl.className = "stat-value text-lg-end text-danger";
           submitBtn.disabled = true;
-          submitBtn.title = "Cần đăng ký tối thiểu 30.0 giờ / tuần (Hiện tại: " + totalHours.toFixed(1) + "h)";
+          submitBtn.title = "Cần đăng ký tối thiểu " + minRequiredHours.toFixed(1) + " giờ / tuần (Hiện tại: " + totalHours.toFixed(1) + "h)";
         } else {
           totalHoursEl.className = "stat-value text-lg-end text-success";
           if (newlyCount > 0) {

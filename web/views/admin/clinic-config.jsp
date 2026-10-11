@@ -448,6 +448,40 @@
               </c:if>
 
               <c:if test="${currentTab == 'slots'}">
+              <!-- Work Schedule Registration Rules Card -->
+              <div class="col-lg-12 mb-2">
+                <div class="admin-card">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                      <h5 class="mb-1 fw-bold"><i class="bi bi-sliders me-2 text-primary"></i>Quy định Đăng ký Lịch làm việc</h5>
+                      <p class="text-muted small mb-0">Thiết lập số giờ làm việc tối thiểu mỗi tuần áp dụng cho Bác sĩ và Nhân viên khi gửi đăng ký lịch.</p>
+                    </div>
+                  </div>
+                  <form action="${pageContext.request.contextPath}/admin/timeslot-config" method="post" class="row g-3 align-items-end">
+                    <input type="hidden" name="action" value="update_min_hours">
+                    <div class="col-md-5 col-lg-4">
+                      <label class="form-label fw-semibold small text-secondary">Số giờ làm việc tối thiểu / tuần</label>
+                      <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="bi bi-clock"></i></span>
+                        <input type="number" step="0.5" min="0" max="168" name="minWorkHours" class="form-control fw-bold text-primary" 
+                               value="${not empty minWorkHours ? minWorkHours : 30.0}" required>
+                        <span class="input-group-text bg-light text-muted">giờ / tuần</span>
+                      </div>
+                    </div>
+                    <div class="col-md-4 col-lg-3">
+                      <button type="submit" class="btn btn-primary px-4 rounded-pill">
+                        <i class="bi bi-check-circle me-1"></i> Lưu quy định
+                      </button>
+                    </div>
+                    <div class="col-12 mt-2">
+                      <div class="small text-muted">
+                        <i class="bi bi-info-circle me-1 text-primary"></i> Khi nhân sự đăng ký lịch tuần, hệ thống sẽ tự động kiểm tra tổng số giờ đã chọn phải đạt từ mức tối thiểu này trở lên.
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
               <!-- Appointment Time Slots Screen -->
               <div class="col-lg-12">
                 <div class="admin-card">

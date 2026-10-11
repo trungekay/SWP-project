@@ -4,10 +4,71 @@ import com.visioncare.model.TimeSlotConfig;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 public class TimeSlotDAO {
+
+    public TimeSlotDAO() {
+        ensureSettingTable();
+    }
+
+    private void ensureSettingTable() {
+        try (Connection conn = DBContext.getConnection();
+             Statement st = conn.createStatement()) {
+            String createTableSql = "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Clinic_Setting' AND xtype='U') "
+                    + "BEGIN "
+                    + "CREATE TABLE Clinic_Setting ( "
+                    + "    Setting_Key VARCHAR(50) PRIMARY KEY, "
+                    + "    Setting_Value NVARCHAR(255) NOT NULL, "
+                    + "    Description NVARCHAR(255) NULL "
+                    + "); "
+                    + "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
+                    + "VALUES ('MIN_WORK_HOURS_PER_WEEK', '30.0', N'Số giờ làm việc tối thiểu mỗi tuần'); "
+                    + "END";
+            st.execute(createTableSql);
+        } catch (Exception e) {
+            System.err.println("Error ensuring Clinic_Setting table: " + e.getMessage());
+        }
+    }
+
+    public double getMinWeeklyWorkingHours() {
+        ensureSettingTable();
+        String sql = "SELECT Setting_Value FROM Clinic_Setting WHERE Setting_Key = 'MIN_WORK_HOURS_PER_WEEK'";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return Double.parseDouble(rs.getString("Setting_Value"));
+            }
+        } catch (Exception e) {
+            System.err.println("Error getMinWeeklyWorkingHours: " + e.getMessage());
+        }
+        return 30.0;
+    }
+
+    public boolean updateMinWeeklyWorkingHours(double hours) {
+        ensureSettingTable();
+        String sql = "UPDATE Clinic_Setting SET Setting_Value = ? WHERE Setting_Key = 'MIN_WORK_HOURS_PER_WEEK'";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, String.valueOf(hours));
+            int rows = ps.executeUpdate();
+            if (rows == 0) {
+                String insertSql = "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
+                        + "VALUES ('MIN_WORK_HOURS_PER_WEEK', ?, N'Số giờ làm việc tối thiểu mỗi tuần')";
+                try (PreparedStatement psIns = conn.prepareStatement(insertSql)) {
+                    psIns.setString(1, String.valueOf(hours));
+                    return psIns.executeUpdate() > 0;
+                }
+            }
+            return rows > 0;
+        } catch (Exception e) {
+            System.err.println("Error updateMinWeeklyWorkingHours: " + e.getMessage());
+            return false;
+        }
+    }
     public List<TimeSlotConfig> getConfiguredSlots() throws Exception {
         List<TimeSlotConfig> list = new ArrayList<>();
         String sql = "SELECT DISTINCT Slot, Start_Time, End_Time, " +
