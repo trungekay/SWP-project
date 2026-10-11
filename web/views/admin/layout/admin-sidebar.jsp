@@ -1,5 +1,18 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<style>
+    .sidebar-menu .catalog-submenu { padding-left: 16px; }
+    .sidebar-menu .catalog-submenu li a.catalog-subnav-link {
+        padding-left: 12px;
+        padding-right: 8px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+    .sidebar-menu .catalog-submenu li a.catalog-subnav-link i {
+        flex-shrink: 0;
+        margin-right: 8px !important;
+    }
+</style>
     <!-- Sidebar -->
     <aside class="sidebar">
         <a href="#" class="sidebar-brand">
@@ -45,10 +58,24 @@
                 </c:if>
             </li>
             <li>
-                <a href="${pageContext.request.contextPath}/admin/catalog" class="${param.activeNav == 'catalog' ? 'active' : ''}">
+                <a href="${pageContext.request.contextPath}/admin/catalog?tab=services" class="${param.activeNav == 'catalog' ? 'active' : ''}">
                     <i class="bi bi-box"></i>
-                    Quản lý Danh mục (Dịch vụ/Vật tư)
+                    Quản lý Danh mục
                 </a>
+                <c:if test="${param.activeNav == 'catalog'}">
+                    <ul class="sidebar-submenu catalog-submenu" aria-label="Danh mục">
+                        <li>
+                            <a href="${pageContext.request.contextPath}/admin/catalog?tab=services" class="catalog-subnav-link ${empty param.activeSub || param.activeSub == 'services' ? 'active-sub' : ''}" data-catalog-subnav="services">
+                                <i class="bi bi-clipboard2-pulse me-2" style="font-size: 14px;"></i>Dịch vụ phòng khám
+                            </a>
+                        </li>
+                        <li>
+                            <a href="${pageContext.request.contextPath}/admin/catalog?tab=supplies" class="catalog-subnav-link ${param.activeSub == 'supplies' ? 'active-sub' : ''}" data-catalog-subnav="supplies">
+                                <i class="bi bi-box-seam me-2" style="font-size: 14px;"></i>Vật tư &amp; Thiết bị
+                            </a>
+                        </li>
+                    </ul>
+                </c:if>
             </li>
             <li>
                 <a href="${pageContext.request.contextPath}/admin/doctors" class="${param.activeNav == 'doctors' ? 'active' : ''}">

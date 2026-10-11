@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
     <!-- Admin Layout CSS -->
-    <link href="${pageContext.request.contextPath}/assets/css/admin-layout.css" rel="stylesheet">
+    <jsp:include page="/views/admin/layout/admin-css.jsp" />
     
     <!-- Catalog specific CSS -->
     <link href="${pageContext.request.contextPath}/assets/css/admin-catalog.css" rel="stylesheet">
@@ -29,6 +29,7 @@
     <!-- Sidebar Include -->
     <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
         <jsp:param name="activeNav" value="catalog" />
+        <jsp:param name="activeSub" value="${kind == 'supply' ? 'supplies' : 'services'}" />
     </jsp:include>
 
     <!-- Main Content -->
