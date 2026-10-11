@@ -40,7 +40,6 @@
 
         <div class="page-content catalog-page bg-light pb-5">
 
-  <div class="catalog-breadcrumb"><div class="container"><a href="${pageContext.request.contextPath}/home">Trang chủ</a><span>/</span><a href="${pageContext.request.contextPath}/admin/catalog?tab=${kind == 'service' ? 'services' : 'supplies'}">Danh mục</a><span>/</span><strong>Cập nhật ${kind == 'service' ? 'dịch vụ' : 'vật tư'}</strong></div></div>
   <div class="container catalog-edit-layout">
     <aside class="catalog-panel catalog-edit-sidebar">
       <h2>${kind == 'service' ? 'Dịch vụ phòng khám' : 'Vật tư & Thiết bị'}</h2>
