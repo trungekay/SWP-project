@@ -128,6 +128,20 @@
 .catalog-edit-form label span { color: #e11d48; }
 .catalog-edit-form input, .catalog-edit-form select, .catalog-edit-form textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 7px; padding: 10px 12px; background: #fff; color: #334155; font-size: 13px; font-weight: 400; }
 .catalog-edit-form input:focus, .catalog-edit-form select:focus, .catalog-edit-form textarea:focus { border-color: #008775; outline: 2px solid #d3ece8; }
+.catalog-image-field { display: grid; gap: 8px; }
+.catalog-edit-form .catalog-image-label { display: block; font-size: 12px; font-weight: 700; color: #475569; }
+.catalog-upload-control { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 12px; border: 1px dashed #9acfc2; border-radius: 9px; background: #f8fdfa; }
+.catalog-upload-control:hover, .catalog-upload-control:focus-within { border-color: #008775; background: #f0faf5; }
+.catalog-edit-form input.catalog-upload-input { position: absolute; width: 1px; height: 1px; padding: 0; opacity: 0; overflow: hidden; }
+.catalog-edit-form .catalog-upload-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: auto; flex: 0 0 auto; margin: 0; padding: 9px 14px; border: 1px solid #18a05e; border-radius: 7px; background: #fff; color: #15803d; font-size: 13px; font-weight: 600; cursor: pointer; }
+.catalog-edit-form .catalog-upload-button:hover { background: #e8f8ed; }
+.catalog-upload-input:focus-visible + .catalog-upload-button { outline: 3px solid #86d5c8; outline-offset: 2px; }
+.catalog-upload-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #64748b; font-size: 12px; }
+.catalog-upload-name.has-file { color: #334155; font-weight: 600; }
+.catalog-image-field small { color: #64748b; font-size: 11px; }
+.catalog-image-current, .catalog-image-selected { display: grid; justify-items: start; gap: 7px; margin-top: 5px; }
+.catalog-image-current > span, .catalog-image-selected > span { color: #64748b; font-size: 11px; font-weight: 600; }
+.catalog-image-selected[hidden] { display: none; }
 .catalog-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; }
 .catalog-form-actions { display: flex; gap: 10px; justify-content: flex-end; align-items: center; border-top: 1px solid #edf0f2; padding-top: 18px; }
 .catalog-form-error { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; border-radius: 8px; padding: 10px 14px; font-size: 12px; margin-top: 15px; }
@@ -149,6 +163,7 @@
 @media (max-width: 991px) { .catalog-edit-layout { grid-template-columns: 1fr; } }
 @media (max-width: 680px) { .catalog-layout, .catalog-sidebar { display: block; } .catalog-sidebar > * { margin-bottom: 14px; } .catalog-heading, .catalog-filters { align-items: stretch; flex-direction: column; } .catalog-search { min-width: 0; width: 100%; } .catalog-filter-selects { flex-wrap: wrap; } .catalog-service { grid-template-columns: 1fr; } .catalog-service-image { border-left: 0; border-top: 1px solid #edf0f2; } .catalog-service-image img { height: 180px; } .catalog-service-actions { flex-wrap: wrap; } }
 @media (max-width: 680px) { .catalog-edit-heading { flex-direction: column; } .catalog-form-grid { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .catalog-upload-control { align-items: flex-start; flex-direction: column; } .catalog-upload-name { max-width: 100%; } }
 
 /* Catalog list uses the same page header, horizontal tabs and content card as clinic config. */
 .catalog-page { min-height: calc(100vh - 70px); background: var(--bg-color, #f4f7f9); color: #334155; }

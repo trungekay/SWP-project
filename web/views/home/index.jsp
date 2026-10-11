@@ -299,8 +299,8 @@
             <!-- Departments Section: details from Service_Catalog -->
             <section id="departments" class="departments section">
               <div class="container section-title" data-aos="fade-up">
-                <h2>Chuyên khoa</h2>
-                <p>Thông tin chi tiết các dịch vụ và chuyên khoa tại VisionCare</p>
+                <h2>Chi tiết dịch vụ</h2>
+                <p>Thông tin chi tiết các dịch vụ tại VisionCare</p>
               </div>
               <div class="container" data-aos="fade-up" data-aos-delay="100">
                 <div class="row">
@@ -324,9 +324,9 @@
                               <h3>
                                 <c:out value="${service.name}" />
                               </h3>
-                              <c:if test="${not empty service.specialty}">
+                              <c:if test="${not empty service.categoryName}">
                                 <p class="fw-semibold">
-                                  <c:out value="${service.specialty}" />
+                                  <c:out value="${service.categoryName}" />
                                 </p>
                               </c:if>
                               <p class="fst-italic">

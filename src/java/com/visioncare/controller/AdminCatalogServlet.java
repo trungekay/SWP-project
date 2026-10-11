@@ -36,6 +36,7 @@ public class AdminCatalogServlet extends HttpServlet {
             if ("/admin/catalog".equals(path)) {
                 request.setAttribute("catalogServices", dao.listServices());
                 request.setAttribute("catalogSupplies", dao.listSupplies());
+                request.setAttribute("serviceCategories", dao.listCategories());
                 request.getRequestDispatcher("/views/admin/catalog.jsp").forward(request, response);
             } else {
                 boolean service = path.endsWith("/service");
@@ -49,6 +50,12 @@ public class AdminCatalogServlet extends HttpServlet {
                         (service ? dao.getService(id) : dao.getSupply(id));
                 if (item == null) { response.sendError(HttpServletResponse.SC_NOT_FOUND); return; }
                 request.setAttribute("choices", choices);
+                if (service) {
+                    request.setAttribute("serviceCategories", dao.listCategories());
+                    if (item instanceof CatalogService) {
+                        request.setAttribute("selectedCategoryId", ((CatalogService) item).getCategoryId());
+                    }
+                }
                 request.setAttribute("item", item);
                 request.setAttribute("kind", service ? "service" : "supply");
                 request.getRequestDispatcher("/views/admin/catalog-edit.jsp").forward(request, response);
@@ -57,7 +64,7 @@ public class AdminCatalogServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         } catch (Exception e) {
             log("Could not load admin catalog", e);
-            request.setAttribute("error", "Không tải được danh mục. Hãy kiểm tra kết nối và cấu trúc bảng Service_Catalog, Medical_Supply trong eye_clinic_db_v2.");
+            request.setAttribute("error", "Không tải được danh mục. Hãy kiểm tra kết nối và cấu trúc bảng Service_Catalog, Service_Category, Medical_Supply trong eye_clinic_db.");
             request.getRequestDispatcher("/views/admin/catalog-error.jsp").forward(request, response);
         }
     }
@@ -91,14 +98,17 @@ public class AdminCatalogServlet extends HttpServlet {
                 String code = field(request, "code", 20, false);
                 String name = field(request, "name", 255, true);
                 BigDecimal price = price(request);
-                String specialty = field(request, "specialty", 30, false);
-                if (!specialty.isEmpty() && !List.of("general", "refraction", "lasik", "children", "retina", "cataract").contains(specialty)) {
-                    throw new IllegalArgumentException("Chuyên khoa không hợp lệ.");
+                String categoryValue = field(request, "categoryId", 10, true);
+                int categoryId;
+                try { categoryId = Integer.parseInt(categoryValue); }
+                catch (NumberFormatException e) { throw new IllegalArgumentException("Nhóm dịch vụ không hợp lệ."); }
+                if (dao.listCategories().stream().noneMatch(category -> category.getId() == categoryId)) {
+                    throw new IllegalArgumentException("Nhóm dịch vụ không hợp lệ.");
                 }
                 String tag = field(request, "tag", 100, false);
                 String summary = field(request, "summary", 500, false);
                 String description = field(request, "description", 4000, false);
-                savedId = dao.saveService(id, user.getId(), code, name, price, specialty, tag, summary,
+                savedId = dao.saveService(id, user.getId(), code, name, price, categoryId, tag, summary,
                         description, upload == null ? null : upload.getBytes(),
                         upload == null ? null : upload.getMimeType());
             } else {
@@ -106,9 +116,7 @@ public class AdminCatalogServlet extends HttpServlet {
                 String category = field(request, "category", 100, true);
                 String batch = field(request, "batch", 50, false);
                 String unit = field(request, "unit", 30, true);
-                int quantity = Integer.parseInt(field(request, "quantity", 10, true));
-                if (quantity < 0) throw new IllegalArgumentException("Số lượng không được âm.");
-                savedId = dao.saveSupply(id, name, category, batch, unit, quantity, price(request),
+                savedId = dao.saveSupply(id, name, category, batch, unit, price(request),
                         upload == null ? null : upload.getBytes(),
                         upload == null ? null : upload.getMimeType());
             }
@@ -127,11 +135,22 @@ public class AdminCatalogServlet extends HttpServlet {
     private void showFormWithSubmittedValues(HttpServletRequest request, HttpServletResponse response, boolean service)
             throws ServletException, IOException {
         Map<String, Object> item = new HashMap<>();
-        for (String key : new String[]{"id", "code", "name", "price", "specialty", "tag", "summary", "description", "image", "category", "batch", "unit", "quantity"}) {
+        for (String key : new String[]{"id", "code", "name", "price", "categoryId", "tag", "summary", "description", "image", "category", "batch", "unit"}) {
             item.put(key, request.getParameter(key));
         }
         try {
             request.setAttribute("choices", service ? dao.listServices() : dao.listSupplies());
+            if (service) {
+                request.setAttribute("serviceCategories", dao.listCategories());
+                String categoryId = request.getParameter("categoryId");
+                if (categoryId != null && categoryId.matches("[0-9]+")) {
+                    try {
+                        request.setAttribute("selectedCategoryId", Integer.parseInt(categoryId));
+                    } catch (NumberFormatException ignored) {
+                        // Keep the placeholder when the submitted ID is out of range.
+                    }
+                }
+            }
         } catch (Exception e) {
             log("Could not reload catalog choices", e);
         }
