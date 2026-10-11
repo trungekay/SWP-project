@@ -33,23 +33,48 @@ public class TimeSlotDAO {
         }
     }
 
+    public double getMaxWeeklyAvailableHours() {
+        try {
+            List<TimeSlotConfig> slots = getConfiguredSlots();
+            int activeCount = 0;
+            for (TimeSlotConfig s : slots) {
+                if (s.getStatus() == null || "Available".equalsIgnoreCase(s.getStatus()) || !"Canceled".equalsIgnoreCase(s.getStatus())) {
+                    activeCount++;
+                }
+            }
+            return activeCount * 7 * 0.5;
+        } catch (Exception e) {
+            System.err.println("Error getMaxWeeklyAvailableHours: " + e.getMessage());
+            return 49.0;
+        }
+    }
+
     public double getMinWeeklyWorkingHours() {
         ensureSettingTable();
+        double hours = 30.0;
         String sql = "SELECT Setting_Value FROM Clinic_Setting WHERE Setting_Key = 'MIN_WORK_HOURS_PER_WEEK'";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
-                return Double.parseDouble(rs.getString("Setting_Value"));
+                hours = Double.parseDouble(rs.getString("Setting_Value"));
             }
         } catch (Exception e) {
             System.err.println("Error getMinWeeklyWorkingHours: " + e.getMessage());
         }
-        return 30.0;
+        double maxHours = getMaxWeeklyAvailableHours();
+        if (maxHours > 0 && hours > maxHours) {
+            hours = maxHours;
+        }
+        return hours;
     }
 
     public boolean updateMinWeeklyWorkingHours(double hours) {
         ensureSettingTable();
+        double maxHours = getMaxWeeklyAvailableHours();
+        if (maxHours > 0 && hours > maxHours) {
+            return false;
+        }
         String sql = "UPDATE Clinic_Setting SET Setting_Value = ? WHERE Setting_Key = 'MIN_WORK_HOURS_PER_WEEK'";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

@@ -460,12 +460,15 @@
                   <form action="${pageContext.request.contextPath}/admin/timeslot-config" method="post" class="row g-3 align-items-end">
                     <input type="hidden" name="action" value="update_min_hours">
                     <div class="col-md-5 col-lg-4">
-                      <label class="form-label fw-semibold small text-secondary">Số giờ làm việc tối thiểu / tuần</label>
+                      <label class="form-label fw-semibold small text-secondary">
+                        Số giờ làm việc tối thiểu / tuần
+                        <span class="text-muted fw-normal">(Tối đa: ${not empty maxWeeklyHours ? maxWeeklyHours : 49.0}h)</span>
+                      </label>
                       <div class="input-group">
                         <span class="input-group-text bg-light"><i class="bi bi-clock"></i></span>
-                        <input type="number" step="0.5" min="0" max="168" name="minWorkHours" class="form-control fw-bold text-primary" 
+                        <input type="number" step="0.5" min="0" max="${not empty maxWeeklyHours ? maxWeeklyHours : 49.0}" name="minWorkHours" class="form-control fw-bold text-primary" 
                                value="${not empty minWorkHours ? minWorkHours : 30.0}" required>
-                        <span class="input-group-text bg-light text-muted">giờ / tuần</span>
+                        <span class="input-group-text bg-light text-muted">/ ${not empty maxWeeklyHours ? maxWeeklyHours : 49.0} giờ</span>
                       </div>
                     </div>
                     <div class="col-md-4 col-lg-3">
@@ -475,7 +478,8 @@
                     </div>
                     <div class="col-12 mt-2">
                       <div class="small text-muted">
-                        <i class="bi bi-info-circle me-1 text-primary"></i> Khi nhân sự đăng ký lịch tuần, hệ thống sẽ tự động kiểm tra tổng số giờ đã chọn phải đạt từ mức tối thiểu này trở lên.
+                        <i class="bi bi-info-circle me-1 text-primary"></i> 
+                        Tổng thời gian làm việc tối đa trong tuần hiện có: <strong>${not empty maxWeeklyHours ? maxWeeklyHours : 49.0} giờ</strong> (dựa trên các ca khám đang mở x 7 ngày/tuần). Số giờ làm tối thiểu bắt buộc phải <strong>nhỏ hơn hoặc bằng ${not empty maxWeeklyHours ? maxWeeklyHours : 49.0} giờ</strong>.
                       </div>
                     </div>
                   </form>

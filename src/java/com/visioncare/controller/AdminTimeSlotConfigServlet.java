@@ -44,8 +44,9 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
                 if (hoursStr != null && !hoursStr.trim().isEmpty()) {
                     try {
                         double hours = Double.parseDouble(hoursStr.trim());
-                        if (hours < 0 || hours > 168) {
-                            request.getSession().setAttribute("errorMsg", "Số giờ làm việc tối thiểu không hợp lệ (phải từ 0 đến 168 giờ)!");
+                        double maxWeeklyHours = timeSlotDAO.getMaxWeeklyAvailableHours();
+                        if (hours < 0 || (maxWeeklyHours > 0 && hours > maxWeeklyHours)) {
+                            request.getSession().setAttribute("errorMsg", "Số giờ làm việc tối thiểu không hợp lệ! Con số này phải từ 0 đến tối đa tổng số giờ làm trong tuần hiện có (" + String.format("%.1f", maxWeeklyHours) + " giờ)!");
                         } else {
                             boolean success = timeSlotDAO.updateMinWeeklyWorkingHours(hours);
                             if (success) {
