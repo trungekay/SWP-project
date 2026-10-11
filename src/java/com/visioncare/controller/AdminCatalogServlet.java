@@ -105,18 +105,16 @@ public class AdminCatalogServlet extends HttpServlet {
                 if (dao.listCategories().stream().noneMatch(category -> category.getId() == categoryId)) {
                     throw new IllegalArgumentException("Nhóm dịch vụ không hợp lệ.");
                 }
-                String tag = field(request, "tag", 100, false);
                 String summary = field(request, "summary", 500, false);
                 String description = field(request, "description", 4000, false);
-                savedId = dao.saveService(id, user.getId(), code, name, price, categoryId, tag, summary,
+                savedId = dao.saveService(id, user.getId(), code, name, price, categoryId, summary,
                         description, upload == null ? null : upload.getBytes(),
                         upload == null ? null : upload.getMimeType());
             } else {
                 String name = field(request, "name", 255, true);
                 String category = field(request, "category", 100, true);
-                String batch = field(request, "batch", 50, false);
                 String unit = field(request, "unit", 30, true);
-                savedId = dao.saveSupply(id, name, category, batch, unit, price(request),
+                savedId = dao.saveSupply(id, name, category, unit, price(request),
                         upload == null ? null : upload.getBytes(),
                         upload == null ? null : upload.getMimeType());
             }
@@ -135,7 +133,7 @@ public class AdminCatalogServlet extends HttpServlet {
     private void showFormWithSubmittedValues(HttpServletRequest request, HttpServletResponse response, boolean service)
             throws ServletException, IOException {
         Map<String, Object> item = new HashMap<>();
-        for (String key : new String[]{"id", "code", "name", "price", "categoryId", "tag", "summary", "description", "image", "category", "batch", "unit"}) {
+        for (String key : new String[]{"id", "code", "name", "price", "categoryId", "summary", "description", "image", "category", "unit"}) {
             item.put(key, request.getParameter(key));
         }
         try {

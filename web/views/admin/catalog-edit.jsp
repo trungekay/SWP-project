@@ -74,13 +74,13 @@
               </label>
             </div>
             <label>Tên dịch vụ <span>*</span><input name="name" maxlength="255" required value="${fn:escapeXml(item.name)}"></label>
-            <div class="catalog-form-grid"><label>Đơn giá (VNĐ) <span>*</span><input name="price" type="number" min="0" step="1" required value="${fn:escapeXml(item.price)}"></label><label>Nhãn hiển thị<input name="tag" maxlength="100" value="${fn:escapeXml(item.tag)}" placeholder="VD: Gói cơ bản"></label></div>
+            <label>Đơn giá (VNĐ) <span>*</span><input name="price" type="number" min="0" step="1" required value="${fn:escapeXml(item.price)}"></label>
             <label>Tóm tắt ngắn<input name="summary" maxlength="500" value="${fn:escapeXml(item.summary)}"></label>
             <label>Mô tả chi tiết<textarea name="description" rows="5" maxlength="4000"><c:out value="${item.description}" /></textarea></label>
           </c:when>
           <c:otherwise>
             <label>Tên vật tư / dược phẩm <span>*</span><input name="name" maxlength="255" required value="${fn:escapeXml(item.name)}"></label>
-            <div class="catalog-form-grid"><label>Phân loại <span>*</span><input name="category" maxlength="100" required value="${fn:escapeXml(item.category)}" placeholder="VD: Dung dịch nhỏ mắt"></label><label>Số lô<input name="batch" maxlength="50" value="${fn:escapeXml(item.batch)}"></label></div>
+            <label>Phân loại <span>*</span><input name="category" maxlength="100" required value="${fn:escapeXml(item.category)}" placeholder="VD: Dung dịch nhỏ mắt"></label>
             <div class="catalog-form-grid"><label>Đơn vị <span>*</span><input name="unit" maxlength="30" required value="${fn:escapeXml(item.unit)}" placeholder="VD: lọ, hộp, cặp"></label><label>Đơn giá (VNĐ) <span>*</span><input name="price" type="number" min="0" step="1" required value="${fn:escapeXml(item.price)}"></label></div>
           </c:otherwise>
         </c:choose>

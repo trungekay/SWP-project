@@ -38,7 +38,6 @@ CREATE TABLE Service_Catalog (
     Service_Name    NVARCHAR(255) NOT NULL,
     Price           DECIMAL(18,0) NOT NULL,
     Category_ID     INT NOT NULL,
-    Tag             NVARCHAR(100) NULL,
     Summary         NVARCHAR(500) NULL,
     Description     NVARCHAR(MAX) NULL,
     Image_Path      VARCHAR(255) NULL,
@@ -55,7 +54,6 @@ CREATE TABLE Medical_Supply (
     Supply_ID    INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     Supply_Name  NVARCHAR(255) NOT NULL,
     Category     NVARCHAR(100) NOT NULL,
-    Batch_Code   VARCHAR(50) NULL,
     Unit         NVARCHAR(30) NOT NULL,
     Price        DECIMAL(18,0) NOT NULL,
     Image_Data   VARBINARY(MAX) NULL,
@@ -337,20 +335,20 @@ INSERT INTO Service_Category (Category_ID, Category_Name) VALUES
 (5, N'Dịch vụ ngoài');
 
 INSERT INTO Service_Catalog
-    (Service_Code, Service_Name, Price, Category_ID, Tag, Summary, Description, Image_Path)
+    (Service_Code, Service_Name, Price, Category_ID, Summary, Description, Image_Path)
 VALUES
-('NK-01', N'Khám mắt tổng quát', 250000, 1, N'Gói cơ bản', N'Khám và chẩn đoán toàn diện các bệnh lý về mắt, phù hợp với mọi lứa tuổi.', N'Bao gồm đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt, đánh giá tình trạng giác mạc và thủy tinh thể.', 'departments-1.jpg'),
-('KX-02', N'Đo khúc xạ và tư vấn kính', 150000, 2, N'Khúc xạ kế', N'Khám sàng lọc và đo độ khúc xạ với hệ thống đo tự động chuẩn xác.', N'Đo khúc xạ chính xác bằng máy tự động, thử thị lực và tư vấn tròng kính phù hợp.', 'departments-2.jpg'),
-('LS-03', N'Phẫu thuật LASIK', 18000000, 3, N'Kỹ thuật cao', N'Xóa cận không dao, thời gian phục hồi nhanh chóng.', N'Phẫu thuật khúc xạ laser LASIK/SMILE điều trị cận thị, viễn thị và loạn thị với công nghệ hiện đại.', 'departments-3.jpg'),
-('PE-04', N'Khám mắt trẻ em và tư vấn nhược thị', 300000, 1, N'Trẻ em & Học đường', N'Sàng lọc sớm các tật khúc xạ tiến triển, tật lé và suy giảm thị lực ở trẻ nhỏ.', N'Sàng lọc cận thị sớm, điều trị nhược thị và lác mắt trong không gian khám thân thiện.', 'departments-4.jpg'),
-('TT-05', N'Phẫu thuật Phaco điều trị đục thủy tinh thể', 12000000, 3, N'Phẫu thuật Phaco', N'Tái tạo tầm nhìn trong sáng bằng phương pháp tán nhuyễn Phaco tiên tiến.', N'Phẫu thuật thay thể thủy tinh nhân tạo điều trị đục thủy tinh thể an toàn, đường mổ siêu nhỏ.', 'departments-5.jpg'),
-('GL-06', N'Đo nhãn áp và chụp OCT võng mạc', 500000, 2, N'Đáy mắt chuyên sâu', N'Kiểm soát nhãn áp, bảo tồn thị trường thần kinh mắt và ngăn ngừa biến chứng mù lòa.', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.', 'gallery/gallery-1.jpg');
+('NK-01', N'Khám mắt tổng quát', 250000, 1, N'Khám và chẩn đoán toàn diện các bệnh lý về mắt, phù hợp với mọi lứa tuổi.', N'Bao gồm đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt, đánh giá tình trạng giác mạc và thủy tinh thể.', 'departments-1.jpg'),
+('KX-02', N'Đo khúc xạ và tư vấn kính', 150000, 2, N'Khám sàng lọc và đo độ khúc xạ với hệ thống đo tự động chuẩn xác.', N'Đo khúc xạ chính xác bằng máy tự động, thử thị lực và tư vấn tròng kính phù hợp.', 'departments-2.jpg'),
+('LS-03', N'Phẫu thuật LASIK', 18000000, 3, N'Xóa cận không dao, thời gian phục hồi nhanh chóng.', N'Phẫu thuật khúc xạ laser LASIK/SMILE điều trị cận thị, viễn thị và loạn thị với công nghệ hiện đại.', 'departments-3.jpg'),
+('PE-04', N'Khám mắt trẻ em và tư vấn nhược thị', 300000, 1, N'Sàng lọc sớm các tật khúc xạ tiến triển, tật lé và suy giảm thị lực ở trẻ nhỏ.', N'Sàng lọc cận thị sớm, điều trị nhược thị và lác mắt trong không gian khám thân thiện.', 'departments-4.jpg'),
+('TT-05', N'Phẫu thuật Phaco điều trị đục thủy tinh thể', 12000000, 3, N'Tái tạo tầm nhìn trong sáng bằng phương pháp tán nhuyễn Phaco tiên tiến.', N'Phẫu thuật thay thể thủy tinh nhân tạo điều trị đục thủy tinh thể an toàn, đường mổ siêu nhỏ.', 'departments-5.jpg'),
+('GL-06', N'Đo nhãn áp và chụp OCT võng mạc', 500000, 2, N'Kiểm soát nhãn áp, bảo tồn thị trường thần kinh mắt và ngăn ngừa biến chứng mù lòa.', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.', 'gallery/gallery-1.jpg');
 
-INSERT INTO Medical_Supply (Supply_Name, Category, Batch_Code, Unit, Price) VALUES
-(N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Dung dịch nhỏ mắt', 'SYS-2026A', N'lọ', 95000),
-(N'Tròng kính Essilor Crizal Alize 1.60', N'Tròng kính', 'ESL-8839', N'cặp', 1250000),
-(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Dung dịch nhỏ mắt', 'SNL-091', N'lọ', 88000),
-(N'Que thử màu huỳnh quang Fluorescein Strips', N'Vật tư chẩn đoán', 'FLS-002', N'hộp', 320000);
+INSERT INTO Medical_Supply (Supply_Name, Category, Unit, Price) VALUES
+(N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Dung dịch nhỏ mắt', N'lọ', 95000),
+(N'Tròng kính Essilor Crizal Alize 1.60', N'Tròng kính', N'cặp', 1250000),
+(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Dung dịch nhỏ mắt', N'lọ', 88000),
+(N'Que thử màu huỳnh quang Fluorescein Strips', N'Vật tư chẩn đoán', N'hộp', 320000);
 
 INSERT INTO Procedure_Order (Specialist_Employee_ID, Record_ID, Service_ID, Status) VALUES
 (9, 1, 2, N'Completed');

@@ -12,8 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CatalogDAO {
-    private static final String SERVICE_COLUMNS = "sc.Service_ID, sc.Service_Code, sc.Service_Name, sc.Price, sc.Category_ID, category.Category_Name, sc.Tag, sc.Summary, sc.Description, sc.Image_Path, CASE WHEN sc.Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
-    private static final String SUPPLY_COLUMNS = "Supply_ID, Supply_Name, Category, Batch_Code, Unit, Price, CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
+    private static final String SERVICE_COLUMNS = "sc.Service_ID, sc.Service_Code, sc.Service_Name, sc.Price, sc.Category_ID, category.Category_Name, sc.Summary, sc.Description, sc.Image_Path, CASE WHEN sc.Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
+    private static final String SUPPLY_COLUMNS = "Supply_ID, Supply_Name, Category, Unit, Price, CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
 
     public List<CatalogService> listServices() throws Exception {
         List<CatalogService> items = new ArrayList<>();
@@ -44,12 +44,12 @@ public class CatalogDAO {
     }
 
     public int saveService(int id, int accountId, String code, String name, BigDecimal price,
-            int categoryId, String tag, String summary, String description,
+            int categoryId, String summary, String description,
             byte[] imageData, String imageMimeType) throws Exception {
         boolean create = id == 0;
         String sql = create
-            ? "INSERT INTO Service_Catalog (Created_By, Service_Code, Service_Name, Price, Category_ID, Tag, Summary, Description, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-            : "UPDATE Service_Catalog SET Service_Code = ?, Service_Name = ?, Price = ?, Category_ID = ?, Tag = ?, Summary = ?, Description = ?" +
+            ? "INSERT INTO Service_Catalog (Created_By, Service_Code, Service_Name, Price, Category_ID, Summary, Description, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            : "UPDATE Service_Catalog SET Service_Code = ?, Service_Name = ?, Price = ?, Category_ID = ?, Summary = ?, Description = ?" +
               (imageData == null ? "" : ", Image_Data = ?, Image_Mime_Type = ?") + " WHERE Service_ID = ?";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -59,7 +59,6 @@ public class CatalogDAO {
             statement.setString(column++, name);
             statement.setBigDecimal(column++, price);
             statement.setInt(column++, categoryId);
-            statement.setString(column++, blankToNull(tag));
             statement.setString(column++, blankToNull(summary));
             statement.setString(column++, blankToNull(description));
             if (create || imageData != null) {
@@ -117,22 +116,21 @@ public class CatalogDAO {
         }
     }
 
-    public int saveSupply(int id, String name, String category, String batch,
-            String unit, BigDecimal price, byte[] imageData,
+    public int saveSupply(int id, String name, String category, String unit,
+            BigDecimal price, byte[] imageData,
             String imageMimeType) throws Exception {
         boolean create = id == 0;
         String sql = create
-            ? "INSERT INTO Medical_Supply (Supply_Name, Category, Batch_Code, Unit, Price, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?, ?, ?)"
-            : "UPDATE Medical_Supply SET Supply_Name = ?, Category = ?, Batch_Code = ?, Unit = ?, Price = ?" +
+            ? "INSERT INTO Medical_Supply (Supply_Name, Category, Unit, Price, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?, ?)"
+            : "UPDATE Medical_Supply SET Supply_Name = ?, Category = ?, Unit = ?, Price = ?" +
               (imageData == null ? "" : ", Image_Data = ?, Image_Mime_Type = ?") + " WHERE Supply_ID = ?";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, name);
             statement.setString(2, category);
-            statement.setString(3, blankToNull(batch));
-            statement.setString(4, unit);
-            statement.setBigDecimal(5, price);
-            int column = 6;
+            statement.setString(3, unit);
+            statement.setBigDecimal(4, price);
+            int column = 5;
             if (create || imageData != null) {
                 statement.setBytes(column++, imageData);
                 statement.setString(column++, imageMimeType);
@@ -151,7 +149,7 @@ public class CatalogDAO {
         return new CatalogService(
                 result.getInt("Service_ID"), result.getString("Service_Code"),
                 result.getString("Service_Name"), result.getBigDecimal("Price"),
-                result.getInt("Category_ID"), result.getString("Category_Name"), result.getString("Tag"),
+                result.getInt("Category_ID"), result.getString("Category_Name"),
                 result.getString("Summary"), result.getString("Description"),
                 result.getString("Image_Path"), result.getBoolean("Has_Image"));
     }
@@ -159,7 +157,7 @@ public class CatalogDAO {
     private MedicalSupply supply(ResultSet result) throws Exception {
         return new MedicalSupply(
                 result.getInt("Supply_ID"), result.getString("Supply_Name"),
-                result.getString("Category"), result.getString("Batch_Code"),
+                result.getString("Category"),
                 result.getString("Unit"),
                 result.getBigDecimal("Price"), result.getBoolean("Has_Image"));
     }
