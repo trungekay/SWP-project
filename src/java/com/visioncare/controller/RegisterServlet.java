@@ -62,7 +62,14 @@ public class RegisterServlet extends HttpServlet {
                     User fullUser = userDAO.getByEmail(pendingUser.getEmail());
                     fullUser.setRole("patient");
                     session.setAttribute("user", fullUser);
-                    response.sendRedirect(request.getContextPath() + "/home");
+
+                    String redirect = (String) session.getAttribute("redirectAfterLogin");
+                    if (redirect != null) {
+                        session.removeAttribute("redirectAfterLogin");
+                        response.sendRedirect(redirect);
+                    } else {
+                        response.sendRedirect(request.getContextPath() + "/home");
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                     request.setAttribute("error", "Không thể đăng ký: " + e.getMessage());
