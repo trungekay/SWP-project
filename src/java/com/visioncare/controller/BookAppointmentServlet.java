@@ -37,6 +37,53 @@ public class BookAppointmentServlet extends HttpServlet {
             throws ServletException, IOException {
         String action = request.getParameter("action");
 
+        // AJAX: Tự động kiểm tra trạng thái thanh toán đơn hàng (Auto Polling cho PayOS)
+        if ("checkPayment".equalsIgnoreCase(action)) {
+            response.setContentType("application/json;charset=UTF-8");
+            String apptIdStr = request.getParameter("appointmentId");
+            if (apptIdStr != null && !apptIdStr.isEmpty()) {
+                try {
+                    int apptId = Integer.parseInt(apptIdStr);
+                    Appointment appt = appointmentDAO.getAppointmentDetailById(apptId);
+                    boolean isPaid = (appt != null && ("Confirmed".equalsIgnoreCase(appt.getStatus()) || "Paid".equalsIgnoreCase(appt.getInvoiceStatus())));
+
+                    // Nếu DB chưa ghi nhận Paid, thử kiểm tra trực tiếp sang cổng PayOS
+                    if (!isPaid) {
+                        String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(apptId);
+                        if ("PAID".equalsIgnoreCase(payosStatus)) {
+                            appointmentDAO.confirmPayment(apptId);
+                            isPaid = true;
+                        }
+                    }
+                    response.getWriter().write("{\"isPaid\":" + isPaid + "}");
+                    return;
+                } catch (Exception e) {
+                    response.getWriter().write("{\"isPaid\":false,\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
+                    return;
+                }
+            }
+            response.getWriter().write("{\"isPaid\":false}");
+            return;
+        }
+
+        // Điều hướng trở về màn hình thành công sau khi thanh toán PayOS
+        String stepParam = request.getParameter("step");
+        if ("success".equalsIgnoreCase(stepParam)) {
+            String apptIdParam = request.getParameter("id");
+            if (apptIdParam != null && !apptIdParam.isEmpty()) {
+                try {
+                    int apptId = Integer.parseInt(apptIdParam);
+                    Appointment fullAppt = appointmentDAO.getAppointmentDetailById(apptId);
+                    if (fullAppt != null) {
+                        request.setAttribute("step", "success");
+                        request.setAttribute("appointment", fullAppt);
+                        request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);
+                        return;
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
         // AJAX: Lấy khung giờ động theo Bác sĩ & Ngày (bỏ hoàn toàn ca tối)
         if ("getSlots".equalsIgnoreCase(action)) {
             response.setContentType("application/json;charset=UTF-8");
@@ -75,6 +122,21 @@ public class BookAppointmentServlet extends HttpServlet {
                 response.getWriter().write("{\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
                 return;
             }
+        }
+
+        // Bắt buộc bệnh nhân phải đăng nhập để đặt lịch khám
+        HttpSession session = request.getSession(false);
+        User user = (session != null) ? (User) session.getAttribute("user") : null;
+        if (user == null) {
+            String query = request.getQueryString();
+            String redirectUrl = request.getContextPath() + "/book-appointment" + (query != null && !query.isEmpty() ? "?" + query : "");
+            if (session == null) {
+                session = request.getSession(true);
+            }
+            session.setAttribute("redirectAfterLogin", redirectUrl);
+            session.setAttribute("infoMsg", "Vui lòng đăng nhập để thực hiện đặt lịch khám mắt.");
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
         }
 
         // Tải trang đặt lịch thông thường
@@ -165,6 +227,20 @@ public class BookAppointmentServlet extends HttpServlet {
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
+
+        // Bắt buộc bệnh nhân phải đăng nhập để thực hiện đặt lịch
+        HttpSession session = request.getSession(false);
+        User user = (session != null) ? (User) session.getAttribute("user") : null;
+        if (user == null) {
+            if (session == null) {
+                session = request.getSession(true);
+            }
+            session.setAttribute("redirectAfterLogin", request.getContextPath() + "/book-appointment");
+            session.setAttribute("infoMsg", "Vui lòng đăng nhập để thực hiện đặt lịch khám mắt.");
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
         String action = request.getParameter("action");
 
         // BƯỚC 2: Bệnh nhân quét mã QR và nhấn "Xác nhận tôi đã thanh toán (Verify Payment)"
@@ -178,6 +254,47 @@ public class BookAppointmentServlet extends HttpServlet {
                 }
                 int appointmentId = Integer.parseInt(apptIdStr);
 
+                // KIỂM TRA THỰC TẾ QUA CỔNG PAYOS (KHÔNG DÙNG MOCK UP NỮA)
+                String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(appointmentId);
+                boolean isPaid = "PAID".equalsIgnoreCase(payosStatus);
+
+                // Nếu PayOS chưa ghi nhận tiền về tài khoản
+                if (!isPaid) {
+                    Appointment pendingAppt = appointmentDAO.getAppointmentDetailById(appointmentId);
+                    request.setAttribute("error", "Hệ thống kiểm tra qua cổng PayOS chưa nhận được khoản thanh toán 200.000 ₫ cho lịch hẹn #" + appointmentId + ". Vui lòng quét mã QR chuyển khoản trên ứng dụng ngân hàng rồi thử lại!");
+                    request.setAttribute("step", "payment");
+                    request.setAttribute("appointment", pendingAppt);
+                    request.setAttribute("appointmentId", appointmentId);
+                    long fee = pendingAppt != null && pendingAppt.getFee() > 0 ? pendingAppt.getFee() : 200000;
+                    request.setAttribute("fee", fee);
+
+                    // Tải lại QR PayOS & VietQR
+                    String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
+                    String cancelUrl = baseUrl + "/book-appointment";
+                    String returnUrl = baseUrl + "/book-appointment?step=success&id=" + appointmentId;
+                    String payosDesc = "VC" + appointmentId;
+                    com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(appointmentId, (int) fee, payosDesc, cancelUrl, returnUrl);
+
+                    String qrUrl;
+                    if (payosRes != null && payosRes.success) {
+                        request.setAttribute("payosCheckoutUrl", payosRes.checkoutUrl);
+                        request.setAttribute("isPayOSEnabled", true);
+                        qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + URLEncoder.encode(payosRes.qrCode, StandardCharsets.UTF_8);
+                    } else {
+                        String phoneSafe = pendingAppt != null && pendingAppt.getPhone() != null ? pendingAppt.getPhone() : "";
+                        String paymentDesc = "VC" + appointmentId + " " + phoneSafe;
+                        qrUrl = "https://img.vietqr.io/image/MB-0335889999-compact2.png?amount=" + fee + "&addInfo=" + URLEncoder.encode(paymentDesc, StandardCharsets.UTF_8) + "&accountName=PHONG%20KHAM%20MAT%20VISIONCARE";
+                    }
+                    request.setAttribute("qrUrl", qrUrl);
+                    request.setAttribute("paymentDesc", "VC" + appointmentId + (pendingAppt != null && pendingAppt.getPhone() != null ? " " + pendingAppt.getPhone() : ""));
+                    request.setAttribute("bankName", "Ngân hàng Quân Đội (MB Bank)");
+                    request.setAttribute("accountNumber", "0335889999");
+                    request.setAttribute("accountHolder", "PHONG KHAM MAT VISIONCARE");
+                    request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);
+                    return;
+                }
+
+                // KHI PAYOS ĐÃ XÁC NHẬN "PAID" THẬT SỰ:
                 // Cập nhật hóa đơn -> Paid, tạo Payment_Transaction, Confirmed lịch hẹn & Booked ca trực
                 appointmentDAO.confirmPayment(appointmentId);
 
@@ -280,9 +397,7 @@ public class BookAppointmentServlet extends HttpServlet {
             }
 
             // Gán Account ID nếu bệnh nhân đã đăng nhập
-            HttpSession session = request.getSession(false);
-            if (session != null && session.getAttribute("user") != null) {
-                User user = (User) session.getAttribute("user");
+            if (user != null) {
                 appointment.setUserId(user.getId());
                 if (appointment.getEmail() == null || appointment.getEmail().isEmpty()) {
                     appointment.setEmail(user.getEmail());
@@ -350,6 +465,25 @@ public class BookAppointmentServlet extends HttpServlet {
             String encodedDesc = URLEncoder.encode(paymentDesc, StandardCharsets.UTF_8);
             String qrUrl = "https://img.vietqr.io/image/MB-0335889999-compact2.png?amount=" + fee + "&addInfo=" + encodedDesc + "&accountName=PHONG%20KHAM%20MAT%20VISIONCARE";
 
+            // TÍCH HỢP CỔNG PAYOS ĐỒNG THỜI
+            String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
+            String cancelUrl = baseUrl + "/book-appointment";
+            String returnUrl = baseUrl + "/book-appointment?step=success&id=" + newId;
+            String payosDesc = "VC" + newId;
+            com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(newId, (int) fee, payosDesc, cancelUrl, returnUrl);
+
+            String payosCheckoutUrl = null;
+            if (payosRes != null && payosRes.success) {
+                payosCheckoutUrl = payosRes.checkoutUrl;
+                request.setAttribute("payosCheckoutUrl", payosRes.checkoutUrl);
+                request.setAttribute("isPayOSEnabled", true);
+                if (payosRes.qrCode != null && !payosRes.qrCode.isEmpty()) {
+                    qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + URLEncoder.encode(payosRes.qrCode, StandardCharsets.UTF_8);
+                }
+            } else {
+                request.setAttribute("isPayOSEnabled", false);
+            }
+
             Appointment fullAppt = appointmentDAO.getAppointmentDetailById(newId);
             if (fullAppt != null) {
                 fullAppt.setEmail(appointment.getEmail());
@@ -359,6 +493,7 @@ public class BookAppointmentServlet extends HttpServlet {
             request.setAttribute("appointment", fullAppt != null ? fullAppt : appointment);
             request.setAttribute("appointmentId", newId);
             request.setAttribute("qrUrl", qrUrl);
+            request.setAttribute("payosCheckoutUrl", payosCheckoutUrl);
             request.setAttribute("fee", fee);
             request.setAttribute("paymentDesc", paymentDesc);
             request.setAttribute("bankName", "Ngân hàng Quân Đội (MB Bank)");
