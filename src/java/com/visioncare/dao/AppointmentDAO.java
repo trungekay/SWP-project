@@ -53,13 +53,17 @@ public class AppointmentDAO {
 
             if (appointmentId > 0) {
                 // Insert Master_Invoice as Pending_Deposit
-                long totalFee = fee > 0 ? fee : 200000;
+                long depositFee = fee > 0 ? fee : 200000;
+                long totalServiceAmount = a.getTotalAmount() > 0 ? a.getTotalAmount() : depositFee;
+                long balanceDue = totalServiceAmount > depositFee ? (totalServiceAmount - depositFee) : 0;
+
                 String sqlInvoice = "INSERT INTO Master_Invoice (Appointment_ID, Total_Amount, Deposit_Amount, Balance_Due, Status, Create_At) " +
-                                    "VALUES (?, ?, 0, ?, 'Pending_Deposit', SYSUTCDATETIME())";
+                                    "VALUES (?, ?, ?, ?, 'Pending_Deposit', SYSUTCDATETIME())";
                 try (PreparedStatement psInv = conn.prepareStatement(sqlInvoice)) {
                     psInv.setInt(1, appointmentId);
-                    psInv.setLong(2, totalFee);
-                    psInv.setLong(3, totalFee);
+                    psInv.setLong(2, totalServiceAmount);
+                    psInv.setLong(3, depositFee);
+                    psInv.setLong(4, balanceDue);
                     psInv.executeUpdate();
                 }
 
@@ -107,15 +111,23 @@ public class AppointmentDAO {
             // 1. Get Master_Invoice
             int invoiceId = -1;
             long totalAmount = 200000;
-            String sqlFindInv = "SELECT Invoice_ID, Total_Amount FROM Master_Invoice WHERE Appointment_ID = ?";
+            long depositAmount = 200000;
+            long balanceDue = 0;
+            String sqlFindInv = "SELECT Invoice_ID, Total_Amount, Deposit_Amount, Balance_Due FROM Master_Invoice WHERE Appointment_ID = ?";
             try (PreparedStatement psInv = conn.prepareStatement(sqlFindInv)) {
                 psInv.setInt(1, appointmentId);
                 try (ResultSet rs = psInv.executeQuery()) {
                     if (rs.next()) {
                         invoiceId = rs.getInt("Invoice_ID");
                         totalAmount = rs.getLong("Total_Amount");
+                        depositAmount = rs.getLong("Deposit_Amount");
+                        balanceDue = rs.getLong("Balance_Due");
                     }
                 }
+            }
+            if (depositAmount <= 0) {
+                depositAmount = totalAmount <= 200000 && totalAmount > 0 ? totalAmount : 200000;
+                balanceDue = totalAmount > depositAmount ? (totalAmount - depositAmount) : 0;
             }
 
             if (invoiceId <= 0) {
@@ -130,10 +142,14 @@ public class AppointmentDAO {
                     }
                 }
             } else {
-                // Update Invoice to Paid
-                String sqlUpdInv = "UPDATE Master_Invoice SET Deposit_Amount = Total_Amount, Balance_Due = 0, Status = 'Paid', Close_At = SYSUTCDATETIME() WHERE Invoice_ID = ?";
+                // Update Invoice: Nếu còn dư nợ thì Partial_Paid, nếu đã xong thì Paid
+                String invStatus = balanceDue <= 0 ? "Paid" : "Partial_Paid";
+                String sqlUpdInv = "UPDATE Master_Invoice SET Deposit_Amount = ?, Balance_Due = ?, Status = ?, Close_At = SYSUTCDATETIME() WHERE Invoice_ID = ?";
                 try (PreparedStatement psUpd = conn.prepareStatement(sqlUpdInv)) {
-                    psUpd.setInt(1, invoiceId);
+                    psUpd.setLong(1, depositAmount);
+                    psUpd.setLong(2, balanceDue);
+                    psUpd.setString(3, invStatus);
+                    psUpd.setInt(4, invoiceId);
                     psUpd.executeUpdate();
                 }
             }
@@ -143,7 +159,7 @@ public class AppointmentDAO {
                               "VALUES (?, ?, 'Success', SYSUTCDATETIME(), 'VietQR_Banking')";
             try (PreparedStatement psTrans = conn.prepareStatement(sqlTrans)) {
                 psTrans.setInt(1, invoiceId);
-                psTrans.setLong(2, totalAmount);
+                psTrans.setLong(2, depositAmount);
                 psTrans.executeUpdate();
             }
 
@@ -183,7 +199,7 @@ public class AppointmentDAO {
                      "       ws.Work_Date, ws.Start_Time, ws.End_Time, ws.Slot, " +
                      "       e.Employee_ID, e.Full_Name AS Doctor_Name, e.Specialty, " +
                      "       mr.Clinical_Diagnosis, " +
-                     "       mi.Invoice_ID, mi.Total_Amount, mi.Deposit_Amount, mi.Status AS Invoice_Status " +
+                     "       mi.Invoice_ID, mi.Total_Amount, mi.Deposit_Amount, mi.Balance_Due, mi.Status AS Invoice_Status " +
                      "FROM Appointment a " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
                      "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
@@ -212,7 +228,13 @@ public class AppointmentDAO {
                     appt.setScheduleId(rs.getInt("Schedule_ID"));
                     appt.setReason(rs.getString("Clinical_Diagnosis"));
                     appt.setInvoiceId(rs.getInt("Invoice_ID"));
-                    appt.setFee(rs.getLong("Total_Amount"));
+                    long totalAmt = rs.getLong("Total_Amount");
+                    long depAmt = rs.getLong("Deposit_Amount");
+                    long balDue = rs.getLong("Balance_Due");
+                    appt.setTotalAmount(totalAmt);
+                    appt.setBalanceDue(balDue);
+                    long finalFee = depAmt > 0 ? depAmt : (totalAmt <= 200000 && totalAmt > 0 ? totalAmt : 200000);
+                    appt.setFee(finalFee);
                     appt.setInvoiceStatus(rs.getString("Invoice_Status"));
                     try {
                         appt.setUserId(rs.getInt("Account_ID"));
@@ -225,7 +247,8 @@ public class AppointmentDAO {
     }
 
     public int create(Appointment a) throws Exception {
-        return createPendingAppointment(a, a.getServiceId(), a.getFee() > 0 ? a.getFee() : 200000);
+        long feeToCharge = a.getFee() > 0 ? a.getFee() : (a.getTotalAmount() <= 200000 && a.getTotalAmount() > 0 ? a.getTotalAmount() : 200000);
+        return createPendingAppointment(a, a.getServiceId(), feeToCharge);
     }
 
     private int getOrCreatePatient(Connection conn, Appointment a) throws SQLException {

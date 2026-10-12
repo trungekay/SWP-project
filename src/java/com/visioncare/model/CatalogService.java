@@ -39,4 +39,30 @@ public class CatalogService {
     public String getDescription() { return description; }
     public String getImage() { return image; }
     public boolean isUploadedImage() { return uploadedImage; }
+
+    public String getSpecialty() {
+        if (code != null) {
+            String c = code.toUpperCase();
+            if (c.contains("NK")) return "general";
+            if (c.contains("KX")) return "refraction";
+            if (c.contains("LS")) return "lasik";
+            if (c.contains("PE")) return "children";
+            if (c.contains("TT")) return "cataract";
+            if (c.contains("GL")) return "retina";
+        }
+        if (name != null) {
+            String n = name.toLowerCase();
+            if (n.contains("khúc xạ") || n.contains("kính")) return "refraction";
+            if (n.contains("lasik") || n.contains("phẫu thuật")) return "lasik";
+            if (n.contains("trẻ em") || n.contains("nhược thị")) return "children";
+            if (n.contains("thủy tinh thể") || n.contains("phaco")) return "cataract";
+            if (n.contains("glaucoma") || n.contains("võng mạc") || n.contains("nhãn áp")) return "retina";
+            if (n.contains("tổng quát")) return "general";
+        }
+        return categoryName != null ? categoryName : "";
+    }
+
+    public String getTag() {
+        return categoryName != null ? categoryName : "";
+    }
 }

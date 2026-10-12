@@ -54,6 +54,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=rules" class="${param.activeSub == 'rules' ? 'active-sub' : ''}">
+                                <i class="bi bi-sliders me-2" style="font-size: 14px;"></i>Quy định giờ làm việc
+                            </a>
+                        </li>
+                        <li>
                             <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=intro" class="${param.activeSub == 'intro' ? 'active-sub' : ''}">
                                 <i class="bi bi-images me-2" style="font-size: 14px;"></i>Cấu hình giới thiệu
                             </a>

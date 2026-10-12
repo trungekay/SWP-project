@@ -18,6 +18,8 @@ public class Appointment {
     private int serviceId;
     private String serviceName;
     private long fee = 200000;
+    private long totalAmount;
+    private long balanceDue;
     private int scheduleId;
     private String slotName;
     private String invoiceStatus;
@@ -161,5 +163,19 @@ public class Appointment {
     }
     public void setInvoiceId(int invoiceId) {
         this.invoiceId = invoiceId;
+    }
+
+    public long getTotalAmount() {
+        return totalAmount;
+    }
+    public void setTotalAmount(long totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
+    public long getBalanceDue() {
+        return balanceDue;
+    }
+    public void setBalanceDue(long balanceDue) {
+        this.balanceDue = balanceDue;
     }
 }

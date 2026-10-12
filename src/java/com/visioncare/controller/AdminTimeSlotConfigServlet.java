@@ -65,6 +65,10 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
             request.getSession().setAttribute("errorMsg", "Lỗi cấu hình Slot: " + e.getMessage());
         }
 
+        if ("update_min_hours".equals(action)) {
+            response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=rules");
+            return;
+        }
         response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=slots");
     }
 }

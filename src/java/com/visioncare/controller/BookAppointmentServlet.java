@@ -261,11 +261,12 @@ public class BookAppointmentServlet extends HttpServlet {
                 // Nếu PayOS chưa ghi nhận tiền về tài khoản
                 if (!isPaid) {
                     Appointment pendingAppt = appointmentDAO.getAppointmentDetailById(appointmentId);
-                    request.setAttribute("error", "Hệ thống kiểm tra qua cổng PayOS chưa nhận được khoản thanh toán 200.000 ₫ cho lịch hẹn #" + appointmentId + ". Vui lòng quét mã QR chuyển khoản trên ứng dụng ngân hàng rồi thử lại!");
+                    long fee = pendingAppt != null && pendingAppt.getFee() > 0 ? pendingAppt.getFee() : 200000;
+                    String feeFmt = String.format("%,d ₫", fee);
+                    request.setAttribute("error", "Hệ thống kiểm tra qua cổng PayOS chưa nhận được khoản thanh toán " + feeFmt + " cho lịch hẹn #" + appointmentId + ". Vui lòng quét mã QR chuyển khoản trên ứng dụng ngân hàng rồi thử lại!");
                     request.setAttribute("step", "payment");
                     request.setAttribute("appointment", pendingAppt);
                     request.setAttribute("appointmentId", appointmentId);
-                    long fee = pendingAppt != null && pendingAppt.getFee() > 0 ? pendingAppt.getFee() : 200000;
                     request.setAttribute("fee", fee);
 
                     // Tải lại QR PayOS & VietQR
@@ -449,8 +450,26 @@ public class BookAppointmentServlet extends HttpServlet {
             }
 
             // TẠO LỊCH HẸN PENDING VÀ HÓA ĐƠN PENDING DEPOSIT
-            long fee = 200000; // Phí khám ban đầu theo tiêu chuẩn phòng khám
+            CatalogService cs = null;
+            if (serviceId > 0) {
+                try {
+                    cs = catalogDAO.getService(serviceId);
+                    if (cs != null) {
+                        appointment.setServiceName(cs.getName());
+                    }
+                } catch (Exception ignored) {}
+            }
+            long totalServicePrice = (cs != null && cs.getPrice() != null) ? cs.getPrice().longValue() : 200000;
+            appointment.setTotalAmount(totalServicePrice);
+
+            // Quy định thu phí:
+            // - Dịch vụ có giá <= 200.000đ (ví dụ đo khúc xạ 150.000đ): Thu đúng 100% giá dịch vụ.
+            // - Các dịch vụ chuyên khoa khác (> 200.000đ): Chỉ thu trước phí khám ban đầu / tiền cọc 200.000đ, phần còn lại thanh toán sau khi khám xong.
+            long fee = totalServicePrice <= 200000 && totalServicePrice > 0 ? totalServicePrice : 200000;
+            long balanceDue = totalServicePrice > fee ? (totalServicePrice - fee) : 0;
             appointment.setFee(fee);
+            appointment.setBalanceDue(balanceDue);
+
             int newId = appointmentDAO.createPendingAppointment(appointment, serviceId, fee);
 
             if (newId <= 0) {
