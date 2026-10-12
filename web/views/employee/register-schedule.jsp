@@ -1,17 +1,37 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-  <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
-    <jsp:include page="/views/common/header.jsp">
-      <jsp:param name="pageTitle" value="Đăng ký lịch làm việc" />
-      <jsp:param name="pageDescription" value="Đăng ký ca làm việc hàng tuần cho Bác sĩ, Chuyên viên và Nhân viên" />
-      <jsp:param name="bodyClass" value="starter-page-page" />
-      <jsp:param name="activeNav" value="register-schedule" />
-    </jsp:include>
+<c:set var="isStaffOrAdmin" value="${sessionScope.user.role == 'staff' || sessionScope.user.role == 'admin'}" />
 
-    <link href="${pageContext.request.contextPath}/assets/css/register-schedule.css" rel="stylesheet">
+<jsp:include page="/views/common/header.jsp">
+  <jsp:param name="pageTitle" value="Đăng ký lịch làm việc — VisionCare" />
+  <jsp:param name="pageDescription" value="Đăng ký ca làm việc hàng tuần cho Bác sĩ, Chuyên viên và Nhân viên" />
+  <jsp:param name="bodyClass" value="starter-page-page" />
+  <jsp:param name="activeNav" value="register-schedule" />
+  <jsp:param name="hideHeaderForAdmin" value="${isStaffOrAdmin ? 'true' : 'false'}" />
+</jsp:include>
 
+<link href="${pageContext.request.contextPath}/assets/css/register-schedule.css" rel="stylesheet">
+<c:if test="${isStaffOrAdmin}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <jsp:include page="/views/admin/layout/admin-css.jsp" />
+  <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
+    <jsp:param name="activeNav" value="register-schedule" />
+  </jsp:include>
+</c:if>
+
+<c:choose>
+  <c:when test="${isStaffOrAdmin}">
+    <main class="main-wrapper">
+      <jsp:include page="/views/admin/layout/admin-header.jsp" />
+      <div class="page-content p-4">
+        <div class="register-container" style="max-width: 100%; padding: 0;">
+  </c:when>
+  <c:otherwise>
     <main class="main">
       <div class="register-container">
+  </c:otherwise>
+</c:choose>
 
         <!-- Flash Messages (Neu co) -->
         <c:if test="${not empty sessionScope.errorMessage}">
@@ -512,8 +532,17 @@
 
         </form>
 
-      </div>
-    </main>
+      <c:choose>
+        <c:when test="${isStaffOrAdmin}">
+            </div>
+          </div>
+        </main>
+        </c:when>
+        <c:otherwise>
+          </div>
+        </main>
+        </c:otherwise>
+      </c:choose>
 
     <script>
       var isShiftOnlyMode = ${ isShiftOnlyRole ?'true': 'false'};
@@ -762,4 +791,6 @@
       }
     </script>
 
-    <jsp:include page="/views/common/footer.jsp" />
+    <jsp:include page="/views/common/footer.jsp">
+      <jsp:param name="hideFooter" value="${isStaffOrAdmin ? 'true' : 'false'}" />
+    </jsp:include>

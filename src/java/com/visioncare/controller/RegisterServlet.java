@@ -17,7 +17,22 @@ public class RegisterServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String path = request.getServletPath();
+        HttpSession session = request.getSession();
+
+        if (session.getAttribute("error") != null) {
+            request.setAttribute("error", session.getAttribute("error"));
+            session.removeAttribute("error");
+        }
+        if (session.getAttribute("successMessage") != null) {
+            request.setAttribute("successMessage", session.getAttribute("successMessage"));
+            session.removeAttribute("successMessage");
+        }
+
         if ("/verify-otp".equals(path)) {
+            if (session.getAttribute("pendingUser") == null) {
+                response.sendRedirect(request.getContextPath() + "/register");
+                return;
+            }
             request.getRequestDispatcher("/views/auth/verify-otp.jsp").forward(request, response);
             return;
         }

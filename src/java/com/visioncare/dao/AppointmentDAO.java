@@ -18,7 +18,7 @@ public class AppointmentDAO {
             try (PreparedStatement psAppt = conn.prepareStatement(sqlAppt, Statement.RETURN_GENERATED_KEYS)) {
                 psAppt.setInt(1, patientId);
                 psAppt.setInt(2, scheduleId);
-                psAppt.setString(3, "Pending");
+                psAppt.setString(3, "Confirmed");
                 psAppt.executeUpdate();
                 try (ResultSet keys = psAppt.getGeneratedKeys()) {
                     if (keys.next()) {
@@ -137,11 +137,12 @@ public class AppointmentDAO {
     }
     public List<Appointment> getByUserId(int userId) throws Exception {
         List<Appointment> list = new ArrayList<>();
-        String sql = "SELECT a.Appointment_ID, a.Status, p.Full_Name, p.Phone, p.DOB, ws.Start_Time, ws.Doctor_Employee_ID, p.Account_ID, ws.Work_Date, e.Full_Name AS Doctor_Name " +
+        String sql = "SELECT a.Appointment_ID, a.Status, p.Full_Name, p.Phone, p.DOB, ws.Start_Time, ws.Doctor_Employee_ID, p.Account_ID, ws.Work_Date, e.Full_Name AS Doctor_Name, i.Invoice_ID " +
                      "FROM Appointment a " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
                      "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
                      "LEFT JOIN Employee_Profile e ON ws.Doctor_Employee_ID = e.Employee_ID " +
+                     "LEFT JOIN Master_Invoice i ON a.Appointment_ID = i.Appointment_ID " +
                      "WHERE p.Account_ID = ? ORDER BY ws.Work_Date DESC, ws.Start_Time";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -150,6 +151,7 @@ public class AppointmentDAO {
                 while (rs.next()) {
                     Appointment appt = mapRow(rs);
                     appt.setAppointmentDate(rs.getDate("Work_Date"));
+                    appt.setInvoiceId(rs.getInt("Invoice_ID"));
                     list.add(appt);
                 }
             }
@@ -193,5 +195,64 @@ public class AppointmentDAO {
             // Field not present in this query
         }
         return a;
+    }
+
+    /**
+     * Patient requests cancellation. Updates status to 'Pending' (waiting for Staff to approve).
+     * Doctor's schedule remains 'Booked' until Staff approves.
+     */
+    public boolean requestCancelAppointment(int appointmentId, int userId, String reason) throws Exception {
+        String sql = "UPDATE a SET a.Status = 'Pending' " +
+                     "FROM Appointment a " +
+                     "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
+                     "WHERE a.Appointment_ID = ? AND p.Account_ID = ? AND a.Status = 'Confirmed'";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, appointmentId);
+            ps.setInt(2, userId);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    public boolean requestCancelByInvoice(int invoiceId, int userId, String reason) {
+        String sql = "UPDATE a SET a.Status = 'Pending' " +
+                     "FROM Appointment a " +
+                     "JOIN Master_Invoice i ON a.Appointment_ID = i.Appointment_ID " +
+                     "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
+                     "WHERE i.Invoice_ID = ? AND p.Account_ID = ? AND a.Status = 'Confirmed'";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, invoiceId);
+            ps.setInt(2, userId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean cancelAppointment(int appointmentId, int userId, String reason) throws Exception {
+        String sql = "UPDATE a SET a.Status = 'Canceled' " +
+                     "FROM Appointment a " +
+                     "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
+                     "WHERE a.Appointment_ID = ? AND p.Account_ID = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, appointmentId);
+            ps.setInt(2, userId);
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                String sqlFree = "UPDATE ws SET ws.Status = 'Available' " +
+                                 "FROM Work_Schedule ws " +
+                                 "JOIN Appointment a ON ws.Schedule_ID = a.Schedule_ID " +
+                                 "WHERE a.Appointment_ID = ?";
+                try (PreparedStatement psFree = conn.prepareStatement(sqlFree)) {
+                    psFree.setInt(1, appointmentId);
+                    psFree.executeUpdate();
+                }
+                return true;
+            }
+        }
+        return false;
     }
 }

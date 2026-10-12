@@ -1,17 +1,37 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-  <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
-    <jsp:include page="/views/common/header.jsp">
-      <jsp:param name="pageTitle" value="Lịch làm việc của tôi" />
-      <jsp:param name="pageDescription" value="Xem và quản lý lịch làm việc của Bác sĩ, Chuyên viên và Nhân viên" />
-      <jsp:param name="bodyClass" value="starter-page-page" />
-      <jsp:param name="activeNav" value="schedule" />
-    </jsp:include>
+<c:set var="isStaffOrAdmin" value="${sessionScope.user.role == 'staff' || sessionScope.user.role == 'admin'}" />
 
-    <link href="${pageContext.request.contextPath}/assets/css/schedule.css" rel="stylesheet">
+<jsp:include page="/views/common/header.jsp">
+  <jsp:param name="pageTitle" value="Lịch làm việc — VisionCare" />
+  <jsp:param name="pageDescription" value="Xem và quản lý lịch làm việc của Bác sĩ, Chuyên viên và Nhân viên" />
+  <jsp:param name="bodyClass" value="starter-page-page" />
+  <jsp:param name="activeNav" value="schedule" />
+  <jsp:param name="hideHeaderForAdmin" value="${isStaffOrAdmin ? 'true' : 'false'}" />
+</jsp:include>
 
+<link href="${pageContext.request.contextPath}/assets/css/schedule.css" rel="stylesheet">
+<c:if test="${isStaffOrAdmin}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <jsp:include page="/views/admin/layout/admin-css.jsp" />
+  <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
+    <jsp:param name="activeNav" value="schedule" />
+  </jsp:include>
+</c:if>
+
+<c:choose>
+  <c:when test="${isStaffOrAdmin}">
+    <main class="main-wrapper">
+      <jsp:include page="/views/admin/layout/admin-header.jsp" />
+      <div class="page-content p-4">
+        <div class="schedule-container" style="max-width: 100%; padding: 0;">
+  </c:when>
+  <c:otherwise>
     <main class="main">
       <div class="schedule-container">
+  </c:otherwise>
+</c:choose>
 
         <!-- Flash Messages (Sau khi dang ky hoac cap nhat lich) -->
         <c:if test="${not empty sessionScope.successMessage}">
@@ -309,9 +329,18 @@
             </div>
           </div>
 
+<c:choose>
+  <c:when test="${isStaffOrAdmin}">
         </div>
-
       </div>
     </main>
-
+    <jsp:include page="/views/common/footer.jsp">
+      <jsp:param name="hideFooter" value="true" />
+    </jsp:include>
+  </c:when>
+  <c:otherwise>
+      </div>
+    </main>
     <jsp:include page="/views/common/footer.jsp" />
+  </c:otherwise>
+</c:choose>

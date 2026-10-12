@@ -106,4 +106,11 @@ public class Appointment {
     public void setUserId(int userId) {
         this.userId = userId;
     }
+    private int invoiceId;
+    public int getInvoiceId() {
+        return invoiceId;
+    }
+    public void setInvoiceId(int invoiceId) {
+        this.invoiceId = invoiceId;
+    }
 }

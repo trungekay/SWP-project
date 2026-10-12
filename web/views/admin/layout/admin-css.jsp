@@ -1,4 +1,6 @@
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
     :root {
         --primary-color: #008b74;
         --primary-hover: #00705d;
@@ -26,6 +28,10 @@
         background-color: #ffffff;
         border-right: 1px solid var(--border-color);
         z-index: 1000;
+        font-family: 'Inter', sans-serif;
+    }
+    .sidebar, .sidebar * {
+        font-family: 'Inter', sans-serif;
     }
     .sidebar-brand {
         height: 70px; display: flex; align-items: center; padding: 0 24px;
@@ -37,7 +43,16 @@
         display: inline-flex; align-items: center; justify-content: center;
         color: #fff; font-size: 16px; margin-right: 10px; flex-shrink: 0;
     }
-    .brand-text { color: #1e293b; font-weight: 700; font-size: 22px; }
+    .brand-text { color: #1e293b; font-weight: 700; font-size: 22px; font-family: 'Inter', sans-serif; }
+    .sidebar-menu-header {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: #94a3b8;
+        padding: 12px 16px 4px;
+        font-weight: 700;
+        font-family: 'Inter', sans-serif;
+    }
     .sidebar-menu {
         padding: 15px;
         list-style: none;
@@ -51,23 +66,31 @@
         text-decoration: none;
         border-radius: 8px;
         font-weight: 500;
+        font-size: 14px;
         transition: all 0.2s ease;
+        font-family: 'Inter', sans-serif;
     }
     .sidebar-menu li a i {
         margin-right: 12px;
         font-size: 18px;
     }
-    .sidebar-menu li a.active {
+    .sidebar-menu li a.active, .sidebar-menu li a:hover {
         background-color: #f0f7f6;
         color: var(--primary-color);
+        font-weight: 600;
     }
     .sidebar-dropdown {
         position: relative;
     }
+    .sidebar-dropdown > a {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
     .sidebar-submenu {
         display: none;
         list-style: none;
-        padding: 5px 0 5px 35px;
+        padding: 4px 0 6px 12px;
         margin: 0;
         background-color: #fcfcfc;
         border-radius: 0 0 8px 8px;
@@ -80,10 +103,15 @@
         font-size: 13px;
         color: var(--text-muted);
         border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: 'Inter', sans-serif;
     }
     .sidebar-submenu li a:hover, .sidebar-submenu li a.active {
         color: var(--primary-color);
         background-color: #f0f7f6;
+        font-weight: 600;
     }
 
     /* --- Main Content --- */
