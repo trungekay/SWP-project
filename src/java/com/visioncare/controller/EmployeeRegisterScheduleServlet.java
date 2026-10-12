@@ -188,7 +188,7 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             if (actorProfile == null) {
                 actorProfile = currentUser;
             }
-            boolean isShiftOnlyRole = !"doctor".equalsIgnoreCase(role);
+            boolean isShiftOnlyRole = "doctor".equalsIgnoreCase(role);
             request.setAttribute("isShiftOnlyRole", isShiftOnlyRole);
             request.setAttribute("actorProfile", actorProfile);
             request.setAttribute("selectedYear", selectedYear);
@@ -274,7 +274,7 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             DateTimeFormatter dbFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             Set<String> existingKeys = workScheduleDAO.getRegisteredSlotKeys(actorId, role, startOfWeek.format(dbFmt), endOfWeek.format(dbFmt));
 
-            boolean isShiftOnlyRole = !"doctor".equalsIgnoreCase(role);
+            boolean isShiftOnlyRole = "doctor".equalsIgnoreCase(role);
             if (isShiftOnlyRole) {
                 Map<String, List<ScheduleRegistrationDTO>> shiftGroups = new HashMap<>();
                 for (ScheduleRegistrationDTO item : registrationList) {
@@ -306,7 +306,7 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                         boolean isClosed = closedKeys.contains(slotKey);
 
                         if (!isSubmitted && !isAlreadyRegistered && !isClosed) {
-                            session.setAttribute("errorMessage", "Quy định bắt buộc: Chuyên viên và Nhân viên phải đăng ký trọn vẹn theo Ca Sáng (08:00 - 11:30) hoặc Ca Chiều (13:30 - 17:00)! Vui lòng không chọn lẻ từng slot.");
+                            session.setAttribute("errorMessage", "Quy định bắt buộc: Bác sĩ phải đăng ký trọn vẹn theo buổi: Ca Sáng (08:00 - 11:30) hoặc Ca Chiều (13:30 - 17:00)! Vui lòng không chọn lẻ từng slot.");
                             response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
                             return;
                         }

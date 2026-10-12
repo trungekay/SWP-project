@@ -42,6 +42,19 @@ public class RegisterServlet extends HttpServlet {
             User pendingUser = (User) session.getAttribute("pendingUser");
             if (sessionOtp != null && sessionOtp.equals(enteredOtp) && pendingUser != null) {
                 try {
+                    User existingEmail = userDAO.getByEmail(pendingUser.getEmail());
+                    if (existingEmail != null) {
+                        request.setAttribute("error", "Rất tiếc, Email này đã được đăng ký trên hệ thống.");
+                        request.getRequestDispatcher("/views/auth/verify-otp.jsp").forward(request, response);
+                        return;
+                    }
+                    User existingPhone = userDAO.getByPhone(pendingUser.getPhone());
+                    if (existingPhone != null) {
+                        request.setAttribute("error", "Rất tiếc, Số điện thoại này đã được đăng ký trên hệ thống.");
+                        request.getRequestDispatcher("/views/auth/verify-otp.jsp").forward(request, response);
+                        return;
+                    }
+
                     userDAO.register(pendingUser);
                     session.removeAttribute("registerOtp");
                     session.removeAttribute("pendingUser");
