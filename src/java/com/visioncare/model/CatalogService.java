@@ -7,22 +7,22 @@ public class CatalogService {
     private final String code;
     private final String name;
     private final BigDecimal price;
-    private final String specialty;
-    private final String tag;
+    private final int categoryId;
+    private final String categoryName;
     private final String summary;
     private final String description;
     private final String image;
     private final boolean uploadedImage;
 
     public CatalogService(int id, String code, String name, BigDecimal price,
-            String specialty, String tag, String summary, String description, String image,
+            int categoryId, String categoryName, String summary, String description, String image,
             boolean uploadedImage) {
         this.id = id;
         this.code = code;
         this.name = name;
         this.price = price;
-        this.specialty = specialty;
-        this.tag = tag;
+        this.categoryId = categoryId;
+        this.categoryName = categoryName;
         this.summary = summary;
         this.description = description;
         this.image = image;
@@ -33,8 +33,8 @@ public class CatalogService {
     public String getCode() { return code; }
     public String getName() { return name; }
     public BigDecimal getPrice() { return price; }
-    public String getSpecialty() { return specialty; }
-    public String getTag() { return tag; }
+    public int getCategoryId() { return categoryId; }
+    public String getCategoryName() { return categoryName; }
     public String getSummary() { return summary; }
     public String getDescription() { return description; }
     public String getImage() { return image; }

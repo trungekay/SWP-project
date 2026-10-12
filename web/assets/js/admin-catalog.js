@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const servicesView = document.getElementById('servicesView');
   const suppliesView = document.getElementById('suppliesView');
   const cards = [...document.querySelectorAll('.catalog-service')];
-  const rows = [...document.querySelectorAll('.catalog-table tbody tr')];
+  const rows = [...document.querySelectorAll('#suppliesView .catalog-table tbody tr')];
   const successToast = document.getElementById('catalogSuccessToast');
   if (successToast) {
     window.setTimeout(() => {
@@ -38,26 +38,53 @@ document.addEventListener('DOMContentLoaded', () => {
     if (event.target === deleteDialog) deleteDialog.close();
   });
 
-  function setTab(tab) {
+  function setTab(tab, updateUrl = true) {
+    tab = tab === 'supplies' ? 'supplies' : 'services';
     servicesView.hidden = tab !== 'services';
     suppliesView.hidden = tab !== 'supplies';
     tabs.forEach((button) => {
       const active = button.dataset.tab === tab;
       button.classList.toggle('is-active', active);
       button.setAttribute('aria-selected', String(active));
+      button.tabIndex = active ? 0 : -1;
     });
-    const url = new URL(window.location.href);
-    url.searchParams.set('tab', tab);
-    window.history.replaceState(null, '', url);
+    document.querySelectorAll('[data-catalog-subnav]').forEach((link) => {
+      const active = link.dataset.catalogSubnav === tab;
+      link.classList.toggle('active-sub', active);
+      if (active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+    if (updateUrl) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      window.history.replaceState(null, '', url);
+    }
   }
   tabs.forEach((button) => button.addEventListener('click', () => setTab(button.dataset.tab)));
+  document.querySelectorAll('[data-catalog-subnav]').forEach((link) => {
+    link.addEventListener('click', (event) => {
+      event.preventDefault();
+      setTab(link.dataset.catalogSubnav);
+    });
+  });
+  window.addEventListener('popstate', () => {
+    setTab(new URL(window.location.href).searchParams.get('tab'), false);
+  });
+  setTab(new URL(window.location.href).searchParams.get('tab'), false);
+  tabs.forEach((button, index) => button.addEventListener('keydown', (event) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    const next = tabs[(index + (event.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+    setTab(next.dataset.tab);
+    next.focus();
+  }));
 
   function filterServices() {
     const term = document.getElementById('serviceSearch').value.trim().toLocaleLowerCase('vi');
-    const specialty = document.getElementById('specialtySelect').value;
+    const category = document.getElementById('categorySelect').value;
     let count = 0;
     cards.forEach((card) => {
-      const visible = (specialty === 'all' || card.dataset.specialty === specialty)
+      const visible = (category === 'all' || card.dataset.categoryId === category)
         && card.textContent.toLocaleLowerCase('vi').includes(term);
       card.hidden = !visible;
       if (visible) count++;
@@ -65,7 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('serviceEmpty').hidden = count > 0;
   }
   document.getElementById('serviceSearch').addEventListener('input', filterServices);
-  document.getElementById('specialtySelect').addEventListener('change', filterServices);
+  document.getElementById('categorySelect').addEventListener('change', filterServices);
+  filterServices();
 
   document.getElementById('supplySearch').addEventListener('input', (event) => {
     const term = event.target.value.trim().toLocaleLowerCase('vi');
@@ -76,4 +104,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('supplyEmpty').hidden = count > 0;
   });
+  document.getElementById('supplyEmpty').hidden = rows.length > 0;
 });

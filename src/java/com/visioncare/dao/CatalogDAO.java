@@ -2,6 +2,7 @@ package com.visioncare.dao;
 
 import com.visioncare.model.CatalogService;
 import com.visioncare.model.MedicalSupply;
+import com.visioncare.model.ServiceCategory;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -11,13 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CatalogDAO {
-    private static final String SERVICE_COLUMNS = "Service_ID, Service_Code, Service_Name, Price, Specialty_Code, Tag, Summary, Description, Image_Path, CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
-    private static final String SUPPLY_COLUMNS = "Supply_ID, Supply_Name, Category, Batch_Code, Unit, Quantity, Price, CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
+    private static final String SERVICE_COLUMNS = "sc.Service_ID, sc.Service_Code, sc.Service_Name, sc.Price, sc.Category_ID, category.Category_Name, sc.Summary, sc.Description, sc.Image_Path, CASE WHEN sc.Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
+    private static final String SUPPLY_COLUMNS = "Supply_ID, Supply_Name, Category, Unit, Price, CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
 
     public List<CatalogService> listServices() throws Exception {
         List<CatalogService> items = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT " + SERVICE_COLUMNS + " FROM Service_Catalog ORDER BY CASE WHEN Service_Code IS NULL THEN 1 ELSE 0 END, Service_ID");
+             PreparedStatement statement = connection.prepareStatement("SELECT " + SERVICE_COLUMNS + " FROM Service_Catalog sc JOIN Service_Category category ON category.Category_ID = sc.Category_ID ORDER BY CASE WHEN sc.Service_Code IS NULL THEN 1 ELSE 0 END, sc.Service_ID");
              ResultSet result = statement.executeQuery()) {
             while (result.next()) items.add(service(result));
         }
@@ -26,7 +27,7 @@ public class CatalogDAO {
 
     public CatalogService getService(int id) throws Exception {
         try (Connection connection = DBContext.getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT " + SERVICE_COLUMNS + " FROM Service_Catalog WHERE Service_ID = ?")) {
+             PreparedStatement statement = connection.prepareStatement("SELECT " + SERVICE_COLUMNS + " FROM Service_Catalog sc JOIN Service_Category category ON category.Category_ID = sc.Category_ID WHERE sc.Service_ID = ?")) {
             statement.setInt(1, id);
             try (ResultSet result = statement.executeQuery()) {
                 return result.next() ? service(result) : null;
@@ -43,12 +44,12 @@ public class CatalogDAO {
     }
 
     public int saveService(int id, int accountId, String code, String name, BigDecimal price,
-            String specialty, String tag, String summary, String description,
+            int categoryId, String summary, String description,
             byte[] imageData, String imageMimeType) throws Exception {
         boolean create = id == 0;
         String sql = create
-            ? "INSERT INTO Service_Catalog (Created_By, Service_Code, Service_Name, Price, Specialty_Code, Tag, Summary, Description, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-            : "UPDATE Service_Catalog SET Service_Code = ?, Service_Name = ?, Price = ?, Specialty_Code = ?, Tag = ?, Summary = ?, Description = ?" +
+            ? "INSERT INTO Service_Catalog (Created_By, Service_Code, Service_Name, Price, Category_ID, Summary, Description, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            : "UPDATE Service_Catalog SET Service_Code = ?, Service_Name = ?, Price = ?, Category_ID = ?, Summary = ?, Description = ?" +
               (imageData == null ? "" : ", Image_Data = ?, Image_Mime_Type = ?") + " WHERE Service_ID = ?";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -57,8 +58,7 @@ public class CatalogDAO {
             statement.setString(column++, blankToNull(code));
             statement.setString(column++, name);
             statement.setBigDecimal(column++, price);
-            statement.setString(column++, blankToNull(specialty));
-            statement.setString(column++, blankToNull(tag));
+            statement.setInt(column++, categoryId);
             statement.setString(column++, blankToNull(summary));
             statement.setString(column++, blankToNull(description));
             if (create || imageData != null) {
@@ -73,6 +73,19 @@ public class CatalogDAO {
             }
             throw new IllegalStateException("Không đọc được mã dịch vụ vừa tạo.");
         }
+    }
+
+    public List<ServiceCategory> listCategories() throws Exception {
+        List<ServiceCategory> categories = new ArrayList<>();
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT Category_ID, Category_Name FROM Service_Category ORDER BY Category_ID");
+             ResultSet result = statement.executeQuery()) {
+            while (result.next()) {
+                categories.add(new ServiceCategory(result.getInt("Category_ID"), result.getString("Category_Name")));
+            }
+        }
+        return categories;
     }
 
     public List<MedicalSupply> listSupplies() throws Exception {
@@ -103,23 +116,21 @@ public class CatalogDAO {
         }
     }
 
-    public int saveSupply(int id, String name, String category, String batch,
-            String unit, int quantity, BigDecimal price, byte[] imageData,
+    public int saveSupply(int id, String name, String category, String unit,
+            BigDecimal price, byte[] imageData,
             String imageMimeType) throws Exception {
         boolean create = id == 0;
         String sql = create
-            ? "INSERT INTO Medical_Supply (Supply_Name, Category, Batch_Code, Unit, Quantity, Price, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-            : "UPDATE Medical_Supply SET Supply_Name = ?, Category = ?, Batch_Code = ?, Unit = ?, Quantity = ?, Price = ?" +
+            ? "INSERT INTO Medical_Supply (Supply_Name, Category, Unit, Price, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?, ?)"
+            : "UPDATE Medical_Supply SET Supply_Name = ?, Category = ?, Unit = ?, Price = ?" +
               (imageData == null ? "" : ", Image_Data = ?, Image_Mime_Type = ?") + " WHERE Supply_ID = ?";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, name);
             statement.setString(2, category);
-            statement.setString(3, blankToNull(batch));
-            statement.setString(4, unit);
-            statement.setInt(5, quantity);
-            statement.setBigDecimal(6, price);
-            int column = 7;
+            statement.setString(3, unit);
+            statement.setBigDecimal(4, price);
+            int column = 5;
             if (create || imageData != null) {
                 statement.setBytes(column++, imageData);
                 statement.setString(column++, imageMimeType);
@@ -138,7 +149,7 @@ public class CatalogDAO {
         return new CatalogService(
                 result.getInt("Service_ID"), result.getString("Service_Code"),
                 result.getString("Service_Name"), result.getBigDecimal("Price"),
-                result.getString("Specialty_Code"), result.getString("Tag"),
+                result.getInt("Category_ID"), result.getString("Category_Name"),
                 result.getString("Summary"), result.getString("Description"),
                 result.getString("Image_Path"), result.getBoolean("Has_Image"));
     }
@@ -146,8 +157,8 @@ public class CatalogDAO {
     private MedicalSupply supply(ResultSet result) throws Exception {
         return new MedicalSupply(
                 result.getInt("Supply_ID"), result.getString("Supply_Name"),
-                result.getString("Category"), result.getString("Batch_Code"),
-                result.getString("Unit"), result.getInt("Quantity"),
+                result.getString("Category"),
+                result.getString("Unit"),
                 result.getBigDecimal("Price"), result.getBoolean("Has_Image"));
     }
 
