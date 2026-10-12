@@ -448,6 +448,44 @@
               </c:if>
 
               <c:if test="${currentTab == 'slots'}">
+              <!-- Work Schedule Registration Rules Card -->
+              <div class="col-lg-12 mb-2">
+                <div class="admin-card">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                      <h5 class="mb-1 fw-bold"><i class="bi bi-sliders me-2 text-primary"></i>Quy định Đăng ký Lịch làm việc</h5>
+                      <p class="text-muted small mb-0">Thiết lập số giờ làm việc tối thiểu mỗi tuần áp dụng cho Bác sĩ và Nhân viên khi gửi đăng ký lịch.</p>
+                    </div>
+                  </div>
+                  <form action="${pageContext.request.contextPath}/admin/timeslot-config" method="post" class="row g-3 align-items-end">
+                    <input type="hidden" name="action" value="update_min_hours">
+                    <div class="col-md-5 col-lg-4">
+                      <label class="form-label fw-semibold small text-secondary">
+                        Số giờ làm việc tối thiểu / tuần
+                        <span class="text-muted fw-normal">(Tối đa: ${not empty maxWeeklyHours ? maxWeeklyHours : 49.0}h)</span>
+                      </label>
+                      <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="bi bi-clock"></i></span>
+                        <input type="number" step="0.5" min="0" max="${not empty maxWeeklyHours ? maxWeeklyHours : 49.0}" name="minWorkHours" class="form-control fw-bold text-primary" 
+                               value="${not empty minWorkHours ? minWorkHours : 30.0}" required>
+                        <span class="input-group-text bg-light text-muted">/ ${not empty maxWeeklyHours ? maxWeeklyHours : 49.0} giờ</span>
+                      </div>
+                    </div>
+                    <div class="col-md-4 col-lg-3">
+                      <button type="submit" class="btn btn-primary px-4 rounded-pill">
+                        <i class="bi bi-check-circle me-1"></i> Lưu quy định
+                      </button>
+                    </div>
+                    <div class="col-12 mt-2">
+                      <div class="small text-muted">
+                        <i class="bi bi-info-circle me-1 text-primary"></i> 
+                        Tổng thời gian làm việc tối đa trong tuần hiện có: <strong>${not empty maxWeeklyHours ? maxWeeklyHours : 49.0} giờ</strong> (dựa trên các ca khám đang mở x 7 ngày/tuần). Số giờ làm tối thiểu bắt buộc phải <strong>nhỏ hơn hoặc bằng ${not empty maxWeeklyHours ? maxWeeklyHours : 49.0} giờ</strong>.
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
               <!-- Appointment Time Slots Screen -->
               <div class="col-lg-12">
                 <div class="admin-card">

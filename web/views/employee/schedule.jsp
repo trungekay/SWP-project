@@ -1,16 +1,47 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
   <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
-    <jsp:include page="/views/common/header.jsp">
-      <jsp:param name="pageTitle" value="Lịch làm việc của tôi" />
-      <jsp:param name="pageDescription" value="Xem và quản lý lịch làm việc của Bác sĩ, Chuyên viên và Nhân viên" />
-      <jsp:param name="bodyClass" value="starter-page-page" />
-      <jsp:param name="activeNav" value="schedule" />
-    </jsp:include>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lịch làm việc của tôi - VisionCare</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5 CSS & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <!-- Layout & Custom CSS -->
+  <link href="${pageContext.request.contextPath}/assets/css/admin-layout.css" rel="stylesheet">
+  <link href="${pageContext.request.contextPath}/assets/css/schedule.css" rel="stylesheet">
+</head>
+<body>
 
-    <link href="${pageContext.request.contextPath}/assets/css/schedule.css" rel="stylesheet">
+  <!-- Sidebar -->
+  <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
+    <jsp:param name="activeNav" value="schedule" />
+  </jsp:include>
 
-    <main class="main">
+  <!-- Main Wrapper -->
+  <div class="main-wrapper">
+    <!-- Top Header -->
+    <jsp:include page="/views/employee/layout/employee-header.jsp" />
+
+    <!-- Page Content -->
+    <div class="page-content">
+      <div class="page-header">
+        <div class="page-title">
+          <h2>Lịch làm việc của tôi</h2>
+          <p>Xem và theo dõi ca trực hàng tuần của bạn tại phòng khám</p>
+        </div>
+        <div>
+          <a href="${pageContext.request.contextPath}/employee/register-schedule" class="btn btn-primary d-flex align-items-center gap-2" style="background-color: var(--primary-color); border-color: var(--primary-color);">
+            <i class="bi bi-calendar-plus"></i> Đăng ký ca làm việc
+          </a>
+        </div>
+      </div>
+
       <div class="schedule-container">
 
         <!-- Flash Messages (Sau khi dang ky hoac cap nhat lich) -->
@@ -312,6 +343,9 @@
         </div>
 
       </div>
-    </main>
+    </div><!-- End page-content -->
+  </div><!-- End main-wrapper -->
 
-    <jsp:include page="/views/common/footer.jsp" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

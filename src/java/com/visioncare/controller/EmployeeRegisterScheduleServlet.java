@@ -188,7 +188,7 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             if (actorProfile == null) {
                 actorProfile = currentUser;
             }
-            boolean isShiftOnlyRole = "doctor".equalsIgnoreCase(role);
+            boolean isShiftOnlyRole = !"doctor".equalsIgnoreCase(role);
             request.setAttribute("isShiftOnlyRole", isShiftOnlyRole);
             request.setAttribute("actorProfile", actorProfile);
             request.setAttribute("selectedYear", selectedYear);
@@ -217,6 +217,7 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             request.setAttribute("slotStatusMap", slotStatusMap);
             request.setAttribute("registeredCount", registeredKeys.size());
             request.setAttribute("registeredHours", registeredKeys.size() * 0.5);
+            request.setAttribute("minWeeklyHours", timeSlotDAO.getMinWeeklyWorkingHours());
             request.getRequestDispatcher("/views/employee/register-schedule.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
@@ -274,7 +275,7 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             DateTimeFormatter dbFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             Set<String> existingKeys = workScheduleDAO.getRegisteredSlotKeys(actorId, role, startOfWeek.format(dbFmt), endOfWeek.format(dbFmt));
 
-            boolean isShiftOnlyRole = "doctor".equalsIgnoreCase(role);
+            boolean isShiftOnlyRole = !"doctor".equalsIgnoreCase(role);
             if (isShiftOnlyRole) {
                 Map<String, List<ScheduleRegistrationDTO>> shiftGroups = new HashMap<>();
                 for (ScheduleRegistrationDTO item : registrationList) {
@@ -284,29 +285,39 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
 
                 Set<String> closedKeys = workScheduleDAO.getClosedSlotKeys(actorId, role, startOfWeek.format(dbFmt), endOfWeek.format(dbFmt));
 
+                List<TimeSlotConfig> allConfiguredSlots = timeSlotDAO.getConfiguredSlots();
+                Map<String, List<String>> sessionSlotMap = new HashMap<>();
+                for (TimeSlotConfig sc : allConfiguredSlots) {
+                    String sess = sc.getSession();
+                    if (sess != null) {
+                        sessionSlotMap.computeIfAbsent(sess.toLowerCase(), k -> new ArrayList<>()).add(sc.getSlotName());
+                    }
+                }
+
                 for (Map.Entry<String, List<ScheduleRegistrationDTO>> entry : shiftGroups.entrySet()) {
                     String[] parts = entry.getKey().split("#");
                     String date = parts[0];
                     String sessionType = parts[1];
                     List<ScheduleRegistrationDTO> shiftItems = entry.getValue();
 
-                    int expectedSlotStart = "Morning".equalsIgnoreCase(sessionType) ? 1 : 8;
-                    int expectedSlotEnd = "Morning".equalsIgnoreCase(sessionType) ? 7 : 14;
+                    List<String> expectedSlots = sessionSlotMap.get(sessionType.toLowerCase());
+                    if (expectedSlots == null || expectedSlots.isEmpty()) {
+                        continue;
+                    }
 
                     Set<String> submittedSlots = new HashSet<>();
                     for (ScheduleRegistrationDTO s : shiftItems) {
                         submittedSlots.add(s.getSlot());
                     }
 
-                    for (int slotNum = expectedSlotStart; slotNum <= expectedSlotEnd; slotNum++) {
-                        String slotName = "Slot " + slotNum;
+                    for (String slotName : expectedSlots) {
                         String slotKey = date + "_" + slotName;
                         boolean isSubmitted = submittedSlots.contains(slotName);
                         boolean isAlreadyRegistered = existingKeys.contains(slotKey);
                         boolean isClosed = closedKeys.contains(slotKey);
 
                         if (!isSubmitted && !isAlreadyRegistered && !isClosed) {
-                            session.setAttribute("errorMessage", "Quy định bắt buộc: Bác sĩ phải đăng ký trọn vẹn theo buổi: Ca Sáng (08:00 - 11:30) hoặc Ca Chiều (13:30 - 17:00)! Vui lòng không chọn lẻ từng slot.");
+                            session.setAttribute("errorMessage", "Quy định bắt buộc: Chuyên viên và Nhân viên phải đăng ký trọn vẹn theo buổi (Ca Sáng hoặc Ca Chiều)! Vui lòng không chọn lẻ từng slot.");
                             response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
                             return;
                         }
@@ -320,8 +331,9 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             }
             double totalWeeklyHours = allKeysThisWeek.size() * 0.5;
 
-            if (totalWeeklyHours < 30.0) {
-                session.setAttribute("errorMessage", "Quy định: Bạn cần đăng ký tối thiểu 30.0 giờ / tuần (hiện tại mới có: " + String.format("%.1f", totalWeeklyHours) + "h). Vui lòng chọn thêm!");
+            double minWeeklyHours = timeSlotDAO.getMinWeeklyWorkingHours();
+            if (totalWeeklyHours < minWeeklyHours) {
+                session.setAttribute("errorMessage", "Quy định: Bạn cần đăng ký tối thiểu " + String.format("%.1f", minWeeklyHours) + " giờ / tuần (hiện tại mới có: " + String.format("%.1f", totalWeeklyHours) + "h). Vui lòng chọn thêm!");
                 response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
                 return;
             }
