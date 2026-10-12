@@ -14,7 +14,8 @@ public class User {
     private String specialty;       
     private String roomName;        
     private String licenseNumber;   
-    private String position;        
+    private String position;
+    private String biography;        
     private boolean isFirstLogin;
     public User() {
     }
@@ -107,8 +108,11 @@ public class User {
     public void setLicenseNumber(String licenseNumber) { this.licenseNumber = licenseNumber; }
 
     public String getPosition() { return position; }
+    public String getBiography() { return biography; }
+    public void setBiography(String biography) { this.biography = biography; }
     public void setPosition(String position) { this.position = position; }
 
     public boolean isFirstLogin() { return isFirstLogin; }
     public void setFirstLogin(boolean firstLogin) { isFirstLogin = firstLogin; }
 }
+

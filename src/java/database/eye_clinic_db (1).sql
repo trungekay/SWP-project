@@ -82,6 +82,8 @@ CREATE TABLE Employee_Profile (
     Room_ID         INT NULL,
     Full_Name       NVARCHAR(150) NOT NULL,
     Phone           NVARCHAR(20) NULL,
+    DOB         DATE NULL,
+    Address     NVARCHAR(255) NULL,
     Specialty       NVARCHAR(100) NULL,
     License_Number  NVARCHAR(100) NULL,
     Biography       NVARCHAR(MAX) NULL,
@@ -93,6 +95,7 @@ CREATE TABLE Work_Schedule (
     Schedule_ID             INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     Doctor_Employee_ID      INT NULL,
     Specialist_Employee_ID  INT NULL,
+    Staff_Employee_ID       INT NULL,
     Work_Date               DATE NOT NULL,
     Start_Time              TIME(0) NOT NULL,
     End_Time                TIME(0) NOT NULL,
@@ -219,7 +222,7 @@ CREATE TABLE Refund_Request (
 GO
 
 ALTER TABLE Account ADD CONSTRAINT CHK_Account_Status
-    CHECK (Account_Status IN (N'Active', N'Inactive', N'Banned', N'Locked'));
+    CHECK (Account_Status IN (N'Active', N'Inactive', N'Banned', N'Locked','Deleted'));
 ALTER TABLE Work_Schedule ADD CONSTRAINT CHK_WS_Has_Employee
     CHECK (Doctor_Employee_ID IS NOT NULL OR Specialist_Employee_ID IS NOT NULL);
 ALTER TABLE Work_Schedule ADD CONSTRAINT CHK_WS_Time CHECK (End_Time > Start_Time);

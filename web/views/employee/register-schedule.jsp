@@ -1,16 +1,47 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
   <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
-    <jsp:include page="/views/common/header.jsp">
-      <jsp:param name="pageTitle" value="Đăng ký lịch làm việc" />
-      <jsp:param name="pageDescription" value="Đăng ký ca làm việc hàng tuần cho Bác sĩ, Chuyên viên và Nhân viên" />
-      <jsp:param name="bodyClass" value="starter-page-page" />
-      <jsp:param name="activeNav" value="register-schedule" />
-    </jsp:include>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng ký lịch làm việc - VisionCare</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5 CSS & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <!-- Layout & Custom CSS -->
+  <link href="${pageContext.request.contextPath}/assets/css/admin-layout.css" rel="stylesheet">
+  <link href="${pageContext.request.contextPath}/assets/css/register-schedule.css" rel="stylesheet">
+</head>
+<body>
 
-    <link href="${pageContext.request.contextPath}/assets/css/register-schedule.css" rel="stylesheet">
+  <!-- Sidebar -->
+  <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
+    <jsp:param name="activeNav" value="register-schedule" />
+  </jsp:include>
 
-    <main class="main">
+  <!-- Main Wrapper -->
+  <div class="main-wrapper">
+    <!-- Top Header -->
+    <jsp:include page="/views/employee/layout/employee-header.jsp" />
+
+    <!-- Page Content -->
+    <div class="page-content">
+      <div class="page-header">
+        <div class="page-title">
+          <h2>Đăng ký ca làm việc</h2>
+          <p>Đăng ký khung giờ làm việc hàng tuần cho Bác sĩ, Chuyên viên và Nhân viên</p>
+        </div>
+        <div>
+          <a href="${pageContext.request.contextPath}/employee/schedule" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+            <i class="bi bi-arrow-left"></i> Xem lịch đã đăng ký
+          </a>
+        </div>
+      </div>
+
       <div class="register-container">
 
         <!-- Flash Messages (Neu co) -->
@@ -61,13 +92,13 @@
                   <div class="text-muted small mt-1">
                     <c:choose>
                       <c:when test="${isShiftOnlyRole}">
-                        <i class="bi bi-info-circle me-1 text-primary"></i><strong>Quy định:</strong> Bác sĩ bắt buộc đăng ký
+                        <i class="bi bi-info-circle me-1 text-primary"></i><strong>Quy định:</strong> Chuyên viên và Nhân viên bắt buộc đăng ký
                         trọn vẹn theo <strong>Ca Sáng (08:00 - 11:30)</strong> hoặc <strong>Ca Chiều (13:30 -
-                          17:00)</strong>. Tối thiểu <strong>30.0 giờ / tuần</strong>.
+                          17:00)</strong>. Tối thiểu <strong>${not empty minWeeklyHours ? minWeeklyHours : 30.0} giờ / tuần</strong>.
                       </c:when>
                       <c:otherwise>
-                        <i class="bi bi-info-circle me-1"></i><strong>Quy định:</strong> Đăng ký linh hoạt theo từng
-                        slot hoặc theo ca làm việc. Tối thiểu <strong>30.0 giờ / tuần</strong>.
+                        <i class="bi bi-info-circle me-1"></i><strong>Quy định:</strong> Bác sĩ đăng ký linh hoạt theo từng
+                        slot hoặc theo ca làm việc. Tối thiểu <strong>${not empty minWeeklyHours ? minWeeklyHours : 30.0} giờ / tuần</strong>.
                       </c:otherwise>
                     </c:choose>
                   </div>
@@ -167,17 +198,33 @@
               </c:choose>
             </div>
 
+            <!-- Đếm số ca Morning & Afternoon thực tế trong cấu hình -->
+            <c:set var="totalMorningSlots" value="0" />
+            <c:set var="totalAfternoonSlots" value="0" />
+            <c:forEach var="slot" items="${slots}">
+              <c:if test="${slot.session == 'Morning'}">
+                <c:set var="totalMorningSlots" value="${totalMorningSlots + 1}" />
+              </c:if>
+              <c:if test="${slot.session == 'Afternoon'}">
+                <c:set var="totalAfternoonSlots" value="${totalAfternoonSlots + 1}" />
+              </c:if>
+            </c:forEach>
+
             <!-- Right: Quick Select Helpers -->
             <div class="quick-select-group">
               <span class="text-muted small fw-semibold me-1 d-none d-lg-inline">Chọn nhanh:</span>
               <c:choose>
                 <c:when test="${isShiftOnlyRole}">
-                  <button type="button" class="btn-quick-select" onclick="selectShiftAllWeek('Morning')">
-                    <i class="bi bi-sun text-warning"></i> Ca Sáng Cả Tuần
-                  </button>
-                  <button type="button" class="btn-quick-select" onclick="selectShiftAllWeek('Afternoon')">
-                    <i class="bi bi-sunset text-danger"></i> Ca Chiều Cả Tuần
-                  </button>
+                  <c:if test="${totalMorningSlots > 0}">
+                    <button type="button" class="btn-quick-select" onclick="selectShiftAllWeek('Morning')">
+                      <i class="bi bi-sun text-warning"></i> Ca Sáng Cả Tuần
+                    </button>
+                  </c:if>
+                  <c:if test="${totalAfternoonSlots > 0}">
+                    <button type="button" class="btn-quick-select" onclick="selectShiftAllWeek('Afternoon')">
+                      <i class="bi bi-sunset text-danger"></i> Ca Chiều Cả Tuần
+                    </button>
+                  </c:if>
                   <button type="button" class="btn-quick-select" onclick="selectAllWeek()">
                     <i class="bi bi-check-all text-primary"></i> Cả Tuần
                   </button>
@@ -186,12 +233,16 @@
                   </button>
                 </c:when>
                 <c:otherwise>
-                  <button type="button" class="btn-quick-select" onclick="selectMorning()">
-                    <i class="bi bi-sun text-warning"></i> Ca Sáng (8h-11h30)
-                  </button>
-                  <button type="button" class="btn-quick-select" onclick="selectAfternoon()">
-                    <i class="bi bi-sunset text-danger"></i> Ca Chiều (13h30-17h)
-                  </button>
+                  <c:if test="${totalMorningSlots > 0}">
+                    <button type="button" class="btn-quick-select" onclick="selectMorning()">
+                      <i class="bi bi-sun text-warning"></i> Ca Sáng
+                    </button>
+                  </c:if>
+                  <c:if test="${totalAfternoonSlots > 0}">
+                    <button type="button" class="btn-quick-select" onclick="selectAfternoon()">
+                      <i class="bi bi-sunset text-danger"></i> Ca Chiều
+                    </button>
+                  </c:if>
                   <button type="button" class="btn-quick-select" onclick="selectAllWeek()">
                     <i class="bi bi-check-all text-primary"></i> Cả Tuần
                   </button>
@@ -205,7 +256,7 @@
           </div>
 
           <c:choose>
-            <%--=========================================================================A. GIAO DIỆN ĐĂNG KÝ THEO BUỔI/CA CHO BÁC SĨ (DOCTOR) (BẮT BUỘC THEO CA)=========================================================================--%>
+            <%--=========================================================================A. GIAO DIỆN ĐĂNG KÝ THEO BUỔI/CA CHO CHUYÊN VIÊN & NHÂN VIÊN=========================================================================--%>
               <c:when test="${isShiftOnlyRole}">
                 <div class="register-card">
                   <div class="table-responsive">
@@ -219,7 +270,14 @@
                               <i class="bi bi-sun-fill text-warning fs-5"></i>
                               <div>
                                 <span>CA SÁNG (08:00 - 11:30)</span>
-
+                                <c:choose>
+                                  <c:when test="${totalMorningSlots > 0}">
+                                    <span class="badge bg-light text-secondary ms-1 fw-normal" style="font-size: 11px;">${totalMorningSlots} ca</span>
+                                  </c:when>
+                                  <c:otherwise>
+                                    <span class="badge bg-secondary-subtle text-secondary ms-1 fw-normal" style="font-size: 11px;">Chưa mở ca</span>
+                                  </c:otherwise>
+                                </c:choose>
                               </div>
                             </div>
                           </th>
@@ -228,7 +286,14 @@
                               <i class="bi bi-sunset-fill text-danger fs-5"></i>
                               <div>
                                 <span>CA CHIỀU (13:30 - 17:00)</span>
-
+                                <c:choose>
+                                  <c:when test="${totalAfternoonSlots > 0}">
+                                    <span class="badge bg-light text-secondary ms-1 fw-normal" style="font-size: 11px;">${totalAfternoonSlots} ca</span>
+                                  </c:when>
+                                  <c:otherwise>
+                                    <span class="badge bg-secondary-subtle text-secondary ms-1 fw-normal" style="font-size: 11px;">Chưa mở ca</span>
+                                  </c:otherwise>
+                                </c:choose>
                               </div>
                             </div>
                           </th>
@@ -302,14 +367,20 @@
                                   </div>
                                 </c:when>
 
-                                <c:when test="${mRegCount >= 7}">
+                                <c:when test="${totalMorningSlots == 0}">
+                                  <div class="slot-closed" title="Chưa có ca làm việc nào được cấu hình cho buổi sáng">
+                                    <span class="slot-title text-muted"><i class="bi bi-dash-circle me-1"></i>Chưa mở ca</span>
+                                  </div>
+                                </c:when>
+
+                                <c:when test="${mRegCount >= totalMorningSlots}">
                                   <div class="slot-registered" title="Bạn đã có lịch làm việc ở ca này">
                                     <span class="slot-title"><i class="bi bi-check-circle-fill me-1"></i>Đã đăng
                                       ký</span>
                                   </div>
                                 </c:when>
 
-                                <c:when test="${mClosedCount >= 7}">
+                                <c:when test="${(mRegCount + mClosedCount) >= totalMorningSlots}">
                                   <div class="slot-closed" title="Khung giờ này đã bị Quản trị viên đóng">
                                     <span class="slot-title"><i class="bi bi-slash-circle me-1"></i>Đóng ca</span>
                                   </div>
@@ -324,7 +395,7 @@
                                           class="bi bi-plus-lg me-1"></i>Chọn</span>
                                     </label>
 
-                                    <!-- Hidden inputs cho 7 Slot Sáng -->
+                                    <!-- Hidden inputs cho Slot Sáng -->
                                     <c:forEach var="slot" items="${slots}">
                                       <c:if test="${slot.session == 'Morning'}">
                                         <c:set var="ckey" value="${day.fullDate}_${slot.id}" />
@@ -352,14 +423,20 @@
                                   </div>
                                 </c:when>
 
-                                <c:when test="${aRegCount >= 7}">
+                                <c:when test="${totalAfternoonSlots == 0}">
+                                  <div class="slot-closed" title="Chưa có ca làm việc nào được cấu hình cho buổi chiều">
+                                    <span class="slot-title text-muted"><i class="bi bi-dash-circle me-1"></i>Chưa mở ca</span>
+                                  </div>
+                                </c:when>
+
+                                <c:when test="${aRegCount >= totalAfternoonSlots}">
                                   <div class="slot-registered" title="Bạn đã có lịch làm việc ở ca này">
                                     <span class="slot-title"><i class="bi bi-check-circle-fill me-1"></i>Đã đăng
                                       ký</span>
                                   </div>
                                 </c:when>
 
-                                <c:when test="${aClosedCount >= 7}">
+                                <c:when test="${(aRegCount + aClosedCount) >= totalAfternoonSlots}">
                                   <div class="slot-closed" title="Khung giờ này đã bị Quản trị viên đóng">
                                     <span class="slot-title"><i class="bi bi-slash-circle me-1"></i>Đóng ca</span>
                                   </div>
@@ -374,7 +451,7 @@
                                           class="bi bi-plus-lg me-1"></i>Chọn</span>
                                     </label>
 
-                                    <!-- Hidden inputs cho 7 Slot Chiều -->
+                                    <!-- Hidden inputs cho Slot Chiều -->
                                     <c:forEach var="slot" items="${slots}">
                                       <c:if test="${slot.session == 'Afternoon'}">
                                         <c:set var="ckey" value="${day.fullDate}_${slot.id}" />
@@ -406,7 +483,7 @@
                 </div>
               </c:when>
 
-              <%--=========================================================================B. GIAO DIỆN ĐĂNG KÝ THEO SLOT (14 CỘT) DÀNH CHO SPECIALIST VÀ STAFF=========================================================================--%>
+              <%--=========================================================================B. GIAO DIỆN ĐĂNG KÝ THEO TỪNG SLOT LINH HOẠT CHO BÁC SĨ (DOCTOR)=========================================================================--%>
                 <c:otherwise>
                   <div class="register-card">
                     <div class="table-responsive">
@@ -604,11 +681,12 @@
         totalHoursEl.innerText = totalHours.toFixed(1) + " giờ";
 
         var submitBtn = document.getElementById('btnSubmitSchedule');
+        var minRequiredHours = ${not empty minWeeklyHours ? minWeeklyHours : 30.0};
 
-        if (totalHours < 30.0) {
+        if (totalHours < minRequiredHours) {
           totalHoursEl.className = "stat-value text-lg-end text-danger";
           submitBtn.disabled = true;
-          submitBtn.title = "Cần đăng ký tối thiểu 30.0 giờ / tuần (Hiện tại: " + totalHours.toFixed(1) + "h)";
+          submitBtn.title = "Cần đăng ký tối thiểu " + minRequiredHours.toFixed(1) + " giờ / tuần (Hiện tại: " + totalHours.toFixed(1) + "h)";
         } else {
           totalHoursEl.className = "stat-value text-lg-end text-success";
           if (newlyCount > 0) {
@@ -761,5 +839,10 @@
         });
       }
     </script>
+      </div>
+    </div><!-- End page-content -->
+  </div><!-- End main-wrapper -->
 
-    <jsp:include page="/views/common/footer.jsp" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

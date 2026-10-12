@@ -75,13 +75,33 @@
               <p class="text-muted mb-4">Đăng nhập vào tài khoản của bạn</p>
             </div>
 
-            <%-- Thông báo lỗi / thành công --%>
+            <%-- Thông báo lỗi / thành công / nhắc nhở --%>
             <c:if test="${not empty sessionScope.successMsg}">
               <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <i class="bi bi-check-circle me-2"></i>${sessionScope.successMsg}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
               </div>
               <c:remove var="successMsg" scope="session" />
+            </c:if>
+            <c:if test="${not empty sessionScope.infoMsg}">
+              <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <i class="bi bi-info-circle-fill me-2"></i>${sessionScope.infoMsg}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+              <c:remove var="infoMsg" scope="session" />
+            </c:if>
+            <c:if test="${not empty param.message and empty sessionScope.infoMsg}">
+              <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <i class="bi bi-info-circle-fill me-2"></i>${param.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            </c:if>
+            <c:if test="${not empty sessionScope.warningMsg}">
+              <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>${sessionScope.warningMsg}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+              <c:remove var="warningMsg" scope="session" />
             </c:if>
             <c:if test="${not empty error}">
               <div class="alert alert-danger alert-dismissible fade show" role="alert">

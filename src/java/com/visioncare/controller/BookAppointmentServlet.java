@@ -1,41 +1,219 @@
 package com.visioncare.controller;
+
 import com.visioncare.dao.AppointmentDAO;
+import com.visioncare.dao.CatalogDAO;
 import com.visioncare.dao.DoctorDAO;
-import com.visioncare.dao.DepartmentDAO;
+import com.visioncare.dao.WorkScheduleDAO;
 import com.visioncare.model.Appointment;
+import com.visioncare.model.CatalogService;
 import com.visioncare.model.Doctor;
-import com.visioncare.model.Department;
+import com.visioncare.model.TimeSlot;
 import com.visioncare.model.User;
+import com.visioncare.util.EmailUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.Date;
+import java.time.LocalDate;
 import java.util.List;
-import jakarta.servlet.annotation.WebServlet;
 
 @WebServlet(name = "BookAppointmentServlet", urlPatterns = {"/book-appointment"})
 public class BookAppointmentServlet extends HttpServlet {
+
     private final DoctorDAO doctorDAO = new DoctorDAO();
-    private final DepartmentDAO departmentDAO = new DepartmentDAO();
+    private final CatalogDAO catalogDAO = new CatalogDAO();
+    private final WorkScheduleDAO workScheduleDAO = new WorkScheduleDAO();
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        String action = request.getParameter("action");
+
+        // AJAX: Tự động kiểm tra trạng thái thanh toán đơn hàng (Auto Polling cho PayOS)
+        if ("checkPayment".equalsIgnoreCase(action)) {
+            response.setContentType("application/json;charset=UTF-8");
+            String apptIdStr = request.getParameter("appointmentId");
+            if (apptIdStr != null && !apptIdStr.isEmpty()) {
+                try {
+                    int apptId = Integer.parseInt(apptIdStr);
+                    Appointment appt = appointmentDAO.getAppointmentDetailById(apptId);
+                    boolean isPaid = (appt != null && ("Confirmed".equalsIgnoreCase(appt.getStatus()) || "Paid".equalsIgnoreCase(appt.getInvoiceStatus())));
+
+                    // Nếu DB chưa ghi nhận Paid, thử kiểm tra trực tiếp sang cổng PayOS
+                    if (!isPaid) {
+                        String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(apptId);
+                        if ("PAID".equalsIgnoreCase(payosStatus)) {
+                            appointmentDAO.confirmPayment(apptId);
+                            isPaid = true;
+                        }
+                    }
+                    response.getWriter().write("{\"isPaid\":" + isPaid + "}");
+                    return;
+                } catch (Exception e) {
+                    response.getWriter().write("{\"isPaid\":false,\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
+                    return;
+                }
+            }
+            response.getWriter().write("{\"isPaid\":false}");
+            return;
+        }
+
+        // Điều hướng trở về màn hình thành công sau khi thanh toán PayOS
+        String stepParam = request.getParameter("step");
+        if ("success".equalsIgnoreCase(stepParam)) {
+            String apptIdParam = request.getParameter("id");
+            if (apptIdParam != null && !apptIdParam.isEmpty()) {
+                try {
+                    int apptId = Integer.parseInt(apptIdParam);
+                    Appointment fullAppt = appointmentDAO.getAppointmentDetailById(apptId);
+                    if (fullAppt != null) {
+                        request.setAttribute("step", "success");
+                        request.setAttribute("appointment", fullAppt);
+                        request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);
+                        return;
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
+        // AJAX: Lấy khung giờ động theo Bác sĩ & Ngày (bỏ hoàn toàn ca tối)
+        if ("getSlots".equalsIgnoreCase(action)) {
+            response.setContentType("application/json;charset=UTF-8");
+            try {
+                String docIdStr = request.getParameter("doctorId");
+                String dateStr = request.getParameter("date");
+                if (docIdStr == null || docIdStr.isEmpty() || dateStr == null || dateStr.isEmpty()) {
+                    response.getWriter().write("{\"shiftSummary\":\"OFF\",\"slots\":[]}");
+                    return;
+                }
+                int doctorId = Integer.parseInt(docIdStr);
+                List<TimeSlot> slots = workScheduleDAO.getDoctorSlotsForDate(doctorId, dateStr);
+                String shift = workScheduleDAO.getDoctorWorkShiftSummary(doctorId, dateStr);
+
+                StringBuilder json = new StringBuilder();
+                json.append("{");
+                json.append("\"shiftSummary\":\"").append(shift).append("\",");
+                json.append("\"slots\":[");
+                for (int i = 0; i < slots.size(); i++) {
+                    TimeSlot s = slots.get(i);
+                    if (i > 0) json.append(",");
+                    json.append("{");
+                    json.append("\"id\":").append(s.getId()).append(",");
+                    json.append("\"slotName\":\"").append(escapeJson(s.getSlotName())).append("\",");
+                    json.append("\"startTime\":\"").append(escapeJson(s.getStartTime())).append("\",");
+                    json.append("\"endTime\":\"").append(escapeJson(s.getEndTime())).append("\",");
+                    json.append("\"session\":\"").append(escapeJson(s.getSession())).append("\",");
+                    json.append("\"isBooked\":").append(s.isBooked());
+                    json.append("}");
+                }
+                json.append("]}");
+                response.getWriter().write(json.toString());
+                return;
+            } catch (Exception e) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("{\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
+                return;
+            }
+        }
+
+        // Bắt buộc bệnh nhân phải đăng nhập để đặt lịch khám
+        HttpSession session = request.getSession(false);
+        User user = (session != null) ? (User) session.getAttribute("user") : null;
+        if (user == null) {
+            String query = request.getQueryString();
+            String redirectUrl = request.getContextPath() + "/book-appointment" + (query != null && !query.isEmpty() ? "?" + query : "");
+            if (session == null) {
+                session = request.getSession(true);
+            }
+            session.setAttribute("redirectAfterLogin", redirectUrl);
+            session.setAttribute("infoMsg", "Vui lòng đăng nhập để thực hiện đặt lịch khám mắt.");
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        // Tải trang đặt lịch thông thường
         try {
-            request.setAttribute("doctors", doctorDAO.getAll());
-            request.setAttribute("departments", departmentDAO.getAll());
+            prepareFormData(request);
+
+            // Xử lý params truyền vào từ trang khác (vd: trang bác sĩ, dịch vụ)
             String docParam = request.getParameter("doc");
-            if (docParam != null) {
-                request.setAttribute("selectedDoctor", docParam);
+            String serviceParam = request.getParameter("serviceId");
+            @SuppressWarnings("unchecked")
+            List<CatalogService> services = (List<CatalogService>) request.getAttribute("services");
+            @SuppressWarnings("unchecked")
+            List<Doctor> doctors = (List<Doctor>) request.getAttribute("doctors");
+
+            if (docParam != null && !docParam.isEmpty()) {
+                request.setAttribute("selectedDoctorId", docParam);
+                // Nếu chưa có serviceId, tự động tìm dịch vụ tương ứng với chuyên khoa của bác sĩ này
+                if (serviceParam == null || serviceParam.isEmpty()) {
+                    try {
+                        int dId = Integer.parseInt(docParam);
+                        Doctor targetDoc = null;
+                        if (doctors != null) {
+                            for (Doctor d : doctors) {
+                                if (d.getId() == dId) { targetDoc = d; break; }
+                            }
+                        }
+                        if (targetDoc != null && services != null) {
+                            for (CatalogService cs : services) {
+                                if (cs.getSpecialty() != null && (cs.getSpecialty().equalsIgnoreCase(targetDoc.getDepartmentKey()) ||
+                                    (targetDoc.getSpecialty() != null && targetDoc.getSpecialty().toLowerCase().contains(cs.getSpecialty().toLowerCase())))) {
+                                    request.setAttribute("selectedServiceId", String.valueOf(cs.getId()));
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+
+            if (serviceParam != null && !serviceParam.isEmpty()) {
+                request.setAttribute("selectedServiceId", serviceParam);
+                // Nếu chưa có doctorId, tự động tìm bác sĩ đầu tiên thuộc đúng chuyên khoa của dịch vụ này
+                if (docParam == null || docParam.isEmpty()) {
+                    try {
+                        int sId = Integer.parseInt(serviceParam);
+                        CatalogService targetSvc = null;
+                        if (services != null) {
+                            for (CatalogService cs : services) {
+                                if (cs.getId() == sId) { targetSvc = cs; break; }
+                            }
+                        }
+                        if (targetSvc != null && targetSvc.getSpecialty() != null && doctors != null) {
+                            for (Doctor d : doctors) {
+                                if (targetSvc.getSpecialty().equalsIgnoreCase(d.getDepartmentKey()) ||
+                                    (d.getSpecialty() != null && d.getSpecialty().toLowerCase().contains(targetSvc.getSpecialty().toLowerCase()))) {
+                                    request.setAttribute("selectedDoctorId", String.valueOf(d.getId()));
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+
+            String dateParam = request.getParameter("date");
+            if (dateParam != null && !dateParam.isEmpty()) {
+                request.setAttribute("selectedDate", dateParam);
+            } else {
+                // Mặc định ngày hôm nay
+                request.setAttribute("selectedDate", LocalDate.now().toString());
             }
             String timeParam = request.getParameter("time");
-            if (timeParam != null) {
+            if (timeParam != null && !timeParam.isEmpty()) {
                 request.setAttribute("selectedTime", timeParam);
             }
+
+            request.setAttribute("step", "form");
             request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
@@ -43,32 +221,162 @@ public class BookAppointmentServlet extends HttpServlet {
             request.getRequestDispatcher("/views/error/500.jsp").forward(request, response);
         }
     }
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        response.setCharacterEncoding("UTF-8");
+
+        // Bắt buộc bệnh nhân phải đăng nhập để thực hiện đặt lịch
+        HttpSession session = request.getSession(false);
+        User user = (session != null) ? (User) session.getAttribute("user") : null;
+        if (user == null) {
+            if (session == null) {
+                session = request.getSession(true);
+            }
+            session.setAttribute("redirectAfterLogin", request.getContextPath() + "/book-appointment");
+            session.setAttribute("infoMsg", "Vui lòng đăng nhập để thực hiện đặt lịch khám mắt.");
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        String action = request.getParameter("action");
+
+        // BƯỚC 2: Bệnh nhân quét mã QR và nhấn "Xác nhận tôi đã thanh toán (Verify Payment)"
+        if ("confirmPayment".equalsIgnoreCase(action)) {
+            try {
+                String apptIdStr = request.getParameter("appointmentId");
+                if (apptIdStr == null || apptIdStr.isEmpty()) {
+                    request.setAttribute("error", "Không tìm thấy mã lịch hẹn cần xác nhận thanh toán.");
+                    doGet(request, response);
+                    return;
+                }
+                int appointmentId = Integer.parseInt(apptIdStr);
+
+                // KIỂM TRA THỰC TẾ QUA CỔNG PAYOS (KHÔNG DÙNG MOCK UP NỮA)
+                String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(appointmentId);
+                boolean isPaid = "PAID".equalsIgnoreCase(payosStatus);
+
+                // Nếu PayOS chưa ghi nhận tiền về tài khoản
+                if (!isPaid) {
+                    Appointment pendingAppt = appointmentDAO.getAppointmentDetailById(appointmentId);
+                    request.setAttribute("error", "Hệ thống kiểm tra qua cổng PayOS chưa nhận được khoản thanh toán 200.000 ₫ cho lịch hẹn #" + appointmentId + ". Vui lòng quét mã QR chuyển khoản trên ứng dụng ngân hàng rồi thử lại!");
+                    request.setAttribute("step", "payment");
+                    request.setAttribute("appointment", pendingAppt);
+                    request.setAttribute("appointmentId", appointmentId);
+                    long fee = pendingAppt != null && pendingAppt.getFee() > 0 ? pendingAppt.getFee() : 200000;
+                    request.setAttribute("fee", fee);
+
+                    // Tải lại QR PayOS & VietQR
+                    String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
+                    String cancelUrl = baseUrl + "/book-appointment";
+                    String returnUrl = baseUrl + "/book-appointment?step=success&id=" + appointmentId;
+                    String payosDesc = "VC" + appointmentId;
+                    com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(appointmentId, (int) fee, payosDesc, cancelUrl, returnUrl);
+
+                    String qrUrl;
+                    if (payosRes != null && payosRes.success) {
+                        request.setAttribute("payosCheckoutUrl", payosRes.checkoutUrl);
+                        request.setAttribute("isPayOSEnabled", true);
+                        qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + URLEncoder.encode(payosRes.qrCode, StandardCharsets.UTF_8);
+                    } else {
+                        String phoneSafe = pendingAppt != null && pendingAppt.getPhone() != null ? pendingAppt.getPhone() : "";
+                        String paymentDesc = "VC" + appointmentId + " " + phoneSafe;
+                        qrUrl = "https://img.vietqr.io/image/MB-0335889999-compact2.png?amount=" + fee + "&addInfo=" + URLEncoder.encode(paymentDesc, StandardCharsets.UTF_8) + "&accountName=PHONG%20KHAM%20MAT%20VISIONCARE";
+                    }
+                    request.setAttribute("qrUrl", qrUrl);
+                    request.setAttribute("paymentDesc", "VC" + appointmentId + (pendingAppt != null && pendingAppt.getPhone() != null ? " " + pendingAppt.getPhone() : ""));
+                    request.setAttribute("bankName", "Ngân hàng Quân Đội (MB Bank)");
+                    request.setAttribute("accountNumber", "0335889999");
+                    request.setAttribute("accountHolder", "PHONG KHAM MAT VISIONCARE");
+                    request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);
+                    return;
+                }
+
+                // KHI PAYOS ĐÃ XÁC NHẬN "PAID" THẬT SỰ:
+                // Cập nhật hóa đơn -> Paid, tạo Payment_Transaction, Confirmed lịch hẹn & Booked ca trực
+                appointmentDAO.confirmPayment(appointmentId);
+
+                // Lấy thông tin lịch hẹn đầy đủ sau khi đã thanh toán
+                Appointment fullAppt = appointmentDAO.getAppointmentDetailById(appointmentId);
+                String email = request.getParameter("email");
+                if (email == null || email.trim().isEmpty()) {
+                    if (fullAppt != null) email = fullAppt.getEmail();
+                }
+
+                // Gửi email xác nhận & hướng dẫn chuẩn bị đi khám tới bệnh nhân
+                if (email != null && !email.trim().isEmpty() && fullAppt != null) {
+                    EmailUtil.sendAppointmentConfirmationEmail(
+                            email.trim(),
+                            fullAppt.getPatientName(),
+                            fullAppt.getId(),
+                            fullAppt.getDoctorName() != null ? fullAppt.getDoctorName() : "Bác sĩ Chuyên khoa VisionCare",
+                            fullAppt.getDepartment() != null ? fullAppt.getDepartment() : "Khám chuyên khoa mắt",
+                            fullAppt.getAppointmentDate() != null ? fullAppt.getAppointmentDate().toString() : "",
+                            fullAppt.getTimeSlot() != null ? fullAppt.getTimeSlot() : "",
+                            fullAppt.getFee() > 0 ? fullAppt.getFee() : 200000
+                    );
+                }
+
+                request.setAttribute("step", "success");
+                request.setAttribute("appointment", fullAppt);
+                request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);
+                return;
+            } catch (Exception e) {
+                e.printStackTrace();
+                request.setAttribute("error", "Lỗi trong quá trình xác nhận thanh toán: " + e.getMessage());
+                doGet(request, response);
+                return;
+            }
+        }
+
+        // BƯỚC 1: Bệnh nhân nhấn "Xác nhận lịch hẹn (Verify Appointment)"
         try {
             Appointment appointment = new Appointment();
-            appointment.setPatientName(request.getParameter("patientName"));
-            appointment.setPhone(request.getParameter("patientPhone"));
-            appointment.setEmail(request.getParameter("patientEmail"));
-            appointment.setDepartment(request.getParameter("department"));
-            appointment.setPayment(request.getParameter("payment"));
-            appointment.setReason(request.getParameter("visitReason"));
-            appointment.setStatus("pending");
+            appointment.setPatientName(trimOrNull(request.getParameter("patientName")));
+            appointment.setPhone(trimOrNull(request.getParameter("patientPhone")));
+            appointment.setEmail(trimOrNull(request.getParameter("patientEmail")));
+            appointment.setReason(trimOrNull(request.getParameter("visitReason")));
 
-            // Parse doctor ID
-            String doctorIdStr = request.getParameter("doctorId");
-            if (doctorIdStr != null && !doctorIdStr.isEmpty()) {
-                appointment.setDoctorId(Integer.parseInt(doctorIdStr));
+            // Parse Bệnh lý / Dịch vụ khám từ DB
+            String serviceIdStr = request.getParameter("serviceId");
+            int serviceId = 0;
+            if (serviceIdStr != null && !serviceIdStr.isEmpty()) {
+                serviceId = Integer.parseInt(serviceIdStr);
+                appointment.setServiceId(serviceId);
+                try {
+                    CatalogService cs = catalogDAO.getService(serviceId);
+                    if (cs != null) {
+                        appointment.setServiceName(cs.getName());
+                    }
+                } catch (Exception ignored) {}
             }
 
-            // Parse dates
+            // Parse Bác sĩ từ DB
+            String doctorIdStr = request.getParameter("doctorId");
+            int doctorId = 0;
+            if (doctorIdStr != null && !doctorIdStr.isEmpty()) {
+                doctorId = Integer.parseInt(doctorIdStr);
+                appointment.setDoctorId(doctorId);
+                try {
+                    Doctor doc = doctorDAO.getById(doctorId);
+                    if (doc != null) {
+                        appointment.setDoctorName(doc.getFullName());
+                        appointment.setDepartment(doc.getSpecialty());
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            // Parse Ngày hẹn khám
             String dateStr = request.getParameter("appointmentDate");
             if (dateStr != null && !dateStr.isEmpty()) {
                 appointment.setAppointmentDate(Date.valueOf(dateStr));
             }
+
+            // Parse Ngày sinh
             String dobStr = request.getParameter("patientDob");
-            if (dobStr != null && !dobStr.isEmpty()) {
+            if (dobStr != null && !dobStr.trim().isEmpty()) {
                 dobStr = dobStr.trim();
                 if (dobStr.matches("\\d{2}/\\d{2}/\\d{4}")) {
                     String[] parts = dobStr.split("/");
@@ -79,38 +387,164 @@ public class BookAppointmentServlet extends HttpServlet {
                 }
                 appointment.setDob(Date.valueOf(dobStr));
             }
-            appointment.setTimeSlot(request.getParameter("timeSlot"));
 
-            HttpSession session = request.getSession(false);
-            if (session != null && session.getAttribute("user") != null) {
-                User user = (User) session.getAttribute("user");
-                appointment.setUserId(user.getId());
+            // Parse Khung giờ & Schedule ID
+            String timeSlot = request.getParameter("timeSlot");
+            appointment.setTimeSlot(timeSlot);
+            String scheduleIdStr = request.getParameter("scheduleId");
+            if (scheduleIdStr != null && !scheduleIdStr.isEmpty()) {
+                appointment.setScheduleId(Integer.parseInt(scheduleIdStr));
             }
 
+            // Gán Account ID nếu bệnh nhân đã đăng nhập
+            if (user != null) {
+                appointment.setUserId(user.getId());
+                if (appointment.getEmail() == null || appointment.getEmail().isEmpty()) {
+                    appointment.setEmail(user.getEmail());
+                }
+            }
+
+            // VALIDATE THÔNG TIN (Verify Appointment Info)
+            if (appointment.getPatientName() == null || appointment.getPatientName().isEmpty()) {
+                request.setAttribute("error", "Vui lòng nhập họ và tên người khám.");
+                repopulateAndForward(request, response, appointment);
+                return;
+            }
+            if (appointment.getPhone() == null || !appointment.getPhone().matches("^0[3|5|7|8|9][0-9]{8}$")) {
+                request.setAttribute("error", "Số điện thoại không hợp lệ (yêu cầu số điện thoại Việt Nam 10 chữ số).");
+                repopulateAndForward(request, response, appointment);
+                return;
+            }
+            if (appointment.getEmail() == null || !appointment.getEmail().matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
+                request.setAttribute("error", "Vui lòng nhập địa chỉ email hợp lệ để nhận vé khám và lời nhắc.");
+                repopulateAndForward(request, response, appointment);
+                return;
+            }
+            if (appointment.getDoctorId() <= 0) {
+                request.setAttribute("error", "Vui lòng chọn bác sĩ khám.");
+                repopulateAndForward(request, response, appointment);
+                return;
+            }
+            if (appointment.getAppointmentDate() == null) {
+                request.setAttribute("error", "Vui lòng chọn ngày khám.");
+                repopulateAndForward(request, response, appointment);
+                return;
+            }
+            if (appointment.getTimeSlot() == null || appointment.getTimeSlot().isEmpty()) {
+                request.setAttribute("error", "Vui lòng chọn khung giờ khám phù hợp.");
+                repopulateAndForward(request, response, appointment);
+                return;
+            }
+
+            // KIỂM TRA TÍNH KHẢ DỤNG CỦA KHUNG GIỜ (Check slot availability)
             boolean alreadyBooked = appointmentDAO.isSlotBooked(
                     appointment.getDoctorId(),
                     appointment.getAppointmentDate(),
                     appointment.getTimeSlot()
             );
             if (alreadyBooked) {
-                request.setAttribute("error", "Khung giờ này đã được đặt. Vui lòng chọn khung giờ khác.");
-                doGet(request, response);
+                request.setAttribute("error", "Khung giờ này vừa có người đặt hoặc không khả dụng. Vui lòng chọn khung giờ khác.");
+                repopulateAndForward(request, response, appointment);
                 return;
             }
 
-            int newId = appointmentDAO.create(appointment);
-            if (newId > 0) {
-                request.setAttribute("success", true);
-                request.setAttribute("appointmentId", newId);
-                request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);
-            } else {
-                request.setAttribute("error", "Không thể đặt lịch. Vui lòng thử lại.");
-                doGet(request, response);
+            // TẠO LỊCH HẸN PENDING VÀ HÓA ĐƠN PENDING DEPOSIT
+            long fee = 200000; // Phí khám ban đầu theo tiêu chuẩn phòng khám
+            appointment.setFee(fee);
+            int newId = appointmentDAO.createPendingAppointment(appointment, serviceId, fee);
+
+            if (newId <= 0) {
+                request.setAttribute("error", "Khung giờ này không còn trống hoặc hệ thống đang bận. Vui lòng thử lại.");
+                repopulateAndForward(request, response, appointment);
+                return;
             }
+
+            // TẠO MÃ QR THANH TOÁN ĐỘNG (Dynamic VietQR Code)
+            String phoneSafe = appointment.getPhone() != null ? appointment.getPhone() : "";
+            String paymentDesc = "VC" + newId + " " + phoneSafe;
+            String encodedDesc = URLEncoder.encode(paymentDesc, StandardCharsets.UTF_8);
+            String qrUrl = "https://img.vietqr.io/image/MB-0335889999-compact2.png?amount=" + fee + "&addInfo=" + encodedDesc + "&accountName=PHONG%20KHAM%20MAT%20VISIONCARE";
+
+            // TÍCH HỢP CỔNG PAYOS ĐỒNG THỜI
+            String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
+            String cancelUrl = baseUrl + "/book-appointment";
+            String returnUrl = baseUrl + "/book-appointment?step=success&id=" + newId;
+            String payosDesc = "VC" + newId;
+            com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(newId, (int) fee, payosDesc, cancelUrl, returnUrl);
+
+            String payosCheckoutUrl = null;
+            if (payosRes != null && payosRes.success) {
+                payosCheckoutUrl = payosRes.checkoutUrl;
+                request.setAttribute("payosCheckoutUrl", payosRes.checkoutUrl);
+                request.setAttribute("isPayOSEnabled", true);
+                if (payosRes.qrCode != null && !payosRes.qrCode.isEmpty()) {
+                    qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + URLEncoder.encode(payosRes.qrCode, StandardCharsets.UTF_8);
+                }
+            } else {
+                request.setAttribute("isPayOSEnabled", false);
+            }
+
+            Appointment fullAppt = appointmentDAO.getAppointmentDetailById(newId);
+            if (fullAppt != null) {
+                fullAppt.setEmail(appointment.getEmail());
+            }
+
+            request.setAttribute("step", "payment");
+            request.setAttribute("appointment", fullAppt != null ? fullAppt : appointment);
+            request.setAttribute("appointmentId", newId);
+            request.setAttribute("qrUrl", qrUrl);
+            request.setAttribute("payosCheckoutUrl", payosCheckoutUrl);
+            request.setAttribute("fee", fee);
+            request.setAttribute("paymentDesc", paymentDesc);
+            request.setAttribute("bankName", "Ngân hàng Quân Đội (MB Bank)");
+            request.setAttribute("accountNumber", "0335889999");
+            request.setAttribute("accountHolder", "PHONG KHAM MAT VISIONCARE");
+
+            request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);
+
         } catch (Exception e) {
             e.printStackTrace();
-            request.setAttribute("error", "Có lỗi xảy ra: " + e.getMessage());
+            request.setAttribute("error", "Có lỗi xảy ra trong quá trình đặt lịch: " + e.getMessage());
             doGet(request, response);
         }
+    }
+
+    private void prepareFormData(HttpServletRequest request) throws Exception {
+        // Tải danh mục bệnh lý / dịch vụ hoàn toàn từ Database (Service_Catalog)
+        List<CatalogService> services = catalogDAO.listServices();
+        request.setAttribute("services", services);
+
+        // Tải danh sách bác sĩ hoàn toàn từ Database (Employee_Profile)
+        List<Doctor> doctors = doctorDAO.getAll();
+        request.setAttribute("doctors", doctors);
+
+        // Tự động điền thông tin nếu bệnh nhân đã đăng nhập
+        HttpSession session = request.getSession(false);
+        if (session != null && session.getAttribute("user") != null) {
+            User loggedUser = (User) session.getAttribute("user");
+            request.setAttribute("loggedUser", loggedUser);
+        }
+    }
+
+    private void repopulateAndForward(HttpServletRequest request, HttpServletResponse response, Appointment a) throws Exception {
+        prepareFormData(request);
+        request.setAttribute("appointment", a);
+        request.setAttribute("selectedServiceId", a.getServiceId());
+        request.setAttribute("selectedDoctorId", a.getDoctorId());
+        request.setAttribute("selectedDate", a.getAppointmentDate() != null ? a.getAppointmentDate().toString() : "");
+        request.setAttribute("selectedTime", a.getTimeSlot());
+        request.setAttribute("step", "form");
+        request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);
+    }
+
+    private String trimOrNull(String s) {
+        if (s == null) return null;
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    private String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
     }
 }
