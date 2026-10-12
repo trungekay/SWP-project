@@ -217,48 +217,74 @@
           </div>
           <div class="col-lg-9 ps-lg-5">
             <div class="pt-2">
-              <h4 class="fw-bold" style="color: #1c355e;">Lịch sử khám bệnh</h4>
-              <p class="text-muted small mb-4">Xem chi tiết lịch sử khám, hồ sơ y tế và hóa đơn thanh toán của bạn</p>
-              
-              <div class="content-card mb-5">
-                <div class="table-responsive">
-                  <table class="custom-table">
-                    <thead>
-                      <tr>
-                        <th>Ngày khám</th>
-                        <th>Bác sĩ</th>
-                        <th>Dịch vụ</th>
-                        <th>Trạng thái</th>
-                        <th>Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <c:choose>
-                        <c:when test="${not empty records}">
-                          <c:forEach var="record" items="${records}">
-                            <tr>
-                              <td>${record.date}</td>
-                              <td>
-                                <div class="user-details">
-                                    <p class="name">BS. ${record.doctorName}</p>
-                                </div>
-                              </td>
-                              <td>${record.serviceName}</td>
-                              <td><span class="badge-status status-active">Hoàn thành</span></td>
-                              <td>
-                                <div class="action-btns">
-                                  <a href="${pageContext.request.contextPath}/profile/medical-record?id=${record.id}" class="action-btn" title="Xem hồ sơ khám">
-                                    <i class="bi bi-file-earmark-medical"></i>
-                                  </a>
-                                  <a href="${pageContext.request.contextPath}/views/profile/invoice-detail.jsp" class="action-btn" title="Xem hóa đơn">
-                                    <i class="bi bi-receipt"></i>
-                                  </a>
-                                </div>
-                              </td>
-                            </tr>
-                          </c:forEach>
-                        </c:when>
-                        <c:otherwise>
+              <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                  <h4 class="fw-bold mb-1" style="color: #1c355e;">Hồ sơ y tế &amp; Thanh toán</h4>
+                  <p class="text-muted small mb-0">Xem chi tiết lịch sử khám bệnh và các hóa đơn thanh toán của bạn</p>
+                </div>
+                <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-primary rounded-pill px-4 shadow-sm" style="background:#0d9488; border-color:#0d9488;">
+                  <i class="bi bi-calendar-plus me-1"></i>Đặt lịch khám mới
+                </a>
+              </div>
+              <hr class="mb-4">
+
+              <h6 class="fw-bold mb-3" style="color: #0d9488;"><i class="bi bi-journal-medical me-2"></i>Lịch sử khám bệnh</h6>
+              <div class="table-responsive mb-5">
+                <table class="table table-borderless table-striped align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="py-3">Ngày khám</th>
+                      <th class="py-3">Bác sĩ</th>
+                      <th class="py-3">Dịch vụ</th>
+                      <th class="py-3">Trạng thái</th>
+                      <th class="py-3">Chi tiết</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <c:choose>
+                      <c:when test="${not empty records}">
+                        <c:forEach var="record" items="${records}">
+                          <tr>
+                            <td class="py-3">${record.date}</td>
+                            <td class="py-3">BS. ${record.doctorName}</td>
+                            <td class="py-3">${record.serviceName}</td>
+                            <td class="py-3"><span class="badge-success-custom">Hoàn thành</span></td>
+                            <td class="py-3">
+                              <a href="${pageContext.request.contextPath}/profile/medical-record?id=${record.id}" class="btn btn-sm btn-outline-primary" style="color: #0d9488; border-color: #0d9488;">
+                                <i class="bi bi-eye"></i> Xem
+                              </a>
+                            </td>
+                          </tr>
+                        </c:forEach>
+                      </c:when>
+                      <c:otherwise>
+                        <tr>
+                          <td colspan="5" class="text-center py-4 text-muted">Chưa có dữ liệu</td>
+                        </tr>
+                      </c:otherwise>
+                    </c:choose>
+                  </tbody>
+                </table>
+              </div>
+
+              <h6 class="fw-bold mb-3" style="color: #0d9488;"><i class="bi bi-receipt me-2"></i>Lịch sử thanh toán</h6>
+              <div class="table-responsive">
+                <table class="table table-borderless table-striped align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="py-3">Ngày thanh toán</th>
+                      <th class="py-3">Mã hóa đơn</th>
+                      <th class="py-3">Nội dung (Dịch vụ/Thuốc/Kính)</th>
+                      <th class="py-3">Tổng tiền</th>
+                      <th class="py-3">Phương thức</th>
+                      <th class="py-3">Trạng thái</th>
+                      <th class="py-3">Chi tiết</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <c:choose>
+                      <c:when test="${not empty invoices}">
+                        <c:forEach var="invoice" items="${invoices}">
                           <tr>
                             <td colspan="5" class="text-center py-4 text-muted">Chưa có dữ liệu</td>
                           </tr>

@@ -28,8 +28,8 @@
           <ul>
             <li><a href="${pageContext.request.contextPath}/home">Trang chủ</a></li>
             <li><a href="${pageContext.request.contextPath}/home#about">Giới thiệu</a></li>
-            <li><a href="${pageContext.request.contextPath}/doctor-schedules">Danh sách bác sĩ</a></li>
-            <li><a href="${pageContext.request.contextPath}/book-appointment">Đặt lịch</a></li>
+            <li><a href="${pageContext.request.contextPath}/doctor-schedules">Lịch khám bác sĩ</a></li>
+            <li><a href="${pageContext.request.contextPath}/book-appointment">Đặt lịch khám online</a></li>
             <li><a href="${pageContext.request.contextPath}/login">Đăng nhập</a></li>
           </ul>
         </div>
