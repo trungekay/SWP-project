@@ -25,7 +25,7 @@ public class ProcedureOrderDAO {
         "    po.Service_ID, " +
         "    po.Status, " +
         "    s.Service_Name, " +
-        "    s.Actual_Price, " +
+        "    s.Price AS Service_Price, " +
         "    spec.Full_Name AS Specialist_Name, " +
         "    spec.Phone AS Specialist_Phone, " +
         "    r.Room_Name, " +
@@ -42,7 +42,7 @@ public class ProcedureOrderDAO {
         "    p.DOB AS Patient_DOB, " +
         "    p.Address AS Patient_Address " +
         "FROM Procedure_Order po " +
-        "JOIN Service s ON po.Service_ID = s.Service_ID " +
+        "JOIN Service_Catalog s ON po.Service_ID = s.Service_ID " +
         "JOIN Medical_Record mr ON po.Record_ID = mr.Record_ID " +
         "JOIN Appointment a ON mr.Appointment_ID = a.Appointment_ID " +
         "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
@@ -434,7 +434,7 @@ public class ProcedureOrderDAO {
         po.setStatus(rs.getString("Status"));
 
         po.setServiceName(rs.getString("Service_Name"));
-        po.setServicePrice(rs.getDouble("Actual_Price"));
+        po.setServicePrice(rs.getDouble("Service_Price"));
 
         po.setSpecialistName(rs.getString("Specialist_Name"));
         po.setSpecialistPhone(rs.getString("Specialist_Phone"));

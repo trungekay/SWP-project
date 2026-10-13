@@ -107,7 +107,7 @@ public class AdminCatalogServlet extends HttpServlet {
                 }
                 String summary = field(request, "summary", 500, false);
                 String description = field(request, "description", 4000, false);
-                savedId = dao.saveService(id, user.getId(), code, name, price, categoryId, summary,
+                savedId = dao.saveService(id, code, name, price, categoryId, summary,
                         description, upload == null ? null : upload.getBytes(),
                         upload == null ? null : upload.getMimeType());
             } else {

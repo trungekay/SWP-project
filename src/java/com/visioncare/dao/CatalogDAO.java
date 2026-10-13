@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CatalogDAO {
-    private static final String SERVICE_COLUMNS = "sc.Service_ID, sc.Service_Code, sc.Service_Name, sc.Price, sc.Category_ID, category.Category_Name, sc.Summary, sc.Description, sc.Image_Path, CASE WHEN sc.Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
+    private static final String SERVICE_COLUMNS = "sc.Service_ID, sc.Service_Code, sc.Service_Name, sc.Price, sc.Category_ID, category.Category_Name, sc.Summary, sc.Description, CASE WHEN sc.Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
     private static final String SUPPLY_COLUMNS = "Supply_ID, Supply_Name, Category, Unit, Price, CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
 
     public List<CatalogService> listServices() throws Exception {
@@ -43,18 +43,17 @@ public class CatalogDAO {
         }
     }
 
-    public int saveService(int id, int accountId, String code, String name, BigDecimal price,
+    public int saveService(int id, String code, String name, BigDecimal price,
             int categoryId, String summary, String description,
             byte[] imageData, String imageMimeType) throws Exception {
         boolean create = id == 0;
         String sql = create
-            ? "INSERT INTO Service_Catalog (Created_By, Service_Code, Service_Name, Price, Category_ID, Summary, Description, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            ? "INSERT INTO Service_Catalog (Service_Code, Service_Name, Price, Category_ID, Summary, Description, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
             : "UPDATE Service_Catalog SET Service_Code = ?, Service_Name = ?, Price = ?, Category_ID = ?, Summary = ?, Description = ?" +
               (imageData == null ? "" : ", Image_Data = ?, Image_Mime_Type = ?") + " WHERE Service_ID = ?";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             int column = 1;
-            if (create) statement.setInt(column++, accountId);
             statement.setString(column++, blankToNull(code));
             statement.setString(column++, name);
             statement.setBigDecimal(column++, price);
@@ -151,7 +150,7 @@ public class CatalogDAO {
                 result.getString("Service_Name"), result.getBigDecimal("Price"),
                 result.getInt("Category_ID"), result.getString("Category_Name"),
                 result.getString("Summary"), result.getString("Description"),
-                result.getString("Image_Path"), result.getBoolean("Has_Image"));
+                result.getBoolean("Has_Image"));
     }
 
     private MedicalSupply supply(ResultSet result) throws Exception {

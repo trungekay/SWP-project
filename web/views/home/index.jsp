@@ -250,7 +250,7 @@
                           </c:when>
                           <c:otherwise>
                             <img
-                              src="${pageContext.request.contextPath}/assets/img/${empty service.image ? 'departments-1.jpg' : fn:escapeXml(service.image)}"
+                              src="${pageContext.request.contextPath}/assets/img/${service.defaultImagePath}"
                               class="card-img-top" alt="${fn:escapeXml(service.name)}"
                               style="height: 200px; object-fit: cover;">
                           </c:otherwise>
@@ -354,7 +354,7 @@
                                     src="${pageContext.request.contextPath}/catalog-image?kind=service&amp;id=${service.id}"
                                     alt="${fn:escapeXml(service.name)}" class="img-fluid"></c:when>
                                 <c:otherwise><img
-                                    src="${pageContext.request.contextPath}/assets/img/${empty service.image ? 'departments-1.jpg' : fn:escapeXml(service.image)}"
+                                    src="${pageContext.request.contextPath}/assets/img/${service.defaultImagePath}"
                                     alt="${fn:escapeXml(service.name)}" class="img-fluid"></c:otherwise>
                               </c:choose>
                             </div>

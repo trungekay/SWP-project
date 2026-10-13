@@ -11,11 +11,10 @@ public class CatalogService {
     private final String categoryName;
     private final String summary;
     private final String description;
-    private final String image;
     private final boolean uploadedImage;
 
     public CatalogService(int id, String code, String name, BigDecimal price,
-            int categoryId, String categoryName, String summary, String description, String image,
+            int categoryId, String categoryName, String summary, String description,
             boolean uploadedImage) {
         this.id = id;
         this.code = code;
@@ -25,7 +24,6 @@ public class CatalogService {
         this.categoryName = categoryName;
         this.summary = summary;
         this.description = description;
-        this.image = image;
         this.uploadedImage = uploadedImage;
     }
 
@@ -37,8 +35,22 @@ public class CatalogService {
     public String getCategoryName() { return categoryName; }
     public String getSummary() { return summary; }
     public String getDescription() { return description; }
-    public String getImage() { return image; }
     public boolean isUploadedImage() { return uploadedImage; }
+
+    public String getDefaultImagePath() {
+        if (code != null) {
+            switch (code.toUpperCase(java.util.Locale.ROOT)) {
+                case "NK-01": return "departments-1.jpg";
+                case "KX-02": return "departments-2.jpg";
+                case "LS-03": return "departments-3.jpg";
+                case "PE-04": return "departments-4.jpg";
+                case "TT-05": return "departments-5.jpg";
+                case "GL-06": return "gallery/gallery-1.jpg";
+                default: break;
+            }
+        }
+        return "departments-1.jpg";
+    }
 
     public String getSpecialty() {
         if (code != null) {

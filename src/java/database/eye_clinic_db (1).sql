@@ -1,3 +1,7 @@
+-- Fresh database setup: this script drops and recreates eye_clinic_db.
+-- Service_Catalog is the single service table; Procedure_Order.Service_ID references it.
+-- Service_Catalog does not have the obsolete Created_By column.
+
 USE master;
 GO
 IF EXISTS (SELECT name FROM sys.databases WHERE name = N'eye_clinic_db')
@@ -33,17 +37,14 @@ CREATE TABLE Service_Category (
 
 CREATE TABLE Service_Catalog (
     Service_ID      INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    Created_By      INT NULL,
     Service_Code    VARCHAR(20) NULL,
     Service_Name    NVARCHAR(255) NOT NULL,
     Price           DECIMAL(18,0) NOT NULL,
     Category_ID     INT NOT NULL,
     Summary         NVARCHAR(500) NULL,
     Description     NVARCHAR(MAX) NULL,
-    Image_Path      VARCHAR(255) NULL,
     Image_Data      VARBINARY(MAX) NULL,
     Image_Mime_Type VARCHAR(50) NULL,
-    FOREIGN KEY (Created_By) REFERENCES Account(Account_ID),
     CONSTRAINT FK_Service_Catalog_Category FOREIGN KEY (Category_ID) REFERENCES Service_Category(Category_ID),
     CONSTRAINT CHK_Service_Catalog_Price CHECK (Price >= 0)
 );
@@ -147,14 +148,6 @@ CREATE TABLE Medical_Record (
     FOREIGN KEY (Doctor_Employee_ID) REFERENCES Employee_Profile(Employee_ID)
 );
 
-CREATE TABLE Service (
-    Service_ID      INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    Service_Name    NVARCHAR(255) NOT NULL,
-    Actual_Price    DECIMAL(18,0) NOT NULL,
-    Created_At      DATETIME2 NOT NULL DEFAULT (SYSUTCDATETIME()),
-    Update_At       DATETIME2 NOT NULL DEFAULT (SYSUTCDATETIME())
-);
-
 CREATE TABLE Procedure_Order (
     Order_ID                INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     Specialist_Employee_ID  INT NULL,
@@ -163,7 +156,7 @@ CREATE TABLE Procedure_Order (
     Status                  NVARCHAR(50) NOT NULL DEFAULT (N'Pending'),
     FOREIGN KEY (Specialist_Employee_ID) REFERENCES Employee_Profile(Employee_ID),
     FOREIGN KEY (Record_ID)              REFERENCES Medical_Record(Record_ID),
-    FOREIGN KEY (Service_ID)             REFERENCES Service(Service_ID)
+    FOREIGN KEY (Service_ID)             REFERENCES Service_Catalog(Service_ID)
 );
 
 CREATE TABLE Prescription (
@@ -236,7 +229,6 @@ ALTER TABLE Leave_Cancel_Request ADD CONSTRAINT CHK_LCR_Status
     CHECK (request_status IN (N'Pending', N'Approved', N'Rejected'));
 ALTER TABLE Appointment ADD CONSTRAINT CHK_Appt_Status
     CHECK (Status IN (N'Pending', N'Confirmed', N'In_Progress', N'Completed', N'Canceled'));
-ALTER TABLE Service ADD CONSTRAINT CHK_Service_Price CHECK (Actual_Price >= 0);
 ALTER TABLE Procedure_Order ADD CONSTRAINT CHK_PO_Status
     CHECK (Status IN (N'Pending', N'Completed', N'Cancelled'));
 ALTER TABLE Prescription_Detail ADD CONSTRAINT CHK_Medicine_Quantity CHECK (Quantity > 0);
@@ -388,12 +380,7 @@ VALUES
 (20, 8, N'Dịch vụ: Đo nhãn áp và chụp OCT võng mạc | Lý do: Tái khám định kỳ theo dõi nhãn áp sau điều trị', NULL, NULL, SYSUTCDATETIME()),
 (21, 3, N'Dịch vụ: Khám mắt tổng quát | Lý do: Bệnh nhân báo bận công tác đột xuất, xin hủy lịch khám', NULL, NULL, SYSUTCDATETIME());
 
-INSERT INTO Service (Service_Name, Actual_Price) VALUES
-(N'Khám mắt tổng quát', 200000),
-(N'Đo khúc xạ máy',     100000),
-(N'Chụp OCT đáy mắt',   400000);
-
--- Danh mục quản trị; bảng Service ở trên dùng cho Procedure_Order.
+-- Một danh mục dịch vụ dùng chung cho đặt lịch và Procedure_Order.
 INSERT INTO Service_Category (Category_ID, Category_Name) VALUES
 (1, N'Khám và tư vấn'),
 (2, N'Kiểm tra và chẩn đoán'),
@@ -401,15 +388,16 @@ INSERT INTO Service_Category (Category_ID, Category_Name) VALUES
 (4, N'Khác'),
 (5, N'Dịch vụ ngoài');
 
+-- Sample images remain in web/assets/img; Image_Data is used for admin uploads.
 INSERT INTO Service_Catalog
-    (Service_Code, Service_Name, Price, Category_ID, Summary, Description, Image_Path)
+    (Service_Code, Service_Name, Price, Category_ID, Summary, Description)
 VALUES
-('NK-01', N'Khám mắt tổng quát', 250000, 1, N'Khám và chẩn đoán toàn diện các bệnh lý về mắt, phù hợp với mọi lứa tuổi.', N'Bao gồm đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt, đánh giá tình trạng giác mạc và thủy tinh thể.', 'departments-1.jpg'),
-('KX-02', N'Đo khúc xạ và tư vấn kính', 150000, 2, N'Khám sàng lọc và đo độ khúc xạ với hệ thống đo tự động chuẩn xác.', N'Đo khúc xạ chính xác bằng máy tự động, thử thị lực và tư vấn tròng kính phù hợp.', 'departments-2.jpg'),
-('LS-03', N'Phẫu thuật LASIK', 18000000, 3, N'Xóa cận không dao, thời gian phục hồi nhanh chóng.', N'Phẫu thuật khúc xạ laser LASIK/SMILE điều trị cận thị, viễn thị và loạn thị với công nghệ hiện đại.', 'departments-3.jpg'),
-('PE-04', N'Khám mắt trẻ em và tư vấn nhược thị', 300000, 1, N'Sàng lọc sớm các tật khúc xạ tiến triển, tật lé và suy giảm thị lực ở trẻ nhỏ.', N'Sàng lọc cận thị sớm, điều trị nhược thị và lác mắt trong không gian khám thân thiện.', 'departments-4.jpg'),
-('TT-05', N'Phẫu thuật Phaco điều trị đục thủy tinh thể', 12000000, 3, N'Tái tạo tầm nhìn trong sáng bằng phương pháp tán nhuyễn Phaco tiên tiến.', N'Phẫu thuật thay thể thủy tinh nhân tạo điều trị đục thủy tinh thể an toàn, đường mổ siêu nhỏ.', 'departments-5.jpg'),
-('GL-06', N'Đo nhãn áp và chụp OCT võng mạc', 500000, 2, N'Kiểm soát nhãn áp, bảo tồn thị trường thần kinh mắt và ngăn ngừa biến chứng mù lòa.', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.', 'gallery/gallery-1.jpg');
+('NK-01', N'Khám mắt tổng quát', 250000, 1, N'Khám và chẩn đoán toàn diện các bệnh lý về mắt, phù hợp với mọi lứa tuổi.', N'Bao gồm đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt, đánh giá tình trạng giác mạc và thủy tinh thể.'),
+('KX-02', N'Đo khúc xạ và tư vấn kính', 150000, 2, N'Khám sàng lọc và đo độ khúc xạ với hệ thống đo tự động chuẩn xác.', N'Đo khúc xạ chính xác bằng máy tự động, thử thị lực và tư vấn tròng kính phù hợp.'),
+('LS-03', N'Phẫu thuật LASIK', 18000000, 3, N'Xóa cận không dao, thời gian phục hồi nhanh chóng.', N'Phẫu thuật khúc xạ laser LASIK/SMILE điều trị cận thị, viễn thị và loạn thị với công nghệ hiện đại.'),
+('PE-04', N'Khám mắt trẻ em và tư vấn nhược thị', 300000, 1, N'Sàng lọc sớm các tật khúc xạ tiến triển, tật lé và suy giảm thị lực ở trẻ nhỏ.', N'Sàng lọc cận thị sớm, điều trị nhược thị và lác mắt trong không gian khám thân thiện.'),
+('TT-05', N'Phẫu thuật Phaco điều trị đục thủy tinh thể', 12000000, 3, N'Tái tạo tầm nhìn trong sáng bằng phương pháp tán nhuyễn Phaco tiên tiến.', N'Phẫu thuật thay thể thủy tinh nhân tạo điều trị đục thủy tinh thể an toàn, đường mổ siêu nhỏ.'),
+('GL-06', N'Đo nhãn áp và chụp OCT võng mạc', 500000, 2, N'Kiểm soát nhãn áp, bảo tồn thị trường thần kinh mắt và ngăn ngừa biến chứng mù lòa.', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.');
 
 INSERT INTO Medical_Supply (Supply_Name, Category, Unit, Price) VALUES
 (N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Dung dịch nhỏ mắt', N'lọ', 95000),
@@ -423,11 +411,11 @@ INSERT INTO Procedure_Order (Specialist_Employee_ID, Record_ID, Service_ID, Stat
 (9, 4, 1, N'Completed'),
 (9, 7, 2, N'Completed'),
 (9, 8, 2, N'Completed'),
-(9, 10, 3, N'Completed'),
+(9, 10, 6, N'Completed'),
 (9, 13, 1, N'Completed'),
 (9, 14, 1, N'Completed'),
-(9, 16, 3, N'Completed'),
-(9, 18, 3, N'Completed');
+(9, 16, 6, N'Completed'),
+(9, 18, 6, N'Completed');
 
 INSERT INTO Prescription (Record_ID, Doctor_Notes) VALUES
 (1, N'Nhỏ thuốc đúng giờ, tái khám sau 7 ngày nếu mắt còn đỏ'),
