@@ -8,7 +8,11 @@ import java.util.List;
 public class DoctorDAO {
     public List<Doctor> getAll() throws Exception {
         List<Doctor> list = new ArrayList<>();
-        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 3 AND a.Account_Status != 'Deleted' ORDER BY e.Employee_ID";
+        String sql = "SELECT e.*, rm.Room_Name FROM Employee_Profile e " +
+                     "JOIN Account a ON e.Account_ID = a.Account_ID " +
+                     "LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID " +
+                     "WHERE a.Role_ID = 3 AND a.Account_Status != 'Deleted' " +
+                     "ORDER BY e.Employee_ID";
         try (Connection conn = DBContext.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
@@ -21,7 +25,11 @@ public class DoctorDAO {
 
     public List<Doctor> getSpecialists() throws Exception {
         List<Doctor> list = new ArrayList<>();
-        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 4 AND a.Account_Status != 'Deleted' ORDER BY e.Employee_ID";
+        String sql = "SELECT e.*, rm.Room_Name FROM Employee_Profile e " +
+                     "JOIN Account a ON e.Account_ID = a.Account_ID " +
+                     "LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID " +
+                     "WHERE a.Role_ID = 4 AND a.Account_Status != 'Deleted' " +
+                     "ORDER BY e.Employee_ID";
         try (Connection conn = DBContext.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
@@ -33,7 +41,10 @@ public class DoctorDAO {
     }
 
     public Doctor getById(int id) throws Exception {
-        String sql = "SELECT e.* FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID WHERE a.Role_ID = 3 AND a.Account_Status != 'Deleted' AND e.Employee_ID = ?";
+        String sql = "SELECT e.*, rm.Room_Name FROM Employee_Profile e " +
+                     "JOIN Account a ON e.Account_ID = a.Account_ID " +
+                     "LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID " +
+                     "WHERE a.Role_ID = 3 AND a.Account_Status != 'Deleted' AND e.Employee_ID = ?";
         try (Connection conn = DBContext.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -47,7 +58,18 @@ public class DoctorDAO {
     }
 
     public List<Doctor> getByDepartment(String departmentKey) throws Exception {
-        return getAll();
+        List<Doctor> all = getAll();
+        if (departmentKey == null || departmentKey.isEmpty() || "all".equalsIgnoreCase(departmentKey)) {
+            return all;
+        }
+        List<Doctor> filtered = new ArrayList<>();
+        for (Doctor d : all) {
+            if (departmentKey.equalsIgnoreCase(d.getDepartmentKey()) ||
+                (d.getSpecialty() != null && d.getSpecialty().toLowerCase().contains(departmentKey.toLowerCase()))) {
+                filtered.add(d);
+            }
+        }
+        return filtered.isEmpty() ? all : filtered;
     }
 
     public boolean assignDoctorToRoom(int doctorId, int roomId) throws Exception {
@@ -92,8 +114,24 @@ public class DoctorDAO {
         String specialty = hasColumn(rs, "Specialty") && rs.getString("Specialty") != null ? rs.getString("Specialty")
                 : "Khám mắt tổng quát";
         d.setSpecialty(specialty);
-        d.setDepartmentKey("general");
-        d.setDescription("Bác sĩ chuyên khoa tại phòng khám VisionCare.");
+
+        String deptKey = "general";
+        if (specialty != null) {
+            String sLower = specialty.toLowerCase();
+            if (sLower.contains("khúc xạ") || sLower.contains("kính")) {
+                deptKey = "refraction";
+            } else if (sLower.contains("lasik") || sLower.contains("phẫu thuật")) {
+                deptKey = "lasik";
+            } else if (sLower.contains("trẻ em") || sLower.contains("nhược thị")) {
+                deptKey = "children";
+            } else if (sLower.contains("thủy tinh thể") || sLower.contains("phaco")) {
+                deptKey = "cataract";
+            } else if (sLower.contains("glaucoma") || sLower.contains("võng mạc")) {
+                deptKey = "retina";
+            }
+        }
+        d.setDepartmentKey(deptKey);
+        d.setDescription("Bác sĩ chuyên khoa " + specialty + " tại phòng khám VisionCare.");
 
         if (hasColumn(rs, "Biography")) {
             d.setBiography(rs.getString("Biography"));
@@ -144,6 +182,9 @@ public class DoctorDAO {
         d.setRating(5.0);
         if (hasColumn(rs, "Room_ID")) {
             d.setRoomId(rs.getInt("Room_ID"));
+        }
+        if (hasColumn(rs, "Room_Name") && rs.getString("Room_Name") != null) {
+            d.setRoomName(rs.getString("Room_Name"));
         }
         return d;
     }

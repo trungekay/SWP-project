@@ -19,9 +19,9 @@ body {
 }
 
 .schedule-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 24px 16px;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 /* ==========================================================================
