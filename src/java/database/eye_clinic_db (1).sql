@@ -55,11 +55,12 @@ CREATE TABLE Medical_Supply (
     Supply_ID    INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     Supply_Name  NVARCHAR(255) NOT NULL,
     Category     NVARCHAR(100) NOT NULL,
-    Unit         NVARCHAR(30) NOT NULL,
     Price        DECIMAL(18,0) NOT NULL,
     Image_Data   VARBINARY(MAX) NULL,
     Image_Mime_Type VARCHAR(50) NULL,
-    CONSTRAINT CHK_Medical_Supply_Price CHECK (Price >= 0)
+    CONSTRAINT CHK_Medical_Supply_Price CHECK (Price >= 0),
+    CONSTRAINT CHK_Medical_Supply_Category CHECK (Category IN (
+        N'Thuốc & Dung dịch', N'Kính & Phụ kiện', N'Vật tư y tế tiêu hao', N'Khác'))
 );
 
 CREATE TABLE Room (
@@ -399,11 +400,11 @@ VALUES
 ('TT-05', N'Phẫu thuật Phaco điều trị đục thủy tinh thể', 12000000, 3, N'Tái tạo tầm nhìn trong sáng bằng phương pháp tán nhuyễn Phaco tiên tiến.', N'Phẫu thuật thay thể thủy tinh nhân tạo điều trị đục thủy tinh thể an toàn, đường mổ siêu nhỏ.'),
 ('GL-06', N'Đo nhãn áp và chụp OCT võng mạc', 500000, 2, N'Kiểm soát nhãn áp, bảo tồn thị trường thần kinh mắt và ngăn ngừa biến chứng mù lòa.', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.');
 
-INSERT INTO Medical_Supply (Supply_Name, Category, Unit, Price) VALUES
-(N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Dung dịch nhỏ mắt', N'lọ', 95000),
-(N'Tròng kính Essilor Crizal Alize 1.60', N'Tròng kính', N'cặp', 1250000),
-(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Dung dịch nhỏ mắt', N'lọ', 88000),
-(N'Que thử màu huỳnh quang Fluorescein Strips', N'Vật tư chẩn đoán', N'hộp', 320000);
+INSERT INTO Medical_Supply (Supply_Name, Category, Price) VALUES
+(N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Thuốc & Dung dịch', 95000),
+(N'Tròng kính Essilor Crizal Alize 1.60', N'Kính & Phụ kiện', 1250000),
+(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Thuốc & Dung dịch', 88000),
+(N'Que thử màu huỳnh quang Fluorescein Strips', N'Vật tư y tế tiêu hao', 320000);
 
 INSERT INTO Procedure_Order (Specialist_Employee_ID, Record_ID, Service_ID, Status) VALUES
 (9, 1, 2, N'Completed'),

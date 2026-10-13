@@ -80,8 +80,15 @@
           </c:when>
           <c:otherwise>
             <label><span class="catalog-label-title">Tên vật tư / dược phẩm <em>*</em></span><input name="name" maxlength="255" required value="${fn:escapeXml(item.name)}"></label>
-            <label><span class="catalog-label-title">Phân loại <em>*</em></span><input name="category" maxlength="100" required value="${fn:escapeXml(item.category)}" placeholder="VD: Dung dịch nhỏ mắt"></label>
-            <div class="catalog-form-grid"><label><span class="catalog-label-title">Đơn vị <em>*</em></span><input name="unit" maxlength="30" required value="${fn:escapeXml(item.unit)}" placeholder="VD: lọ, hộp, cặp"></label><label><span class="catalog-label-title">Đơn giá (VNĐ) <em>*</em></span><input name="price" type="number" min="0" step="1" required value="${fn:escapeXml(item.price)}"></label></div>
+            <label><span class="catalog-label-title">Phân loại <em>*</em></span>
+              <select name="category" required>
+                <option value="" disabled ${empty item.category ? 'selected' : ''}>Chọn phân loại</option>
+                <c:forEach items="${supplyCategories}" var="category">
+                  <option value="${fn:escapeXml(category.vietnameseName)}" ${item.category eq category.vietnameseName ? 'selected' : ''}><c:out value="${category.vietnameseName}" /></option>
+                </c:forEach>
+              </select>
+            </label>
+            <label><span class="catalog-label-title">Đơn giá (VNĐ) <em>*</em></span><input name="price" type="number" min="0" step="1" required value="${fn:escapeXml(item.price)}"></label>
           </c:otherwise>
         </c:choose>
         <div class="catalog-image-field">

@@ -58,10 +58,10 @@
       <c:if test="${param.deleteError == '1'}"><div class="catalog-delete-error" role="alert">Không thể xóa mục này. Mục có thể đang được sử dụng; hãy kiểm tra dữ liệu liên quan.</div></c:if>
       <section class="catalog-view" id="servicesView" role="tabpanel" aria-labelledby="servicesTab" ${param.tab == 'supplies' ? 'hidden' : ''}>
         <div class="catalog-panel catalog-heading"><h5><i class="bi bi-clipboard2-pulse me-2 text-primary"></i>Danh sách Dịch vụ Phòng khám</h5><a class="catalog-primary" href="${pageContext.request.contextPath}/admin/catalog/service?new=1"><i class="bi bi-plus-lg"></i> Thêm dịch vụ</a></div>
-        <div class="catalog-panel catalog-filters"><label class="catalog-search"><i class="bi bi-search"></i><input type="search" id="serviceSearch" placeholder="Tìm tên hoặc mã dịch vụ..." aria-label="Tìm dịch vụ"></label><select id="categorySelect" aria-label="Lọc nhóm dịch vụ"><option value="all">Tất cả nhóm dịch vụ</option><c:forEach items="${serviceCategories}" var="category"><option value="${category.id}"><c:out value="${category.name}" /></option></c:forEach></select></div>
+        <div class="catalog-panel catalog-filters"><label class="catalog-search"><i class="bi bi-search"></i><input type="search" id="serviceSearch" placeholder="Tìm tên hoặc mã dịch vụ..." aria-label="Tìm dịch vụ"></label></div>
         <div class="table-responsive" id="serviceList"><table class="table align-middle table-custom catalog-table"><thead><tr><th>Mã dịch vụ</th><th>Tên dịch vụ</th><th>Nhóm dịch vụ</th><th>Đơn giá</th><th class="text-end">Thao tác</th></tr></thead><tbody>
           <c:forEach items="${catalogServices}" var="service">
-            <tr class="catalog-service" data-category-id="${service.categoryId}">
+            <tr class="catalog-service">
               <td><c:out value="${empty service.code ? service.id : service.code}" /></td>
               <td><strong><c:out value="${service.name}" /></strong></td>
               <td><c:out value="${service.categoryName}" /></td>
@@ -92,7 +92,7 @@
     <button id="catalogDeleteConfirm" type="button" class="catalog-delete-confirm"><i class="bi bi-trash"></i> Xác nhận xóa</button>
   </div>
 </dialog>
-<script src="${pageContext.request.contextPath}/assets/js/admin-catalog.js?v=4" defer></script>
+<script src="${pageContext.request.contextPath}/assets/js/admin-catalog.js?v=5" defer></script>
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

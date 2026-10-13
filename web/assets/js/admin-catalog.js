@@ -81,18 +81,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function filterServices() {
     const term = document.getElementById('serviceSearch').value.trim().toLocaleLowerCase('vi');
-    const category = document.getElementById('categorySelect').value;
     let count = 0;
     cards.forEach((card) => {
-      const visible = (category === 'all' || card.dataset.categoryId === category)
-        && card.textContent.toLocaleLowerCase('vi').includes(term);
+      const visible = card.textContent.toLocaleLowerCase('vi').includes(term);
       card.hidden = !visible;
       if (visible) count++;
     });
     document.getElementById('serviceEmpty').hidden = count > 0;
   }
   document.getElementById('serviceSearch').addEventListener('input', filterServices);
-  document.getElementById('categorySelect').addEventListener('change', filterServices);
   filterServices();
 
   document.getElementById('supplySearch').addEventListener('input', (event) => {

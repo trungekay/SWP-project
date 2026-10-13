@@ -3,6 +3,7 @@ package com.visioncare.controller;
 import com.visioncare.dao.CatalogDAO;
 import com.visioncare.model.CatalogService;
 import com.visioncare.model.MedicalSupply;
+import com.visioncare.model.SupplyCategory;
 import com.visioncare.model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -36,7 +37,6 @@ public class AdminCatalogServlet extends HttpServlet {
             if ("/admin/catalog".equals(path)) {
                 request.setAttribute("catalogServices", dao.listServices());
                 request.setAttribute("catalogSupplies", dao.listSupplies());
-                request.setAttribute("serviceCategories", dao.listCategories());
                 request.getRequestDispatcher("/views/admin/catalog.jsp").forward(request, response);
             } else {
                 boolean service = path.endsWith("/service");
@@ -50,6 +50,7 @@ public class AdminCatalogServlet extends HttpServlet {
                         (service ? dao.getService(id) : dao.getSupply(id));
                 if (item == null) { response.sendError(HttpServletResponse.SC_NOT_FOUND); return; }
                 request.setAttribute("choices", choices);
+                if (!service) request.setAttribute("supplyCategories", SupplyCategory.values());
                 if (service) {
                     request.setAttribute("serviceCategories", dao.listCategories());
                     if (item instanceof CatalogService) {
@@ -113,8 +114,10 @@ public class AdminCatalogServlet extends HttpServlet {
             } else {
                 String name = field(request, "name", 255, true);
                 String category = field(request, "category", 100, true);
-                String unit = field(request, "unit", 30, true);
-                savedId = dao.saveSupply(id, name, category, unit, price(request),
+                if (SupplyCategory.fromVietnameseName(category) == null) {
+                    throw new IllegalArgumentException("Phân loại vật tư không hợp lệ.");
+                }
+                savedId = dao.saveSupply(id, name, category, price(request),
                         upload == null ? null : upload.getBytes(),
                         upload == null ? null : upload.getMimeType());
             }
@@ -133,11 +136,12 @@ public class AdminCatalogServlet extends HttpServlet {
     private void showFormWithSubmittedValues(HttpServletRequest request, HttpServletResponse response, boolean service)
             throws ServletException, IOException {
         Map<String, Object> item = new HashMap<>();
-        for (String key : new String[]{"id", "code", "name", "price", "categoryId", "summary", "description", "image", "category", "unit"}) {
+        for (String key : new String[]{"id", "code", "name", "price", "categoryId", "summary", "description", "image", "category"}) {
             item.put(key, request.getParameter(key));
         }
         try {
             request.setAttribute("choices", service ? dao.listServices() : dao.listSupplies());
+            if (!service) request.setAttribute("supplyCategories", SupplyCategory.values());
             if (service) {
                 request.setAttribute("serviceCategories", dao.listCategories());
                 String categoryId = request.getParameter("categoryId");

@@ -13,7 +13,7 @@ import java.util.List;
 
 public class CatalogDAO {
     private static final String SERVICE_COLUMNS = "sc.Service_ID, sc.Service_Code, sc.Service_Name, sc.Price, sc.Category_ID, category.Category_Name, sc.Summary, sc.Description, CASE WHEN sc.Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
-    private static final String SUPPLY_COLUMNS = "Supply_ID, Supply_Name, Category, Unit, Price, CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
+    private static final String SUPPLY_COLUMNS = "Supply_ID, Supply_Name, Category, Price, CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
 
     public List<CatalogService> listServices() throws Exception {
         List<CatalogService> items = new ArrayList<>();
@@ -115,21 +115,20 @@ public class CatalogDAO {
         }
     }
 
-    public int saveSupply(int id, String name, String category, String unit,
+    public int saveSupply(int id, String name, String category,
             BigDecimal price, byte[] imageData,
             String imageMimeType) throws Exception {
         boolean create = id == 0;
         String sql = create
-            ? "INSERT INTO Medical_Supply (Supply_Name, Category, Unit, Price, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?, ?)"
-            : "UPDATE Medical_Supply SET Supply_Name = ?, Category = ?, Unit = ?, Price = ?" +
+            ? "INSERT INTO Medical_Supply (Supply_Name, Category, Price, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?)"
+            : "UPDATE Medical_Supply SET Supply_Name = ?, Category = ?, Price = ?" +
               (imageData == null ? "" : ", Image_Data = ?, Image_Mime_Type = ?") + " WHERE Supply_ID = ?";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, name);
             statement.setString(2, category);
-            statement.setString(3, unit);
-            statement.setBigDecimal(4, price);
-            int column = 5;
+            statement.setBigDecimal(3, price);
+            int column = 4;
             if (create || imageData != null) {
                 statement.setBytes(column++, imageData);
                 statement.setString(column++, imageMimeType);
@@ -157,7 +156,6 @@ public class CatalogDAO {
         return new MedicalSupply(
                 result.getInt("Supply_ID"), result.getString("Supply_Name"),
                 result.getString("Category"),
-                result.getString("Unit"),
                 result.getBigDecimal("Price"), result.getBoolean("Has_Image"));
     }
 
