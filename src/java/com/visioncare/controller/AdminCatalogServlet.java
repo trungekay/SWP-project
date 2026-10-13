@@ -3,6 +3,7 @@ package com.visioncare.controller;
 import com.visioncare.dao.CatalogDAO;
 import com.visioncare.model.CatalogService;
 import com.visioncare.model.MedicalSupply;
+import com.visioncare.model.ServiceCategory;
 import com.visioncare.model.SupplyCategory;
 import com.visioncare.model.User;
 import jakarta.servlet.ServletException;
@@ -52,10 +53,7 @@ public class AdminCatalogServlet extends HttpServlet {
                 request.setAttribute("choices", choices);
                 if (!service) request.setAttribute("supplyCategories", SupplyCategory.values());
                 if (service) {
-                    request.setAttribute("serviceCategories", dao.listCategories());
-                    if (item instanceof CatalogService) {
-                        request.setAttribute("selectedCategoryId", ((CatalogService) item).getCategoryId());
-                    }
+                    request.setAttribute("serviceCategories", ServiceCategory.values());
                 }
                 request.setAttribute("item", item);
                 request.setAttribute("kind", service ? "service" : "supply");
@@ -65,7 +63,7 @@ public class AdminCatalogServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         } catch (Exception e) {
             log("Could not load admin catalog", e);
-            request.setAttribute("error", "Không tải được danh mục. Hãy kiểm tra kết nối và cấu trúc bảng Service_Catalog, Service_Category, Medical_Supply trong eye_clinic_db.");
+            request.setAttribute("error", "Không tải được danh mục. Hãy kiểm tra kết nối và cấu trúc bảng Service_Catalog, Medical_Supply trong eye_clinic_db.");
             request.getRequestDispatcher("/views/admin/catalog-error.jsp").forward(request, response);
         }
     }
@@ -99,16 +97,13 @@ public class AdminCatalogServlet extends HttpServlet {
                 String code = field(request, "code", 20, false);
                 String name = field(request, "name", 255, true);
                 BigDecimal price = price(request);
-                String categoryValue = field(request, "categoryId", 10, true);
-                int categoryId;
-                try { categoryId = Integer.parseInt(categoryValue); }
-                catch (NumberFormatException e) { throw new IllegalArgumentException("Nhóm dịch vụ không hợp lệ."); }
-                if (dao.listCategories().stream().noneMatch(category -> category.getId() == categoryId)) {
+                String category = field(request, "category", 100, true);
+                if (ServiceCategory.fromVietnameseName(category) == null) {
                     throw new IllegalArgumentException("Nhóm dịch vụ không hợp lệ.");
                 }
                 String summary = field(request, "summary", 500, false);
                 String description = field(request, "description", 4000, false);
-                savedId = dao.saveService(id, code, name, price, categoryId, summary,
+                savedId = dao.saveService(id, code, name, price, category, summary,
                         description, upload == null ? null : upload.getBytes(),
                         upload == null ? null : upload.getMimeType());
             } else {
@@ -136,22 +131,14 @@ public class AdminCatalogServlet extends HttpServlet {
     private void showFormWithSubmittedValues(HttpServletRequest request, HttpServletResponse response, boolean service)
             throws ServletException, IOException {
         Map<String, Object> item = new HashMap<>();
-        for (String key : new String[]{"id", "code", "name", "price", "categoryId", "summary", "description", "image", "category"}) {
+        for (String key : new String[]{"id", "code", "name", "price", "category", "summary", "description", "image"}) {
             item.put(key, request.getParameter(key));
         }
         try {
             request.setAttribute("choices", service ? dao.listServices() : dao.listSupplies());
             if (!service) request.setAttribute("supplyCategories", SupplyCategory.values());
             if (service) {
-                request.setAttribute("serviceCategories", dao.listCategories());
-                String categoryId = request.getParameter("categoryId");
-                if (categoryId != null && categoryId.matches("[0-9]+")) {
-                    try {
-                        request.setAttribute("selectedCategoryId", Integer.parseInt(categoryId));
-                    } catch (NumberFormatException ignored) {
-                        // Keep the placeholder when the submitted ID is out of range.
-                    }
-                }
+                request.setAttribute("serviceCategories", ServiceCategory.values());
             }
         } catch (Exception e) {
             log("Could not reload catalog choices", e);

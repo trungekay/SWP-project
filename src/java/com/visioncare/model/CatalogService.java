@@ -7,21 +7,19 @@ public class CatalogService {
     private final String code;
     private final String name;
     private final BigDecimal price;
-    private final int categoryId;
-    private final String categoryName;
+    private final String category;
     private final String summary;
     private final String description;
     private final boolean uploadedImage;
 
     public CatalogService(int id, String code, String name, BigDecimal price,
-            int categoryId, String categoryName, String summary, String description,
+            String category, String summary, String description,
             boolean uploadedImage) {
         this.id = id;
         this.code = code;
         this.name = name;
         this.price = price;
-        this.categoryId = categoryId;
-        this.categoryName = categoryName;
+        this.category = category;
         this.summary = summary;
         this.description = description;
         this.uploadedImage = uploadedImage;
@@ -31,8 +29,8 @@ public class CatalogService {
     public String getCode() { return code; }
     public String getName() { return name; }
     public BigDecimal getPrice() { return price; }
-    public int getCategoryId() { return categoryId; }
-    public String getCategoryName() { return categoryName; }
+    public String getCategory() { return category; }
+    public String getCategoryName() { return category; }
     public String getSummary() { return summary; }
     public String getDescription() { return description; }
     public boolean isUploadedImage() { return uploadedImage; }
@@ -71,10 +69,10 @@ public class CatalogService {
             if (n.contains("glaucoma") || n.contains("võng mạc") || n.contains("nhãn áp")) return "retina";
             if (n.contains("tổng quát")) return "general";
         }
-        return categoryName != null ? categoryName : "";
+        return category != null ? category : "";
     }
 
     public String getTag() {
-        return categoryName != null ? categoryName : "";
+        return category != null ? category : "";
     }
 }

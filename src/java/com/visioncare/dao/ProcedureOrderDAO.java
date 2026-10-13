@@ -25,7 +25,7 @@ public class ProcedureOrderDAO {
         "    po.Service_ID, " +
         "    po.Status, " +
         "    s.Service_Name, " +
-        "    s.Price AS Service_Price, " +
+        "    po.Actual_Price AS Service_Price, " +
         "    spec.Full_Name AS Specialist_Name, " +
         "    spec.Phone AS Specialist_Phone, " +
         "    r.Room_Name, " +
@@ -393,17 +393,18 @@ public class ProcedureOrderDAO {
      * Thêm chỉ định dịch vụ mới (hữu ích cho Bác sĩ khi khám hoặc để test dữ liệu)
      */
     public int createProcedureOrder(int recordId, int serviceId, Integer specialistEmployeeId, String status) throws Exception {
-        String sql = "INSERT INTO Procedure_Order (Record_ID, Service_ID, Specialist_Employee_ID, Status) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO Procedure_Order (Record_ID, Service_ID, Specialist_Employee_ID, Status, Actual_Price) " +
+                     "SELECT ?, sc.Service_ID, ?, ?, sc.Price FROM Service_Catalog sc WHERE sc.Service_ID = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, recordId);
-            ps.setInt(2, serviceId);
             if (specialistEmployeeId != null && specialistEmployeeId > 0) {
-                ps.setInt(3, specialistEmployeeId);
+                ps.setInt(2, specialistEmployeeId);
             } else {
-                ps.setNull(3, Types.INTEGER);
+                ps.setNull(2, Types.INTEGER);
             }
-            ps.setString(4, (status != null && !status.isEmpty()) ? status : "Pending");
+            ps.setString(3, (status != null && !status.isEmpty()) ? status : "Pending");
+            ps.setInt(4, serviceId);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {

@@ -62,13 +62,10 @@
             <div class="catalog-form-grid">
               <label>Mã dịch vụ<input name="code" maxlength="20" value="${fn:escapeXml(item.code)}" placeholder="VD: NK-01"></label>
               <label><span class="catalog-label-title catalog-service-label">Nhóm dịch vụ <em>*</em></span>
-                <select name="categoryId" required>
-                  <c:if test="${empty selectedCategoryId}"><option value="" selected disabled>Chọn nhóm dịch vụ</option></c:if>
+                <select name="category" required>
+                  <option value="" disabled ${empty item.category ? 'selected' : ''}>Chọn nhóm dịch vụ</option>
                   <c:forEach items="${serviceCategories}" var="category">
-                    <c:choose>
-                      <c:when test="${selectedCategoryId eq category.id}"><option value="${category.id}" selected="selected"><c:out value="${category.name}" /></option></c:when>
-                      <c:otherwise><option value="${category.id}"><c:out value="${category.name}" /></option></c:otherwise>
-                    </c:choose>
+                    <option value="${fn:escapeXml(category.vietnameseName)}" ${item.category eq category.vietnameseName ? 'selected' : ''}><c:out value="${category.vietnameseName}" /></option>
                   </c:forEach>
                 </select>
               </label>
