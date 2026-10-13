@@ -14,7 +14,7 @@ public class HistoryDAO {
     // For medical-history.jsp (Lịch sử khám)
     public List<Map<String, Object>> getMedicalRecords(int accountId) throws Exception {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT a.Appointment_ID, m.Created_At AS Date, e.Full_Name AS DoctorName " +
+        String sql = "SELECT a.Appointment_ID, a.Status, m.Created_At AS Date, e.Full_Name AS DoctorName " +
                      "FROM Medical_Record m " +
                      "JOIN Appointment a ON m.Appointment_ID = a.Appointment_ID " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
@@ -30,6 +30,7 @@ public class HistoryDAO {
                     map.put("doctorName", rs.getString("DoctorName"));
                     map.put("id", rs.getInt("Appointment_ID"));
                     map.put("serviceName", "Khám chuyên khoa");
+                    map.put("status", rs.getString("Status"));
                     list.add(map);
                 }
             }

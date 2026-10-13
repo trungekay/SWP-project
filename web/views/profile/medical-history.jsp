@@ -248,7 +248,22 @@
                             <td class="py-3">${record.date}</td>
                             <td class="py-3">BS. ${record.doctorName}</td>
                             <td class="py-3">${record.serviceName}</td>
-                            <td class="py-3"><span class="badge-success-custom">Hoàn thành</span></td>
+                            <td class="py-3">
+                              <c:choose>
+                                <c:when test="${record.status == 'Completed'}">
+                                  <span class="badge-success-custom">Đã hoàn thành</span>
+                                </c:when>
+                                <c:when test="${record.status == 'Confirmed'}">
+                                  <span class="badge-status" style="background-color: #e0f2fe; color: #0369a1; padding: 6px 12px; border-radius: 20px; font-weight: 500; font-size: 12px;">Chưa hoàn thành (Chờ khám)</span>
+                                </c:when>
+                                <c:when test="${record.status == 'In_Progress'}">
+                                  <span class="badge-status" style="background-color: #f3e8ff; color: #7e22ce; padding: 6px 12px; border-radius: 20px; font-weight: 500; font-size: 12px;">Đang khám</span>
+                                </c:when>
+                                <c:otherwise>
+                                  <span class="badge-status" style="background-color: #fef3c7; color: #b45309; padding: 6px 12px; border-radius: 20px; font-weight: 500; font-size: 12px;">Chưa hoàn thành</span>
+                                </c:otherwise>
+                              </c:choose>
+                            </td>
                             <td class="py-3">
                               <a href="${pageContext.request.contextPath}/profile/medical-record?id=${record.id}" class="btn btn-sm btn-outline-primary" style="color: #0d9488; border-color: #0d9488;">
                                 <i class="bi bi-eye"></i> Xem

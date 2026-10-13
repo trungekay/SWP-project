@@ -294,13 +294,22 @@
                             <td class="py-3">
                               <c:choose>
                                 <c:when test="${appt.status == 'Pending'}">
-                                  <span class="badge-status" style="background: #fef3c7; color: #b45309;">Chờ xác nhận</span>
+                                  <span class="badge-status" style="background: #fef3c7; color: #b45309;">Chờ tiếp đón</span>
+                                </c:when>
+                                <c:when test="${appt.status == 'Confirmed'}">
+                                  <span class="badge-status" style="background: #e0f2fe; color: #0369a1;">Chưa hoàn thành (Chờ khám)</span>
+                                </c:when>
+                                <c:when test="${appt.status == 'In_Progress'}">
+                                  <span class="badge-status" style="background: #f3e8ff; color: #7e22ce;">Đang khám</span>
                                 </c:when>
                                 <c:when test="${appt.status == 'Completed'}">
-                                  <span class="badge-status status-active">Hoàn thành</span>
+                                  <span class="badge-status status-active">Đã hoàn thành</span>
+                                </c:when>
+                                <c:when test="${appt.status == 'Canceled'}">
+                                  <span class="badge-status" style="background: #fee2e2; color: #b91c1c;">Đã hủy / Quá hạn</span>
                                 </c:when>
                                 <c:otherwise>
-                                  <span class="badge-status" style="background: #fee2e2; color: #b91c1c;">${appt.status}</span>
+                                  <span class="badge-status" style="background: #f1f5f9; color: #475569;">${appt.status}</span>
                                 </c:otherwise>
                               </c:choose>
                             </td>
