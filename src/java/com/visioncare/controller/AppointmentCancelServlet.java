@@ -31,22 +31,36 @@ public class AppointmentCancelServlet extends HttpServlet {
 
         String idParam = request.getParameter("appointmentId");
         String reason = request.getParameter("reason");
-        String requestRefund = request.getParameter("requestRefund");
 
         if (idParam != null && !idParam.trim().isEmpty()) {
             try {
-                int appointmentId = Integer.parseInt(idParam.trim().replace("#APT-", ""));
-                boolean requested = appointmentDAO.requestCancelAppointment(appointmentId, currentUser.getId(), reason);
-                if (requested) {
-                    invoiceDAO.createRefundRequestForAppointment(
-                        appointmentId, 
-                        currentUser.getId(), 
-                        250000, 
-                        "Hủy lịch hẹn #" + appointmentId + ": " + (reason != null && !reason.trim().isEmpty() ? reason : "Bận việc đột xuất")
-                    );
-                    session.setAttribute("successMessage", "Yêu cầu hủy lịch hẹn #" + appointmentId + " và hoàn tiền cọc đã được gửi tới nhân viên tiếp nhận. Trạng thái lịch chuyển sang 'Chờ duyệt', sau khi nhân viên duyệt thì lịch hẹn mới được hủy!");
+                int appointmentId = Integer.parseInt(idParam.trim().replace("#APT-", "").replace("APT-", "").replace("#", ""));
+                com.visioncare.model.Appointment appt = appointmentDAO.getAppointmentDetailById(appointmentId);
+
+                if (appt != null && "Pending".equalsIgnoreCase(appt.getStatus()) && !"Paid".equalsIgnoreCase(appt.getInvoiceStatus()) && !"Partial_Paid".equalsIgnoreCase(appt.getInvoiceStatus())) {
+                    // Lịch chưa thanh toán cọc -> Bệnh nhân có thể hủy trực tiếp và giải phóng slot ngay
+                    boolean cancelled = appointmentDAO.cancelAppointment(appointmentId, currentUser.getId(), reason);
+                    if (cancelled) {
+                        session.setAttribute("successMessage", "Đã hủy lịch hẹn #" + appointmentId + " thành công.");
+                    } else {
+                        session.setAttribute("errorMessage", "Không thể hủy lịch hẹn #" + appointmentId + ".");
+                    }
                 } else {
-                    session.setAttribute("errorMessage", "Không thể gửi yêu cầu hủy lịch hẹn #" + appointmentId + " (Lịch không ở trạng thái 'Đã xác nhận' hoặc không thuộc tài khoản của bạn).");
+                    // Lịch đã xác nhận (đã thanh toán cọc) -> Gửi yêu cầu duyệt hủy và hoàn tiền cọc
+                    boolean requested = appointmentDAO.requestCancelAppointment(appointmentId, currentUser.getId(), reason);
+                    if (requested) {
+                        long refundFee = (appt != null && appt.getFee() > 0) ? appt.getFee() : 200000;
+                        invoiceDAO.createRefundRequestForAppointment(
+                            appointmentId, 
+                            currentUser.getId(), 
+                            refundFee, 
+                            "Hủy lịch hẹn #" + appointmentId + ": " + (reason != null && !reason.trim().isEmpty() ? reason : "Bận việc đột xuất")
+                        );
+                        String feeFormatted = String.format("%,d ₫", refundFee);
+                        session.setAttribute("successMessage", "Yêu cầu hủy lịch hẹn #" + appointmentId + " và hoàn tiền cọc (" + feeFormatted + ") đã được gửi tới nhân viên tiếp nhận. Trạng thái lịch chuyển sang 'Chờ duyệt', sau khi nhân viên duyệt thì lịch hẹn sẽ được hủy!");
+                    } else {
+                        session.setAttribute("errorMessage", "Không thể gửi yêu cầu hủy lịch hẹn #" + appointmentId + " (Lịch không ở trạng thái 'Đã xác nhận' hoặc không thuộc tài khoản của bạn).");
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();

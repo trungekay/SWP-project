@@ -342,27 +342,43 @@
                                   <td class="py-3">${appt.appointmentDate}<br><small
                                       class="text-muted">${appt.timeSlot}</small></td>
                                   <td class="py-3">BS. ${appt.doctorName}</td>
-                                  <td class="py-3">Khám chuyên khoa</td>
+                                  <td class="py-3">
+                                    <c:choose>
+                                      <c:when test="${not empty appt.serviceName}">
+                                        <span class="fw-semibold text-dark">${appt.serviceName}</span>
+                                      </c:when>
+                                      <c:otherwise>Khám chuyên khoa</c:otherwise>
+                                    </c:choose>
+                                  </td>
                                   <td class="py-3">
                                     <c:choose>
                                       <c:when test="${appt.status == 'Pending'}">
-                                        <span class="badge-status" style="background: #fef3c7; color: #b45309;"><i
-                                            class="bi bi-clock-history me-1"></i>Chờ duyệt hủy</span>
+                                        <c:choose>
+                                          <c:when test="${appt.hasRefundRequest}">
+                                            <span class="badge-status" style="background: #fef3c7; color: #b45309;"><i
+                                                class="bi bi-clock-history me-1"></i>Chờ duyệt hủy</span>
+                                          </c:when>
+                                          <c:otherwise>
+                                            <span class="badge-status" style="background: #fff7ed; color: #c2410c;"><i
+                                                class="bi bi-credit-card me-1"></i>Chờ thanh toán</span>
+                                          </c:otherwise>
+                                        </c:choose>
                                       </c:when>
                                       <c:when test="${appt.status == 'Confirmed'}">
-                                        <span class="badge-status" style="background: #e0f2fe; color: #0369a1;">Đã xác
-                                          nhận</span>
+                                        <span class="badge-status" style="background: #e0f2fe; color: #0369a1;"><i
+                                            class="bi bi-check-circle me-1"></i>Đã xác nhận</span>
                                       </c:when>
                                       <c:when test="${appt.status == 'In_Progress'}">
-                                        <span class="badge-status" style="background: #f3e8ff; color: #6b21a8;">Đang
-                                          khám</span>
+                                        <span class="badge-status" style="background: #f3e8ff; color: #6b21a8;"><i
+                                            class="bi bi-activity me-1"></i>Đang khám</span>
                                       </c:when>
                                       <c:when test="${appt.status == 'Completed'}">
-                                        <span class="badge-status status-active">Hoàn thành</span>
+                                        <span class="badge-status status-active"><i
+                                            class="bi bi-check-all me-1"></i>Hoàn thành</span>
                                       </c:when>
                                       <c:when test="${appt.status == 'Canceled'}">
-                                        <span class="badge-status" style="background: #fee2e2; color: #b91c1c;">Đã
-                                          hủy</span>
+                                        <span class="badge-status" style="background: #fee2e2; color: #b91c1c;"><i
+                                            class="bi bi-x-circle me-1"></i>Đã hủy</span>
                                       </c:when>
                                       <c:otherwise>
                                         <span class="badge-status text-muted">${appt.status}</span>
@@ -373,15 +389,27 @@
                                     <c:choose>
                                       <c:when test="${appt.status == 'Confirmed'}">
                                         <button type="button" class="btn btn-sm btn-outline-danger"
-                                          onclick="openCancelModal('${appt.id}', '${appt.appointmentDate} (${appt.timeSlot})')">
+                                          onclick="openCancelModal('${appt.id}', '${appt.appointmentDate} (${appt.timeSlot})', '${appt.fee}')">
                                           <i class="bi bi-x-circle me-1"></i>Hủy lịch hẹn
                                         </button>
                                       </c:when>
-                                      <c:when test="${appt.status == 'Pending'}">
+                                      <c:when test="${appt.status == 'Pending' and appt.hasRefundRequest}">
                                         <span
                                           class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">
                                           <i class="bi bi-hourglass-split me-1"></i>Chờ nhân viên duyệt
                                         </span>
+                                      </c:when>
+                                      <c:when test="${appt.status == 'Pending'}">
+                                        <div class="d-flex justify-content-center gap-2">
+                                          <a href="${pageContext.request.contextPath}/book-appointment?step=payment&id=${appt.id}"
+                                            class="btn btn-sm btn-primary" style="background: #0d9488; border-color: #0d9488;">
+                                            <i class="bi bi-qr-code me-1"></i>Thanh toán
+                                          </a>
+                                          <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            onclick="openDirectCancelModal('${appt.id}', '${appt.appointmentDate} (${appt.timeSlot})')">
+                                            <i class="bi bi-x me-1"></i>Hủy
+                                          </button>
+                                        </div>
                                       </c:when>
                                       <c:otherwise>
                                         <span class="text-muted small">-</span>
@@ -408,7 +436,7 @@
           </div>
         </section>
 
-        <!-- Modal Hủy Lịch Hẹn -->
+        <!-- Modal Hủy Lịch Hẹn Đã Xác Nhận (Hoàn cọc) -->
         <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border-radius: 12px; border: none; padding: 10px;">
@@ -429,12 +457,12 @@
                   </div>
                   <div class="p-3 bg-light rounded-3 mb-3 border">
                     <div class="d-flex align-items-center text-teal fw-bold mb-1" style="color: #0d9488;">
-                      <i class="bi bi-info-circle me-2"></i>Quy trình xử lý hoàn cọc (250.000 đ)
+                      <i class="bi bi-info-circle me-2"></i>Quy trình xử lý hoàn tiền cọc (<span id="cancelFeeDisplay">200.000 ₫</span>)
                     </div>
                     <div class="text-muted small" style="font-size: 0.825rem; line-height: 1.5;">
                       Sau khi bạn gửi, trạng thái lịch hẹn sẽ chuyển sang <strong>Chờ duyệt hủy</strong> và được gửi tới
                       Nhân viên (Staff). Khi nhân viên đồng ý, lịch hẹn sẽ được hủy chính thức và tiền cọc sẽ được hoàn
-                      trả.
+                      trả theo quy định phòng khám.
                     </div>
                   </div>
                   <div class="d-flex justify-content-end gap-2 mt-4">
@@ -447,12 +475,47 @@
           </div>
         </div>
 
+        <!-- Modal Hủy Lịch Hẹn Chưa Thanh Toán -->
+        <div class="modal fade" id="directCancelModal" tabindex="-1" aria-labelledby="directCancelModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 12px; border: none; padding: 10px;">
+              <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="directCancelModalLabel" style="color: #64748b;"><i
+                    class="bi bi-trash3 me-2"></i>Hủy lịch hẹn chưa thanh toán</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body pt-3 pb-4">
+                <p class="text-muted mb-3">Bạn có chắc chắn muốn hủy lịch khám chưa thanh toán <strong id="directCancelApptLabel"
+                    class="text-dark">#APT-00000</strong>? Khung giờ sẽ được giải phóng cho bệnh nhân khác.</p>
+                <form action="${pageContext.request.contextPath}/appointment/cancel" method="POST">
+                  <input type="hidden" name="appointmentId" id="directCancelAppointmentId" value="">
+                  <input type="hidden" name="reason" value="Bệnh nhân hủy lịch chưa thanh toán">
+                  <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Không hủy</button>
+                    <button type="submit" class="btn btn-secondary">Xác nhận hủy</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <script>
-          function openCancelModal(id, timeText) {
+          function openCancelModal(id, timeText, fee) {
             document.getElementById('cancelAppointmentId').value = id;
             document.getElementById('cancelApptLabel').innerText = '#APT-' + id + ' (' + timeText + ')';
+            const feeNum = parseInt(fee) || 200000;
+            const feeEl = document.getElementById('cancelFeeDisplay');
+            if (feeEl) feeEl.innerText = feeNum.toLocaleString('vi-VN') + ' ₫';
             const cancelModal = new bootstrap.Modal(document.getElementById('cancelModal'));
             cancelModal.show();
+          }
+
+          function openDirectCancelModal(id, timeText) {
+            document.getElementById('directCancelAppointmentId').value = id;
+            document.getElementById('directCancelApptLabel').innerText = '#APT-' + id + ' (' + timeText + ')';
+            const directModal = new bootstrap.Modal(document.getElementById('directCancelModal'));
+            directModal.show();
           }
         </script>
 

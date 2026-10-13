@@ -586,13 +586,20 @@ public class InvoiceDAO {
      */
     public boolean createRefundRequestForAppointment(int appointmentId, int accountId, long amount, String reason) {
         int invoiceId = 0;
-        String sql = "SELECT Invoice_ID FROM Master_Invoice WHERE Appointment_ID = ?";
+        int patientId = 0;
+        long depositAmount = 0;
+        String sql = "SELECT mi.Invoice_ID, mi.Deposit_Amount, mi.Total_Amount, a.Patient_ID " +
+                     "FROM Master_Invoice mi " +
+                     "JOIN Appointment a ON mi.Appointment_ID = a.Appointment_ID " +
+                     "WHERE a.Appointment_ID = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, appointmentId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     invoiceId = rs.getInt("Invoice_ID");
+                    depositAmount = rs.getLong("Deposit_Amount");
+                    patientId = rs.getInt("Patient_ID");
                 }
             }
         } catch (Exception e) {
@@ -600,11 +607,13 @@ public class InvoiceDAO {
         }
 
         if (invoiceId <= 0) {
-            String sqlCreateInv = "INSERT INTO Master_Invoice (Appointment_ID, Total_Amount, Balance_Due, Status) VALUES (?, ?, 0, 'Pending')";
+            String sqlCreateInv = "INSERT INTO Master_Invoice (Appointment_ID, Total_Amount, Deposit_Amount, Balance_Due, Status, Create_At) VALUES (?, ?, ?, 0, 'Paid', SYSUTCDATETIME())";
             try (Connection conn = DBContext.getConnection();
                  PreparedStatement ps = conn.prepareStatement(sqlCreateInv, Statement.RETURN_GENERATED_KEYS)) {
+                long defAmt = amount > 0 ? amount : 200000;
                 ps.setInt(1, appointmentId);
-                ps.setLong(2, amount > 0 ? amount : 250000);
+                ps.setLong(2, defAmt);
+                ps.setLong(3, defAmt);
                 ps.executeUpdate();
                 try (ResultSet keys = ps.getGeneratedKeys()) {
                     if (keys.next()) invoiceId = keys.getInt(1);
@@ -614,6 +623,41 @@ public class InvoiceDAO {
             }
         }
 
-        return createRefundRequest(invoiceId, accountId, amount, reason);
+        long refundAmount = (amount > 0) ? amount : (depositAmount > 0 ? depositAmount : 200000);
+
+        if (patientId <= 0) {
+            String findPatient = "SELECT Patient_ID FROM Patient WHERE Account_ID = ?";
+            try (Connection conn = DBContext.getConnection();
+                 PreparedStatement psP = conn.prepareStatement(findPatient)) {
+                psP.setInt(1, accountId);
+                try (ResultSet rsP = psP.executeQuery()) {
+                    if (rsP.next()) patientId = rsP.getInt(1);
+                }
+            } catch (Exception ignored) {}
+        }
+        if (patientId <= 0) return false;
+
+        int staffId = 1;
+        String findStaff = "SELECT TOP 1 Employee_ID FROM Employee_Profile";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement psE = conn.prepareStatement(findStaff);
+             ResultSet rsE = psE.executeQuery()) {
+            if (rsE.next()) staffId = rsE.getInt(1);
+        } catch (Exception ignored) {}
+
+        String insertSql = "INSERT INTO Refund_Request (Invoice_ID, created_by_employee_id, Patient_ID, Refund_Amount, Reason, Status, Created_At, Update_At) " +
+                           "VALUES (?, ?, ?, ?, ?, 'Pending', SYSUTCDATETIME(), SYSUTCDATETIME())";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement psIns = conn.prepareStatement(insertSql)) {
+            psIns.setInt(1, invoiceId);
+            psIns.setInt(2, staffId);
+            psIns.setInt(3, patientId);
+            psIns.setLong(4, refundAmount);
+            psIns.setString(5, reason);
+            return psIns.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }

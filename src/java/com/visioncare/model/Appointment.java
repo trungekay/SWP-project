@@ -24,6 +24,7 @@ public class Appointment {
     private String slotName;
     private String invoiceStatus;
     private int invoiceId;
+    private boolean hasRefundRequest;
 
     public Appointment() {
     }
@@ -115,8 +116,6 @@ public class Appointment {
     public void setUserId(int userId) {
         this.userId = userId;
     }
-    private int invoiceId;
-
     public int getServiceId() {
         return serviceId;
     }
@@ -164,5 +163,26 @@ public class Appointment {
     }
     public void setInvoiceId(int invoiceId) {
         this.invoiceId = invoiceId;
+    }
+
+    public long getTotalAmount() {
+        return totalAmount;
+    }
+    public void setTotalAmount(long totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
+    public long getBalanceDue() {
+        return balanceDue;
+    }
+    public void setBalanceDue(long balanceDue) {
+        this.balanceDue = balanceDue;
+    }
+
+    public boolean isHasRefundRequest() {
+        return hasRefundRequest;
+    }
+    public void setHasRefundRequest(boolean hasRefundRequest) {
+        this.hasRefundRequest = hasRefundRequest;
     }
 }
