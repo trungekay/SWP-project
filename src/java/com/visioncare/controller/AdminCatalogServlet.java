@@ -190,9 +190,9 @@ public class AdminCatalogServlet extends HttpServlet {
     }
 
     private BigDecimal price(HttpServletRequest request) {
-        BigDecimal value = new BigDecimal(field(request, "price", 18, true));
-        if (value.signum() < 0 || value.scale() > 0 || value.precision() > 18) {
-            throw new IllegalArgumentException("Đơn giá phải là số nguyên không âm, tối đa 18 chữ số.");
+        BigDecimal value = new BigDecimal(field(request, "price", 12, true));
+        if (value.signum() < 0 || value.scale() > 0 || value.precision() > 12) {
+            throw new IllegalArgumentException("Đơn giá phải là số nguyên không âm, tối đa 12 chữ số.");
         }
         return value;
     }
