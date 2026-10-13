@@ -60,17 +60,33 @@
                 <div class="text-center">
                   <div class="logo-icon"><i class="bi bi-chat-dots"></i></div>
                   <h3 class="mb-2 fw-bold" style="color: #1c355e;">Xác minh mã OTP</h3>
-                  <p class="text-muted mb-4 small">Vui lòng nhập mã OTP gồm 6 chữ số vừa được gửi đến số điện thoại /
-                    email của bạn.</p>
+                  <p class="text-muted mb-4 small">Vui lòng nhập mã OTP gồm 6 chữ số vừa được gửi đến 
+                    <c:choose>
+                      <c:when test="${not empty sessionScope.resetEmail}">
+                        email <strong><c:out value="${sessionScope.resetEmail}"/></strong>.
+                      </c:when>
+                      <c:otherwise>
+                        số điện thoại / email của bạn.
+                      </c:otherwise>
+                    </c:choose>
+                  </p>
                 </div>
 
+                <%-- Thông báo thành công --%>
+                <c:if test="${not empty successMessage}">
+                  <div class="alert alert-success alert-dismissible fade show small" role="alert">
+                    <i class="bi bi-check-circle me-2"></i>${successMessage}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                  </div>
+                </c:if>
+
                 <%-- Thông báo lỗi --%>
-                  <c:if test="${not empty error}">
-                    <div class="alert alert-danger alert-dismissible fade show small" role="alert">
-                      <i class="bi bi-exclamation-triangle me-2"></i>${error}
-                      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                  </c:if>
+                <c:if test="${not empty error}">
+                  <div class="alert alert-danger alert-dismissible fade show small" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>${error}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                  </div>
+                </c:if>
 
                   <form method="post" action="${pageContext.request.contextPath}/forgot-password/verify" id="otpForm">
                     <input type="hidden" name="otp1" id="otp1">
@@ -102,7 +118,7 @@
 
                   <div class="text-center mt-3">
                     <p class="small text-muted mb-3" id="resendContainer">Chưa nhận được mã? <span
-                        style="color: #6c757d; font-weight: 500;" id="resendTimer">Gửi lại (59s)</span></p>
+                        style="color: #6c757d; font-weight: 500;" id="resendTimer">Gửi lại (120s)</span></p>
                     <a href="${pageContext.request.contextPath}/login" class="text-decoration-none small"
                       style="color: #0d9488; font-weight: 500;"><i class="bi bi-arrow-left me-1"></i>Quay lại Đăng
                       nhập</a>
@@ -168,7 +184,7 @@
           });
 
           // Timer logic
-          let timeLeft = 119;
+          let timeLeft = 120;
           const timerElement = document.getElementById("resendTimer");
           const resendContainer = document.getElementById("resendContainer");
 
@@ -176,7 +192,7 @@
             timeLeft--;
             if (timeLeft <= 0) {
               clearInterval(countdownInterval);
-              resendContainer.innerHTML = 'Chưa nhận được mã? <a href="${pageContext.request.contextPath}/forgot-password" style="color: #0d9488; font-weight: 500;" class="text-decoration-none">Nhập lại Email</a>';
+              resendContainer.innerHTML = 'Chưa nhận được mã? <a href="${pageContext.request.contextPath}/resend-otp?type=reset" onclick="this.innerHTML=\'Đang gửi lại...\'; this.style.pointerEvents=\'none\';" style="color: #0d9488; font-weight: 500;" class="text-decoration-none">Gửi lại mã</a> &bull; <a href="${pageContext.request.contextPath}/forgot-password" style="color: #64748b;" class="text-decoration-none">Nhập lại Email</a>';
             } else {
               timerElement.innerText = "Gửi lại (" + timeLeft + "s)";
             }
