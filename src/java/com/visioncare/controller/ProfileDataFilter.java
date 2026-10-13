@@ -2,6 +2,7 @@ package com.visioncare.controller;
 
 import com.visioncare.dao.AppointmentDAO;
 import com.visioncare.dao.HistoryDAO;
+import com.visioncare.dao.InvoiceDAO;
 import com.visioncare.model.Appointment;
 import com.visioncare.model.User;
 import jakarta.servlet.*;
@@ -17,6 +18,7 @@ public class ProfileDataFilter implements Filter {
 
     private AppointmentDAO appointmentDAO = new AppointmentDAO();
     private HistoryDAO historyDAO = new HistoryDAO();
+    private InvoiceDAO invoiceDAO = new InvoiceDAO();
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -26,6 +28,15 @@ public class ProfileDataFilter implements Filter {
         HttpSession session = req.getSession();
         User user = (User) session.getAttribute("user");
         
+        if (session.getAttribute("successMessage") != null) {
+            req.setAttribute("successMessage", session.getAttribute("successMessage"));
+            session.removeAttribute("successMessage");
+        }
+        if (session.getAttribute("errorMessage") != null) {
+            req.setAttribute("errorMessage", session.getAttribute("errorMessage"));
+            session.removeAttribute("errorMessage");
+        }
+
         if (user != null) {
             String path = req.getRequestURI();
             try {
@@ -37,6 +48,7 @@ public class ProfileDataFilter implements Filter {
                     req.setAttribute("invoices", historyDAO.getInvoices(user.getId()));
                 } else if (path.endsWith("refund-request.jsp")) {
                     req.setAttribute("refunds", historyDAO.getRefunds(user.getId()));
+                    req.setAttribute("paidInvoices", invoiceDAO.getPaidInvoicesForPatient(user.getId()));
                 }
             } catch (Exception e) {
                 e.printStackTrace();

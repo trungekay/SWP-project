@@ -26,20 +26,25 @@ CREATE TABLE Account (
     FOREIGN KEY (Role_ID) REFERENCES Role(Role_ID)
 );
 
+CREATE TABLE Service_Category (
+    Category_ID   INT NOT NULL PRIMARY KEY,
+    Category_Name NVARCHAR(100) NOT NULL UNIQUE
+);
+
 CREATE TABLE Service_Catalog (
     Service_ID      INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     Created_By      INT NULL,
     Service_Code    VARCHAR(20) NULL,
     Service_Name    NVARCHAR(255) NOT NULL,
     Price           DECIMAL(18,0) NOT NULL,
-    Specialty_Code  VARCHAR(30) NULL,
-    Tag             NVARCHAR(100) NULL,
+    Category_ID     INT NOT NULL,
     Summary         NVARCHAR(500) NULL,
     Description     NVARCHAR(MAX) NULL,
     Image_Path      VARCHAR(255) NULL,
     Image_Data      VARBINARY(MAX) NULL,
     Image_Mime_Type VARCHAR(50) NULL,
     FOREIGN KEY (Created_By) REFERENCES Account(Account_ID),
+    CONSTRAINT FK_Service_Catalog_Category FOREIGN KEY (Category_ID) REFERENCES Service_Category(Category_ID),
     CONSTRAINT CHK_Service_Catalog_Price CHECK (Price >= 0)
 );
 CREATE UNIQUE INDEX UX_Service_Catalog_Code ON Service_Catalog(Service_Code)
@@ -49,13 +54,10 @@ CREATE TABLE Medical_Supply (
     Supply_ID    INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     Supply_Name  NVARCHAR(255) NOT NULL,
     Category     NVARCHAR(100) NOT NULL,
-    Batch_Code   VARCHAR(50) NULL,
     Unit         NVARCHAR(30) NOT NULL,
-    Quantity     INT NOT NULL DEFAULT (0),
     Price        DECIMAL(18,0) NOT NULL,
     Image_Data   VARBINARY(MAX) NULL,
     Image_Mime_Type VARCHAR(50) NULL,
-    CONSTRAINT CHK_Medical_Supply_Quantity CHECK (Quantity >= 0),
     CONSTRAINT CHK_Medical_Supply_Price CHECK (Price >= 0)
 );
 
@@ -66,13 +68,15 @@ CREATE TABLE Room (
 
 CREATE TABLE Patient (
     Patient_ID  INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    Account_ID  INT NULL UNIQUE,
+    Account_ID  INT NULL,
     Full_Name   NVARCHAR(150) NOT NULL,
     Phone       NVARCHAR(20)  NOT NULL UNIQUE,
     DOB         DATE NULL,
     Address     NVARCHAR(255) NULL,
     FOREIGN KEY (Account_ID) REFERENCES Account(Account_ID)
 );
+CREATE UNIQUE NONCLUSTERED INDEX UX_Patient_Account_ID ON Patient(Account_ID)
+    WHERE Account_ID IS NOT NULL;
 
 CREATE TABLE Employee_Profile (
     Employee_ID     INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
@@ -279,11 +283,24 @@ INSERT INTO Account (Role_ID, Email, Password, Auth_Provider, Account_Status) VA
 (4, N'specialist.huy@eyeclinic.com', N'123', N'Local', N'Active'),
 (4, N'specialist.c@eyeclinic.com',   N'123', N'Local', N'Active'),
 (5, N'staff.lan@eyeclinic.com',      N'123', N'Local', N'Active'),
-(6, N'patient.an@gmail.com',         N'123', N'Local', N'Active');
+(6, N'patient.an@gmail.com',         N'123', N'Local', N'Active'),
+(6, N'patient.linh@gmail.com',       N'123', N'Local', N'Active'),
+(6, N'patient.hoang@gmail.com',      N'123', N'Local', N'Active'),
+(6, N'patient.mai@gmail.com',        N'123', N'Local', N'Active'),
+(6, N'patient.duc@gmail.com',        N'123', N'Local', N'Active');
 
 INSERT INTO Patient (Account_ID, Full_Name, Phone, DOB, Address) VALUES
-(13,   N'Nguyễn Văn An',  N'0901234567', '1995-05-15', N'123 Lê Lợi, Q.1, TP.HCM'),
-(NULL, N'Trần Thị Bình',  N'0918765432', '1988-10-20', N'456 Nguyễn Huệ, Q.1, TP.HCM');
+(13,   N'Nguyễn Văn An',       N'0901234567', '1995-05-15', N'123 Lê Lợi, Q.1, TP.HCM'),
+(NULL, N'Trần Thị Bình',       N'0918765432', '1988-10-20', N'456 Nguyễn Huệ, Q.1, TP.HCM'),
+(14,   N'Đặng Thùy Linh',      N'0933112233', '1998-08-12', N'78 Nguyễn Trãi, Q.5, TP.HCM'),
+(15,   N'Hoàng Minh Tuấn',     N'0977889900', '1985-03-24', N'154 Hai Bà Trưng, Q.3, TP.HCM'),
+(16,   N'Lê Thị Ngọc Mai',     N'0966554433', '2002-11-05', N'45 Xô Viết Nghệ Tĩnh, Bình Thạnh, TP.HCM'),
+(17,   N'Vũ Trọng Đức',        N'0912334455', '1970-07-19', N'210 Điện Biên Phủ, Q.3, TP.HCM'),
+(NULL, N'Bùi Quốc Anh (Bé)',   N'0988776655', '2015-09-10', N'12 Hoàng Diệu, Q.4, TP.HCM'),
+(NULL, N'Phạm Thanh Thảo',     N'0909112244', '1992-06-30', N'89 Cách Mạng Tháng 8, Q.10, TP.HCM'),
+(NULL, N'Ngô Đình Cường',      N'0944556677', '1963-04-18', N'33 Nam Kỳ Khởi Nghĩa, Q.1, TP.HCM'),
+(NULL, N'Đỗ Bảo Châu (Bé)',    N'0938445566', '2017-02-14', N'66 Lê Văn Sỹ, Phú Nhuận, TP.HCM'),
+(NULL, N'Nguyễn Hữu Nghĩa',    N'0919223344', '1990-12-08', N'102 Pasteur, Q.1, TP.HCM');
 
 INSERT INTO Employee_Profile (Account_ID, Room_ID, Full_Name, Phone, Specialty, License_Number, Biography) VALUES
 (1,  NULL, N'Quản trị viên Hệ thống',     NULL, N'Quản trị hệ thống',     NULL,            NULL),
@@ -302,11 +319,22 @@ INSERT INTO Employee_Profile (Account_ID, Room_ID, Full_Name, Phone, Specialty, 
 INSERT INTO Work_Schedule
     (Doctor_Employee_ID, Specialist_Employee_ID, Work_Date, Slot, Start_Time, End_Time, Status)
 VALUES
-(3,    NULL, '2026-04-01', N'Slot 1', '08:00:00', '08:30:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 2', '08:30:00', '09:00:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 3', '09:00:00', '09:30:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 4', '09:30:00', '10:00:00', N'Available'),
-(NULL, 9,    '2026-04-01', N'Slot 1', '08:00:00', '08:30:00', N'Available');
+(3,    NULL, '2026-04-01', N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(3,    NULL, '2026-04-01', N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(3,    NULL, '2026-04-01', N'Slot 3',  '09:00:00', '09:30:00', N'Available'),
+(3,    NULL, '2026-04-01', N'Slot 4',  '09:30:00', '10:00:00', N'Available'),
+(3,    NULL, '2026-04-01', N'Slot 5',  '10:00:00', '10:30:00', N'Available'),
+(3,    NULL, '2026-04-01', N'Slot 6',  '10:30:00', '11:00:00', N'Available'),
+(3,    NULL, '2026-04-01', N'Slot 7',  '11:00:00', '11:30:00', N'Available'),
+(3,    NULL, '2026-04-01', N'Slot 8',  '13:30:00', '14:00:00', N'Available'),
+(3,    NULL, '2026-04-01', N'Slot 9',  '14:00:00', '14:30:00', N'Available'),
+(3,    NULL, '2026-04-01', N'Slot 10', '14:30:00', '15:00:00', N'Available'),
+(3,    NULL, '2026-04-01', N'Slot 11', '15:00:00', '15:30:00', N'Available'),
+(3,    NULL, '2026-04-01', N'Slot 12', '15:30:00', '16:00:00', N'Available'),
+(3,    NULL, '2026-04-01', N'Slot 13', '16:00:00', '16:30:00', N'Available'),
+(3,    NULL, '2026-04-01', N'Slot 14', '16:30:00', '17:00:00', N'Available'),
+(3,    NULL, '2026-04-01', N'Slot 15', '17:00:00', '17:30:00', N'Available'),
+(NULL, 9,    '2026-04-01', N'Slot 1',  '08:00:00', '08:30:00', N'Available');
 
 INSERT INTO Leave_Cancel_Request
     (Schedule_ID, Requester_Employee_ID, Approved_By_Employee_ID, leave_Date, Reason, request_status, approved_at)
@@ -315,12 +343,50 @@ VALUES
 
 INSERT INTO Appointment (Patient_ID, Schedule_ID, Staff_Employee_ID, Status, created_at, checkin_time) VALUES
 (1, 1, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(2, 2, 12, N'Pending',   SYSUTCDATETIME(), NULL);
+(2, 2, 12, N'Pending',   SYSUTCDATETIME(), NULL),
+(1, 60, 12, N'Pending', SYSUTCDATETIME(), NULL),
+(3, 846, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(4, 847, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(1, 61, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(5, 111, 12, N'Pending', SYSUTCDATETIME(), NULL),
+(5, 848, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(1, 849, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(8, 86, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(11, 850, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(3, 151, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(4, 204, 12, N'Pending', SYSUTCDATETIME(), NULL),
+(7, 851, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(10, 852, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(7, 127, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(9, 853, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(6, 854, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(6, 855, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(9, 211, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(2, 15, 12, N'Canceled', SYSUTCDATETIME(), NULL);
 
 INSERT INTO Medical_Record
-    (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, examination_result, conclusion)
+    (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, examination_result, conclusion, Created_At)
 VALUES
-(1, 3, N'Mắt phải cận thị 1.5 độ, viêm kết mạc nhẹ', NULL, NULL);
+(1, 3, N'Mắt phải cận thị 1.5 độ, viêm kết mạc nhẹ', NULL, NULL, SYSUTCDATETIME()),
+(3, 3, N'Dịch vụ/Bệnh lý: Khám mắt tổng quát', NULL, NULL, SYSUTCDATETIME()),
+(4, 3, N'Dịch vụ: Khám mắt tổng quát | Lý do: Khô rát mắt, nhìn màn hình máy tính mỏi mắt', N'Khô mắt độ 1 cả hai mắt, hội chứng thị giác màn hình (CVS). Thị lực OD 10/10, OS 10/10, nhãn áp bình thường.', N'Hạn chế nhìn màn hình liên tục >45 phút không nghỉ, chớp mắt thường xuyên. Nhỏ nước mắt nhân tạo hàng ngày.', SYSUTCDATETIME()),
+(5, 3, N'Dịch vụ: Khám mắt tổng quát | Lý do: Cộm xốn mắt trái, mi mắt sưng đỏ', N'Viêm bờ mi mạn tính, xước biểu mô giác mạc nông mắt trái do dị vật cọ xát. Thị lực OD 10/10, OS 8/10.', N'Vệ sinh bờ mi bằng gạc ấm mỗi sáng và tối. Dùng thuốc nhỏ kháng sinh và chất làm ẩm bảo vệ giác mạc. Tái khám sau 5 ngày.', SYSUTCDATETIME()),
+(6, 3, N'Dịch vụ: Khám mắt tổng quát | Lý do: Tái khám định kỳ sau điều trị viêm kết mạc', NULL, NULL, SYSUTCDATETIME()),
+(7, 3, N'Dịch vụ: Khám mắt tổng quát | Lý do: Khám sức khỏe định kỳ cho sinh viên', NULL, NULL, SYSUTCDATETIME()),
+(8, 4, N'Dịch vụ: Đo khúc xạ và tư vấn kính | Lý do: Mắt nhìn mờ bảng đen, nhức đầu khi đọc sách', N'Cận thị tiến triển: OD -2.50D (thị lực chỉnh kính 10/10), OS -3.00D loạn 0.5D trục 180 (chỉnh kính 10/10).', N'Kê đơn kính mới chống ánh sáng xanh. Tư vấn tư thế ngồi học và giữ khoảng cách 35cm khi đọc sách.', SYSUTCDATETIME()),
+(9, 4, N'Dịch vụ: Đo khúc xạ và tư vấn kính | Lý do: Kiểm tra lại độ cận mắt kính cũ', N'Độ cận ổn định: OD -1.25D, OS -1.50D. Đáy mắt bình thường không tổn thương võng mạc.', N'Giữ nguyên độ kính hiện tại, không cần tăng độ. Tái kiểm tra khúc xạ sau 6 tháng.', SYSUTCDATETIME()),
+(10, 4, N'Dịch vụ: Đo khúc xạ và tư vấn kính | Lý do: Đo độ làm kính cận râm đi du lịch', NULL, NULL, SYSUTCDATETIME()),
+(11, 5, N'Dịch vụ: Phẫu thuật LASIK | Lý do: Muốn xóa cận thị cao để thi tuyển ngành công an', N'Cận thị 2 mắt OD -6.50D, OS -7.00D. Chiều dày giác mạc trung tâm 545µm. Đủ tiêu chuẩn phẫu thuật Femto-LASIK.', N'Phẫu thuật Femto-LASIK hai mắt thành công hoàn hảo. Thị lực không kính ngày 1 sau mổ: OD 10/10, OS 10/10.', SYSUTCDATETIME()),
+(12, 5, N'Dịch vụ: Phẫu thuật LASIK | Lý do: Khám tiền phẫu và đo bản đồ giác mạc xóa cận', NULL, NULL, SYSUTCDATETIME()),
+(13, 5, N'Dịch vụ: Phẫu thuật LASIK | Lý do: Tư vấn phẫu thuật Smile / Femto-Lasik', NULL, NULL, SYSUTCDATETIME()),
+(14, 6, N'Dịch vụ: Khám mắt trẻ em và tư vấn nhược thị | Lý do: Bé hay nheo mắt nghiêng đầu xem tivi', N'Nhược thị khúc xạ mắt trái do bất đồng khúc xạ: OD +0.75D (thị lực 9/10), OS +4.25D loạn 1.0D (thị lực 3/10).', N'Chỉ định đeo kính đúng độ liên tục. Áp dụng liệu pháp bịt mắt lành (mắt phải) 2 giờ mỗi ngày kết hợp tập thị giác. Tái khám sau 1 tháng.', SYSUTCDATETIME()),
+(15, 6, N'Dịch vụ: Khám mắt trẻ em và tư vấn nhược thị | Lý do: Bố mẹ phát hiện mắt bé thỉnh thoảng lé vào trong', N'Lác trong điều tiết một phần mắt phải góc 15 độ Hirschberg. Đáy mắt trong suốt, không u nguyên bào võng mạc.', N'Cho tra atropine giãn cơ thể mi và cấp kính điều chỉnh toàn phần. Hẹn đo lại góc lác sau 3 tuần đeo kính.', SYSUTCDATETIME()),
+(16, 6, N'Dịch vụ: Khám mắt trẻ em và tư vấn nhược thị | Lý do: Tái khám kiểm tra thị lực sau 1 tháng tập che mắt', NULL, NULL, SYSUTCDATETIME()),
+(17, 7, N'Dịch vụ: Phẫu thuật Phaco điều trị đục thủy tinh thể | Lý do: Mắt phải mờ như có màn sương che, chói mắt ban ngày', N'Đục thể thủy tinh người già nhân vỏ độ 3 mắt phải. Thị lực mắt phải đếm ngón tay 2m. Mắt trái đục nhẹ thị lực 6/10.', N'Thực hiện tán nhuyễn Phaco đặt thể thủy tinh nhân tạo đa tiêu mắt phải thành công. Thị lực sau mổ 1 ngày: OD 9/10.', SYSUTCDATETIME()),
+(18, 7, N'Dịch vụ: Phẫu thuật Phaco điều trị đục thủy tinh thể | Lý do: Khám tầm soát đục thủy tinh thể người cao tuổi', NULL, NULL, SYSUTCDATETIME()),
+(19, 8, N'Dịch vụ: Đo nhãn áp và chụp OCT võng mạc | Lý do: Nhức tức vùng hốc mắt, nhìn thấy quầng màu cầu vồng quanh đèn', N'Nghi ngờ Glaucoma góc mở. Nhãn áp OD 26 mmHg, OS 24 mmHg (giá trị cao). Hình ảnh OCT cho thấy lớp sợi thần kinh võng mạc khuyết nhẹ góc thái dương dưới.', N'Kê thuốc hạ nhãn áp, theo dõi sát thị trường mắt. Tuyệt đối không tự ý nhỏ các loại thuốc có chứa corticoid.', SYSUTCDATETIME()),
+(20, 8, N'Dịch vụ: Đo nhãn áp và chụp OCT võng mạc | Lý do: Tái khám định kỳ theo dõi nhãn áp sau điều trị', NULL, NULL, SYSUTCDATETIME()),
+(21, 3, N'Dịch vụ: Khám mắt tổng quát | Lý do: Bệnh nhân báo bận công tác đột xuất, xin hủy lịch khám', NULL, NULL, SYSUTCDATETIME());
 
 INSERT INTO Service (Service_Name, Actual_Price) VALUES
 (N'Khám mắt tổng quát', 200000),
@@ -328,36 +394,93 @@ INSERT INTO Service (Service_Name, Actual_Price) VALUES
 (N'Chụp OCT đáy mắt',   400000);
 
 -- Danh mục quản trị; bảng Service ở trên dùng cho Procedure_Order.
-INSERT INTO Service_Catalog
-    (Service_Code, Service_Name, Price, Specialty_Code, Tag, Summary, Description, Image_Path)
-VALUES
-('NK-01', N'Nhãn khoa tổng quát', 250000, 'general', N'Gói cơ bản', N'Khám và chẩn đoán toàn diện các bệnh lý về mắt, phù hợp với mọi lứa tuổi.', N'Bao gồm đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt, đánh giá tình trạng giác mạc và thủy tinh thể.', 'departments-1.jpg'),
-('KX-02', N'Đo Khúc xạ & Kính', 150000, 'refraction', N'Khúc xạ kế', N'Khám sàng lọc và đo độ khúc xạ với hệ thống đo tự động chuẩn xác.', N'Đo khúc xạ chính xác bằng máy tự động, thử thị lực và tư vấn tròng kính phù hợp.', 'departments-2.jpg'),
-('LS-03', N'Phẫu thuật LASIK', 18000000, 'lasik', N'Kỹ thuật cao', N'Xóa cận không dao, thời gian phục hồi nhanh chóng.', N'Phẫu thuật khúc xạ laser LASIK/SMILE điều trị cận thị, viễn thị và loạn thị với công nghệ hiện đại.', 'departments-3.jpg'),
-('PE-04', N'Nhãn khoa trẻ em & Nhược thị', 300000, 'children', N'Trẻ em & Học đường', N'Sàng lọc sớm các tật khúc xạ tiến triển, tật lác và suy giảm thị lực ở trẻ nhỏ.', N'Sàng lọc cận thị sớm, điều trị nhược thị và lác mắt trong không gian khám thân thiện.', 'departments-4.jpg'),
-('TT-05', N'Đục thủy tinh thể (Phaco)', 12000000, 'cataract', N'Phẫu thuật Phaco', N'Tái tạo tầm nhìn trong sáng bằng phương pháp tán nhuyễn Phaco tiên tiến.', N'Phẫu thuật thay thế thủy tinh nhân tạo điều trị đục thủy tinh thể an toàn, đường mổ siêu nhỏ.', 'departments-5.jpg'),
-('GL-06', N'Glaucoma & Võng mạc', 500000, 'retina', N'Đáy mắt chuyên sâu', N'Kiểm soát nhãn áp, bảo tồn thị trường thần kinh mắt và ngăn ngừa biến chứng mù lòa.', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.', 'gallery/gallery-1.jpg');
+INSERT INTO Service_Category (Category_ID, Category_Name) VALUES
+(1, N'Khám và tư vấn'),
+(2, N'Kiểm tra và chẩn đoán'),
+(3, N'Điều trị và thủ thuật'),
+(4, N'Khác'),
+(5, N'Dịch vụ ngoài');
 
-INSERT INTO Medical_Supply (Supply_Name, Category, Batch_Code, Unit, Quantity, Price) VALUES
-(N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Dung dịch nhỏ mắt', 'SYS-2026A', N'lọ', 142, 95000),
-(N'Tròng kính Essilor Crizal Alize 1.60', N'Tròng kính', 'ESL-8839', N'cặp', 45, 1250000),
-(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Dung dịch nhỏ mắt', 'SNL-091', N'lọ', 8, 88000),
-(N'Que thử màu huỳnh quang Fluorescein Strips', N'Vật tư chẩn đoán', 'FLS-002', N'hộp', 22, 320000);
+INSERT INTO Service_Catalog
+    (Service_Code, Service_Name, Price, Category_ID, Summary, Description, Image_Path)
+VALUES
+('NK-01', N'Khám mắt tổng quát', 250000, 1, N'Khám và chẩn đoán toàn diện các bệnh lý về mắt, phù hợp với mọi lứa tuổi.', N'Bao gồm đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt, đánh giá tình trạng giác mạc và thủy tinh thể.', 'departments-1.jpg'),
+('KX-02', N'Đo khúc xạ và tư vấn kính', 150000, 2, N'Khám sàng lọc và đo độ khúc xạ với hệ thống đo tự động chuẩn xác.', N'Đo khúc xạ chính xác bằng máy tự động, thử thị lực và tư vấn tròng kính phù hợp.', 'departments-2.jpg'),
+('LS-03', N'Phẫu thuật LASIK', 18000000, 3, N'Xóa cận không dao, thời gian phục hồi nhanh chóng.', N'Phẫu thuật khúc xạ laser LASIK/SMILE điều trị cận thị, viễn thị và loạn thị với công nghệ hiện đại.', 'departments-3.jpg'),
+('PE-04', N'Khám mắt trẻ em và tư vấn nhược thị', 300000, 1, N'Sàng lọc sớm các tật khúc xạ tiến triển, tật lé và suy giảm thị lực ở trẻ nhỏ.', N'Sàng lọc cận thị sớm, điều trị nhược thị và lác mắt trong không gian khám thân thiện.', 'departments-4.jpg'),
+('TT-05', N'Phẫu thuật Phaco điều trị đục thủy tinh thể', 12000000, 3, N'Tái tạo tầm nhìn trong sáng bằng phương pháp tán nhuyễn Phaco tiên tiến.', N'Phẫu thuật thay thể thủy tinh nhân tạo điều trị đục thủy tinh thể an toàn, đường mổ siêu nhỏ.', 'departments-5.jpg'),
+('GL-06', N'Đo nhãn áp và chụp OCT võng mạc', 500000, 2, N'Kiểm soát nhãn áp, bảo tồn thị trường thần kinh mắt và ngăn ngừa biến chứng mù lòa.', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.', 'gallery/gallery-1.jpg');
+
+INSERT INTO Medical_Supply (Supply_Name, Category, Unit, Price) VALUES
+(N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Dung dịch nhỏ mắt', N'lọ', 95000),
+(N'Tròng kính Essilor Crizal Alize 1.60', N'Tròng kính', N'cặp', 1250000),
+(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Dung dịch nhỏ mắt', N'lọ', 88000),
+(N'Que thử màu huỳnh quang Fluorescein Strips', N'Vật tư chẩn đoán', N'hộp', 320000);
 
 INSERT INTO Procedure_Order (Specialist_Employee_ID, Record_ID, Service_ID, Status) VALUES
-(9, 1, 2, N'Completed');
+(9, 1, 2, N'Completed'),
+(9, 3, 1, N'Completed'),
+(9, 4, 1, N'Completed'),
+(9, 7, 2, N'Completed'),
+(9, 8, 2, N'Completed'),
+(9, 10, 3, N'Completed'),
+(9, 13, 1, N'Completed'),
+(9, 14, 1, N'Completed'),
+(9, 16, 3, N'Completed'),
+(9, 18, 3, N'Completed');
 
 INSERT INTO Prescription (Record_ID, Doctor_Notes) VALUES
-(1, N'Nhỏ thuốc đúng giờ, tái khám sau 7 ngày nếu mắt còn đỏ');
+(1, N'Nhỏ thuốc đúng giờ, tái khám sau 7 ngày nếu mắt còn đỏ'),
+(3, N'Hạn chế nhìn màn hình liên tục >45 phút không nghỉ, chớp mắt thường xuyên. Nhỏ nước mắt nhân tạo hàng ngày.'),
+(4, N'Vệ sinh bờ mi bằng gạc ấm mỗi sáng và tối. Dùng thuốc nhỏ kháng sinh và chất làm ẩm bảo vệ giác mạc. Tái khám sau 5 ngày.'),
+(7, N'Kê đơn kính mới chống ánh sáng xanh. Tư vấn tư thế ngồi học và giữ khoảng cách 35cm khi đọc sách.'),
+(8, N'Giữ nguyên độ kính hiện tại, không cần tăng độ. Tái kiểm tra khúc xạ sau 6 tháng.'),
+(10, N'Phẫu thuật Femto-LASIK hai mắt thành công hoàn hảo. Thị lực không kính ngày 1 sau mổ: OD 10/10, OS 10/10.'),
+(13, N'Chỉ định đeo kính đúng độ liên tục. Áp dụng liệu pháp bịt mắt lành (mắt phải) 2 giờ mỗi ngày kết hợp tập thị giác. Tái khám sau 1 tháng.'),
+(14, N'Cho tra atropine giãn cơ thể mi và cấp kính điều chỉnh toàn phần. Hẹn đo lại góc lác sau 3 tuần đeo kính.'),
+(16, N'Thực hiện tán nhuyễn Phaco đặt thể thủy tinh nhân tạo đa tiêu mắt phải thành công. Thị lực sau mổ 1 ngày: OD 9/10.'),
+(18, N'Kê thuốc hạ nhãn áp, theo dõi sát thị trường mắt. Tuyệt đối không tự ý nhỏ các loại thuốc có chứa corticoid.');
 
 INSERT INTO Prescription_Detail (Prescription_ID, Medicine_Name, Quantity, Dosage_Instruction) VALUES
 (1, N'Thuốc nhỏ mắt Tobradex', 1, N'Nhỏ 1 giọt/lần, ngày 2 lần vào mắt phải'),
-(1, N'Nước muối sinh lý 0.9%', 2, N'Rửa mắt hàng ngày sáng và tối');
+(1, N'Nước muối sinh lý 0.9%', 2, N'Rửa mắt hàng ngày sáng và tối'),
+(2, N'Thuốc nhỏ mắt Systane Ultra (10ml)', 1, N'Nhỏ 1 giọt mỗi bên mắt, ngày 3-4 lần khi khô mắt'),
+(2, N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', 1, N'Nhỏ 1 giọt mỗi bên mắt trước khi đi ngủ'),
+(3, N'Thuốc nhỏ mắt Tobradex', 1, N'Nhỏ 1 giọt mắt trái, ngày 2 lần trong 5 ngày'),
+(3, N'Nước muối sinh lý 0.9%', 2, N'Rửa mắt sáng và tối hàng ngày'),
+(4, N'Tròng kính Essilor Crizal Alize 1.60', 1, N'Đeo kính thường xuyên khi học tập và nhìn xa'),
+(5, N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', 1, N'Nhỏ 1 giọt mỗi bên khi mỏi mắt'),
+(6, N'Thuốc nhỏ mắt Tobradex', 1, N'Nhỏ 1 giọt mỗi mắt, 4 lần/ngày trong 7 ngày'),
+(6, N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', 2, N'Nhỏ dưỡng ẩm mắt đều đặn mỗi 2 tiếng'),
+(7, N'Thuốc nhỏ mắt Systane Ultra (10ml)', 1, N'Nhỏ 1 giọt dưỡng mắt mỗi ngày'),
+(8, N'Nước muối sinh lý 0.9%', 1, N'Vệ sinh mắt nhẹ nhàng hàng ngày'),
+(9, N'Thuốc nhỏ mắt Tobradex', 1, N'Nhỏ 1 giọt mắt phải ngày 3 lần trong 2 tuần'),
+(9, N'Thuốc nhỏ mắt Systane Ultra (10ml)', 1, N'Nhỏ bôi trơn mắt sau mổ'),
+(10, N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', 1, N'Nhỏ 1 giọt ngày 2 lần');
 
 INSERT INTO Master_Invoice
     (Appointment_ID, Total_Amount, Deposit_Amount, Balance_Due, Status, Close_At)
 VALUES
-(1, 300000, 100000, 0, N'Paid', SYSUTCDATETIME());
+(1, 300000, 100000, 0, N'Paid', SYSUTCDATETIME()),
+(3, 250000, 200000, 50000, N'Pending_Deposit', NULL),
+(4, 250000, 200000, 0, N'Paid', SYSUTCDATETIME()),
+(5, 250000, 200000, 0, N'Paid', SYSUTCDATETIME()),
+(6, 250000, 200000, 50000, N'Partial_Paid', SYSUTCDATETIME()),
+(7, 250000, 200000, 250000, N'Pending_Deposit', NULL),
+(8, 150000, 150000, 0, N'Paid', SYSUTCDATETIME()),
+(9, 150000, 150000, 0, N'Paid', SYSUTCDATETIME()),
+(10, 150000, 150000, 0, N'Paid', SYSUTCDATETIME()),
+(11, 18000000, 18000000, 0, N'Paid', SYSUTCDATETIME()),
+(12, 18000000, 200000, 17800000, N'Partial_Paid', SYSUTCDATETIME()),
+(13, 18000000, 200000, 18000000, N'Pending_Deposit', NULL),
+(14, 300000, 300000, 0, N'Paid', SYSUTCDATETIME()),
+(15, 300000, 300000, 0, N'Paid', SYSUTCDATETIME()),
+(16, 300000, 200000, 100000, N'Partial_Paid', SYSUTCDATETIME()),
+(17, 12000000, 12000000, 0, N'Paid', SYSUTCDATETIME()),
+(18, 12000000, 200000, 11800000, N'Partial_Paid', SYSUTCDATETIME()),
+(19, 500000, 500000, 0, N'Paid', SYSUTCDATETIME()),
+(20, 500000, 200000, 300000, N'Partial_Paid', SYSUTCDATETIME()),
+(21, 250000, 0, 0, N'Canceled', NULL);
 
 INSERT INTO Payment_Transaction (Invoice_ID, Amount, Gateway_Status, Payment_Gateway) VALUES
 (1, 100000, N'Success', N'VNPay'),

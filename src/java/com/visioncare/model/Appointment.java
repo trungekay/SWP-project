@@ -18,10 +18,23 @@ public class Appointment {
     private int serviceId;
     private String serviceName;
     private long fee = 200000;
+    private long totalAmount;
+    private long balanceDue;
     private int scheduleId;
     private String slotName;
     private String invoiceStatus;
     private int invoiceId;
+    private boolean hasRefundRequest;
+    private int patientId;
+    private String address;
+    private int staffEmployeeId;
+    private String staffName;
+    private String checkinTime;
+    private String roomName;
+    private String medicalNotes;
+    private String createdAt;
+    private String endTime;
+    private int queueNumber;
 
     public Appointment() {
     }
@@ -113,7 +126,6 @@ public class Appointment {
     public void setUserId(int userId) {
         this.userId = userId;
     }
-
     public int getServiceId() {
         return serviceId;
     }
@@ -162,16 +174,6 @@ public class Appointment {
     public void setInvoiceId(int invoiceId) {
         this.invoiceId = invoiceId;
     }
-    private int patientId;
-    private String address;
-    private int staffEmployeeId;
-    private String staffName;
-    private String checkinTime;
-    private String roomName;
-    private String medicalNotes;
-    private String createdAt;
-    private String endTime;
-    private int queueNumber;
 
     public int getPatientId() {
         return patientId;
@@ -233,5 +235,25 @@ public class Appointment {
     public void setQueueNumber(int queueNumber) {
         this.queueNumber = queueNumber;
     }
-}
 
+    public long getTotalAmount() {
+        return totalAmount;
+    }
+    public void setTotalAmount(long totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
+    public long getBalanceDue() {
+        return balanceDue;
+    }
+    public void setBalanceDue(long balanceDue) {
+        this.balanceDue = balanceDue;
+    }
+
+    public boolean isHasRefundRequest() {
+        return hasRefundRequest;
+    }
+    public void setHasRefundRequest(boolean hasRefundRequest) {
+        this.hasRefundRequest = hasRefundRequest;
+    }
+}

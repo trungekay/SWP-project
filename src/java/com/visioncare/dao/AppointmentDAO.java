@@ -21,7 +21,9 @@ public class AppointmentDAO {
 
             // Check if slot is already booked or taken
             String checkSlotSql = "SELECT ws.Status, " +
-                                  "       (SELECT COUNT(*) FROM Appointment ap WHERE ap.Schedule_ID = ws.Schedule_ID AND ap.Status NOT IN ('Canceled', 'Rejected')) AS ActiveAppts " +
+                                  "       (SELECT COUNT(*) FROM Appointment ap WHERE ap.Schedule_ID = ws.Schedule_ID " +
+                                  "        AND (ap.Status IN ('Confirmed', 'In_Progress', 'Completed') " +
+                                  "             OR (ap.Status = 'Pending' AND DATEDIFF(MINUTE, ap.created_at, SYSUTCDATETIME()) < 15))) AS ActiveAppts " +
                                   "FROM Work_Schedule ws WHERE ws.Schedule_ID = ?";
             try (PreparedStatement psCheck = conn.prepareStatement(checkSlotSql)) {
                 psCheck.setInt(1, scheduleId);
@@ -53,13 +55,17 @@ public class AppointmentDAO {
 
             if (appointmentId > 0) {
                 // Insert Master_Invoice as Pending_Deposit
-                long totalFee = fee > 0 ? fee : 200000;
+                long depositFee = fee > 0 ? fee : 200000;
+                long totalServiceAmount = a.getTotalAmount() > 0 ? a.getTotalAmount() : depositFee;
+                long balanceDue = totalServiceAmount > depositFee ? (totalServiceAmount - depositFee) : 0;
+
                 String sqlInvoice = "INSERT INTO Master_Invoice (Appointment_ID, Total_Amount, Deposit_Amount, Balance_Due, Status, Create_At) " +
-                                    "VALUES (?, ?, 0, ?, 'Pending_Deposit', SYSUTCDATETIME())";
+                                    "VALUES (?, ?, ?, ?, 'Pending_Deposit', SYSUTCDATETIME())";
                 try (PreparedStatement psInv = conn.prepareStatement(sqlInvoice)) {
                     psInv.setInt(1, appointmentId);
-                    psInv.setLong(2, totalFee);
-                    psInv.setLong(3, totalFee);
+                    psInv.setLong(2, totalServiceAmount);
+                    psInv.setLong(3, depositFee);
+                    psInv.setLong(4, balanceDue);
                     psInv.executeUpdate();
                 }
 
@@ -107,15 +113,23 @@ public class AppointmentDAO {
             // 1. Get Master_Invoice
             int invoiceId = -1;
             long totalAmount = 200000;
-            String sqlFindInv = "SELECT Invoice_ID, Total_Amount FROM Master_Invoice WHERE Appointment_ID = ?";
+            long depositAmount = 200000;
+            long balanceDue = 0;
+            String sqlFindInv = "SELECT Invoice_ID, Total_Amount, Deposit_Amount, Balance_Due FROM Master_Invoice WHERE Appointment_ID = ?";
             try (PreparedStatement psInv = conn.prepareStatement(sqlFindInv)) {
                 psInv.setInt(1, appointmentId);
                 try (ResultSet rs = psInv.executeQuery()) {
                     if (rs.next()) {
                         invoiceId = rs.getInt("Invoice_ID");
                         totalAmount = rs.getLong("Total_Amount");
+                        depositAmount = rs.getLong("Deposit_Amount");
+                        balanceDue = rs.getLong("Balance_Due");
                     }
                 }
+            }
+            if (depositAmount <= 0) {
+                depositAmount = totalAmount <= 200000 && totalAmount > 0 ? totalAmount : 200000;
+                balanceDue = totalAmount > depositAmount ? (totalAmount - depositAmount) : 0;
             }
 
             if (invoiceId <= 0) {
@@ -130,10 +144,14 @@ public class AppointmentDAO {
                     }
                 }
             } else {
-                // Update Invoice to Paid
-                String sqlUpdInv = "UPDATE Master_Invoice SET Deposit_Amount = Total_Amount, Balance_Due = 0, Status = 'Paid', Close_At = SYSUTCDATETIME() WHERE Invoice_ID = ?";
+                // Update Invoice: Nếu còn dư nợ thì Partial_Paid, nếu đã xong thì Paid
+                String invStatus = balanceDue <= 0 ? "Paid" : "Partial_Paid";
+                String sqlUpdInv = "UPDATE Master_Invoice SET Deposit_Amount = ?, Balance_Due = ?, Status = ?, Close_At = SYSUTCDATETIME() WHERE Invoice_ID = ?";
                 try (PreparedStatement psUpd = conn.prepareStatement(sqlUpdInv)) {
-                    psUpd.setInt(1, invoiceId);
+                    psUpd.setLong(1, depositAmount);
+                    psUpd.setLong(2, balanceDue);
+                    psUpd.setString(3, invStatus);
+                    psUpd.setInt(4, invoiceId);
                     psUpd.executeUpdate();
                 }
             }
@@ -143,7 +161,7 @@ public class AppointmentDAO {
                               "VALUES (?, ?, 'Success', SYSUTCDATETIME(), 'VietQR_Banking')";
             try (PreparedStatement psTrans = conn.prepareStatement(sqlTrans)) {
                 psTrans.setInt(1, invoiceId);
-                psTrans.setLong(2, totalAmount);
+                psTrans.setLong(2, depositAmount);
                 psTrans.executeUpdate();
             }
 
@@ -183,7 +201,7 @@ public class AppointmentDAO {
                      "       ws.Work_Date, ws.Start_Time, ws.End_Time, ws.Slot, " +
                      "       e.Employee_ID, e.Full_Name AS Doctor_Name, e.Specialty, " +
                      "       mr.Clinical_Diagnosis, " +
-                     "       mi.Invoice_ID, mi.Total_Amount, mi.Deposit_Amount, mi.Status AS Invoice_Status " +
+                     "       mi.Invoice_ID, mi.Total_Amount, mi.Deposit_Amount, mi.Balance_Due, mi.Status AS Invoice_Status " +
                      "FROM Appointment a " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
                      "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
@@ -212,7 +230,13 @@ public class AppointmentDAO {
                     appt.setScheduleId(rs.getInt("Schedule_ID"));
                     appt.setReason(rs.getString("Clinical_Diagnosis"));
                     appt.setInvoiceId(rs.getInt("Invoice_ID"));
-                    appt.setFee(rs.getLong("Total_Amount"));
+                    long totalAmt = rs.getLong("Total_Amount");
+                    long depAmt = rs.getLong("Deposit_Amount");
+                    long balDue = rs.getLong("Balance_Due");
+                    appt.setTotalAmount(totalAmt);
+                    appt.setBalanceDue(balDue);
+                    long finalFee = depAmt > 0 ? depAmt : (totalAmt <= 200000 && totalAmt > 0 ? totalAmt : 200000);
+                    appt.setFee(finalFee);
                     appt.setInvoiceStatus(rs.getString("Invoice_Status"));
                     try {
                         appt.setUserId(rs.getInt("Account_ID"));
@@ -225,7 +249,8 @@ public class AppointmentDAO {
     }
 
     public int create(Appointment a) throws Exception {
-        return createPendingAppointment(a, a.getServiceId(), a.getFee() > 0 ? a.getFee() : 200000);
+        long feeToCharge = a.getFee() > 0 ? a.getFee() : (a.getTotalAmount() <= 200000 && a.getTotalAmount() > 0 ? a.getTotalAmount() : 200000);
+        return createPendingAppointment(a, a.getServiceId(), feeToCharge);
     }
 
     private int getOrCreatePatient(Connection conn, Appointment a) throws SQLException {
@@ -338,19 +363,47 @@ public class AppointmentDAO {
 
     public List<Appointment> getByUserId(int userId) throws Exception {
         List<Appointment> list = new ArrayList<>();
-        String sql = "SELECT a.Appointment_ID, a.Status, p.Full_Name, p.Phone, p.DOB, ws.Start_Time, ws.Doctor_Employee_ID, p.Account_ID, ws.Work_Date, e.Full_Name AS Doctor_Name " +
+        String sql = "SELECT a.Appointment_ID, a.Status, p.Full_Name, p.Phone, p.DOB, ws.Start_Time, ws.Doctor_Employee_ID, p.Account_ID, ws.Work_Date, e.Full_Name AS Doctor_Name, " +
+                     "       i.Invoice_ID, i.Deposit_Amount, i.Total_Amount, i.Balance_Due, i.Status AS Invoice_Status, " +
+                     "       mr.Clinical_Diagnosis, " +
+                     "       CASE WHEN EXISTS (SELECT 1 FROM Refund_Request r WHERE r.Invoice_ID = i.Invoice_ID AND r.Status = 'Pending') THEN 1 ELSE 0 END AS Has_Refund_Request " +
                      "FROM Appointment a " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
                      "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
                      "LEFT JOIN Employee_Profile e ON ws.Doctor_Employee_ID = e.Employee_ID " +
-                     "WHERE p.Account_ID = ? ORDER BY ws.Work_Date DESC, ws.Start_Time";
+                     "LEFT JOIN Master_Invoice i ON a.Appointment_ID = i.Appointment_ID " +
+                     "LEFT JOIN Medical_Record mr ON a.Appointment_ID = mr.Appointment_ID " +
+                     "WHERE (p.Account_ID = ? OR p.Patient_ID IN (SELECT Patient_ID FROM Patient WHERE Account_ID = ?)) " +
+                     "ORDER BY ws.Work_Date DESC, ws.Start_Time DESC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
+            ps.setInt(2, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Appointment appt = mapRow(rs);
                     appt.setAppointmentDate(rs.getDate("Work_Date"));
+                    appt.setInvoiceId(rs.getInt("Invoice_ID"));
+                    long totalAmt = rs.getLong("Total_Amount");
+                    long depAmt = rs.getLong("Deposit_Amount");
+                    long balDue = rs.getLong("Balance_Due");
+                    appt.setTotalAmount(totalAmt);
+                    appt.setBalanceDue(balDue);
+                    long finalFee = depAmt > 0 ? depAmt : (totalAmt <= 200000 && totalAmt > 0 ? totalAmt : 200000);
+                    appt.setFee(finalFee);
+                    appt.setInvoiceStatus(rs.getString("Invoice_Status"));
+                    appt.setHasRefundRequest(rs.getInt("Has_Refund_Request") == 1);
+                    String diag = rs.getString("Clinical_Diagnosis");
+                    if (diag != null && !diag.isEmpty()) {
+                        appt.setReason(diag);
+                        if (diag.contains("Dịch vụ/Bệnh lý: ")) {
+                            String svcPart = diag.substring(diag.indexOf("Dịch vụ/Bệnh lý: ") + "Dịch vụ/Bệnh lý: ".length());
+                            if (svcPart.contains(" | ")) {
+                                svcPart = svcPart.substring(0, svcPart.indexOf(" | ")).trim();
+                            }
+                            appt.setServiceName(svcPart);
+                        }
+                    }
                     list.add(appt);
                 }
             }
@@ -361,7 +414,9 @@ public class AppointmentDAO {
     public boolean isSlotBooked(int doctorId, Date date, String timeSlot) throws Exception {
         String sql = "SELECT COUNT(*) FROM Appointment a " +
                      "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
-                     "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? AND CAST(ws.Start_Time AS VARCHAR(5)) = ? AND a.Status NOT IN ('Canceled', 'Rejected')";
+                     "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? AND CAST(ws.Start_Time AS VARCHAR(5)) = ? " +
+                     "  AND (a.Status IN ('Confirmed', 'In_Progress', 'Completed') " +
+                     "       OR (a.Status = 'Pending' AND DATEDIFF(MINUTE, a.created_at, SYSUTCDATETIME()) < 15))";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, doctorId);
@@ -856,6 +911,77 @@ public class AppointmentDAO {
             ps.setInt(1, appointmentId);
             return ps.executeUpdate() > 0;
         }
+    }
+
+    /**
+     * Patient requests cancellation. Updates status to 'Pending' (waiting for Staff to approve).
+     * Doctor's schedule remains 'Booked' until Staff approves.
+     */
+    public boolean requestCancelAppointment(int appointmentId, int userId, String reason) throws Exception {
+        String sql = "UPDATE a SET a.Status = 'Pending' " +
+                     "FROM Appointment a " +
+                     "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
+                     "WHERE a.Appointment_ID = ? AND (p.Account_ID = ? OR a.Patient_ID IN (SELECT Patient_ID FROM Patient WHERE Account_ID = ?)) AND a.Status = 'Confirmed'";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, appointmentId);
+            ps.setInt(2, userId);
+            ps.setInt(3, userId);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    public boolean requestCancelByInvoice(int invoiceId, int userId, String reason) {
+        String sql = "UPDATE a SET a.Status = 'Pending' " +
+                     "FROM Appointment a " +
+                     "JOIN Master_Invoice i ON a.Appointment_ID = i.Appointment_ID " +
+                     "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
+                     "WHERE i.Invoice_ID = ? AND (p.Account_ID = ? OR a.Patient_ID IN (SELECT Patient_ID FROM Patient WHERE Account_ID = ?)) AND a.Status = 'Confirmed'";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, invoiceId);
+            ps.setInt(2, userId);
+            ps.setInt(3, userId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean cancelAppointment(int appointmentId, int userId, String reason) throws Exception {
+        String sql = "UPDATE a SET a.Status = 'Canceled' " +
+                     "FROM Appointment a " +
+                     "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
+                     "WHERE a.Appointment_ID = ? AND (p.Account_ID = ? OR a.Patient_ID IN (SELECT Patient_ID FROM Patient WHERE Account_ID = ?))";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, appointmentId);
+            ps.setInt(2, userId);
+            ps.setInt(3, userId);
+            int rows = ps.executeUpdate();
+            if (rows > 0) {
+                // Free the schedule
+                String sqlFree = "UPDATE ws SET ws.Status = 'Available' " +
+                                 "FROM Work_Schedule ws " +
+                                 "JOIN Appointment a ON ws.Schedule_ID = a.Schedule_ID " +
+                                 "WHERE a.Appointment_ID = ?";
+                try (PreparedStatement psFree = conn.prepareStatement(sqlFree)) {
+                    psFree.setInt(1, appointmentId);
+                    psFree.executeUpdate();
+                }
+
+                // If invoice was pending deposit, mark it as Canceled as well
+                String sqlCancelInv = "UPDATE Master_Invoice SET Status = 'Canceled', Close_At = SYSUTCDATETIME() WHERE Appointment_ID = ? AND Status = 'Pending_Deposit'";
+                try (PreparedStatement psInv = conn.prepareStatement(sqlCancelInv)) {
+                    psInv.setInt(1, appointmentId);
+                    psInv.executeUpdate();
+                }
+
+                return true;
+            }
+        }
+        return false;
     }
 }
 

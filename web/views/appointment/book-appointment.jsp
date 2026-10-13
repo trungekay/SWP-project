@@ -315,12 +315,31 @@
                                       </div>
                                       <div class="col-12 border-top pt-2 mt-2">
                                         <div class="d-flex justify-content-between">
-                                          <span class="text-muted">Phí khám ban đầu đã trả:</span>
+                                          <span class="text-muted">
+                                            <c:choose>
+                                              <c:when test="${appointment.balanceDue > 0}">Tiền cọc giữ chỗ đã thanh toán:</c:when>
+                                              <c:otherwise>Chi phí dịch vụ đã thanh toán:</c:otherwise>
+                                            </c:choose>
+                                          </span>
                                           <strong class="text-success fs-5">
                                             <fmt:formatNumber value="${appointment.fee}" type="number"
                                               groupingUsed="true" /> ₫
                                           </strong>
                                         </div>
+                                        <c:if test="${appointment.balanceDue > 0}">
+                                          <div class="d-flex justify-content-between mt-2 pt-2 border-top">
+                                            <span class="text-muted small">Tổng chi phí gói dịch vụ:</span>
+                                            <span class="text-dark small fw-semibold">
+                                              <fmt:formatNumber value="${appointment.totalAmount}" type="number" groupingUsed="true" /> ₫
+                                            </span>
+                                          </div>
+                                          <div class="d-flex justify-content-between mt-1 text-danger small">
+                                            <span>Số tiền còn lại (thanh toán sau khám tại quầy):</span>
+                                            <strong>
+                                              <fmt:formatNumber value="${appointment.balanceDue}" type="number" groupingUsed="true" /> ₫
+                                            </strong>
+                                          </div>
+                                        </c:if>
                                       </div>
                                     </div>
                                   </div>
@@ -407,11 +426,25 @@
                                                 <code class="p-1 rounded bg-light border">${paymentDesc}</code>
                                               </div>
 
-                                              <div class="col-6 fs-6 text-dark fw-bold mt-2">Tổng phí khám ban đầu:
+                                              <div class="col-6 fs-6 text-dark fw-bold mt-2">
+                                                <c:choose>
+                                                  <c:when test="${appointment.balanceDue > 0}">Tiền cọc giữ chỗ cần thanh toán:</c:when>
+                                                  <c:otherwise>Tổng phí dịch vụ trọn gói:</c:otherwise>
+                                                </c:choose>
                                               </div>
                                               <div class="col-6 fs-5 fw-bold text-success text-end mt-2">
                                                 <fmt:formatNumber value="${fee}" type="number" groupingUsed="true" /> ₫
                                               </div>
+                                              <c:if test="${appointment.balanceDue > 0}">
+                                                <div class="col-6 text-muted small">Tổng giá gói dịch vụ:</div>
+                                                <div class="col-6 text-muted small text-end fw-semibold">
+                                                  <fmt:formatNumber value="${appointment.totalAmount}" type="number" groupingUsed="true" /> ₫
+                                                </div>
+                                                <div class="col-6 text-danger small">Số tiền còn lại (thanh toán tại phòng khám):</div>
+                                                <div class="col-6 text-danger small text-end fw-bold">
+                                                  <fmt:formatNumber value="${appointment.balanceDue}" type="number" groupingUsed="true" /> ₫
+                                                </div>
+                                              </c:if>
                                             </div>
                                           </div>
 
@@ -840,13 +873,14 @@
                                                                         <div
                                                                           class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                                                                           <div>
-                                                                            <span class="text-muted small d-block">Phí
-                                                                              khám chuyên khoa ban đầu:</span>
-                                                                            <strong class="fs-4 text-teal"
-                                                                              style="color: #0d9488;">200.000 ₫</strong>
-                                                                            <span
-                                                                              class="badge bg-light text-secondary border ms-2">Đã
-                                                                              bao gồm VAT &amp; Phí tư vấn</span>
+                                                                            <span class="text-muted small d-block" id="feeLabelText">Phí khám chuyên khoa ban đầu:</span>
+                                                                            <div class="d-flex align-items-baseline gap-2">
+                                                                              <strong class="fs-4 text-teal"
+                                                                                style="color: #0d9488;" id="feeDisplayAmount">200.000 ₫</strong>
+                                                                              <span
+                                                                                class="badge bg-light text-secondary border" id="feeBadgeText">Đã bao gồm VAT &amp; Phí tư vấn</span>
+                                                                            </div>
+                                                                            <div id="feeRemainingNotice" class="text-muted small mt-1" style="display: none;"></div>
                                                                           </div>
 
                                                                           <div class="d-flex gap-2">
@@ -1019,6 +1053,7 @@
                 if (rDate) rDate.textContent = dateVal;
                 const rTime = document.getElementById('recapTimeSlot');
                 if (rTime) rTime.textContent = slotVal;
+                updateFeeDisplay();
               }
 
               // Cuộn lên đầu thẻ booking
@@ -1031,6 +1066,7 @@
             // Lọc bác sĩ theo chuyên khoa khi người dùng nhấn chọn dịch vụ / bệnh lý (KHÔNG ẨN BÁC SĨ NÀO)
             function filterDoctorsByService(radioElement) {
               if (!radioElement) return;
+              updateFeeDisplay();
               const specialtyCode = (radioElement.dataset.specialty || '').toLowerCase().trim();
               const serviceName = radioElement.dataset.name || 'Dịch vụ đã chọn';
               const doctorSelect = document.getElementById('doctorSelect');
@@ -1275,8 +1311,48 @@
               }
             }
 
+            // Cập nhật hiển thị phí khám động theo dịch vụ được chọn
+            function updateFeeDisplay() {
+              const checkedSvc = document.querySelector('input[name="serviceId"]:checked');
+              if (!checkedSvc) return;
+              const price = parseFloat(checkedSvc.dataset.price) || 200000;
+              const labelEl = document.getElementById('feeLabelText');
+              const amountEl = document.getElementById('feeDisplayAmount');
+              const badgeEl = document.getElementById('feeBadgeText');
+              const noticeEl = document.getElementById('feeRemainingNotice');
+
+              if (price <= 200000) {
+                if (labelEl) labelEl.textContent = 'Tổng phí dịch vụ trọn gói:';
+                if (amountEl) amountEl.textContent = price.toLocaleString('vi-VN') + ' ₫';
+                if (badgeEl) {
+                  badgeEl.className = 'badge bg-success bg-opacity-10 text-success border border-success';
+                  badgeEl.textContent = 'Thanh toán 100% khi đặt lịch';
+                }
+                if (noticeEl) {
+                  noticeEl.style.display = 'block';
+                  noticeEl.className = 'text-success small mt-1';
+                  noticeEl.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Đã bao gồm toàn bộ phí khám &amp; tư vấn chuyên khoa. Không phát sinh thêm phí khám tại phòng khám.';
+                }
+              } else {
+                const deposit = 200000;
+                const remaining = price - deposit;
+                if (labelEl) labelEl.textContent = 'Phí đặt cọc giữ chỗ khám ban đầu:';
+                if (amountEl) amountEl.textContent = deposit.toLocaleString('vi-VN') + ' ₫';
+                if (badgeEl) {
+                  badgeEl.className = 'badge bg-warning bg-opacity-10 text-warning border border-warning';
+                  badgeEl.textContent = 'Đặt cọc giữ chỗ online';
+                }
+                if (noticeEl) {
+                  noticeEl.style.display = 'block';
+                  noticeEl.className = 'text-muted small mt-1';
+                  noticeEl.innerHTML = '<i class="bi bi-info-circle-fill text-teal me-1" style="color:#0d9488;"></i>Tổng giá gói dịch vụ: <b class="text-dark">' + price.toLocaleString('vi-VN') + ' ₫</b>. Số tiền còn lại <b class="text-danger">' + remaining.toLocaleString('vi-VN') + ' ₫</b> sẽ thanh toán tại quầy thu ngân sau khi khám xong.';
+                }
+              }
+            }
+
             // Tự động khởi tạo khi tải trang
             document.addEventListener('DOMContentLoaded', function () {
+              updateFeeDisplay();
               const docSelect = document.getElementById('doctorSelect');
               const checkedSvc = document.querySelector('input[name="serviceId"]:checked');
 

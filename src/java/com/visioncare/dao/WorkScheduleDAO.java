@@ -241,7 +241,9 @@ public class WorkScheduleDAO {
                      "       ws.Status, " +
                      "       CASE " +
                      "         WHEN ws.Status = 'Booked' THEN 1 " +
-                     "         WHEN EXISTS (SELECT 1 FROM Appointment ap WHERE ap.Schedule_ID = ws.Schedule_ID AND ap.Status NOT IN ('Canceled', 'Rejected')) THEN 1 " +
+                     "         WHEN EXISTS (SELECT 1 FROM Appointment ap WHERE ap.Schedule_ID = ws.Schedule_ID " +
+                     "                      AND (ap.Status IN ('Confirmed', 'In_Progress', 'Completed') " +
+                     "                           OR (ap.Status = 'Pending' AND DATEDIFF(MINUTE, ap.created_at, SYSUTCDATETIME()) < 15))) THEN 1 " +
                      "         ELSE 0 " +
                      "       END AS Is_Booked " +
                      "FROM Work_Schedule ws " +
@@ -326,7 +328,9 @@ public class WorkScheduleDAO {
                 {"Slot 10", "14:30:00", "15:00:00"},
                 {"Slot 11", "15:00:00", "15:30:00"},
                 {"Slot 12", "15:30:00", "16:00:00"},
-                {"Slot 13", "16:00:00", "16:30:00"}
+                {"Slot 13", "16:00:00", "16:30:00"},
+                {"Slot 14", "16:30:00", "17:00:00"},
+                {"Slot 15", "17:00:00", "17:30:00"}
             };
 
             // Gán ca làm việc chân thực cho 6 bác sĩ (ID 3 đến 8) trong 14 ngày tới:
