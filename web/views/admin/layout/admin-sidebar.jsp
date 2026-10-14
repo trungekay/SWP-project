@@ -120,18 +120,11 @@
                         Dashboard Doanh thu
                     </a>
                 </li>
-                <li class="sidebar-dropdown">
-                    <a href="javascript:void(0);" onclick="toggleSubmenu('user-submenu', this);" class="${param.activeNav == 'users' ? 'active' : ''}">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-person"></i>
-                            <span>Quản lý Người dùng</span>
-                        </div>
-                        <i class="bi ${param.activeNav == 'users' ? 'bi-chevron-up' : 'bi-chevron-down'}" style="font-size: 11px;"></i>
+                <li>
+                    <a href="${pageContext.request.contextPath}/admin/users" class="${param.activeNav == 'users' ? 'active' : ''}">
+                        <i class="bi bi-people"></i>
+                        Quản lý Người dùng
                     </a>
-                    <ul class="sidebar-submenu ${param.activeNav == 'users' ? 'show' : ''}" id="user-submenu">
-                        <li><a href="${pageContext.request.contextPath}/admin/users?type=staff" class="${param.type == 'staff' || empty param.type ? 'active' : ''}"><i class="bi bi-person-badge"></i> Danh sách nội bộ</a></li>
-                        <li><a href="${pageContext.request.contextPath}/admin/users?type=patient" class="${param.type == 'patient' ? 'active' : ''}"><i class="bi bi-people"></i> Danh sách khách hàng</a></li>
-                    </ul>
                 </li>
                 <li>
                     <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=rooms" class="${param.activeNav == 'clinic-config' || param.activeNav == 'clinic-rooms' || param.activeNav == 'clinic-slots' ? 'active' : ''}">
@@ -143,18 +136,6 @@
                     <a href="${pageContext.request.contextPath}/admin/catalog" class="${param.activeNav == 'catalog' ? 'active' : ''}">
                         <i class="bi bi-box"></i>
                         Quản lý Danh mục
-                    </a>
-                </li>
-                <li>
-                    <a href="${pageContext.request.contextPath}/admin/doctors" class="${param.activeNav == 'doctors' ? 'active' : ''}">
-                        <i class="bi bi-person-badge"></i>
-                        Quản lý Bác sĩ
-                    </a>
-                </li>
-                <li>
-                    <a href="${pageContext.request.contextPath}/admin/patients" class="${param.activeNav == 'patients' ? 'active' : ''}">
-                        <i class="bi bi-people"></i>
-                        Quản lý Bệnh nhân
                     </a>
                 </li>
                 <li>

@@ -12,8 +12,6 @@ import java.io.IOException;
  * Automatically responds with HTTP 404 as requested.
  */
 @WebServlet(name = "StaffPlaceholderServlet", urlPatterns = {
-    "/staff/appointments",
-    "/staff/check-in",
     "/staff/patients"
 })
 public class StaffPlaceholderServlet extends HttpServlet {

@@ -10,7 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 
-@WebServlet(name = "AdminUserListServlet", urlPatterns = {"/admin/users"})
+@WebServlet(name = "AdminUserListServlet", urlPatterns = {"/admin/users", "/admin/doctors", "/admin/patients"})
 public class AdminUserListServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAO();
@@ -18,6 +18,16 @@ public class AdminUserListServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        String servletPath = request.getServletPath();
+        if ("/admin/doctors".equals(servletPath)) {
+            response.sendRedirect(request.getContextPath() + "/admin/users?type=staff");
+            return;
+        }
+        if ("/admin/patients".equals(servletPath)) {
+            response.sendRedirect(request.getContextPath() + "/admin/users?type=patient");
+            return;
+        }
+
         try {
             List<User> users = userDAO.getAllUsers();
             request.setAttribute("users", users);
