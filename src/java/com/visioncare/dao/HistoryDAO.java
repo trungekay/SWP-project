@@ -110,7 +110,7 @@ public class HistoryDAO {
                     String status = rs.getString("Status");
                     String statusVn = status;
                     if ("Pending".equals(status)) statusVn = "Chờ duyệt";
-                    else if ("Approved".equals(status)) statusVn = "Đã hoàn tiền";
+                    else if ("Approved".equals(status)) statusVn = "Đã xác nhận";
                     else if ("Rejected".equals(status)) statusVn = "Đã từ chối";
 
                     map.put("id", refundId);

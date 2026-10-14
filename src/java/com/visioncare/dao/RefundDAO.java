@@ -342,7 +342,7 @@ public class RefundDAO {
 
     private String getStatusVn(String st) {
         if ("Pending".equalsIgnoreCase(st)) return "Chờ duyệt";
-        if ("Approved".equalsIgnoreCase(st)) return "Đã hoàn tiền";
+        if ("Approved".equalsIgnoreCase(st)) return "Đã xác nhận";
         if ("Rejected".equalsIgnoreCase(st)) return "Từ chối";
         return st != null ? st : "";
     }

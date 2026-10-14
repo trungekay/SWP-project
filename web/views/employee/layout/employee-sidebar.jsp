@@ -20,7 +20,7 @@
             </a>
         </li>
 
-        <c:if test="${sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist'}">
+        <c:if test="${sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist' || sessionScope.user.roleId == 4 || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2}">
             <li>
                 <a href="${pageContext.request.contextPath}/specialist/waiting-list" class="${param.activeNav == 'waiting-list' ? 'active' : ''}">
                     <i class="bi bi-clipboard2-pulse"></i>

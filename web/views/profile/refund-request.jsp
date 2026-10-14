@@ -490,9 +490,9 @@
                                         </span>
                                       </c:when>
                                       <c:when
-                                        test="${refund.status == 'Approved' || refund.status == 'Đã hoàn tiền' || refund.statusVn == 'Đã hoàn tiền'}">
+                                        test="${refund.status == 'Approved' || refund.status == 'Đã hoàn tiền' || refund.statusVn == 'Đã hoàn tiền' || refund.status == 'Đã xác nhận' || refund.statusVn == 'Đã xác nhận'}">
                                         <span class="badge-status badge-approved">
-                                          <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Đã hoàn tiền
+                                          <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Đã xác nhận
                                         </span>
                                       </c:when>
                                       <c:otherwise>
@@ -749,13 +749,13 @@
                 '</span>' +
                 '<span class="text-muted small">Yêu cầu hoàn tiền đang chờ nhân viên kiểm tra và xử lý.</span>' +
                 '</div>';
-            } else if (status === 'Approved' || status === 'Đã hoàn tiền') {
+            } else if (status === 'Approved' || status === 'Đã hoàn tiền' || status === 'Đã xác nhận') {
               statusSection.innerHTML =
                 '<div class="d-flex align-items-center gap-2 flex-wrap">' +
                 '<span class="badge-status badge-approved">' +
-                '<i class="bi bi-circle-fill" style="font-size: 6px;"></i> Đã hoàn tiền' +
+                '<i class="bi bi-circle-fill" style="font-size: 6px;"></i> Đã xác nhận' +
                 '</span>' +
-                '<span class="text-muted small">Yêu cầu đã được nhân viên chấp thuận và hoàn tất hoàn tiền.</span>' +
+                '<span class="text-muted small">Yêu cầu hoàn tiền đã được nhân viên xác nhận và đang tiến hành xử lý hoàn cọc.</span>' +
                 '</div>';
             } else {
               statusSection.innerHTML =

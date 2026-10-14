@@ -171,19 +171,42 @@
 
                         <!-- Financial Summary -->
                         <div class="row justify-content-end mb-3">
-                            <div class="col-md-6">
+                            <div class="col-md-7 col-lg-6">
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Tạm tính:</span>
-                                    <span class="fw-bold">${not empty invoice.totalAmountFmt ? invoice.totalAmountFmt : '0 đ'}</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Đã đặt cọc:</span>
+                                    <span class="text-muted">Phí đăng ký khám theo bác sĩ (Tiền cọc):</span>
                                     <span class="fw-bold">${not empty invoice.depositAmountFmt ? invoice.depositAmountFmt : '0 đ'}</span>
                                 </div>
+                                <c:if test="${not empty invoice.medAmount && invoice.medAmount > 0}">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted"><i class="bi bi-capsule text-primary me-1"></i>Thuốc kê đơn (Phát sinh):</span>
+                                        <span class="fw-bold text-primary">+ ${invoice.medAmountFmt}</span>
+                                    </div>
+                                </c:if>
+                                <c:if test="${not empty invoice.procedureAmount && invoice.procedureAmount > 0}">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted"><i class="bi bi-gear-wide text-primary me-1"></i>Cận lâm sàng / Thủ thuật phát sinh:</span>
+                                        <span class="fw-bold text-primary">+ ${invoice.procedureAmountFmt}</span>
+                                    </div>
+                                </c:if>
                                 <hr class="my-2">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold fs-6" style="color: #0d9488;">Tổng cộng:</span>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold fs-6" style="color: #0d9488;">Tổng cộng hóa đơn:</span>
                                     <span class="fw-bold fs-5 text-success">${not empty invoice.totalAmountFmt ? invoice.totalAmountFmt : '0 đ'}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted"><i class="bi bi-check2-circle text-success me-1"></i>Đã thanh toán đặt cọc:</span>
+                                    <span class="fw-bold text-success">- ${not empty invoice.depositAmountFmt ? invoice.depositAmountFmt : '0 đ'}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                                    <span class="fw-bold text-dark">Còn lại cần thanh toán:</span>
+                                    <c:choose>
+                                        <c:when test="${invoice.status == 'Paid' || invoice.balanceDue <= 0}">
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fw-semibold">0 đ (Đã tất toán đủ)</span>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <span class="fw-bold fs-5 text-danger">${invoice.balanceDueFmt}</span>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
                             </div>
                         </div>
