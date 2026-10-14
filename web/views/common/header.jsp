@@ -146,6 +146,10 @@
                           sessionScope.user.fullName : 'Tài khoản'}</span> <i
                           class="bi bi-chevron-down toggle-dropdown"></i></a>
                       <ul class="custom-dropdown-menu">
+                        <c:if test="${sessionScope.user.role == 'staff'}">
+                          <li><a href="${pageContext.request.contextPath}/staff/appointments"><i class="bi bi-calendar-check me-2" style="font-size: 16px;"></i> Lịch hẹn tiếp đón</a></li>
+                          <li><a href="${pageContext.request.contextPath}/staff/waiting-list"><i class="bi bi-people me-2" style="font-size: 16px;"></i> Hàng đợi phòng khám</a></li>
+                        </c:if>
                         <c:if test="${sessionScope.user.role == 'doctor' || sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist' || sessionScope.user.role == 'staff' || sessionScope.user.role == 'director'}">
                           <li><a href="${pageContext.request.contextPath}/employee/schedule"><i class="bi bi-calendar-week me-2" style="font-size: 16px;"></i> Lịch làm việc</a></li>
                           <li><a href="${pageContext.request.contextPath}/employee/register-schedule"><i class="bi bi-calendar-plus me-2" style="font-size: 16px;"></i> Đăng ký lịch</a></li>

@@ -30,6 +30,8 @@ public class LoginServlet extends HttpServlet {
             throws ServletException, IOException {
         String email = request.getParameter("email");
         String password = request.getParameter("password");
+        if (email != null) email = email.trim();
+        if (password != null) password = password.trim();
         try {
             User user = userDAO.login(email, password);
             if (user != null) {
