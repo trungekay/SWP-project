@@ -145,30 +145,7 @@
                         Quản lý Danh mục
                     </a>
                 </li>
-                <li>
-                    <a href="${pageContext.request.contextPath}/admin/doctors" class="${param.activeNav == 'doctors' ? 'active' : ''}">
-                        <i class="bi bi-person-badge"></i>
-                        Quản lý Bác sĩ
-                    </a>
-                </li>
-                <li>
-                    <a href="${pageContext.request.contextPath}/admin/patients" class="${param.activeNav == 'patients' ? 'active' : ''}">
-                        <i class="bi bi-people"></i>
-                        Quản lý Bệnh nhân
-                    </a>
-                </li>
-                <li>
-                    <a href="${pageContext.request.contextPath}/admin/billing" class="${param.activeNav == 'billing' ? 'active' : ''}">
-                        <i class="bi bi-receipt"></i>
-                        Hóa đơn và Thanh toán
-                    </a>
-                </li>
-                <li>
-                    <a href="${pageContext.request.contextPath}/staff/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}">
-                        <i class="bi bi-cash-coin"></i>
-                        Quản lý Hoàn tiền
-                    </a>
-                </li>
+
 
                 <div class="sidebar-menu-header mt-3">Nghiệp vụ Nhân viên</div>
                 <li>

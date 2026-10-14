@@ -338,7 +338,7 @@
                     <div class="d-flex gap-2 flex-wrap">
                         <a href="${pageContext.request.contextPath}/staff/refunds?status=all" class="filter-tab ${currentStatus == 'all' ? 'active' : ''}">Tất cả</a>
                         <a href="${pageContext.request.contextPath}/staff/refunds?status=Pending" class="filter-tab ${currentStatus == 'Pending' ? 'active' : ''}">Chờ duyệt (${stats.pending})</a>
-                        <a href="${pageContext.request.contextPath}/staff/refunds?status=Approved" class="filter-tab ${currentStatus == 'Approved' ? 'active' : ''}">Đã hoàn tiền (${stats.approved})</a>
+                        <a href="${pageContext.request.contextPath}/staff/refunds?status=Approved" class="filter-tab ${currentStatus == 'Approved' ? 'active' : ''}">Đã xác nhận (${stats.approved})</a>
                         <a href="${pageContext.request.contextPath}/staff/refunds?status=Rejected" class="filter-tab ${currentStatus == 'Rejected' ? 'active' : ''}">Đã từ chối (${stats.rejected})</a>
                     </div>
                     <div class="text-muted small">
@@ -588,7 +588,8 @@
                             <i class="bi bi-info-circle-fill me-1"></i>
                             <strong>Tự động đồng bộ hệ thống:</strong> Sau khi duyệt yêu cầu:
                             <ul class="mb-0 ps-3 mt-1">
-                                <li>Hóa đơn được đánh dấu <strong>Đã hoàn tiền</strong></li>
+                                <li>Yêu cầu hoàn tiền được chuyển sang trạng thái <strong>Đã xác nhận</strong></li>
+                                <li>Hóa đơn viện phí được đánh dấu <strong>Đã hoàn tiền (Refunded)</strong></li>
                                 <li>Trạng thái lịch hẹn của bệnh nhân sẽ chuyển sang <strong>Đã hủy (Canceled)</strong></li>
                                 <li>Lịch làm việc của bác sĩ sẽ được giải phóng về trạng thái <strong>Trống (Available)</strong></li>
                             </ul>
@@ -702,13 +703,13 @@
                     '<button type="button" class="btn btn-success px-3" style="background-color: #0d9488; border-color: #0d9488;" onclick="triggerApproveFromDetail()">' +
                         '<i class="bi bi-check-lg me-1"></i>Duyệt hoàn tiền' +
                     '</button>';
-            } else if (data.status === 'Approved') {
+            } else if (data.status === 'Approved' || data.status === 'Đã hoàn tiền' || data.status === 'Đã xác nhận') {
                 statusSection.innerHTML = 
                     '<div class="d-flex align-items-center gap-2 flex-wrap">' +
                         '<span class="badge-status badge-approved">' +
-                            '<i class="bi bi-circle-fill" style="font-size: 6px;"></i> Đã hoàn tiền' +
+                            '<i class="bi bi-circle-fill" style="font-size: 6px;"></i> Đã xác nhận' +
                         '</span>' +
-                        '<span class="text-muted small">Người duyệt: <strong class="text-dark">' + (data.approver || 'Ban quản trị') + '</strong>' +
+                        '<span class="text-muted small">Người xác nhận: <strong class="text-dark">' + (data.approver || 'Ban quản trị') + '</strong>' +
                         (data.updatedAt ? ' | Cập nhật: ' + data.updatedAt : '') + '</span>' +
                     '</div>';
                 actionsSection.innerHTML = '';
