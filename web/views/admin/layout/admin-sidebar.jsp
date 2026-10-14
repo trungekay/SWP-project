@@ -120,18 +120,11 @@
                         Dashboard Doanh thu
                     </a>
                 </li>
-                <li class="sidebar-dropdown">
-                    <a href="javascript:void(0);" onclick="toggleSubmenu('user-submenu', this);" class="${param.activeNav == 'users' ? 'active' : ''}">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-person"></i>
-                            <span>Quản lý Người dùng</span>
-                        </div>
-                        <i class="bi ${param.activeNav == 'users' ? 'bi-chevron-up' : 'bi-chevron-down'}" style="font-size: 11px;"></i>
+                <li>
+                    <a href="${pageContext.request.contextPath}/admin/users" class="${param.activeNav == 'users' ? 'active' : ''}">
+                        <i class="bi bi-people"></i>
+                        Quản lý Người dùng
                     </a>
-                    <ul class="sidebar-submenu ${param.activeNav == 'users' ? 'show' : ''}" id="user-submenu">
-                        <li><a href="${pageContext.request.contextPath}/admin/users?type=staff" class="${param.type == 'staff' || empty param.type ? 'active' : ''}"><i class="bi bi-person-badge"></i> Danh sách nội bộ</a></li>
-                        <li><a href="${pageContext.request.contextPath}/admin/users?type=patient" class="${param.type == 'patient' ? 'active' : ''}"><i class="bi bi-people"></i> Danh sách khách hàng</a></li>
-                    </ul>
                 </li>
                 <li>
                     <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=rooms" class="${param.activeNav == 'clinic-config' || param.activeNav == 'clinic-rooms' || param.activeNav == 'clinic-slots' ? 'active' : ''}">
@@ -145,7 +138,18 @@
                         Quản lý Danh mục
                     </a>
                 </li>
-
+                <li>
+                    <a href="${pageContext.request.contextPath}/admin/billing" class="${param.activeNav == 'billing' ? 'active' : ''}">
+                        <i class="bi bi-receipt"></i>
+                        Hóa đơn và Thanh toán
+                    </a>
+                </li>
+                <li>
+                    <a href="${pageContext.request.contextPath}/staff/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}">
+                        <i class="bi bi-cash-coin"></i>
+                        Quản lý Hoàn tiền
+                    </a>
+                </li>
 
                 <div class="sidebar-menu-header mt-3">Nghiệp vụ Nhân viên</div>
                 <li>
