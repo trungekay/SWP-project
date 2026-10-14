@@ -92,7 +92,7 @@
     <button id="catalogDeleteConfirm" type="button" class="catalog-delete-confirm"><i class="bi bi-trash"></i> Xác nhận xóa</button>
   </div>
 </dialog>
-<script src="${pageContext.request.contextPath}/assets/js/admin-catalog.js?v=5" defer></script>
+<script src="${pageContext.request.contextPath}/assets/js/admin-catalog.js?v=6" defer></script>
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
