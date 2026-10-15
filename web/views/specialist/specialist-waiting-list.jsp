@@ -7,16 +7,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hàng đợi Cận lâm sàng - VisionCare</title>
+  <title>Hàng đợi Cận lâm sàng & Thủ thuật - VisionCare</title>
   
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <!-- Bootstrap 5 CSS & Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <!-- Layout CSS -->
-  <link href="${pageContext.request.contextPath}/assets/css/admin-layout.css" rel="stylesheet">
-  <!-- Screen 34 Dedicated CSS -->
+  <!-- Layout CSS (Staff & Admin Design System) -->
+  <jsp:include page="/views/staff/layout/staff-css.jsp" />
+  <!-- Screen 34 Dedicated Enhancements -->
   <link href="${pageContext.request.contextPath}/assets/css/specialist-waiting-list.css" rel="stylesheet">
 </head>
 <body>
@@ -32,236 +32,238 @@
     <jsp:include page="/views/employee/layout/employee-header.jsp" />
 
     <!-- Page Content -->
-    <div class="page-content">
+    <div class="page-content" style="padding: 24px 30px;">
 
       <!-- Header Section -->
-      <div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-        <div class="page-title">
-          <h2>Hàng đợi Cận lâm sàng & Thủ thuật</h2>
-          <p>Danh sách bệnh nhân được Bác sĩ chỉ định thực hiện kỹ thuật chẩn đoán và thủ thuật</p>
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+          <h2 class="fw-bold text-dark mb-1" style="font-size: 22px;">Hàng đợi Cận lâm sàng & Thủ thuật</h2>
+          <p class="text-secondary mb-0 small">Danh sách bệnh nhân được Bác sĩ chỉ định thực hiện kỹ thuật chẩn đoán và thủ thuật chuyên sâu</p>
         </div>
         <div class="d-flex align-items-center gap-2">
-          <a href="${pageContext.request.contextPath}/specialist/waiting-list" class="btn btn-outline-secondary d-flex align-items-center gap-2" style="font-size: 13px;">
+          <a href="${pageContext.request.contextPath}/specialist/waiting-list" 
+             class="btn btn-white border shadow-sm text-secondary px-3 py-2 d-flex align-items-center gap-1.5" 
+             style="font-size: 13.5px; border-radius: 8px;">
             <i class="bi bi-arrow-clockwise"></i> Làm mới danh sách
           </a>
         </div>
       </div>
 
-      <!-- KPI Summary Cards -->
-      <div class="row g-3 mb-4">
-        <div class="col-12 col-sm-6 col-xl-4">
-          <div class="stat-card">
-            <div class="stat-icon total">
-              <i class="bi bi-card-checklist"></i>
+      <!-- KPI Summary Cards (Bấm trực tiếp để lọc theo trạng thái) -->
+      <div class="row g-3 mb-4 align-items-stretch">
+        <!-- 1. Tất cả ca trong hàng đợi -->
+        <div class="col-12 col-sm-6 col-xl-4 d-flex">
+          <a href="${pageContext.request.contextPath}/specialist/waiting-list?status=all&keyword=${keyword}&date=${selectedDate}&scope=${selectedScope}"
+             class="metric-card w-100 text-decoration-none ${selectedStatus == 'all' || empty selectedStatus ? 'border border-2 border-primary shadow-sm bg-light' : ''}">
+            <div class="metric-icon-box metric-icon-teal">
+              <i class="bi bi-clipboard2-pulse"></i>
             </div>
-            <div>
-              <div class="stat-value"><c:out value="${statusCounts['all'] != null ? statusCounts['all'] : 0}" /></div>
-              <div class="stat-label">Tổng số ca chỉ định</div>
+            <div class="metric-info">
+              <div class="metric-num"><c:out value="${statusCounts['all'] != null ? statusCounts['all'] : 0}" /></div>
+              <div class="metric-title text-secondary">Tổng ca trong hàng đợi</div>
             </div>
-          </div>
+          </a>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl-4">
-          <div class="stat-card">
-            <div class="stat-icon pending">
+        <!-- 2. Đang chờ thực hiện -->
+        <div class="col-12 col-sm-6 col-xl-4 d-flex">
+          <a href="${pageContext.request.contextPath}/specialist/waiting-list?status=Pending&keyword=${keyword}&date=${selectedDate}&scope=${selectedScope}"
+             class="metric-card w-100 text-decoration-none ${selectedStatus == 'Pending' ? 'border border-2 border-warning shadow-sm' : ''}"
+             style="${selectedStatus == 'Pending' ? 'background-color: #fffdf5;' : ''}">
+            <div class="metric-icon-box metric-icon-warning">
               <i class="bi bi-hourglass-split"></i>
             </div>
-            <div>
-              <div class="stat-value text-warning"><c:out value="${statusCounts['pending'] != null ? statusCounts['pending'] : 0}" /></div>
-              <div class="stat-label">Đang chờ thực hiện</div>
+            <div class="metric-info">
+              <div class="metric-num"><c:out value="${statusCounts['pending'] != null ? statusCounts['pending'] : 0}" /></div>
+              <div class="metric-title text-secondary">Chờ thực hiện</div>
             </div>
-          </div>
+          </a>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl-4">
-          <div class="stat-card">
-            <div class="stat-icon completed">
+        <!-- 3. Đã hoàn tất -->
+        <div class="col-12 col-sm-6 col-xl-4 d-flex">
+          <a href="${pageContext.request.contextPath}/specialist/waiting-list?status=Completed&keyword=${keyword}&date=${selectedDate}&scope=${selectedScope}"
+             class="metric-card w-100 text-decoration-none ${selectedStatus == 'Completed' ? 'border border-2 border-success shadow-sm' : ''}"
+             style="${selectedStatus == 'Completed' ? 'background-color: #f0fdf4;' : ''}">
+            <div class="metric-icon-box metric-icon-success">
               <i class="bi bi-check2-circle"></i>
             </div>
-            <div>
-              <div class="stat-value text-success"><c:out value="${statusCounts['completed'] != null ? statusCounts['completed'] : 0}" /></div>
-              <div class="stat-label">Đã hoàn thành</div>
+            <div class="metric-info">
+              <div class="metric-num"><c:out value="${statusCounts['completed'] != null ? statusCounts['completed'] : 0}" /></div>
+              <div class="metric-title text-secondary">Đã hoàn tất</div>
             </div>
-          </div>
+          </a>
         </div>
       </div>
 
-      <!-- Filter & Search Section -->
-      <div class="filter-card">
-        <!-- Status Tabs -->
-        <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
-          <a href="${pageContext.request.contextPath}/specialist/waiting-list?status=all&keyword=${keyword}&date=${selectedDate}&scope=${selectedScope}" 
-             class="tab-pill-btn ${selectedStatus == 'all' ? 'active' : ''}">
-            Tất cả
-            <span class="tab-badge"><c:out value="${statusCounts['all'] != null ? statusCounts['all'] : 0}" /></span>
-          </a>
-
-          <a href="${pageContext.request.contextPath}/specialist/waiting-list?status=Pending&keyword=${keyword}&date=${selectedDate}&scope=${selectedScope}" 
-             class="tab-pill-btn ${selectedStatus == 'Pending' ? 'active' : ''}">
-            <i class="bi bi-clock-history"></i> Chờ thực hiện
-            <span class="tab-badge"><c:out value="${statusCounts['pending'] != null ? statusCounts['pending'] : 0}" /></span>
-          </a>
-
-          <a href="${pageContext.request.contextPath}/specialist/waiting-list?status=Completed&keyword=${keyword}&date=${selectedDate}&scope=${selectedScope}" 
-             class="tab-pill-btn ${selectedStatus == 'Completed' ? 'active' : ''}">
-            <i class="bi bi-check-circle"></i> Đã hoàn tất
-            <span class="tab-badge"><c:out value="${statusCounts['completed'] != null ? statusCounts['completed'] : 0}" /></span>
-          </a>
-
-          <a href="${pageContext.request.contextPath}/specialist/waiting-list?status=Cancelled&keyword=${keyword}&date=${selectedDate}&scope=${selectedScope}" 
-             class="tab-pill-btn ${selectedStatus == 'Cancelled' ? 'active' : ''}">
-            <i class="bi bi-x-circle"></i> Đã hủy
-            <span class="tab-badge"><c:out value="${statusCounts['cancelled'] != null ? statusCounts['cancelled'] : 0}" /></span>
-          </a>
-        </div>
-
-        <!-- Filter Form -->
-        <form method="GET" action="${pageContext.request.contextPath}/specialist/waiting-list" class="row g-2 align-items-center">
+      <!-- Main Content Card -->
+      <div class="content-card">
+        <!-- Toolbar: Tìm kiếm, Ngày & Phạm vi -->
+        <form action="${pageContext.request.contextPath}/specialist/waiting-list" method="get" class="p-3 border-bottom bg-white">
           <input type="hidden" name="status" value="${selectedStatus}">
-          
-          <!-- Keyword input -->
-          <div class="col-12 col-md-4">
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-              <input type="text" name="keyword" class="form-control border-start-0" 
-                     placeholder="Tìm tên bệnh nhân, SĐT, thủ thuật..." 
-                     value="<c:out value='${keyword}'/>">
+          <div class="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-3">
+            <!-- 1. Thanh tìm kiếm nhanh -->
+            <div class="search-filter-input flex-grow-1" style="max-width: 480px;">
+              <i class="bi bi-search"></i>
+              <input type="text" name="keyword" value="<c:out value='${keyword}'/>"
+                     placeholder="Nhập tên bệnh nhân, SĐT, thủ thuật..." class="w-100"
+                     style="height: 40px; font-size: 14px; border-radius: 8px;">
             </div>
-          </div>
 
-          <!-- Date picker -->
-          <div class="col-12 col-sm-6 col-md-3">
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-calendar3"></i></span>
-              <input type="date" name="date" class="form-control border-start-0" 
-                     value="<c:out value='${selectedDate}'/>">
+            <!-- 2. Chọn ngày, phạm vi & nút Tra cứu -->
+            <div class="d-flex align-items-center gap-2 flex-wrap flex-md-nowrap">
+              <!-- Chọn ngày -->
+              <div class="d-flex align-items-center gap-1.5">
+                <span class="text-secondary small fw-semibold text-nowrap"><i class="bi bi-calendar3 me-1 text-primary"></i>Ngày:</span>
+                <input type="date" name="date" class="form-control fw-semibold text-dark shadow-none"
+                       style="height: 40px; font-size: 13.5px; width: 145px; border-radius: 8px; border: 1px solid #cbd5e1; background-color: #f8fafc;"
+                       value="${selectedDate}">
+              </div>
+
+              <!-- Lọc phạm vi ca -->
+              <select name="scope" class="form-select shadow-none" style="height: 40px; font-size: 13.5px; width: 210px; border-radius: 8px; border: 1px solid #cbd5e1;">
+                <option value="my" ${selectedScope == 'my' ? 'selected' : ''}>Chỉ ca của tôi</option>
+                <option value="all" ${selectedScope == 'all' ? 'selected' : ''}>Toàn bộ phòng khám</option>
+              </select>
+
+              <!-- Nút Tra cứu -->
+              <button type="submit" class="btn btn-teal px-3 text-nowrap d-flex align-items-center gap-1.5 shadow-sm"
+                      style="height: 40px; font-weight: 600;">
+                <i class="bi bi-search"></i>
+                <span>Tra cứu</span>
+              </button>
+
+              <c:if test="${not empty keyword || not empty selectedDate || selectedScope == 'all'}">
+                <a href="${pageContext.request.contextPath}/specialist/waiting-list?status=${selectedStatus}" 
+                   class="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+                   style="height: 40px; width: 40px; border-radius: 8px;" title="Đặt lại bộ lọc">
+                  <i class="bi bi-x-lg"></i>
+                </a>
+              </c:if>
             </div>
-          </div>
-
-          <!-- Scope select -->
-          <div class="col-12 col-sm-6 col-md-3">
-            <select name="scope" class="form-select">
-              <option value="my" ${selectedScope == 'my' ? 'selected' : ''}>Chỉ ca của tôi & chưa gán</option>
-              <option value="all" ${selectedScope == 'all' ? 'selected' : ''}>Toàn bộ phòng khám</option>
-            </select>
-          </div>
-
-          <!-- Submit Buttons -->
-          <div class="col-12 col-md-2 d-flex gap-2">
-            <button type="submit" class="btn btn-primary w-100" style="background-color: var(--vc-primary); border-color: var(--vc-primary);">
-              <i class="bi bi-funnel"></i> Lọc
-            </button>
-            <c:if test="${not empty keyword || not empty selectedDate || selectedScope == 'all'}">
-              <a href="${pageContext.request.contextPath}/specialist/waiting-list?status=${selectedStatus}" 
-                 class="btn btn-outline-secondary" title="Đặt lại bộ lọc">
-                <i class="bi bi-x-lg"></i>
-              </a>
-            </c:if>
           </div>
         </form>
-      </div>
 
-      <!-- Main Waiting List Table -->
-      <div class="waiting-table-container">
-        <c:choose>
-          <c:when test="${empty orderList}">
-            <div class="empty-state">
-              <i class="bi bi-clipboard2-x empty-icon"></i>
-              <h5 class="fw-bold text-dark mb-1">Không có bệnh nhân nào trong hàng đợi</h5>
-              <p class="text-muted small mb-3">Hiện chưa có ca chỉ định cận lâm sàng nào phù hợp với bộ lọc đã chọn.</p>
-              <a href="${pageContext.request.contextPath}/specialist/waiting-list" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-arrow-repeat me-1"></i> Xóa bộ lọc và tải lại
-              </a>
-            </div>
-          </c:when>
-          <c:otherwise>
-            <div class="table-responsive">
-              <table class="table-modern">
+        <!-- Thanh điều hướng Tab trạng thái -->
+        <div class="px-3 pt-3 pb-2 bg-light border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="${pageContext.request.contextPath}/specialist/waiting-list?status=all&keyword=${keyword}&date=${selectedDate}&scope=${selectedScope}"
+               class="btn btn-sm ${selectedStatus == 'all' || empty selectedStatus ? 'btn-dark fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
+              <i class="bi bi-people-fill me-1"></i> Tất cả (${statusCounts['all'] != null ? statusCounts['all'] : 0})
+            </a>
+            <a href="${pageContext.request.contextPath}/specialist/waiting-list?status=Pending&keyword=${keyword}&date=${selectedDate}&scope=${selectedScope}"
+               class="btn btn-sm ${selectedStatus == 'Pending' ? 'btn-warning text-dark fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
+              <i class="bi bi-hourglass-split me-1"></i> Chờ thực hiện (${statusCounts['pending'] != null ? statusCounts['pending'] : 0})
+            </a>
+            <a href="${pageContext.request.contextPath}/specialist/waiting-list?status=Completed&keyword=${keyword}&date=${selectedDate}&scope=${selectedScope}"
+               class="btn btn-sm ${selectedStatus == 'Completed' ? 'btn-success fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
+              <i class="bi bi-check2-circle me-1"></i> Đã hoàn tất (${statusCounts['completed'] != null ? statusCounts['completed'] : 0})
+            </a>
+          </div>
+          <div class="text-secondary small">
+            Tổng số: <strong>${orderList != null ? orderList.size() : 0}</strong> ca
+          </div>
+        </div>
+
+        <!-- Table Danh sách Hàng đợi -->
+        <div class="table-container">
+          <c:choose>
+            <c:when test="${empty orderList}">
+              <div class="p-5 text-center">
+                <i class="bi bi-clipboard2-x text-muted mb-3" style="font-size: 48px; display: inline-block;"></i>
+                <h6 class="fw-bold text-dark mb-1">Hiện không có ca nào trong danh sách</h6>
+                <p class="text-muted small mb-3">Không tìm thấy ca chỉ định nào phù hợp với bộ lọc hiện tại.</p>
+                <a href="${pageContext.request.contextPath}/specialist/waiting-list" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                  <i class="bi bi-arrow-repeat me-1"></i> Đặt lại bộ lọc
+                </a>
+              </div>
+            </c:when>
+            <c:otherwise>
+              <table class="custom-table" style="table-layout: auto; width: 100%;">
                 <thead>
                   <tr>
-                    <th>Mã số</th>
-                    <th>Bệnh nhân</th>
-                    <th>Dịch vụ chỉ định</th>
-                    <th>Bác sĩ chỉ định & Chẩn đoán</th>
-                    <th>KTV phụ trách / Phòng</th>
-                    <th>Thời gian</th>
-                    <th>Trạng thái</th>
-                    <th class="text-end">Thao tác</th>
+                    <th style="width: 55px; text-align: center;">STT</th>
+                    <th style="width: 190px;">Bệnh nhân</th>
+                    <th style="width: 260px;">Dịch vụ chỉ định</th>
+                    <th>Bác sĩ & Chẩn đoán sơ bộ</th>
+                    <th style="width: 110px;">Thời gian</th>
+                    <th style="width: 125px; text-align: center;">Trạng thái</th>
+                    <th style="width: 140px; text-align: center;">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <c:forEach var="item" items="${orderList}">
+                  <c:forEach var="item" items="${orderList}" varStatus="loop">
                     <tr>
-                      <!-- ID -->
-                      <td>
-                        <span class="fw-bold text-dark">#PO-${item.orderId}</span>
+                      <!-- STT -->
+                      <td class="text-center fw-semibold text-secondary" style="font-size: 13.5px;">
+                        ${loop.count < 10 ? '0' : ''}${loop.count}
                       </td>
 
-                      <!-- Patient Info -->
+                      <!-- Bệnh nhân -->
                       <td>
-                        <div class="d-flex align-items-center gap-3">
-                          <div class="patient-avatar">
-                            ${item.patientName != null && item.patientName.length() > 0 ? item.patientName.substring(0, 1) : 'BN'}
+                        <div class="patient-name-title">
+                          <a href="${pageContext.request.contextPath}/specialist/patient-detail?patientId=${item.patientId}&orderId=${item.orderId}" 
+                             class="text-decoration-none text-dark hover-teal fw-bold" 
+                             style="font-size: 13.5px;"
+                             title="Xem hồ sơ bệnh nhân">
+                            <c:out value="${item.patientName}" />
+                          </a>
+                        </div>
+                        <div class="patient-sub-info text-secondary small mt-1" style="font-size: 12px; line-height: 1.45;">
+                          <div title="Mã chỉ định">
+                            <i class="bi bi-receipt text-muted me-1"></i>#CD-${item.orderId}
                           </div>
-                          <div>
-                            <a href="${pageContext.request.contextPath}/specialist/patient-detail?patientId=${item.patientId}&orderId=${item.orderId}" 
-                               class="patient-name-link" title="Xem hồ sơ bệnh nhân (Màn 35)">
-                              <c:out value="${item.patientName}" />
-                            </a>
-                            <div class="text-muted small mt-1">
-                              <span class="me-2"><i class="bi bi-cake2 me-1"></i>${item.patientAge} tuổi</span>
-                              <span><i class="bi bi-telephone me-1"></i><c:out value="${item.patientPhone}" /></span>
+                          <div class="fw-medium" style="color: #334155;">
+                            <i class="bi bi-telephone text-muted me-1"></i><c:out value="${item.patientPhone}" />
+                          </div>
+                          <c:if test="${not empty item.patientDob}">
+                            <div title="Ngày sinh" class="fw-medium" style="color: #334155;">
+                              <i class="bi bi-calendar-event text-muted me-1"></i><fmt:formatDate value="${item.patientDob}" pattern="dd/MM/yyyy" />
                             </div>
-                          </div>
+                          </c:if>
                         </div>
                       </td>
 
-                      <!-- Service Info -->
+                      <!-- Dịch vụ chỉ định -->
                       <td>
-                        <span class="badge-service">
-                          <i class="bi bi-activity text-primary me-1"></i>
+                        <div class="fw-semibold text-dark" style="font-size: 13.5px; line-height: 1.3;">
                           <c:out value="${item.serviceName}" />
-                        </span>
-                        <div class="text-muted small mt-1">
-                          Giá niêm yết: <fmt:formatNumber value="${item.servicePrice}" type="currency" currencySymbol="đ" maxFractionDigits="0"/>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                          <span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 11px;">
+                            <i class="bi bi-door-open me-1 text-success"></i><c:out value="${item.roomName != null ? item.roomName : 'P. Cận lâm sàng'}" />
+                          </span>
+                          <span class="text-teal fw-bold small">
+                            <fmt:formatNumber value="${item.servicePrice}" type="currency" currencySymbol="đ" maxFractionDigits="0"/>
+                          </span>
                         </div>
                       </td>
 
-                      <!-- Doctor & Diagnosis -->
+                      <!-- Bác sĩ & Chẩn đoán sơ bộ -->
                       <td>
-                        <div class="fw-semibold text-dark">
-                          <i class="bi bi-person-badge text-success me-1"></i>
-                          <c:out value="${item.doctorName}" />
+                        <div class="fw-semibold text-dark" style="font-size: 13px;">
+                          <i class="bi bi-person-badge text-success me-1"></i><c:out value="${item.doctorName}" />
                         </div>
-                        <div class="text-muted small text-truncate mt-1" style="max-width: 260px;" title="${item.clinicalDiagnosis}">
-                          <i class="bi bi-chat-left-dots me-1"></i>
-                          <c:out value="${item.clinicalDiagnosis != null ? item.clinicalDiagnosis : 'Chưa có chẩn đoán sơ bộ'}" />
+                        <div class="text-secondary small mt-1" style="line-height: 1.35;" title="${item.clinicalDiagnosis}">
+                          <c:choose>
+                            <c:when test="${not empty item.clinicalDiagnosis}">
+                              <i class="bi bi-chat-left-text me-1 text-muted"></i><c:out value="${item.clinicalDiagnosis}" />
+                            </c:when>
+                            <c:otherwise>
+                              <span class="text-muted fst-italic">Chưa có ghi chú chẩn đoán</span>
+                            </c:otherwise>
+                          </c:choose>
                         </div>
+                        <c:if test="${selectedScope == 'all'}">
+                          <div class="text-muted small mt-1">
+                            <i class="bi bi-person-check text-primary me-1"></i>KTV thực hiện: <strong><c:out value="${item.specialistName != null ? item.specialistName : 'Chưa gán'}" /></strong>
+                          </div>
+                        </c:if>
                       </td>
 
-                      <!-- Specialist & Room -->
+                      <!-- Thời gian -->
                       <td>
-                        <c:choose>
-                          <c:when test="${not empty item.specialistName}">
-                            <div class="fw-semibold text-dark">
-                              <i class="bi bi-person-check text-primary me-1"></i>
-                              <c:out value="${item.specialistName}" />
-                            </div>
-                            <div class="text-muted small mt-1">
-                              <i class="bi bi-door-open me-1"></i><c:out value="${item.roomName != null ? item.roomName : 'Phòng Cận lâm sàng'}" />
-                            </div>
-                          </c:when>
-                          <c:otherwise>
-                            <span class="badge bg-light text-muted border">
-                              <i class="bi bi-dash-circle me-1"></i> Chưa nhận ca
-                            </span>
-                          </c:otherwise>
-                        </c:choose>
-                      </td>
-
-                      <!-- Created At -->
-                      <td>
-                        <div class="text-dark fw-medium small">
+                        <div class="fw-bold text-dark small">
                           <fmt:formatDate value="${item.recordCreatedAt}" pattern="HH:mm" />
                         </div>
                         <div class="text-muted small">
@@ -269,46 +271,46 @@
                         </div>
                       </td>
 
-                      <!-- Status -->
-                      <td>
+                      <!-- Trạng thái -->
+                      <td class="text-center">
                         <c:choose>
                           <c:when test="${item.status == 'Pending'}">
-                            <span class="badge-status pending">
-                              <i class="bi bi-hourglass-split"></i> Chờ thực hiện
-                            </span>
-                          </c:when>
-                          <c:when test="${item.status == 'Completed'}">
-                            <span class="badge-status completed">
-                              <i class="bi bi-check2-circle"></i> Đã hoàn thành
-                            </span>
+                            <span class="badge-status badge-pending">Chờ thực hiện</span>
                           </c:when>
                           <c:otherwise>
-                            <span class="badge-status cancelled">
-                              <i class="bi bi-x-circle"></i> Đã hủy
-                            </span>
+                            <span class="badge-status badge-completed">Đã hoàn tất</span>
                           </c:otherwise>
                         </c:choose>
                       </td>
 
-                      <!-- Actions -->
-                      <td class="text-end">
-                        <div class="d-flex justify-content-end gap-2">
-                          <a href="${pageContext.request.contextPath}/specialist/procedure-detail?orderId=${item.orderId}" 
-                             class="btn-action-primary" 
-                             title="Vào thực hiện thủ thuật & ghi kết quả (Màn 36)">
-                            <c:choose>
-                              <c:when test="${item.status == 'Pending'}">
-                                <i class="bi bi-play-circle-fill"></i> Thực hiện
-                              </c:when>
-                              <c:otherwise>
-                                <i class="bi bi-eye"></i> Xem kết quả
-                              </c:otherwise>
-                            </c:choose>
-                          </a>
+                      <!-- Thao tác -->
+                      <td class="text-center text-nowrap">
+                        <div class="d-flex align-items-center justify-content-center gap-1.5">
+                          <c:choose>
+                            <c:when test="${item.status == 'Pending'}">
+                              <a href="${pageContext.request.contextPath}/specialist/procedure-detail?orderId=${item.orderId}" 
+                                 class="btn btn-sm btn-teal d-inline-flex align-items-center gap-1 py-1 px-2.5 shadow-sm" 
+                                 style="font-size: 12.5px; border-radius: 6px; font-weight: 600;"
+                                 title="Thực hiện thủ thuật & ghi nhận kết quả">
+                                <i class="bi bi-play-fill"></i>
+                                <span>Thực hiện</span>
+                              </a>
+                            </c:when>
+                            <c:otherwise>
+                              <a href="${pageContext.request.contextPath}/specialist/procedure-detail?orderId=${item.orderId}" 
+                                 class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1 py-1 px-2" 
+                                 style="font-size: 12px; border-radius: 6px; font-weight: 600;"
+                                 title="Xem kết quả thủ thuật">
+                                <i class="bi bi-eye"></i>
+                                <span>Xem KQ</span>
+                              </a>
+                            </c:otherwise>
+                          </c:choose>
 
                           <a href="${pageContext.request.contextPath}/specialist/patient-detail?patientId=${item.patientId}&orderId=${item.orderId}" 
-                             class="btn-action-outline" 
-                             title="Xem chi tiết hồ sơ bệnh nhân (Màn 35)">
+                             class="btn btn-sm btn-light border py-1 px-2 text-secondary" 
+                             style="border-radius: 6px;"
+                             title="Xem hồ sơ bệnh nhân">
                             <i class="bi bi-person-vcard"></i>
                           </a>
                         </div>
@@ -317,10 +319,11 @@
                   </c:forEach>
                 </tbody>
               </table>
-            </div>
-          </c:otherwise>
-        </c:choose>
-      </div>
+            </c:otherwise>
+          </c:choose>
+        </div>
+
+      </div><!-- End content-card -->
 
     </div><!-- End page-content -->
   </div><!-- End main-wrapper -->

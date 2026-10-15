@@ -67,6 +67,12 @@
                         <span>Đặt lịch hẹn</span>
                     </a>
                 </li>
+                <li>
+                    <a href="${pageContext.request.contextPath}/employee/register-schedule" class="${param.activeNav == 'register-schedule' ? 'active' : ''}">
+                        <i class="bi bi-calendar-plus"></i>
+                        <span>Đăng ký ca làm việc</span>
+                    </a>
+                </li>
 
                 <!-- 2. Quản lý Lịch hẹn (Sổ xuống gồm 2 nội dung) -->
                 <li class="sidebar-dropdown">
@@ -106,6 +112,48 @@
                     <a href="${pageContext.request.contextPath}/staff/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}">
                         <i class="bi bi-cash-coin"></i>
                         <span>Quản lý yêu cầu hoàn tiền</span>
+                    </a>
+                </li>
+            </c:when>
+
+            <%-- ==================== GIAO DIỆN DÀNH CHO KỸ THUẬT VIÊN (SPECIALIST) ==================== --%>
+            <c:when test="${sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist' || sessionScope.user.roleId == 4}">
+                <div class="sidebar-menu-header">Bàn làm việc Kỹ thuật viên</div>
+
+                <li>
+                    <a href="${pageContext.request.contextPath}/employee/schedule" class="${param.activeNav == 'schedule' ? 'active' : ''}">
+                        <i class="bi bi-calendar-week"></i>
+                        <span>Lịch làm việc của tôi</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="${pageContext.request.contextPath}/employee/register-schedule" class="${param.activeNav == 'register-schedule' ? 'active' : ''}">
+                        <i class="bi bi-calendar-plus"></i>
+                        <span>Đăng ký ca làm việc</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="${pageContext.request.contextPath}/specialist/waiting-list" class="${param.activeNav == 'waiting-list' ? 'active' : ''}">
+                        <i class="bi bi-clipboard2-pulse"></i>
+                        <span>Hàng đợi</span>
+                    </a>
+                </li>
+            </c:when>
+
+            <%-- ==================== GIAO DIỆN DÀNH CHO BÁC SĨ (DOCTOR) ==================== --%>
+            <c:when test="${sessionScope.user.role == 'doctor' || sessionScope.user.roleId == 3}">
+                <div class="sidebar-menu-header">Bàn làm việc Bác sĩ</div>
+
+                <li>
+                    <a href="${pageContext.request.contextPath}/employee/schedule" class="${param.activeNav == 'schedule' ? 'active' : ''}">
+                        <i class="bi bi-calendar-week"></i>
+                        <span>Lịch làm việc của tôi</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="${pageContext.request.contextPath}/employee/register-schedule" class="${param.activeNav == 'register-schedule' ? 'active' : ''}">
+                        <i class="bi bi-calendar-plus"></i>
+                        <span>Đăng ký ca làm việc</span>
                     </a>
                 </li>
             </c:when>
