@@ -22,12 +22,25 @@ public class ForgotPasswordServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String path = request.getServletPath();
+        HttpSession session = request.getSession();
+
+        if (session.getAttribute("error") != null) {
+            request.setAttribute("error", session.getAttribute("error"));
+            session.removeAttribute("error");
+        }
+        if (session.getAttribute("successMessage") != null) {
+            request.setAttribute("successMessage", session.getAttribute("successMessage"));
+            session.removeAttribute("successMessage");
+        }
 
         if ("/forgot-password/verify".equals(path)) {
+            if (session.getAttribute("resetEmail") == null) {
+                response.sendRedirect(request.getContextPath() + "/forgot-password");
+                return;
+            }
             request.getRequestDispatcher("/views/auth/verify-reset-otp.jsp").forward(request, response);
             return;
         } else if ("/forgot-password/reset".equals(path)) {
-            HttpSession session = request.getSession();
             if (session.getAttribute("resetEmail") == null || session.getAttribute("resetOtpVerified") == null) {
                 response.sendRedirect(request.getContextPath() + "/forgot-password");
                 return;

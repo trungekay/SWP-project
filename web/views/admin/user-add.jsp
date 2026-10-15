@@ -1,386 +1,297 @@
-<%@page contentType="text/html" pageEncoding="UTF-8" %>
-    <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-        <!DOCTYPE html>
-        <html lang="vi">
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Thêm Người Dùng - VisionCare Admin</title>
-            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-                rel="stylesheet">
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm Người Dùng - VisionCare Admin</title>
 
-            <jsp:include page="/views/admin/layout/admin-css.jsp" />
-            <style>
-                :root {
-                    --primary-color: #008b74;
-                    --primary-hover: #00705d;
-                    --bg-color: #f4f7f9;
-                    --sidebar-width: 250px;
-                    --text-main: #333333;
-                    --text-muted: #6c757d;
-                    --border-color: #e5e7eb;
-                }
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-                body {
-                    font-family: 'Inter', sans-serif;
-                    background-color: var(--bg-color);
-                    color: var(--text-main);
-                    overflow-x: hidden;
-                }
+    <!-- Admin Layout CSS -->
+    <jsp:include page="/views/admin/layout/admin-css.jsp" />
 
+    <style>
+        .admin-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            padding: 32px;
+        }
 
-                .main-wrapper {
-                    margin-left: var(--sidebar-width);
-                    min-height: 100vh;
-                }
+        .btn-primary {
+            background-color: #18a05e !important;
+            border-color: #18a05e !important;
+            color: #fff !important;
+        }
 
-                .page-content {
-                    padding: 40px;
-                    max-width: 1000px;
-                    margin: 0 auto;
-                }
+        .btn-primary:hover,
+        .btn-primary:focus,
+        .btn-primary:active {
+            background-color: #12824b !important;
+            border-color: #12824b !important;
+            color: #fff !important;
+            box-shadow: 0 4px 12px rgba(24, 160, 94, 0.3) !important;
+        }
 
-                .page-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    margin-bottom: 30px;
-                }
+        .text-primary {
+            color: #18a05e !important;
+        }
 
-                .page-title h2 {
-                    font-size: 24px;
-                    font-weight: 700;
-                    color: #0f172a;
-                    margin-bottom: 6px;
-                }
+        .bg-primary {
+            background-color: #18a05e !important;
+        }
 
-                .page-title p {
-                    color: var(--text-muted);
-                    font-size: 14px;
-                    margin: 0;
-                }
+        .form-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 6px;
+        }
 
-                .btn-back {
-                    background-color: white;
-                    border: 1px solid #cbd5e1;
-                    color: #475569;
-                    padding: 8px 16px;
-                    border-radius: 6px;
-                    font-size: 14px;
-                    font-weight: 500;
-                    text-decoration: none;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 8px;
-                }
+        .form-control, .form-select {
+            border: 1px solid #cbd5e1;
+            padding: 10px 14px;
+            font-size: 14px;
+            border-radius: 8px;
+            color: #0f172a;
+            transition: all 0.2s;
+        }
 
-                .btn-back:hover {
-                    background-color: #f8fafc;
-                    color: #0f172a;
-                }
+        .form-control:focus, .form-select:focus {
+            border-color: #18a05e;
+            box-shadow: 0 0 0 3px rgba(24, 160, 94, 0.15);
+            outline: none;
+        }
 
-                .form-card {
-                    background: white;
-                    border-radius: 16px;
-                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-                    padding: 40px;
-                    max-width: 850px;
-                    margin: 0 auto;
-                    border: 1px solid #f1f5f9;
-                }
+        .input-group-text {
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            color: #64748b;
+            border-radius: 8px 0 0 8px;
+        }
 
-                .form-card h3 {
-                    font-size: 20px;
-                    font-weight: 700;
-                    color: #1e293b;
-                    margin-bottom: 28px;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                }
+        .input-group:focus-within .input-group-text {
+            border-color: #18a05e;
+            color: #18a05e;
+        }
 
-                .form-label {
-                    font-size: 14px;
-                    color: #475569;
-                    margin-bottom: 8px;
-                }
+        .input-group .form-control, .input-group .form-select {
+            border-radius: 0 8px 8px 0;
+        }
 
-                .form-control,
-                .form-select,
-                .input-group-text {
-                    border: 1px solid #cbd5e1;
-                    padding: 12px 16px;
-                    font-size: 14px;
-                    color: #0f172a;
-                    transition: all 0.2s;
-                }
+        .doctor-box {
+            background-color: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
 
-                .input-group-text {
-                    padding: 12px 16px;
-                    background-color: #f8fafc;
-                    color: #64748b;
-                }
+<body>
+    <!-- Sidebar Include -->
+    <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
+        <jsp:param name="activeNav" value="users" />
+        <jsp:param name="activeSub" value="${param.type == 'patient' ? 'patient' : 'staff'}" />
+    </jsp:include>
 
-                .form-control:focus,
-                .form-select:focus {
-                    border-color: var(--primary-color);
-                    box-shadow: none;
-                    outline: none;
-                }
+    <!-- Main Content -->
+    <main class="main-wrapper">
+        <!-- Header Include -->
+        <jsp:include page="/views/admin/layout/admin-header.jsp" />
 
-                .form-control:focus+.input-group-text,
-                .input-group:focus-within .input-group-text {
-                    border-color: var(--primary-color);
-                    color: var(--primary-color);
-                }
-
-                .form-control::placeholder {
-                    color: #94a3b8;
-                }
-
-                .form-actions {
-                    display: flex;
-                    justify-content: flex-end;
-                    gap: 16px;
-                    margin-top: 32px;
-                    padding-top: 24px;
-                    border-top: 1px solid #f1f5f9;
-                }
-
-                .btn-cancel {
-                    background: white;
-                    border: 1px solid #cbd5e1;
-                    color: #475569;
-                    padding: 10px 24px;
-                    border-radius: 8px;
-                    font-weight: 500;
-                    font-size: 14px;
-                    text-decoration: none;
-                }
-
-                .btn-cancel:hover {
-                    background-color: #f8fafc;
-                    color: #0f172a;
-                }
-
-                .btn-submit {
-                    background-color: #18a05e;
-                    border: none;
-                    color: white;
-                    padding: 10px 24px;
-                    border-radius: 8px;
-                    font-weight: 500;
-                    font-size: 14px;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 8px;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                    box-shadow: 0 4px 12px rgba(24, 160, 94, 0.2);
-                }
-
-                .btn-submit:hover {
-                    background-color: #12824b;
-                    box-shadow: 0 4px 12px rgba(24, 160, 94, 0.4);
-                }
-            </style>
-        </head>
-
-        <body>
-
-            <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
-                <jsp:param name="activeNav" value="users" />
-            </jsp:include>
-
-            <main class="main-wrapper">
-                <!-- Header -->
-                <jsp:include page="/views/admin/layout/admin-header.jsp" />
-
-                <div class="page-content">
-                    <div class="page-header">
-                        <div class="page-title">
-                            <h2>Thêm Người dùng</h2>
-                            <p>Thêm người dùng mới vào hệ thống</p>
-                        </div>
-                        <a href="${pageContext.request.contextPath}/admin/users" class="btn-back">
-                            <i class="bi bi-arrow-left"></i> Quay lại danh sách
-                        </a>
-                    </div>
-
-                    <c:if test="${not empty requestScope.error}">
-                        <div class="alert alert-danger" style="max-width: 700px; margin: 0 auto 20px;">
-                            ${requestScope.error}</div>
-                    </c:if>
-
-                    <div class="form-card">
-                        <h3><i class="bi bi-person-lines-fill text-primary"
-                                style="color: var(--primary-color) !important;"></i> Thông tin người dùng mới</h3>
-                        <form action="${pageContext.request.contextPath}/admin/users/add" method="POST">
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted fw-semibold">Họ và Tên</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0"><i
-                                                class="bi bi-person text-secondary"></i></span>
-                                        <input type="text" name="fullName" class="form-control border-start-0 ps-0"
-                                            placeholder="Nhập họ và tên đầy đủ" required>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted fw-semibold">Email</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0"><i
-                                                class="bi bi-envelope text-secondary"></i></span>
-                                        <input type="email" name="email" class="form-control border-start-0 ps-0"
-                                            placeholder="example@system.com" required>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted fw-semibold">Số điện thoại</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0"><i
-                                                class="bi bi-telephone text-secondary"></i></span>
-                                        <input type="text" name="phone" class="form-control border-start-0 ps-0"
-                                            placeholder="09xx xxx xxx" pattern="[0-9]{10}" maxlength="10" minlength="10"
-                                            title="Số điện thoại phải gồm đúng 10 chữ số" required>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted fw-semibold">Ngày sinh (DOB)</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0"><i
-                                                class="bi bi-calendar3 text-secondary"></i></span>
-                                        <input type="text" name="dob" class="form-control border-start-0 ps-0"
-                                            placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}"
-                                            title="Nhập ngày sinh theo định dạng dd/mm/yyyy">
-                                    </div>
-                                </div>
-
-                                <div class="col-md-12">
-                                    <label class="form-label text-muted fw-semibold">Địa chỉ</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0"><i
-                                                class="bi bi-geo-alt text-secondary"></i></span>
-                                        <input type="text" name="address" class="form-control border-start-0 ps-0"
-                                            placeholder="Nhập địa chỉ chi tiết">
-                                    </div>
-                                </div>
-
-
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted fw-semibold">Vai trò (Role)</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0"><i
-                                                class="bi bi-shield-lock text-secondary"></i></span>
-                                        <select name="roleId" class="form-select border-start-0 ps-0"
-                                            ${param.type=='patient'
-                                            ? 'readonly style="pointer-events: none; background-color: #f8fafc;"' : ''
-                                            }>
-                                            <c:choose>
-                                                <c:when test="${param.type == 'patient'}">
-                                                    <option value="6" selected>Patient (Khách hàng cơ bản)</option>
-                                                </c:when>
-                                                <c:otherwise>
-                                                    <option value="5">Staff (Nhân viên)</option>
-                                                    <option value="3">Doctor (Bác sĩ)</option>
-                                                    <option value="4">Medical Specialist (Kỹ thuật viên)</option>
-                                                    <option value="2">Director (Quản lý)</option>
-                                                    <option value="1">System Admin (Toàn quyền)</option>
-                                                </c:otherwise>
-                                            </c:choose>
-                                        </select>
-                                    </div>
-                                    <c:if test="${param.type == 'patient'}">
-                                        <div class="form-text text-muted mt-2"><i
-                                                class="bi bi-info-circle me-1"></i>Đang tạo hồ sơ Bệnh nhân mới.</div>
-                                    </c:if>
-                                </div>
-                            </div>
-
-                            <div id="doctorFields" class="bg-light p-4 rounded-3 mt-4"
-                                style="display: none; border: 1px dashed #cbd5e1;">
-                                <h4 class="mb-4" style="font-size: 16px; color: #0f172a; font-weight: 600;"><i
-                                        class="bi bi-briefcase-medical text-primary me-2"></i>Thông tin Chuyên môn (Dành
-                                    cho Bác sĩ)</h4>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label text-muted fw-semibold" style="font-size: 13px;">Mã
-                                            Chứng chỉ hành nghề</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text bg-white"><i
-                                                    class="bi bi-upc-scan"></i></span>
-                                            <input type="text" name="licenseNumber" class="form-control"
-                                                placeholder="VD: BS-12345/EYE" value="${param.licenseNumber}">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label text-muted fw-semibold" style="font-size: 13px;">Chuyên
-                                            khoa</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text bg-white"><i
-                                                    class="bi bi-hospital"></i></span>
-                                            <input type="text" name="specialty" class="form-control"
-                                                placeholder="VD: Nhãn khoa tổng quát" value="${param.specialty}">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label text-muted fw-semibold" style="font-size: 13px;">Phòng
-                                            làm việc (ID)</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text bg-white"><i
-                                                    class="bi bi-door-open"></i></span>
-                                            <input type="number" name="roomId" class="form-control"
-                                                placeholder="Nhập ID phòng (ví dụ: 1, 2, 3...)" value="${param.roomId}">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-12 mt-3">
-                                        <label class="form-label">Tiểu sử (Biography)</label>
-                                        <div class="input-group">
-                                            <textarea name="biography" class="form-control" rows="3"
-                                                placeholder="Nhập thông tin giới thiệu, tiểu sử...">${param.biography}</textarea>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="form-actions mt-4">
-                                <a href="${pageContext.request.contextPath}/admin/users" class="btn-cancel">Hủy bỏ</a>
-                                <button type="submit" class="btn-submit">
-                                    <i class="bi bi-plus-square"></i> Thêm Người dùng
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+        <div class="page-content">
+            <!-- Page Header -->
+            <div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                <div class="page-title">
+                    <c:choose>
+                        <c:when test="${param.type == 'patient'}">
+                            <h2>Thêm Hồ Sơ Bệnh Nhân</h2>
+                            <p class="text-muted">Đăng ký thông tin tài khoản khách hàng / bệnh nhân mới</p>
+                        </c:when>
+                        <c:otherwise>
+                            <h2>Thêm Nhân Sự Mới</h2>
+                            <p class="text-muted">Tạo mới tài khoản cán bộ nhân viên, bác sĩ vào hệ thống</p>
+                        </c:otherwise>
+                    </c:choose>
                 </div>
-            </main>
+                <a href="${pageContext.request.contextPath}/admin/users?type=${param.type == 'patient' ? 'patient' : 'staff'}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
+                </a>
+            </div>
 
-            <script>
-                function checkRole() {
-                    var roleSelect = document.querySelector('select[name="roleId"]');
-                    var doctorFields = document.getElementById('doctorFields');
-                    if (roleSelect && doctorFields) {
-                        var val = roleSelect.value;
-                        if (val == '3' || val == '4') {
-                            doctorFields.style.display = 'block';
-                        } else {
-                            doctorFields.style.display = 'none';
-                        }
-                    }
+            <!-- Error Notification -->
+            <c:if test="${not empty requestScope.error}">
+                <div class="alert alert-danger alert-dismissible fade show" role="alert" style="max-width: 850px; margin: 0 auto 20px;">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>${requestScope.error}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </c:if>
+
+            <!-- Form Card -->
+            <div class="admin-card" style="max-width: 850px; margin: 0 auto;">
+                <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="bi bi-person-plus me-2 text-primary"></i>Thông tin Người dùng Mới
+                    </h5>
+                </div>
+
+                <form action="${pageContext.request.contextPath}/admin/users/add" method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Họ và Tên <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                <input type="text" name="fullName" class="form-control" placeholder="Nhập họ và tên đầy đủ" value="${param.fullName}" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Địa chỉ Email <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                <input type="email" name="email" class="form-control" placeholder="example@visioncare.vn" value="${param.email}" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                                <input type="text" name="phone" class="form-control" placeholder="09xxxxxxxx" pattern="[0-9]{10}" maxlength="10" minlength="10" title="Số điện thoại phải gồm đúng 10 chữ số" value="${param.phone}" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Ngày sinh (DOB)</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+                                <input type="text" name="dob" class="form-control" placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}" title="Nhập ngày sinh theo định dạng dd/mm/yyyy" value="${param.dob}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label">Địa chỉ liên hệ</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                                <input type="text" name="address" class="form-control" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành..." value="${param.address}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Vai trò trong hệ thống <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                                <select name="roleId" class="form-select" ${param.type == 'patient' ? 'readonly style="pointer-events: none; background-color: #f8fafc;"' : ''}>
+                                    <c:choose>
+                                        <c:when test="${param.type == 'patient'}">
+                                            <option value="6" selected>Patient (Khách hàng &amp; Bệnh nhân)</option>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <option value="5" ${param.roleId == '5' ? 'selected' : ''}>Staff (Nhân viên phòng khám)</option>
+                                            <option value="3" ${param.roleId == '3' ? 'selected' : ''}>Doctor (Bác sĩ chuyên khoa)</option>
+                                            <option value="4" ${param.roleId == '4' ? 'selected' : ''}>Medical Specialist (Kỹ thuật viên y tế)</option>
+                                            <option value="2" ${param.roleId == '2' ? 'selected' : ''}>Director (Quản lý chuyên môn)</option>
+                                            <option value="1" ${param.roleId == '1' ? 'selected' : ''}>System Admin (Quản trị hệ thống)</option>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </select>
+                            </div>
+                            <div class="form-text small text-muted mt-1">
+                                <c:choose>
+                                    <c:when test="${param.type == 'patient'}">
+                                        <i class="bi bi-info-circle me-1"></i>Hồ sơ bệnh nhân được phân quyền mặc định là Patient.
+                                    </c:when>
+                                    <c:otherwise>
+                                        Mật khẩu mặc định khởi tạo sẽ là <code>123</code> và được gửi qua email.
+                                    </c:otherwise>
+                                </c:choose>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Doctor/Specialist Fields -->
+                    <div id="doctorFields" class="doctor-box" style="display: none;">
+                        <h6 class="fw-bold mb-3 text-dark">
+                            <i class="bi bi-briefcase-medical text-primary me-2"></i>Thông tin Chuyên môn Y khoa
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Mã Chứng chỉ hành nghề</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-card-text"></i></span>
+                                    <input type="text" name="licenseNumber" class="form-control" placeholder="VD: CCHN-12345/BYT" value="${param.licenseNumber}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Chuyên khoa</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-hospital"></i></span>
+                                    <input type="text" name="specialty" class="form-control" placeholder="VD: Nhãn khoa tổng quát, Khúc xạ" value="${param.specialty}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Phòng làm việc (ID)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-door-open"></i></span>
+                                    <input type="number" name="roomId" class="form-control" min="1" placeholder="Nhập ID phòng (ví dụ: 1, 2, 3...)" value="${param.roomId}">
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Tiểu sử tóm tắt (Biography)</label>
+                                <textarea name="biography" class="form-control" rows="3" placeholder="Nhập tóm tắt quá trình học tập, kinh nghiệm công tác...">${param.biography}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <a href="${pageContext.request.contextPath}/admin/users?type=${param.type == 'patient' ? 'patient' : 'staff'}" class="btn btn-secondary px-4 rounded-pill">
+                            Hủy bỏ
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4 rounded-pill">
+                            <i class="bi bi-check-lg me-1"></i> Lưu thông tin
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        function checkDoctorRole() {
+            var roleSelect = document.querySelector('select[name="roleId"]');
+            var doctorFields = document.getElementById('doctorFields');
+            if (roleSelect && doctorFields) {
+                var val = roleSelect.value;
+                if (val === '3' || val === '4') {
+                    doctorFields.style.display = 'block';
+                } else {
+                    doctorFields.style.display = 'none';
                 }
-                document.addEventListener('DOMContentLoaded', function () {
-                    var roleSelect = document.querySelector('select[name="roleId"]');
-                    if (roleSelect) {
-                        roleSelect.addEventListener('change', checkRole);
-                        checkRole();
-                    }
-                });
-            </script>
-        </body>
+            }
+        }
 
-        </html>
+        document.addEventListener('DOMContentLoaded', function () {
+            var roleSelect = document.querySelector('select[name="roleId"]');
+            if (roleSelect) {
+                roleSelect.addEventListener('change', checkDoctorRole);
+                checkDoctorRole();
+            }
+        });
+    </script>
+</body>
+</html>
