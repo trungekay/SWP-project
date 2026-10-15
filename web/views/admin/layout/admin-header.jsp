@@ -43,10 +43,25 @@
     <div class="header-right ms-auto">
         <div class="dropdown">
             <div class="user-profile" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; display: flex; align-items: center; gap: 10px;">
-                <div class="avatar-circle">QU</div>
+                <div class="avatar-circle">
+                    <c:choose>
+                        <c:when test="${not empty sessionScope.user.fullName}">
+                            ${sessionScope.user.fullName.substring(0, 1).toUpperCase()}
+                        </c:when>
+                        <c:otherwise>VC</c:otherwise>
+                    </c:choose>
+                </div>
                 <div class="user-info">
-                    <p class="name">Quản trị viên Hệ thống</p>
-                    <p class="role">Super Admin</p>
+                    <p class="name">${not empty sessionScope.user.fullName ? sessionScope.user.fullName : 'Nhân sự'}</p>
+                    <p class="role">
+                        <c:choose>
+                            <c:when test="${sessionScope.user.role == 'admin'}">Quản trị viên (Admin)</c:when>
+                            <c:when test="${sessionScope.user.role == 'staff'}">Nhân viên (Staff)</c:when>
+                            <c:when test="${sessionScope.user.role == 'doctor'}">Bác sĩ (Doctor)</c:when>
+                            <c:when test="${sessionScope.user.role == 'medical_specialist'}">Chuyên viên Khúc xạ</c:when>
+                            <c:otherwise>${sessionScope.user.role}</c:otherwise>
+                        </c:choose>
+                    </p>
                 </div>
                 <i class="bi bi-chevron-down" style="font-size: 12px; color: #64748b; margin-left: 4px;"></i>
             </div>

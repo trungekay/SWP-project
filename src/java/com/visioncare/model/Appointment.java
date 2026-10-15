@@ -24,6 +24,17 @@ public class Appointment {
     private String slotName;
     private String invoiceStatus;
     private int invoiceId;
+    private boolean hasRefundRequest;
+    private int patientId;
+    private String address;
+    private int staffEmployeeId;
+    private String staffName;
+    private String checkinTime;
+    private String roomName;
+    private String medicalNotes;
+    private String createdAt;
+    private String endTime;
+    private int queueNumber;
 
     public Appointment() {
     }
@@ -115,7 +126,6 @@ public class Appointment {
     public void setUserId(int userId) {
         this.userId = userId;
     }
-
     public int getServiceId() {
         return serviceId;
     }
@@ -165,6 +175,67 @@ public class Appointment {
         this.invoiceId = invoiceId;
     }
 
+    public int getPatientId() {
+        return patientId;
+    }
+    public void setPatientId(int patientId) {
+        this.patientId = patientId;
+    }
+    public String getAddress() {
+        return address;
+    }
+    public void setAddress(String address) {
+        this.address = address;
+    }
+    public int getStaffEmployeeId() {
+        return staffEmployeeId;
+    }
+    public void setStaffEmployeeId(int staffEmployeeId) {
+        this.staffEmployeeId = staffEmployeeId;
+    }
+    public String getStaffName() {
+        return staffName;
+    }
+    public void setStaffName(String staffName) {
+        this.staffName = staffName;
+    }
+    public String getCheckinTime() {
+        return checkinTime;
+    }
+    public void setCheckinTime(String checkinTime) {
+        this.checkinTime = checkinTime;
+    }
+    public String getRoomName() {
+        return roomName;
+    }
+    public void setRoomName(String roomName) {
+        this.roomName = roomName;
+    }
+    public String getMedicalNotes() {
+        return medicalNotes;
+    }
+    public void setMedicalNotes(String medicalNotes) {
+        this.medicalNotes = medicalNotes;
+    }
+    public String getCreatedAt() {
+        return createdAt;
+    }
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
+    }
+    public String getEndTime() {
+        return endTime;
+    }
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
+    }
+    public int getQueueNumber() {
+        return queueNumber;
+    }
+    public void setQueueNumber(int queueNumber) {
+        this.queueNumber = queueNumber;
+    }
+
     public long getTotalAmount() {
         return totalAmount;
     }
@@ -177,5 +248,12 @@ public class Appointment {
     }
     public void setBalanceDue(long balanceDue) {
         this.balanceDue = balanceDue;
+    }
+
+    public boolean isHasRefundRequest() {
+        return hasRefundRequest;
+    }
+    public void setHasRefundRequest(boolean hasRefundRequest) {
+        this.hasRefundRequest = hasRefundRequest;
     }
 }

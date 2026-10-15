@@ -4,6 +4,7 @@ import com.visioncare.model.Appointment;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,11 +15,14 @@ public class HistoryDAO {
     // For medical-history.jsp (Lịch sử khám)
     public List<Map<String, Object>> getMedicalRecords(int accountId) throws Exception {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT a.Appointment_ID, m.Created_At AS Date, e.Full_Name AS DoctorName " +
+        String sql = "SELECT m.Record_ID, a.Appointment_ID, a.Status, m.Created_At AS Date, e.Full_Name AS DoctorName, " +
+                     "i.Invoice_ID, i.Status AS Invoice_Status, i.Total_Amount, " +
+                     "(SELECT TOP 1 s.Service_Name FROM Procedure_Order po JOIN Service s ON po.Service_ID = s.Service_ID WHERE po.Record_ID = m.Record_ID) AS Dynamic_Service " +
                      "FROM Medical_Record m " +
                      "JOIN Appointment a ON m.Appointment_ID = a.Appointment_ID " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
                      "JOIN Employee_Profile e ON m.Doctor_Employee_ID = e.Employee_ID " +
+                     "LEFT JOIN Master_Invoice i ON a.Appointment_ID = i.Appointment_ID " +
                      "WHERE p.Account_ID = ? ORDER BY m.Created_At DESC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -28,8 +32,17 @@ public class HistoryDAO {
                     Map<String, Object> map = new HashMap<>();
                     map.put("date", rs.getDate("Date"));
                     map.put("doctorName", rs.getString("DoctorName"));
-                    map.put("id", rs.getInt("Appointment_ID"));
-                    map.put("serviceName", "Khám chuyên khoa");
+                    map.put("status", rs.getString("Status"));
+                    int recId = rs.getInt("Record_ID");
+                    int apptId = rs.getInt("Appointment_ID");
+                    map.put("recordId", recId);
+                    map.put("appointmentId", apptId);
+                    map.put("id", recId > 0 ? recId : apptId);
+                    int invId = rs.getInt("Invoice_ID");
+                    map.put("invoiceId", invId > 0 ? invId : 0);
+                    map.put("invoiceStatus", rs.getString("Invoice_Status"));
+                    String dynamicSvc = rs.getString("Dynamic_Service");
+                    map.put("serviceName", dynamicSvc != null ? dynamicSvc : "Khám chuyên khoa");
                     list.add(map);
                 }
             }
@@ -78,27 +91,42 @@ public class HistoryDAO {
     // For refund-request.jsp
     public List<Map<String, Object>> getRefunds(int accountId) throws Exception {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT r.Refund_ID, r.Invoice_ID, r.Refund_Amount, r.Reason, r.Status " +
+        String sql = "SELECT r.Refund_ID, r.Invoice_ID, r.Refund_Amount, r.Reason, r.Status, r.Created_At, " +
+                     "p.Full_Name AS Patient_Name, p.Phone AS Patient_Phone, i.Appointment_ID " +
                      "FROM Refund_Request r " +
                      "JOIN Patient p ON r.Patient_ID = p.Patient_ID " +
+                     "LEFT JOIN Master_Invoice i ON r.Invoice_ID = i.Invoice_ID " +
                      "WHERE p.Account_ID = ? ORDER BY r.Refund_ID DESC";
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Map<String, Object> map = new HashMap<>();
-                    map.put("id", rs.getInt("Refund_ID"));
-                    map.put("invoiceId", rs.getInt("Invoice_ID"));
-                    map.put("amount", String.format("%,d", rs.getLong("Refund_Amount")));
-                    map.put("reason", rs.getString("Reason"));
-                    
+                    int refundId = rs.getInt("Refund_ID");
+                    int invoiceId = rs.getInt("Invoice_ID");
+                    int apptId = rs.getInt("Appointment_ID");
                     String status = rs.getString("Status");
                     String statusVn = status;
-                    if ("Pending".equals(status)) statusVn = "Đang chờ";
-                    else if ("Approved".equals(status)) statusVn = "Đã hoàn tiền";
-                    else if ("Rejected".equals(status)) statusVn = "Từ chối";
-                    map.put("status", statusVn);
+                    if ("Pending".equals(status)) statusVn = "Chờ duyệt";
+                    else if ("Approved".equals(status)) statusVn = "Đã xác nhận";
+                    else if ("Rejected".equals(status)) statusVn = "Đã từ chối";
+
+                    map.put("id", refundId);
+                    map.put("formattedId", String.format("#REF-%03d", refundId));
+                    map.put("invoiceId", invoiceId);
+                    map.put("formattedInvoiceId", String.format("#INV-%05d", invoiceId));
+                    map.put("appointmentId", apptId);
+                    map.put("formattedApptId", apptId > 0 ? ("#APT-" + apptId) : "N/A");
+                    map.put("amount", String.format("%,d", rs.getLong("Refund_Amount")));
+                    map.put("amountFmt", String.format("%,d đ", rs.getLong("Refund_Amount")));
+                    map.put("reason", rs.getString("Reason"));
+                    map.put("status", status);
+                    map.put("statusVn", statusVn);
+                    map.put("patientName", rs.getString("Patient_Name"));
+                    map.put("patientPhone", rs.getString("Patient_Phone"));
+                    map.put("createdAt", rs.getTimestamp("Created_At") != null ? sdf.format(rs.getTimestamp("Created_At")) : "N/A");
                     
                     list.add(map);
                 }

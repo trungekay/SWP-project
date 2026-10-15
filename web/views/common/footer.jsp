@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
+<c:if test="${param.hideFooter != 'true'}">
   <footer id="footer" class="footer light-background">
 
     <div class="container footer-top">
@@ -53,6 +54,7 @@
     </div>
 
   </footer>
+</c:if>
 
   <!-- Scroll Top -->
   <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
