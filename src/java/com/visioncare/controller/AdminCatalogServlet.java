@@ -57,6 +57,8 @@ public class AdminCatalogServlet extends HttpServlet {
                 }
                 request.setAttribute("item", item);
                 request.setAttribute("kind", service ? "service" : "supply");
+                request.setAttribute("catalogReturnTab", service ? "services"
+                        : supplyTab(request.getParameter("returnTab"), id == 0 ? null : ((MedicalSupply) item).getCategory()));
                 request.getRequestDispatcher("/views/admin/catalog-edit.jsp").forward(request, response);
             }
         } catch (IllegalArgumentException e) {
@@ -116,7 +118,8 @@ public class AdminCatalogServlet extends HttpServlet {
                         upload == null ? null : upload.getBytes(),
                         upload == null ? null : upload.getMimeType());
             }
-            response.sendRedirect(request.getContextPath() + "/admin/catalog?tab=" + (service ? "services" : "supplies")
+            response.sendRedirect(request.getContextPath() + "/admin/catalog?tab="
+                    + (service ? "services" : supplyTab(request.getParameter("returnTab"), request.getParameter("category")))
                     + (id == 0 ? "&created=1" : "&updated=1") + "&id=" + savedId);
         } catch (IllegalArgumentException e) {
             request.setAttribute("error", e.getMessage() == null ? "Thông tin nhập không hợp lệ." : e.getMessage());
@@ -145,6 +148,8 @@ public class AdminCatalogServlet extends HttpServlet {
         }
         request.setAttribute("item", item);
         request.setAttribute("kind", service ? "service" : "supply");
+        request.setAttribute("catalogReturnTab", service ? "services"
+                : supplyTab(request.getParameter("returnTab"), request.getParameter("category")));
         request.getRequestDispatcher("/views/admin/catalog-edit.jsp").forward(request, response);
     }
 
@@ -205,12 +210,21 @@ public class AdminCatalogServlet extends HttpServlet {
                 return;
             }
             response.sendRedirect(request.getContextPath() + "/admin/catalog?tab="
-                    + (service ? "services" : "supplies") + "&deleted=1");
+                    + (service ? "services" : supplyTab(request.getParameter("returnTab"), null)) + "&deleted=1");
         } catch (Exception e) {
             log("Could not delete catalog item", e);
             response.sendRedirect(request.getContextPath() + "/admin/catalog?tab="
-                    + (service ? "services" : "supplies") + "&deleteError=1");
+                    + (service ? "services" : supplyTab(request.getParameter("returnTab"), null)) + "&deleteError=1");
         }
+    }
+
+    private String supplyTab(String requested, String category) {
+        if ("supplies".equals(requested) || "consumables".equals(requested) || "retail".equals(requested)) {
+            return requested;
+        }
+        if ("Vật tư y tế tiêu hao".equals(category)) return "consumables";
+        if ("Thuốc & Dung dịch".equals(category) || "Kính & Phụ kiện".equals(category)) return "retail";
+        return "supplies";
     }
 
     private CatalogDAO.ImageData imageUpload(HttpServletRequest request) throws Exception {
