@@ -1,14 +1,24 @@
 package com.visioncare.model;
 
-public class ServiceCategory {
-    private final int id;
-    private final String name;
+public enum ServiceCategory {
+    CONSULTATION("Khám và tư vấn"),
+    DIAGNOSTICS("Kiểm tra và chẩn đoán"),
+    TREATMENT("Điều trị và thủ thuật"),
+    OTHER("Khác"),
+    EXTERNAL("Dịch vụ ngoài");
 
-    public ServiceCategory(int id, String name) {
-        this.id = id;
-        this.name = name;
+    private final String vietnameseName;
+
+    ServiceCategory(String vietnameseName) {
+        this.vietnameseName = vietnameseName;
     }
 
-    public int getId() { return id; }
-    public String getName() { return name; }
+    public String getVietnameseName() { return vietnameseName; }
+
+    public static ServiceCategory fromVietnameseName(String name) {
+        for (ServiceCategory category : values()) {
+            if (category.vietnameseName.equals(name)) return category;
+        }
+        return null;
+    }
 }

@@ -25,7 +25,7 @@ public class ProcedureOrderDAO {
         "    po.Service_ID, " +
         "    po.Status, " +
         "    s.Service_Name, " +
-        "    s.Actual_Price, " +
+        "    po.Actual_Price AS Service_Price, " +
         "    spec.Full_Name AS Specialist_Name, " +
         "    spec.Phone AS Specialist_Phone, " +
         "    r.Room_Name, " +
@@ -42,7 +42,7 @@ public class ProcedureOrderDAO {
         "    p.DOB AS Patient_DOB, " +
         "    p.Address AS Patient_Address " +
         "FROM Procedure_Order po " +
-        "JOIN Service s ON po.Service_ID = s.Service_ID " +
+        "JOIN Service_Catalog s ON po.Service_ID = s.Service_ID " +
         "JOIN Medical_Record mr ON po.Record_ID = mr.Record_ID " +
         "JOIN Appointment a ON mr.Appointment_ID = a.Appointment_ID " +
         "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
@@ -393,17 +393,18 @@ public class ProcedureOrderDAO {
      * Thêm chỉ định dịch vụ mới (hữu ích cho Bác sĩ khi khám hoặc để test dữ liệu)
      */
     public int createProcedureOrder(int recordId, int serviceId, Integer specialistEmployeeId, String status) throws Exception {
-        String sql = "INSERT INTO Procedure_Order (Record_ID, Service_ID, Specialist_Employee_ID, Status) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO Procedure_Order (Record_ID, Service_ID, Specialist_Employee_ID, Status, Actual_Price) " +
+                     "SELECT ?, sc.Service_ID, ?, ?, sc.Price FROM Service_Catalog sc WHERE sc.Service_ID = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, recordId);
-            ps.setInt(2, serviceId);
             if (specialistEmployeeId != null && specialistEmployeeId > 0) {
-                ps.setInt(3, specialistEmployeeId);
+                ps.setInt(2, specialistEmployeeId);
             } else {
-                ps.setNull(3, Types.INTEGER);
+                ps.setNull(2, Types.INTEGER);
             }
-            ps.setString(4, (status != null && !status.isEmpty()) ? status : "Pending");
+            ps.setString(3, (status != null && !status.isEmpty()) ? status : "Pending");
+            ps.setInt(4, serviceId);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
@@ -434,7 +435,7 @@ public class ProcedureOrderDAO {
         po.setStatus(rs.getString("Status"));
 
         po.setServiceName(rs.getString("Service_Name"));
-        po.setServicePrice(rs.getDouble("Actual_Price"));
+        po.setServicePrice(rs.getDouble("Service_Price"));
 
         po.setSpecialistName(rs.getString("Specialist_Name"));
         po.setSpecialistPhone(rs.getString("Specialist_Phone"));

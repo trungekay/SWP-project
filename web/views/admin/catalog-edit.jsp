@@ -62,13 +62,10 @@
             <div class="catalog-form-grid">
               <label>Mã dịch vụ<input name="code" maxlength="20" value="${fn:escapeXml(item.code)}" placeholder="VD: NK-01"></label>
               <label><span class="catalog-label-title catalog-service-label">Nhóm dịch vụ <em>*</em></span>
-                <select name="categoryId" required>
-                  <c:if test="${empty selectedCategoryId}"><option value="" selected disabled>Chọn nhóm dịch vụ</option></c:if>
+                <select name="category" required>
+                  <option value="" disabled ${empty item.category ? 'selected' : ''}>Chọn nhóm dịch vụ</option>
                   <c:forEach items="${serviceCategories}" var="category">
-                    <c:choose>
-                      <c:when test="${selectedCategoryId eq category.id}"><option value="${category.id}" selected="selected"><c:out value="${category.name}" /></option></c:when>
-                      <c:otherwise><option value="${category.id}"><c:out value="${category.name}" /></option></c:otherwise>
-                    </c:choose>
+                    <option value="${fn:escapeXml(category.vietnameseName)}" ${item.category eq category.vietnameseName ? 'selected' : ''}><c:out value="${category.vietnameseName}" /></option>
                   </c:forEach>
                 </select>
               </label>
@@ -80,8 +77,15 @@
           </c:when>
           <c:otherwise>
             <label><span class="catalog-label-title">Tên vật tư / dược phẩm <em>*</em></span><input name="name" maxlength="255" required value="${fn:escapeXml(item.name)}"></label>
-            <label><span class="catalog-label-title">Phân loại <em>*</em></span><input name="category" maxlength="100" required value="${fn:escapeXml(item.category)}" placeholder="VD: Dung dịch nhỏ mắt"></label>
-            <div class="catalog-form-grid"><label><span class="catalog-label-title">Đơn vị <em>*</em></span><input name="unit" maxlength="30" required value="${fn:escapeXml(item.unit)}" placeholder="VD: lọ, hộp, cặp"></label><label><span class="catalog-label-title">Đơn giá (VNĐ) <em>*</em></span><input name="price" type="number" min="0" step="1" required value="${fn:escapeXml(item.price)}"></label></div>
+            <label><span class="catalog-label-title">Phân loại <em>*</em></span>
+              <select name="category" required>
+                <option value="" disabled ${empty item.category ? 'selected' : ''}>Chọn phân loại</option>
+                <c:forEach items="${supplyCategories}" var="category">
+                  <option value="${fn:escapeXml(category.vietnameseName)}" ${item.category eq category.vietnameseName ? 'selected' : ''}><c:out value="${category.vietnameseName}" /></option>
+                </c:forEach>
+              </select>
+            </label>
+            <label><span class="catalog-label-title">Đơn giá (VNĐ) <em>*</em></span><input name="price" type="number" min="0" step="1" required value="${fn:escapeXml(item.price)}"></label>
           </c:otherwise>
         </c:choose>
         <div class="catalog-image-field">
@@ -94,7 +98,7 @@
           <small id="catalogImageHint">JPG, PNG hoặc WebP, tối đa 5 MB. Để trống nếu muốn giữ ảnh hiện tại.</small>
           <c:choose>
             <c:when test="${kind == 'service' && item.uploadedImage}"><div class="catalog-image-current"><span>Ảnh hiện tại</span><img class="catalog-image-preview" src="${pageContext.request.contextPath}/catalog-image?kind=service&amp;id=${item.id}" alt="Ảnh dịch vụ hiện tại"></div></c:when>
-            <c:when test="${kind == 'service' && not empty item.image}"><div class="catalog-image-current"><span>Ảnh hiện tại</span><img class="catalog-image-preview" src="${pageContext.request.contextPath}/assets/img/${fn:escapeXml(item.image)}" alt="Ảnh dịch vụ hiện tại"></div></c:when>
+            <c:when test="${kind == 'service' && not empty item && not item.uploadedImage}"><div class="catalog-image-current"><span>Ảnh mặc định</span><img class="catalog-image-preview" src="${pageContext.request.contextPath}/assets/img/${item.defaultImagePath}" alt="Ảnh mặc định của dịch vụ"></div></c:when>
             <c:when test="${kind == 'supply' && item.uploadedImage}"><div class="catalog-image-current"><span>Ảnh hiện tại</span><img class="catalog-image-preview" src="${pageContext.request.contextPath}/catalog-image?kind=supply&amp;id=${item.id}" alt="Ảnh vật tư hiện tại"></div></c:when>
           </c:choose>
           <div class="catalog-image-selected" id="catalogSelectedImage" hidden><span>Ảnh vừa chọn</span><img class="catalog-image-preview" alt="Ảnh minh họa vừa chọn"></div>
@@ -108,6 +112,6 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="${pageContext.request.contextPath}/assets/js/admin-catalog-edit.js"></script>
+    <script src="${pageContext.request.contextPath}/assets/js/admin-catalog.js?v=6" defer></script>
 </body>
 </html>

@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabs = [...document.querySelectorAll('.catalog-tab')];
   const servicesView = document.getElementById('servicesView');
   const suppliesView = document.getElementById('suppliesView');
+  if (servicesView && suppliesView) {
   const cards = [...document.querySelectorAll('.catalog-service')];
   const rows = [...document.querySelectorAll('#suppliesView .catalog-table tbody tr')];
   const successToast = document.getElementById('catalogSuccessToast');
@@ -81,18 +82,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function filterServices() {
     const term = document.getElementById('serviceSearch').value.trim().toLocaleLowerCase('vi');
-    const category = document.getElementById('categorySelect').value;
     let count = 0;
     cards.forEach((card) => {
-      const visible = (category === 'all' || card.dataset.categoryId === category)
-        && card.textContent.toLocaleLowerCase('vi').includes(term);
+      const visible = card.textContent.toLocaleLowerCase('vi').includes(term);
       card.hidden = !visible;
       if (visible) count++;
     });
     document.getElementById('serviceEmpty').hidden = count > 0;
   }
   document.getElementById('serviceSearch').addEventListener('input', filterServices);
-  document.getElementById('categorySelect').addEventListener('change', filterServices);
   filterServices();
 
   document.getElementById('supplySearch').addEventListener('input', (event) => {
@@ -105,4 +103,30 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('supplyEmpty').hidden = count > 0;
   });
   document.getElementById('supplyEmpty').hidden = rows.length > 0;
+  }
+
+  const input = document.getElementById('catalogImageFile');
+  const fileName = document.getElementById('catalogFileName');
+  const previewWrap = document.getElementById('catalogSelectedImage');
+  const preview = previewWrap?.querySelector('img');
+  if (!input || !fileName || !previewWrap || !preview) return;
+
+  let previewUrl;
+  input.addEventListener('change', () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = undefined;
+    const file = input.files?.[0];
+    fileName.textContent = file ? file.name : 'Chưa chọn ảnh mới';
+    fileName.classList.toggle('has-file', Boolean(file));
+    previewWrap.hidden = !file;
+    if (file) {
+      previewUrl = URL.createObjectURL(file);
+      preview.src = previewUrl;
+    } else {
+      preview.removeAttribute('src');
+    }
+  });
+  window.addEventListener('pagehide', () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+  });
 });

@@ -54,7 +54,7 @@ public class HistoryDAO {
     public List<Map<String, Object>> getInvoices(int accountId) throws Exception {
         List<Map<String, Object>> list = new ArrayList<>();
         String sql = "SELECT i.Invoice_ID, i.Close_At AS Date, i.Total_Amount, i.Status, " +
-                     "(SELECT STRING_AGG(s.Service_Name, ', ') FROM Procedure_Order po JOIN Service s ON po.Service_ID = s.Service_ID WHERE po.Record_ID = m.Record_ID) AS Description, " +
+                     "(SELECT STRING_AGG(s.Service_Name, ', ') FROM Procedure_Order po JOIN Service_Catalog s ON po.Service_ID = s.Service_ID WHERE po.Record_ID = m.Record_ID) AS Description, " +
                      "(SELECT TOP 1 Payment_Gateway FROM Payment_Transaction pt WHERE pt.Invoice_ID = i.Invoice_ID ORDER BY pt.Transaction_ID DESC) AS Method " +
                      "FROM Master_Invoice i " +
                      "JOIN Appointment a ON i.Appointment_ID = a.Appointment_ID " +
