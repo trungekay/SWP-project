@@ -548,12 +548,20 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        const detailModal = new bootstrap.Modal(document.getElementById('invoiceDetailModal'));
-        const payModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+        function getDetailModal() {
+            const el = document.getElementById('invoiceDetailModal');
+            return el ? (bootstrap.Modal.getInstance(el) || new bootstrap.Modal(el)) : null;
+        }
+        function getPayModal() {
+            const el = document.getElementById('paymentModal');
+            return el ? (bootstrap.Modal.getInstance(el) || new bootstrap.Modal(el)) : null;
+        }
 
         function openInvoiceDetail(id) {
-            detailModal.show();
+            const modal = getDetailModal();
+            if (modal) modal.show();
             const body = document.getElementById('invoiceDetailBody');
+            if (!body) return;
             body.innerHTML = 
                 '<div class="text-center py-4">' +
                     '<div class="spinner-border text-teal" style="color: #0d9488;" role="status"></div>' +
@@ -695,10 +703,14 @@
         }
 
         function openPaymentModal(id, code, amount) {
-            document.getElementById('payModalInvoiceId').value = id;
-            document.getElementById('payModalInvoiceCode').innerText = code;
-            document.getElementById('payModalAmount').value = amount;
-            payModal.show();
+            const idInput = document.getElementById('payModalInvoiceId');
+            if (idInput) idInput.value = id;
+            const codeEl = document.getElementById('payModalInvoiceCode');
+            if (codeEl) codeEl.innerText = code;
+            const amtInput = document.getElementById('payModalAmount');
+            if (amtInput) amtInput.value = amount;
+            const modal = getPayModal();
+            if (modal) modal.show();
         }
 
         function printInvoice() {
