@@ -1,6 +1,7 @@
 package com.visioncare.controller;
 
 import com.visioncare.dao.MedicineDAO;
+import com.visioncare.dao.MedicineDAO.ImageData;
 import com.visioncare.model.Medicine;
 import com.visioncare.model.SupplyCategory;
 import com.visioncare.model.User;
@@ -19,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@WebServlet(name = "AdminMedicineServlet", urlPatterns = {"/admin/medicine", "/admin/medicine/item"})
+@WebServlet(name = "AdminMedicineServlet", urlPatterns = {"/admin/medicine", "/admin/medicine/item", "/medicine-image"})
 @MultipartConfig(maxFileSize = 5 * 1024 * 1024, maxRequestSize = 6 * 1024 * 1024)
 public class AdminMedicineServlet extends HttpServlet {
     private final MedicineDAO dao = new MedicineDAO();
@@ -27,11 +28,16 @@ public class AdminMedicineServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        if ("/medicine-image".equals(request.getServletPath())) {
+            showImage(request, response);
+            return;
+        }
         if (!isAdmin(request, response)) return;
         request.getSession().setAttribute("medicineCsrf", csrf(request));
         try {
             if ("/admin/medicine".equals(request.getServletPath())) {
                 request.setAttribute("medicines", dao.list());
+                request.setAttribute("medicineCategories", categories());
                 request.getRequestDispatcher("/views/admin/medicine.jsp").forward(request, response);
                 return;
             }
@@ -88,8 +94,7 @@ public class AdminMedicineServlet extends HttpServlet {
             String name = field(request, "name", 255, true);
             String category = field(request, "category", 100, true);
             SupplyCategory parsed = SupplyCategory.fromVietnameseName(category);
-            if (parsed != SupplyCategory.MEDICATIONS_AND_SOLUTIONS &&
-                    parsed != SupplyCategory.EYEWEAR_AND_ACCESSORIES) {
+            if (parsed == null || !parsed.isRetail()) {
                 throw new IllegalArgumentException("Phân loại vật tư bán lẻ không hợp lệ.");
             }
             ImageUpload upload = imageUpload(request);
@@ -130,6 +135,35 @@ public class AdminMedicineServlet extends HttpServlet {
         }
     }
 
+    private void showImage(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        int id;
+        try {
+            id = Integer.parseInt(request.getParameter("id"));
+        } catch (NumberFormatException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        if (id <= 0) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        try {
+            ImageData image = dao.getImage(id);
+            if (image == null) {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
+            response.setHeader("X-Content-Type-Options", "nosniff");
+            response.setHeader("Cache-Control", "no-store");
+            response.setContentType(image.getMimeType());
+            response.setContentLength(image.getBytes().length);
+            response.getOutputStream().write(image.getBytes());
+        } catch (Exception e) {
+            throw new ServletException("Không đọc được ảnh vật tư bán lẻ", e);
+        }
+    }
+
     private void showSubmittedForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         Map<String, Object> item = new HashMap<>();
@@ -147,8 +181,7 @@ public class AdminMedicineServlet extends HttpServlet {
     }
 
     private SupplyCategory[] categories() {
-        return new SupplyCategory[]{SupplyCategory.MEDICATIONS_AND_SOLUTIONS,
-                SupplyCategory.EYEWEAR_AND_ACCESSORIES};
+        return SupplyCategory.retailValues();
     }
 
     private boolean isAdmin(HttpServletRequest request, HttpServletResponse response) throws IOException {

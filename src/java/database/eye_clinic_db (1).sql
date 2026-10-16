@@ -69,7 +69,9 @@ CREATE TABLE Medicine (
     Image_Data VARBINARY(MAX) NULL,
     Image_Mime_Type VARCHAR(50) NULL,
     CONSTRAINT CHK_Medicine_Price CHECK (Price >= 0),
-    CONSTRAINT CHK_Medicine_Category CHECK (Category IN (N'Thuốc & Dung dịch', N'Kính & Phụ kiện'))
+    CONSTRAINT CHK_Medicine_Category CHECK (Category IN (
+        N'Thuốc & dung dịch', N'Kính gọng & tròng kính', N'Kính áp tròng',
+        N'Phụ kiện & sản phẩm hỗ trợ', N'Khác'))
 );
 
 CREATE TABLE Consumables (
@@ -416,9 +418,26 @@ VALUES
 ('GL-06', N'Đo nhãn áp và chụp OCT võng mạc', 500000, N'Kiểm tra và chẩn đoán', N'Kiểm soát nhãn áp, bảo tồn thị trường thần kinh mắt và ngăn ngừa biến chứng mù lòa.', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.');
 
 INSERT INTO Medicine (Supply_Name, Category, Price) VALUES
-(N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Thuốc & Dung dịch', 95000),
-(N'Tròng kính Essilor Crizal Alize 1.60', N'Kính & Phụ kiện', 1250000),
-(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Thuốc & Dung dịch', 88000);
+(N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Thuốc & dung dịch', 95000),
+(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Thuốc & dung dịch', 88000),
+(N'Thuốc mỡ tra mắt (3,5g)', N'Thuốc & dung dịch', 65000),
+(N'Dung dịch rửa mắt vô trùng (100 ml)', N'Thuốc & dung dịch', 45000),
+(N'Nước mắt nhân tạo không chất bảo quản (hộp 10 ống)', N'Thuốc & dung dịch', 135000),
+(N'Gọng kính nhựa TR90', N'Kính gọng & tròng kính', 320000),
+(N'Gọng kính kim loại', N'Kính gọng & tròng kính', 450000),
+(N'Tròng kính Essilor Crizal Alize 1.60', N'Kính gọng & tròng kính', 1250000),
+(N'Tròng kính lọc ánh sáng xanh 1.56', N'Kính gọng & tròng kính', 650000),
+(N'Kính râm chống tia UV400', N'Kính gọng & tròng kính', 280000),
+(N'Kính áp tròng mềm dùng một ngày (-2.00D)', N'Kính áp tròng', 180000),
+(N'Kính áp tròng mềm dùng một tháng (-2.00D)', N'Kính áp tròng', 250000),
+(N'Kính áp tròng cứng RGP (1 chiếc)', N'Kính áp tròng', 1200000),
+(N'Kính Ortho-K (1 chiếc)', N'Kính áp tròng', 7500000),
+(N'Dung dịch ngâm và vệ sinh kính áp tròng (240ml)', N'Kính áp tròng', 98000),
+(N'Hộp đựng kính cứng', N'Phụ kiện & sản phẩm hỗ trợ', 35000),
+(N'Khăn lau kính microfiber', N'Phụ kiện & sản phẩm hỗ trợ', 20000),
+(N'Dây đeo kính thể thao', N'Phụ kiện & sản phẩm hỗ trợ', 45000),
+(N'Hộp đựng kính áp tròng', N'Phụ kiện & sản phẩm hỗ trợ', 25000),
+(N'Miếng che mắt tập nhược thị', N'Phụ kiện & sản phẩm hỗ trợ', 60000);
 
 INSERT INTO Consumables (Supply_Name, Category, Price) VALUES
 (N'Que thử màu huỳnh quang Fluorescein Strips', N'Vật tư y tế tiêu hao', 320000);
@@ -446,50 +465,6 @@ FROM (VALUES
 ) AS v(Supply_Name, Price)
 WHERE NOT EXISTS (
     SELECT 1 FROM dbo.Consumables c WHERE c.Supply_Name = v.Supply_Name
-);
-
-INSERT INTO dbo.Medicine (Supply_Name, Category, Price)
-SELECT v.Supply_Name, N'Kính & Phụ kiện', v.Price
-FROM (VALUES
-    (N'Khăn lau kính microfiber', 20000),
-    (N'Hộp đựng kính cứng', 35000),
-    (N'Dung dịch vệ sinh kính (100 ml)', 45000),
-    (N'Kính bảo hộ mắt trong suốt', 85000)
-) AS v(Supply_Name, Price)
-WHERE NOT EXISTS (
-    SELECT 1 FROM dbo.Medicine m WHERE m.Supply_Name = v.Supply_Name
-);
-
--- Thêm thuốc và dung dịch mẫu cho trang Quản lý Vật tư bán lẻ.
-INSERT INTO dbo.Medicine (Supply_Name, Category, Price)
-SELECT v.Supply_Name, N'Thuốc & Dung dịch', v.Price
-FROM (VALUES
-    (N'Nước muối sinh lý NaCl 0,9% (10 ml)', 15000),
-    (N'Dung dịch ngâm kính áp tròng (120 ml)', 69000),
-    (N'Dung dịch rửa mắt vô trùng (100 ml)', 45000),
-    (N'Nước mắt nhân tạo dạng ống (hộp 10 ống)', 120000)
-) AS v(Supply_Name, Price)
-WHERE NOT EXISTS (
-    SELECT 1 FROM dbo.Medicine m WHERE m.Supply_Name = v.Supply_Name
-);
-
--- Mặt hàng bán lẻ mẫu bổ sung; giá chỉ để minh họa.
-INSERT INTO dbo.Medicine (Supply_Name, Category, Price)
-SELECT v.Supply_Name, v.Category, v.Price
-FROM (VALUES
-    (N'Dung dịch nhỏ mắt bôi trơn (10 ml)', N'Thuốc & Dung dịch', 85000),
-    (N'Nước muối sinh lý NaCl 0,9% (500 ml)', N'Thuốc & Dung dịch', 25000),
-    (N'Dung dịch vệ sinh mi mắt (100 ml)', N'Thuốc & Dung dịch', 110000),
-    (N'Dung dịch ngâm kính áp tròng (240 ml)', N'Thuốc & Dung dịch', 98000),
-    (N'Nước mắt nhân tạo không chất bảo quản (hộp 10 ống)', N'Thuốc & Dung dịch', 135000),
-    (N'Gọng kính nhựa TR90', N'Kính & Phụ kiện', 320000),
-    (N'Gọng kính kim loại', N'Kính & Phụ kiện', 450000),
-    (N'Tròng kính lọc ánh sáng xanh 1.56', N'Kính & Phụ kiện', 650000),
-    (N'Hộp đựng kính áp tròng', N'Kính & Phụ kiện', 25000),
-    (N'Dây đeo kính thể thao', N'Kính & Phụ kiện', 45000)
-) AS v(Supply_Name, Category, Price)
-WHERE NOT EXISTS (
-    SELECT 1 FROM dbo.Medicine m WHERE m.Supply_Name = v.Supply_Name
 );
 
 -- Dùng dịch vụ hiện có: Service_ID 2 = KX-02, Service_ID 6 = GL-06.

@@ -1,6 +1,7 @@
 package com.visioncare.controller;
 
 import com.visioncare.dao.CatalogDAO;
+import com.visioncare.dao.CatalogDAO.ImageData;
 import com.visioncare.model.CatalogService;
 import com.visioncare.model.MedicalSupply;
 import com.visioncare.model.ServiceCategory;
@@ -23,7 +24,7 @@ import java.util.UUID;
 
 @WebServlet(name = "AdminCatalogServlet", urlPatterns = {
     "/admin/catalog", "/admin/catalog/service", "/admin/catalog/supply",
-    "/admin/catalog/consumable"
+    "/admin/catalog/consumable", "/catalog-image"
 })
 @MultipartConfig(maxFileSize = 5 * 1024 * 1024, maxRequestSize = 6 * 1024 * 1024)
 public class AdminCatalogServlet extends HttpServlet {
@@ -32,6 +33,10 @@ public class AdminCatalogServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        if ("/catalog-image".equals(request.getServletPath())) {
+            showImage(request, response);
+            return;
+        }
         if (admin(request, response) == null) return;
         request.getSession().setAttribute("catalogCsrf", csrf(request));
         String path = request.getServletPath();
@@ -84,6 +89,10 @@ public class AdminCatalogServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        if ("/catalog-image".equals(request.getServletPath())) {
+            response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            return;
+        }
         User user = admin(request, response);
         if (user == null) return;
         String path = request.getServletPath();
@@ -225,6 +234,39 @@ public class AdminCatalogServlet extends HttpServlet {
             log("Could not delete catalog item", e);
             response.sendRedirect(request.getContextPath() + listUrl(kind)
                     + (listUrl(kind).contains("?") ? "&" : "?") + "deleteError=1");
+        }
+    }
+
+    private void showImage(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        int id;
+        try {
+            id = Integer.parseInt(request.getParameter("id"));
+        } catch (NumberFormatException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        if (id <= 0) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        if ("medicine".equals(request.getParameter("kind"))) {
+            response.sendRedirect(request.getContextPath() + "/medicine-image?id=" + id);
+            return;
+        }
+        try {
+            ImageData image = dao.getImage(request.getParameter("kind"), id);
+            if (image == null) {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
+            response.setHeader("X-Content-Type-Options", "nosniff");
+            response.setHeader("Cache-Control", "no-store");
+            response.setContentType(image.getMimeType());
+            response.setContentLength(image.getBytes().length);
+            response.getOutputStream().write(image.getBytes());
+        } catch (Exception e) {
+            throw new ServletException("Không đọc được ảnh danh mục", e);
         }
     }
 
