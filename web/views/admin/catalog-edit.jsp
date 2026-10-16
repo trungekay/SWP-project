@@ -28,7 +28,7 @@
 
     <!-- Sidebar Include -->
     <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
-        <jsp:param name="activeNav" value="${catalogReturnTab == 'retail' ? 'retail' : 'catalog'}" />
+        <jsp:param name="activeNav" value="catalog" />
     </jsp:include>
 
     <!-- Main Content -->
@@ -41,19 +41,19 @@
 
   <div class="container catalog-edit-layout">
     <aside class="catalog-panel catalog-edit-sidebar">
-      <h2>${kind == 'service' ? 'Dịch vụ phòng khám' : (catalogReturnTab == 'retail' ? 'Vật tư bán lẻ' : (catalogReturnTab == 'consumables' ? 'Vật tư tiêu hao' : 'Thiết bị'))}</h2>
+      <h2>${kind == 'service' ? 'Dịch vụ phòng khám' : (catalogReturnTab == 'consumables' ? 'Vật tư tiêu hao' : 'Thiết bị')}</h2>
       <p>Chọn mục cần sửa hoặc tạo mục mới.</p>
-      <a class="catalog-new-link" href="${pageContext.request.contextPath}${kind == 'medicine' ? '/admin/medicine/item' : '/admin/catalog/'}${kind == 'medicine' ? '' : kind}?new=1"><i class="bi bi-plus-circle"></i> Thêm mới</a>
+      <a class="catalog-new-link" href="${pageContext.request.contextPath}/admin/catalog/${kind}?new=1"><i class="bi bi-plus-circle"></i> Thêm mới</a>
       <nav aria-label="Danh mục hiện có">
         <c:forEach items="${choices}" var="choice">
-            <a class="catalog-choice ${choice.id == item.id ? 'is-active' : ''}" href="${pageContext.request.contextPath}${kind == 'medicine' ? '/admin/medicine/item' : '/admin/catalog/'}${kind == 'medicine' ? '' : kind}?id=${choice.id}"><c:out value="${choice.name}" /></a>
+            <a class="catalog-choice ${choice.id == item.id ? 'is-active' : ''}" href="${pageContext.request.contextPath}/admin/catalog/${kind}?id=${choice.id}"><c:out value="${choice.name}" /></a>
         </c:forEach>
       </nav>
     </aside>
     <section class="catalog-panel catalog-edit-panel">
-      <div class="catalog-edit-heading"><div><h1>${empty item.id ? 'Thêm mới' : 'Cập nhật'} ${kind == 'service' ? 'dịch vụ' : (catalogReturnTab == 'retail' ? 'vật tư bán lẻ' : (catalogReturnTab == 'consumables' ? 'vật tư tiêu hao' : 'thiết bị'))}</h1><p>Nhấn “Lưu thay đổi” để ghi trực tiếp vào database.</p></div><a href="${pageContext.request.contextPath}${kind == 'medicine' ? '/admin/medicine' : '/admin/catalog?tab='}${kind == 'medicine' ? '' : catalogReturnTab}">← Về danh sách</a></div>
+      <div class="catalog-edit-heading"><div><h1>${empty item.id ? 'Thêm mới' : 'Cập nhật'} ${kind == 'service' ? 'dịch vụ' : (catalogReturnTab == 'consumables' ? 'vật tư tiêu hao' : 'thiết bị')}</h1><p>Nhấn “Lưu thay đổi” để ghi trực tiếp vào database.</p></div><a href="${pageContext.request.contextPath}/admin/catalog?tab=${catalogReturnTab}">← Về danh sách</a></div>
       <c:if test="${not empty error}"><div class="catalog-form-error" role="alert"><c:out value="${error}" /></div></c:if>
-      <form class="catalog-edit-form" action="${pageContext.request.contextPath}${kind == 'medicine' ? '/admin/medicine/item' : '/admin/catalog/'}${kind == 'medicine' ? '' : kind}" method="post" enctype="multipart/form-data">
+      <form class="catalog-edit-form" action="${pageContext.request.contextPath}/admin/catalog/${kind}" method="post" enctype="multipart/form-data">
         <input type="hidden" name="csrf" value="${sessionScope.catalogCsrf}">
         <input type="hidden" name="id" value="${fn:escapeXml(item.id)}">
         <input type="hidden" name="returnTab" value="${catalogReturnTab}">
@@ -81,7 +81,7 @@
               <select name="category" required>
                 <option value="" disabled ${empty item.category ? 'selected' : ''}>Chọn phân loại</option>
                 <c:forEach items="${supplyCategories}" var="category">
-                  <c:if test="${(catalogReturnTab == 'supplies' && category.vietnameseName == 'Khác') || (catalogReturnTab == 'consumables' && category.vietnameseName == 'Vật tư y tế tiêu hao') || (catalogReturnTab == 'retail' && (category.vietnameseName == 'Thuốc & Dung dịch' || category.vietnameseName == 'Kính & Phụ kiện'))}">
+                  <c:if test="${(catalogReturnTab == 'supplies' && category.vietnameseName == 'Khác') || (catalogReturnTab == 'consumables' && category.vietnameseName == 'Vật tư y tế tiêu hao')}">
                     <option value="${fn:escapeXml(category.vietnameseName)}" ${item.category eq category.vietnameseName ? 'selected' : ''}>${catalogReturnTab == 'supplies' ? 'Thiết bị' : fn:escapeXml(category.vietnameseName)}</option>
                   </c:if>
                 </c:forEach>
@@ -105,7 +105,7 @@
           </c:choose>
           <div class="catalog-image-selected" id="catalogSelectedImage" hidden><span>Ảnh vừa chọn</span><img class="catalog-image-preview" alt="Ảnh minh họa vừa chọn"></div>
         </div>
-        <div class="catalog-form-actions"><a class="catalog-detail" href="${pageContext.request.contextPath}${kind == 'medicine' ? '/admin/medicine' : '/admin/catalog?tab='}${kind == 'medicine' ? '' : catalogReturnTab}">Hủy</a><button class="catalog-primary" type="submit"><i class="bi bi-check-lg"></i> Lưu thay đổi</button></div>
+        <div class="catalog-form-actions"><a class="catalog-detail" href="${pageContext.request.contextPath}/admin/catalog?tab=${catalogReturnTab}">Hủy</a><button class="catalog-primary" type="submit"><i class="bi bi-check-lg"></i> Lưu thay đổi</button></div>
       </form>
     </section>
   </div>
@@ -114,6 +114,6 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="${pageContext.request.contextPath}/assets/js/admin-catalog.js?v=7" defer></script>
+    <script src="${pageContext.request.contextPath}/assets/js/admin-catalog.js?v=9" defer></script>
 </body>
 </html>

@@ -3,8 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const servicesView = document.getElementById('servicesView');
   const suppliesView = document.getElementById('suppliesView');
   const consumablesView = document.getElementById('consumablesView');
-  const retailView = document.getElementById('retailView');
-  const retailPage = window.location.pathname.endsWith('/admin/medicine');
   if (servicesView && suppliesView) {
   const cards = [...document.querySelectorAll('.catalog-service')];
   const successToast = document.getElementById('catalogSuccessToast');
@@ -42,8 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function setTab(tab, updateUrl = true) {
-    tab = ['services', 'supplies', 'consumables', 'retail'].includes(tab) ? tab : 'services';
-    const views = { services: servicesView, supplies: suppliesView, consumables: consumablesView, retail: retailView };
+    tab = ['services', 'supplies', 'consumables'].includes(tab) ? tab : 'services';
+    const views = { services: servicesView, supplies: suppliesView, consumables: consumablesView };
     Object.entries(views).forEach(([name, view]) => { view.hidden = name !== tab; });
     tabs.forEach((button) => {
       const active = button.dataset.tab === tab;
@@ -71,9 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   window.addEventListener('popstate', () => {
-    setTab(retailPage ? 'retail' : new URL(window.location.href).searchParams.get('tab'), false);
+    setTab(new URL(window.location.href).searchParams.get('tab'), false);
   });
-  setTab(retailPage ? 'retail' : new URL(window.location.href).searchParams.get('tab'), false);
+  setTab(new URL(window.location.href).searchParams.get('tab'), false);
   tabs.forEach((button, index) => button.addEventListener('keydown', (event) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
     event.preventDefault();
@@ -97,8 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   [
     ['suppliesView', 'supplySearch', 'supplyEmpty'],
-    ['consumablesView', 'consumableSearch', 'consumableEmpty'],
-    ['retailView', 'retailSearch', 'retailEmpty']
+    ['consumablesView', 'consumableSearch', 'consumableEmpty']
   ].forEach(([viewId, searchId, emptyId]) => {
     const rows = [...document.querySelectorAll(`#${viewId} .catalog-table tbody tr`)];
     const search = document.getElementById(searchId);

@@ -77,7 +77,6 @@ public class CatalogDAO {
         switch (kind) {
             case "supply": return "Medical_Supply";
             case "consumable": return "Consumables";
-            case "medicine": return "Medicine";
             default: throw new IllegalArgumentException("Loại vật tư không hợp lệ.");
         }
     }
@@ -86,7 +85,6 @@ public class CatalogDAO {
         switch (kind) {
             case "supply": return "Supply_ID";
             case "consumable": return "Consumable_ID";
-            case "medicine": return "Medicine_ID";
             default: throw new IllegalArgumentException("Loại vật tư không hợp lệ.");
         }
     }
@@ -171,7 +169,7 @@ public class CatalogDAO {
 
     public ImageData getImage(String kind, int id) throws Exception {
         String table = "service".equals(kind) ? "Service_Catalog" :
-                "supply".equals(kind) || "consumable".equals(kind) || "medicine".equals(kind) ? table(kind) : null;
+                "supply".equals(kind) || "consumable".equals(kind) ? table(kind) : null;
         if (table == null) return null;
         String key = "service".equals(kind) ? "Service_ID" : key(kind);
         try (Connection connection = DBContext.getConnection();

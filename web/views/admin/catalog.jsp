@@ -8,7 +8,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${retailPage ? 'Quản lý Vật tư bán lẻ' : 'Quản lý Danh mục'} - VisionCare Admin</title>
+    <title>Quản lý Danh mục - VisionCare Admin</title>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Bootstrap CSS -->
@@ -27,7 +27,7 @@
 
     <!-- Sidebar Include -->
     <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
-        <jsp:param name="activeNav" value="${retailPage ? 'retail' : 'catalog'}" />
+        <jsp:param name="activeNav" value="catalog" />
     </jsp:include>
 
     <!-- Main Content -->
@@ -37,9 +37,8 @@
         <jsp:include page="/views/admin/layout/admin-header.jsp" />
 
         <div class="page-content catalog-page">
-  <div class="page-header"><div class="page-title"><h2>${retailPage ? 'Quản lý Vật tư bán lẻ' : 'Quản lý Danh mục'}</h2><p>${retailPage ? 'Danh sách thuốc, kính và vật tư kê đơn mang về cho bệnh nhân' : 'Quản lý dịch vụ phòng khám, thiết bị và vật tư tiêu hao'}</p></div></div>
+  <div class="page-header"><div class="page-title"><h2>Quản lý Danh mục</h2><p>Quản lý dịch vụ phòng khám, thiết bị và vật tư tiêu hao</p></div></div>
   <div class="catalog-layout">
-    <c:if test="${!retailPage}">
     <aside class="catalog-sidebar" aria-label="Phân mục quản trị">
       <div class="catalog-panel catalog-nav-panel" role="tablist" aria-label="Loại danh mục">
         <p class="catalog-eyebrow">Loại danh mục</p>
@@ -48,7 +47,6 @@
         <button type="button" class="catalog-tab ${param.tab == 'consumables' ? 'is-active' : ''}" id="consumablesTab" data-tab="consumables" role="tab" aria-controls="consumablesView" aria-selected="${param.tab == 'consumables' ? 'true' : 'false'}" tabindex="${param.tab == 'consumables' ? '0' : '-1'}"><span><i class="bi bi-bandaid"></i> Vật tư tiêu hao</span></button>
       </div>
     </aside>
-    </c:if>
 
     <div class="catalog-content">
       <c:choose>
@@ -58,7 +56,7 @@
       </c:choose>
       <c:if test="${not empty catalogSuccessMessage}"><div id="catalogSuccessToast" class="catalog-success-toast" role="status" aria-live="polite"><i class="bi bi-check-circle-fill" aria-hidden="true"></i><span><c:out value="${catalogSuccessMessage}" /></span></div></c:if>
       <c:if test="${param.deleteError == '1'}"><div class="catalog-delete-error" role="alert">Không thể xóa mục này. Mục có thể đang được sử dụng; hãy kiểm tra dữ liệu liên quan.</div></c:if>
-      <section class="catalog-view" id="servicesView" role="tabpanel" aria-labelledby="servicesTab" ${param.tab == 'supplies' || param.tab == 'consumables' || retailPage ? 'hidden' : ''}>
+      <section class="catalog-view" id="servicesView" role="tabpanel" aria-labelledby="servicesTab" ${param.tab == 'supplies' || param.tab == 'consumables' ? 'hidden' : ''}>
         <div class="catalog-panel catalog-heading"><h5><i class="bi bi-clipboard2-pulse me-2 text-primary"></i>Danh sách Dịch vụ Phòng khám</h5><a class="catalog-primary" href="${pageContext.request.contextPath}/admin/catalog/service?new=1"><i class="bi bi-plus-lg"></i> Thêm dịch vụ</a></div>
         <div class="catalog-panel catalog-filters"><label class="catalog-search"><i class="bi bi-search"></i><input type="search" id="serviceSearch" placeholder="Tìm tên hoặc mã dịch vụ..." aria-label="Tìm dịch vụ"></label></div>
         <div class="table-responsive" id="serviceList"><table class="table align-middle table-custom catalog-table"><thead><tr><th>Mã dịch vụ</th><th>Tên dịch vụ</th><th>Nhóm dịch vụ</th><th>Đơn giá</th><th class="text-end">Thao tác</th></tr></thead><tbody>
@@ -88,12 +86,6 @@
         </tbody></table></div><p class="catalog-empty" id="consumableEmpty" hidden>Chưa có vật tư tiêu hao hoặc không tìm thấy mục phù hợp.</p></div>
       </section>
 
-      <section class="catalog-view" id="retailView" ${retailPage ? '' : 'hidden'}>
-        <div class="catalog-panel catalog-heading"><h5><i class="bi bi-bag-check me-2 text-primary"></i>Danh sách Vật tư kê đơn mang về</h5><a class="catalog-primary" href="${pageContext.request.contextPath}/admin/medicine/item?new=1"><i class="bi bi-plus-lg"></i> Thêm vật tư bán lẻ</a></div>
-        <div class="catalog-panel catalog-supply-panel"><div class="catalog-supply-toolbar"><label class="catalog-search"><i class="bi bi-search"></i><input type="search" id="retailSearch" placeholder="Tìm thuốc, kính hoặc phụ kiện" aria-label="Tìm vật tư bán lẻ"></label></div><div class="table-responsive catalog-table-wrap"><table class="table align-middle table-custom catalog-table"><thead><tr><th>Tên vật tư / Dược phẩm</th><th>Phân loại</th><th>Đơn giá bán</th><th class="text-end">Thao tác</th></tr></thead><tbody>
-          <c:forEach items="${catalogMedicines}" var="supply"><tr><td><strong><c:out value="${supply.name}" /></strong></td><td><c:out value="${supply.category}" /></td><td><fmt:formatNumber value="${supply.price}" pattern="#,##0" /> VNĐ</td><td><div class="catalog-supply-actions"><a class="catalog-supply-edit" href="${pageContext.request.contextPath}/admin/medicine/item?id=${supply.id}" aria-label="Sửa vật tư bán lẻ ${fn:escapeXml(supply.name)}" title="Sửa vật tư bán lẻ"><i class="bi bi-pencil" aria-hidden="true"></i></a><form class="catalog-delete-form" method="post" action="${pageContext.request.contextPath}/admin/medicine/item" data-kind="vật tư bán lẻ" data-name="${fn:escapeXml(supply.name)}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="${supply.id}"><input type="hidden" name="returnTab" value="retail"><input type="hidden" name="csrf" value="${sessionScope.catalogCsrf}"><button class="catalog-delete" type="button" aria-label="Xóa vật tư bán lẻ ${fn:escapeXml(supply.name)}" title="Xóa vật tư bán lẻ"><i class="bi bi-trash" aria-hidden="true"></i></button></form></div></td></tr></c:forEach>
-        </tbody></table></div><p class="catalog-empty" id="retailEmpty" hidden>Chưa có vật tư bán lẻ hoặc không tìm thấy mục phù hợp.</p></div>
-      </section>
     </div>
   </div>
         </div>
@@ -108,7 +100,7 @@
     <button id="catalogDeleteConfirm" type="button" class="catalog-delete-confirm"><i class="bi bi-trash"></i> Xác nhận xóa</button>
   </div>
 </dialog>
-<script src="${pageContext.request.contextPath}/assets/js/admin-catalog.js?v=7" defer></script>
+<script src="${pageContext.request.contextPath}/assets/js/admin-catalog.js?v=9" defer></script>
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

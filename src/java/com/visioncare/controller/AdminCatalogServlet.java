@@ -23,7 +23,7 @@ import java.util.UUID;
 
 @WebServlet(name = "AdminCatalogServlet", urlPatterns = {
     "/admin/catalog", "/admin/catalog/service", "/admin/catalog/supply",
-    "/admin/catalog/consumable", "/admin/medicine", "/admin/medicine/item"
+    "/admin/catalog/consumable"
 })
 @MultipartConfig(maxFileSize = 5 * 1024 * 1024, maxRequestSize = 6 * 1024 * 1024)
 public class AdminCatalogServlet extends HttpServlet {
@@ -40,24 +40,13 @@ public class AdminCatalogServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/admin/medicine");
                 return;
             }
-            if ("/admin/catalog".equals(path) || "/admin/medicine".equals(path)) {
-                boolean retail = "/admin/medicine".equals(path);
-                request.setAttribute("retailPage", retail);
-                if (retail) {
-                    request.setAttribute("catalogMedicines", dao.listSupplies("medicine"));
-                } else {
-                    request.setAttribute("catalogServices", dao.listServices());
-                    request.setAttribute("catalogSupplies", dao.listSupplies("supply"));
-                    request.setAttribute("catalogConsumables", dao.listSupplies("consumable"));
-                }
+            if ("/admin/catalog".equals(path)) {
+                request.setAttribute("catalogServices", dao.listServices());
+                request.setAttribute("catalogSupplies", dao.listSupplies("supply"));
+                request.setAttribute("catalogConsumables", dao.listSupplies("consumable"));
                 request.getRequestDispatcher("/views/admin/catalog.jsp").forward(request, response);
             } else {
                 String kind = kind(path);
-                if ("supply".equals(kind) && "retail".equals(request.getParameter("returnTab"))) {
-                    response.sendRedirect(request.getContextPath() + "/admin/medicine/item" +
-                            (request.getQueryString() == null ? "?new=1" : "?" + request.getQueryString()));
-                    return;
-                }
                 if ("supply".equals(kind) && "consumables".equals(request.getParameter("returnTab"))) {
                     response.sendRedirect(request.getContextPath() + "/admin/catalog/consumable" +
                             (request.getQueryString() == null ? "?new=1" : "?" + request.getQueryString()));
@@ -87,7 +76,7 @@ public class AdminCatalogServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         } catch (Exception e) {
             log("Could not load admin catalog", e);
-            request.setAttribute("error", "Không tải được danh mục. Hãy kiểm tra kết nối và cấu trúc bảng Service_Catalog, Medical_Supply, Medicine, Consumables trong eye_clinic_db.");
+            request.setAttribute("error", "Không tải được danh mục. Hãy kiểm tra kết nối và cấu trúc bảng Service_Catalog, Medical_Supply, Consumables trong eye_clinic_db.");
             request.getRequestDispatcher("/views/admin/catalog-error.jsp").forward(request, response);
         }
     }
@@ -98,7 +87,7 @@ public class AdminCatalogServlet extends HttpServlet {
         User user = admin(request, response);
         if (user == null) return;
         String path = request.getServletPath();
-        if ("/admin/catalog".equals(path) || "/admin/medicine".equals(path)) { response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED); return; }
+        if ("/admin/catalog".equals(path)) { response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED); return; }
         String kind = kind(path);
         boolean service = "service".equals(kind);
         String token = (String) request.getSession().getAttribute("catalogCsrf");
@@ -244,7 +233,6 @@ public class AdminCatalogServlet extends HttpServlet {
             case "/admin/catalog/service": return "service";
             case "/admin/catalog/supply": return "supply";
             case "/admin/catalog/consumable": return "consumable";
-            case "/admin/medicine/item": return "medicine";
             default: throw new IllegalArgumentException("Đường dẫn không hợp lệ.");
         }
     }
@@ -254,22 +242,19 @@ public class AdminCatalogServlet extends HttpServlet {
             case "service": return "services";
             case "supply": return "supplies";
             case "consumable": return "consumables";
-            case "medicine": return "retail";
             default: throw new IllegalArgumentException("Loại vật tư không hợp lệ.");
         }
     }
 
     private String listUrl(String kind) {
-        return "medicine".equals(kind) ? "/admin/medicine" : "/admin/catalog?tab=" + returnTab(kind);
+        return "/admin/catalog?tab=" + returnTab(kind);
     }
 
     private void validateCategory(String kind, String category) {
         SupplyCategory value = SupplyCategory.fromVietnameseName(category);
         boolean valid = value != null &&
                 ("supply".equals(kind) && value == SupplyCategory.OTHER ||
-                 "consumable".equals(kind) && value == SupplyCategory.MEDICAL_CONSUMABLES ||
-                 "medicine".equals(kind) && (value == SupplyCategory.MEDICATIONS_AND_SOLUTIONS ||
-                         value == SupplyCategory.EYEWEAR_AND_ACCESSORIES));
+                 "consumable".equals(kind) && value == SupplyCategory.MEDICAL_CONSUMABLES);
         if (!valid) throw new IllegalArgumentException("Phân loại vật tư không hợp lệ.");
     }
 

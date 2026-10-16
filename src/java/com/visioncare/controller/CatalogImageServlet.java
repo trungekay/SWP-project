@@ -27,6 +27,10 @@ public class CatalogImageServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
+        if ("medicine".equals(request.getParameter("kind"))) {
+            response.sendRedirect(request.getContextPath() + "/medicine-image?id=" + id);
+            return;
+        }
         try {
             ImageData image = dao.getImage(request.getParameter("kind"), id);
             if (image == null) {

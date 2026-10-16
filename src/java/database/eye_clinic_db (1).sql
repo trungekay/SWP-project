@@ -473,6 +473,25 @@ WHERE NOT EXISTS (
     SELECT 1 FROM dbo.Medicine m WHERE m.Supply_Name = v.Supply_Name
 );
 
+-- Mặt hàng bán lẻ mẫu bổ sung; giá chỉ để minh họa.
+INSERT INTO dbo.Medicine (Supply_Name, Category, Price)
+SELECT v.Supply_Name, v.Category, v.Price
+FROM (VALUES
+    (N'Dung dịch nhỏ mắt bôi trơn (10 ml)', N'Thuốc & Dung dịch', 85000),
+    (N'Nước muối sinh lý NaCl 0,9% (500 ml)', N'Thuốc & Dung dịch', 25000),
+    (N'Dung dịch vệ sinh mi mắt (100 ml)', N'Thuốc & Dung dịch', 110000),
+    (N'Dung dịch ngâm kính áp tròng (240 ml)', N'Thuốc & Dung dịch', 98000),
+    (N'Nước mắt nhân tạo không chất bảo quản (hộp 10 ống)', N'Thuốc & Dung dịch', 135000),
+    (N'Gọng kính nhựa TR90', N'Kính & Phụ kiện', 320000),
+    (N'Gọng kính kim loại', N'Kính & Phụ kiện', 450000),
+    (N'Tròng kính lọc ánh sáng xanh 1.56', N'Kính & Phụ kiện', 650000),
+    (N'Hộp đựng kính áp tròng', N'Kính & Phụ kiện', 25000),
+    (N'Dây đeo kính thể thao', N'Kính & Phụ kiện', 45000)
+) AS v(Supply_Name, Category, Price)
+WHERE NOT EXISTS (
+    SELECT 1 FROM dbo.Medicine m WHERE m.Supply_Name = v.Supply_Name
+);
+
 -- Dùng dịch vụ hiện có: Service_ID 2 = KX-02, Service_ID 6 = GL-06.
 -- Actual_Price giữ giá tại thời điểm lập chỉ định.
 INSERT INTO Procedure_Order (Specialist_Employee_ID, Record_ID, Service_ID, Actual_Price, Status) VALUES
