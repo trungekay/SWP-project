@@ -767,7 +767,9 @@
 
         function renderUserPagination(currentPage) {
             const table = document.getElementById("mainUserTable");
+            if (!table) return;
             const tbody = table.querySelector("tbody");
+            if (!tbody) return;
             const allRows = Array.from(tbody.querySelectorAll("tr.user-row"));
             const visibleRows = allRows.filter(row => row.getAttribute("data-filtered") !== "false");
 
@@ -848,8 +850,10 @@
         function filterUserTable() {
             const roleFilterEl = document.getElementById("userRoleFilter");
             const roleFilter = roleFilterEl ? roleFilterEl.value : "";
-            const statusFilter = document.getElementById("userStatusFilter").value;
-            const searchFilter = document.getElementById("userSearchInput").value.trim().toLowerCase();
+            const statusFilterEl = document.getElementById("userStatusFilter");
+            const statusFilter = statusFilterEl ? statusFilterEl.value : "";
+            const searchFilterEl = document.getElementById("userSearchInput");
+            const searchFilter = searchFilterEl ? searchFilterEl.value.trim().toLowerCase() : "";
             const rows = document.querySelectorAll("#mainUserTable tbody tr.user-row");
 
             rows.forEach(function (row) {
