@@ -1,4 +1,5 @@
 -- Fresh database setup: this script drops and recreates eye_clinic_db.
+-- Medicine, Consumables and sample catalog items are included below.
 -- Service_Catalog is the single service table; Procedure_Order.Service_ID references it.
 -- Service_Catalog does not have the obsolete Created_By column.
 
@@ -421,6 +422,56 @@ INSERT INTO Medicine (Supply_Name, Category, Price) VALUES
 
 INSERT INTO Consumables (Supply_Name, Category, Price) VALUES
 (N'Que thử màu huỳnh quang Fluorescein Strips', N'Vật tư y tế tiêu hao', 320000);
+
+-- Các mục mẫu bổ sung; giá chỉ để minh họa.
+INSERT INTO dbo.Medical_Supply (Supply_Name, Category, Price)
+SELECT v.Supply_Name, N'Khác', v.Price
+FROM (VALUES
+    (N'Bảng thị lực điện tử', 6500000),
+    (N'Đèn khe khám mắt', 78000000),
+    (N'Máy đo nhãn áp không tiếp xúc', 125000000),
+    (N'Máy soi đáy mắt cầm tay', 18000000)
+) AS v(Supply_Name, Price)
+WHERE NOT EXISTS (
+    SELECT 1 FROM dbo.Medical_Supply s WHERE s.Supply_Name = v.Supply_Name
+);
+
+INSERT INTO dbo.Consumables (Supply_Name, Category, Price)
+SELECT v.Supply_Name, N'Vật tư y tế tiêu hao', v.Price
+FROM (VALUES
+    (N'Gạc vô trùng 10 x 10 cm (gói 10 miếng)', 18000),
+    (N'Găng tay khám nitrile (hộp 100 chiếc)', 85000),
+    (N'Bông tăm y tế vô trùng (hộp 100 chiếc)', 32000),
+    (N'Miếng che mắt vô trùng (gói 10 miếng)', 45000)
+) AS v(Supply_Name, Price)
+WHERE NOT EXISTS (
+    SELECT 1 FROM dbo.Consumables c WHERE c.Supply_Name = v.Supply_Name
+);
+
+INSERT INTO dbo.Medicine (Supply_Name, Category, Price)
+SELECT v.Supply_Name, N'Kính & Phụ kiện', v.Price
+FROM (VALUES
+    (N'Khăn lau kính microfiber', 20000),
+    (N'Hộp đựng kính cứng', 35000),
+    (N'Dung dịch vệ sinh kính (100 ml)', 45000),
+    (N'Kính bảo hộ mắt trong suốt', 85000)
+) AS v(Supply_Name, Price)
+WHERE NOT EXISTS (
+    SELECT 1 FROM dbo.Medicine m WHERE m.Supply_Name = v.Supply_Name
+);
+
+-- Thêm thuốc và dung dịch mẫu cho trang Quản lý Vật tư bán lẻ.
+INSERT INTO dbo.Medicine (Supply_Name, Category, Price)
+SELECT v.Supply_Name, N'Thuốc & Dung dịch', v.Price
+FROM (VALUES
+    (N'Nước muối sinh lý NaCl 0,9% (10 ml)', 15000),
+    (N'Dung dịch ngâm kính áp tròng (120 ml)', 69000),
+    (N'Dung dịch rửa mắt vô trùng (100 ml)', 45000),
+    (N'Nước mắt nhân tạo dạng ống (hộp 10 ống)', 120000)
+) AS v(Supply_Name, Price)
+WHERE NOT EXISTS (
+    SELECT 1 FROM dbo.Medicine m WHERE m.Supply_Name = v.Supply_Name
+);
 
 -- Dùng dịch vụ hiện có: Service_ID 2 = KX-02, Service_ID 6 = GL-06.
 -- Actual_Price giữ giá tại thời điểm lập chỉ định.
