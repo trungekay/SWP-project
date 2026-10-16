@@ -151,7 +151,7 @@
             <div class="container">
               <ol>
                 <li><a href="${pageContext.request.contextPath}/home">Trang chủ</a></li>
-                <li><a href="${pageContext.request.contextPath}/profile/manage">Hồ sơ cá nhân</a></li>
+                <li><a href="${pageContext.request.contextPath}/views/profile/manage.jsp">Hồ sơ cá nhân</a></li>
                 <li class="current">Đổi mật khẩu</li>
               </ol>
             </div>

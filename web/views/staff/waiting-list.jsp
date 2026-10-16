@@ -319,7 +319,7 @@
                                                                                     class="action-btn checkin btn-trigger-start"
                                                                                     title="Gọi bệnh nhân vào phòng khám"
                                                                                     data-id="${appt.id}"
-                                                                                    data-name="<c:out value='${appt.patientName}'/>">
+                                                                                    data-name="${appt.patientName}">
                                                                                     <i class="bi bi-box-arrow-in-right"></i>
                                                                                 </button>
                                                                             </c:otherwise>
@@ -330,7 +330,7 @@
                                                                             class="action-btn warning btn-trigger-skip"
                                                                             title="Bỏ qua lượt: Chuyển bệnh nhân xuống cuối hàng đợi hôm nay nếu tạm vắng mặt"
                                                                             data-id="${appt.id}"
-                                                                            data-name="<c:out value='${appt.patientName}'/>">
+                                                                            data-name="${appt.patientName}">
                                                                             <i class="bi bi-arrow-down-circle"></i>
                                                                         </button>
 
@@ -339,7 +339,7 @@
                                                                             class="action-btn delete btn-trigger-absent"
                                                                             title="Báo vắng mặt: Gọi tên nhiều lần không có mặt / Tự ý bỏ về"
                                                                             data-id="${appt.id}"
-                                                                            data-name="<c:out value='${appt.patientName}'/>">
+                                                                            data-name="${appt.patientName}">
                                                                             <i class="bi bi-trash"></i>
                                                                         </button>
                                                                     </c:when>
@@ -350,7 +350,7 @@
                                                                             class="action-btn checkin btn-trigger-complete"
                                                                             title="Đánh dấu bệnh nhân đã khám xong"
                                                                             data-id="${appt.id}"
-                                                                            data-name="<c:out value='${appt.patientName}'/>">
+                                                                            data-name="${appt.patientName}">
                                                                             <i class="bi bi-check2-circle"></i>
                                                                         </button>
 
@@ -359,7 +359,7 @@
                                                                             class="action-btn delete btn-trigger-absent"
                                                                             title="Báo vắng mặt / Hủy ca giữa chừng"
                                                                             data-id="${appt.id}"
-                                                                            data-name="<c:out value='${appt.patientName}'/>">
+                                                                            data-name="${appt.patientName}">
                                                                             <i class="bi bi-trash"></i>
                                                                         </button>
                                                                     </c:when>

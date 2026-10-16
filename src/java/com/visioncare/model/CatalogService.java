@@ -37,15 +37,13 @@ public class CatalogService {
 
     public String getDefaultImagePath() {
         if (code != null) {
-            switch (code.toUpperCase(java.util.Locale.ROOT)) {
-                case "NK-01": return "departments-1.jpg";
-                case "KX-02": return "departments-2.jpg";
-                case "LS-03": return "departments-3.jpg";
-                case "PE-04": return "departments-4.jpg";
-                case "TT-05": return "departments-5.jpg";
-                case "GL-06": return "gallery/gallery-1.jpg";
-                default: break;
-            }
+            String c = code.toUpperCase(java.util.Locale.ROOT);
+            if (c.contains("NK") || c.contains("CVS")) return "departments-1.jpg";
+            if (c.contains("KX")) return "departments-2.jpg";
+            if (c.contains("LS") || c.contains("LASIK") || c.contains("SMILE")) return "departments-3.jpg";
+            if (c.contains("PE")) return "departments-4.jpg";
+            if (c.contains("TT") || c.contains("PHACO")) return "departments-5.jpg";
+            if (c.contains("GL") || c.contains("DM") || c.contains("OCT")) return "gallery/gallery-1.jpg";
         }
         return "departments-1.jpg";
     }
@@ -53,21 +51,21 @@ public class CatalogService {
     public String getSpecialty() {
         if (code != null) {
             String c = code.toUpperCase();
-            if (c.contains("NK")) return "general";
+            if (c.contains("NK") || c.contains("CVS")) return "general";
             if (c.contains("KX")) return "refraction";
-            if (c.contains("LS")) return "lasik";
+            if (c.contains("LS") || c.contains("LASIK") || c.contains("SMILE")) return "lasik";
             if (c.contains("PE")) return "children";
-            if (c.contains("TT")) return "cataract";
-            if (c.contains("GL")) return "retina";
+            if (c.contains("TT") || c.contains("PHACO")) return "cataract";
+            if (c.contains("GL") || c.contains("DM") || c.contains("OCT")) return "retina";
         }
         if (name != null) {
             String n = name.toLowerCase();
             if (n.contains("khúc xạ") || n.contains("kính")) return "refraction";
-            if (n.contains("lasik") || n.contains("phẫu thuật")) return "lasik";
+            if (n.contains("lasik") || n.contains("smile") || n.contains("xóa cận")) return "lasik";
             if (n.contains("trẻ em") || n.contains("nhược thị")) return "children";
             if (n.contains("thủy tinh thể") || n.contains("phaco")) return "cataract";
-            if (n.contains("glaucoma") || n.contains("võng mạc") || n.contains("nhãn áp")) return "retina";
-            if (n.contains("tổng quát")) return "general";
+            if (n.contains("glaucoma") || n.contains("võng mạc") || n.contains("đáy mắt") || n.contains("nhãn áp")) return "retina";
+            if (n.contains("tổng quát") || n.contains("khô mắt")) return "general";
         }
         return category != null ? category : "";
     }

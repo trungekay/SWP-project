@@ -591,7 +591,7 @@
       </c:choose>
 
     <script>
-      var isShiftOnlyMode = ${ isShiftOnlyRole ?'true': 'false'};
+      var isShiftOnlyMode = ${not empty isShiftOnlyRole && isShiftOnlyRole ? 'true' : 'false'};
 
       // Chuyen doi tuan va nam
       function changeWeekOrYear() {
@@ -667,8 +667,8 @@
         var newlyCount = checkboxes.length;
         var newlyHours = newlyCount * 0.5;
 
-        var baseCount = ${ registeredCount };
-        var baseHours = ${ registeredHours };
+        var baseCount = ${not empty registeredCount ? registeredCount : 0};
+        var baseHours = ${not empty registeredHours ? registeredHours : 0};
 
         var totalCount = baseCount + newlyCount;
         var totalHours = totalCount * 0.5;
