@@ -182,8 +182,8 @@
               <table class="custom-table" style="table-layout: auto; width: 100%;">
                 <thead>
                   <tr>
-                    <th style="width: 55px; text-align: center;">STT</th>
-                    <th style="width: 190px;">Bệnh nhân</th>
+                    <th style="width: 85px; text-align: center;">Mã phiếu</th>
+                    <th style="width: 185px;">Bệnh nhân</th>
                     <th style="width: 260px;">Dịch vụ chỉ định</th>
                     <th>Bác sĩ & Chẩn đoán sơ bộ</th>
                     <th style="width: 110px;">Thời gian</th>
@@ -192,11 +192,11 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <c:forEach var="item" items="${orderList}" varStatus="loop">
+                  <c:forEach var="item" items="${orderList}">
                     <tr>
-                      <!-- STT -->
-                      <td class="text-center fw-semibold text-secondary" style="font-size: 13.5px;">
-                        ${loop.count < 10 ? '0' : ''}${loop.count}
+                      <!-- Mã phiếu -->
+                      <td class="text-center fw-semibold text-secondary" style="font-size: 13px;">
+                        #CD-${item.orderId}
                       </td>
 
                       <!-- Bệnh nhân -->
@@ -210,9 +210,6 @@
                           </a>
                         </div>
                         <div class="patient-sub-info text-secondary small mt-1" style="font-size: 12px; line-height: 1.45;">
-                          <div title="Mã chỉ định">
-                            <i class="bi bi-receipt text-muted me-1"></i>#CD-${item.orderId}
-                          </div>
                           <div class="fw-medium" style="color: #334155;">
                             <i class="bi bi-telephone text-muted me-1"></i><c:out value="${item.patientPhone}" />
                           </div>
