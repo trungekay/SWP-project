@@ -57,7 +57,29 @@ CREATE TABLE Medical_Supply (
     Image_Mime_Type VARCHAR(50) NULL,
     CONSTRAINT CHK_Medical_Supply_Price CHECK (Price >= 0),
     CONSTRAINT CHK_Medical_Supply_Category CHECK (Category IN (
-        N'Thuốc & Dung dịch', N'Kính & Phụ kiện', N'Vật tư y tế tiêu hao', N'Khác'))
+        N'Khác'))
+);
+
+CREATE TABLE Medicine (
+    Medicine_ID INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    Supply_Name NVARCHAR(255) NOT NULL,
+    Category NVARCHAR(100) NOT NULL,
+    Price DECIMAL(18,0) NOT NULL,
+    Image_Data VARBINARY(MAX) NULL,
+    Image_Mime_Type VARCHAR(50) NULL,
+    CONSTRAINT CHK_Medicine_Price CHECK (Price >= 0),
+    CONSTRAINT CHK_Medicine_Category CHECK (Category IN (N'Thuốc & Dung dịch', N'Kính & Phụ kiện'))
+);
+
+CREATE TABLE Consumables (
+    Consumable_ID INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    Supply_Name NVARCHAR(255) NOT NULL,
+    Category NVARCHAR(100) NOT NULL DEFAULT (N'Vật tư y tế tiêu hao'),
+    Price DECIMAL(18,0) NOT NULL,
+    Image_Data VARBINARY(MAX) NULL,
+    Image_Mime_Type VARCHAR(50) NULL,
+    CONSTRAINT CHK_Consumables_Price CHECK (Price >= 0),
+    CONSTRAINT CHK_Consumables_Category CHECK (Category = N'Vật tư y tế tiêu hao')
 );
 
 CREATE TABLE Room (
@@ -390,30 +412,29 @@ VALUES
 ('LS-03', N'Phẫu thuật LASIK', 18000000, N'Điều trị và thủ thuật', N'Xóa cận không dao, thời gian phục hồi nhanh chóng.', N'Phẫu thuật khúc xạ laser LASIK/SMILE điều trị cận thị, viễn thị và loạn thị với công nghệ hiện đại.'),
 ('PE-04', N'Khám mắt trẻ em và tư vấn nhược thị', 300000, N'Khám và tư vấn', N'Sàng lọc sớm các tật khúc xạ tiến triển, tật lé và suy giảm thị lực ở trẻ nhỏ.', N'Sàng lọc cận thị sớm, điều trị nhược thị và lác mắt trong không gian khám thân thiện.'),
 ('TT-05', N'Phẫu thuật Phaco điều trị đục thủy tinh thể', 12000000, N'Điều trị và thủ thuật', N'Tái tạo tầm nhìn trong sáng bằng phương pháp tán nhuyễn Phaco tiên tiến.', N'Phẫu thuật thay thể thủy tinh nhân tạo điều trị đục thủy tinh thể an toàn, đường mổ siêu nhỏ.'),
-('GL-06', N'Đo nhãn áp và chụp OCT võng mạc', 500000, N'Kiểm tra và chẩn đoán', N'Kiểm soát nhãn áp, bảo tồn thị trường thần kinh mắt và ngăn ngừa biến chứng mù lòa.', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.'),
--- Hai dịch vụ cũ có nội dung khác với các gói dịch vụ hiện có.
-('KX-MAY', N'Đo khúc xạ máy', 100000, N'Kiểm tra và chẩn đoán', NULL, NULL),
-('OCT-DM', N'Chụp OCT đáy mắt', 400000, N'Kiểm tra và chẩn đoán', NULL, NULL);
+('GL-06', N'Đo nhãn áp và chụp OCT võng mạc', 500000, N'Kiểm tra và chẩn đoán', N'Kiểm soát nhãn áp, bảo tồn thị trường thần kinh mắt và ngăn ngừa biến chứng mù lòa.', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.');
 
-INSERT INTO Medical_Supply (Supply_Name, Category, Price) VALUES
+INSERT INTO Medicine (Supply_Name, Category, Price) VALUES
 (N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Thuốc & Dung dịch', 95000),
 (N'Tròng kính Essilor Crizal Alize 1.60', N'Kính & Phụ kiện', 1250000),
-(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Thuốc & Dung dịch', 88000),
+(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Thuốc & Dung dịch', 88000);
+
+INSERT INTO Consumables (Supply_Name, Category, Price) VALUES
 (N'Que thử màu huỳnh quang Fluorescein Strips', N'Vật tư y tế tiêu hao', 320000);
 
--- Service_ID 7/8 là hai dịch vụ cũ vừa thêm sau sáu dịch vụ hiện có.
+-- Dùng dịch vụ hiện có: Service_ID 2 = KX-02, Service_ID 6 = GL-06.
 -- Actual_Price giữ giá tại thời điểm lập chỉ định.
 INSERT INTO Procedure_Order (Specialist_Employee_ID, Record_ID, Service_ID, Actual_Price, Status) VALUES
-(9, 1, 7, 100000, N'Completed'),
+(9, 1, 2, 100000, N'Completed'),
 (9, 3, 1, 200000, N'Completed'),
 (9, 4, 1, 200000, N'Completed'),
-(9, 7, 7, 100000, N'Completed'),
-(9, 8, 7, 100000, N'Completed'),
-(9, 10, 8, 400000, N'Completed'),
+(9, 7, 2, 100000, N'Completed'),
+(9, 8, 2, 100000, N'Completed'),
+(9, 10, 6, 400000, N'Completed'),
 (9, 13, 1, 200000, N'Completed'),
 (9, 14, 1, 200000, N'Completed'),
-(9, 16, 8, 400000, N'Completed'),
-(9, 18, 8, 400000, N'Completed');
+(9, 16, 6, 400000, N'Completed'),
+(9, 18, 6, 400000, N'Completed');
 
 INSERT INTO Prescription (Record_ID, Doctor_Notes) VALUES
 (1, N'Nhỏ thuốc đúng giờ, tái khám sau 7 ngày nếu mắt còn đỏ'),

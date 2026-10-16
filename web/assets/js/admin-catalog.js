@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const suppliesView = document.getElementById('suppliesView');
   const consumablesView = document.getElementById('consumablesView');
   const retailView = document.getElementById('retailView');
+  const retailPage = window.location.pathname.endsWith('/admin/medicine');
   if (servicesView && suppliesView) {
   const cards = [...document.querySelectorAll('.catalog-service')];
   const successToast = document.getElementById('catalogSuccessToast');
@@ -70,9 +71,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   window.addEventListener('popstate', () => {
-    setTab(new URL(window.location.href).searchParams.get('tab'), false);
+    setTab(retailPage ? 'retail' : new URL(window.location.href).searchParams.get('tab'), false);
   });
-  setTab(new URL(window.location.href).searchParams.get('tab'), false);
+  setTab(retailPage ? 'retail' : new URL(window.location.href).searchParams.get('tab'), false);
   tabs.forEach((button, index) => button.addEventListener('keydown', (event) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
     event.preventDefault();

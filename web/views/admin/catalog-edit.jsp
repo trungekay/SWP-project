@@ -43,19 +43,17 @@
     <aside class="catalog-panel catalog-edit-sidebar">
       <h2>${kind == 'service' ? 'Dịch vụ phòng khám' : (catalogReturnTab == 'retail' ? 'Vật tư bán lẻ' : (catalogReturnTab == 'consumables' ? 'Vật tư tiêu hao' : 'Thiết bị'))}</h2>
       <p>Chọn mục cần sửa hoặc tạo mục mới.</p>
-      <a class="catalog-new-link" href="${pageContext.request.contextPath}/admin/catalog/${kind}?new=1&amp;returnTab=${catalogReturnTab}"><i class="bi bi-plus-circle"></i> Thêm mới</a>
+      <a class="catalog-new-link" href="${pageContext.request.contextPath}${kind == 'medicine' ? '/admin/medicine/item' : '/admin/catalog/'}${kind == 'medicine' ? '' : kind}?new=1"><i class="bi bi-plus-circle"></i> Thêm mới</a>
       <nav aria-label="Danh mục hiện có">
         <c:forEach items="${choices}" var="choice">
-          <c:if test="${kind == 'service' || (catalogReturnTab == 'supplies' && choice.category == 'Khác') || (catalogReturnTab == 'consumables' && choice.category == 'Vật tư y tế tiêu hao') || (catalogReturnTab == 'retail' && (choice.category == 'Thuốc & Dung dịch' || choice.category == 'Kính & Phụ kiện'))}">
-            <a class="catalog-choice ${choice.id == item.id ? 'is-active' : ''}" href="${pageContext.request.contextPath}/admin/catalog/${kind}?id=${choice.id}&amp;returnTab=${catalogReturnTab}"><c:out value="${choice.name}" /></a>
-          </c:if>
+            <a class="catalog-choice ${choice.id == item.id ? 'is-active' : ''}" href="${pageContext.request.contextPath}${kind == 'medicine' ? '/admin/medicine/item' : '/admin/catalog/'}${kind == 'medicine' ? '' : kind}?id=${choice.id}"><c:out value="${choice.name}" /></a>
         </c:forEach>
       </nav>
     </aside>
     <section class="catalog-panel catalog-edit-panel">
-      <div class="catalog-edit-heading"><div><h1>${empty item.id ? 'Thêm mới' : 'Cập nhật'} ${kind == 'service' ? 'dịch vụ' : (catalogReturnTab == 'retail' ? 'vật tư bán lẻ' : (catalogReturnTab == 'consumables' ? 'vật tư tiêu hao' : 'thiết bị'))}</h1><p>Nhấn “Lưu thay đổi” để ghi trực tiếp vào database.</p></div><a href="${pageContext.request.contextPath}/admin/catalog?tab=${catalogReturnTab}">← Về danh sách</a></div>
+      <div class="catalog-edit-heading"><div><h1>${empty item.id ? 'Thêm mới' : 'Cập nhật'} ${kind == 'service' ? 'dịch vụ' : (catalogReturnTab == 'retail' ? 'vật tư bán lẻ' : (catalogReturnTab == 'consumables' ? 'vật tư tiêu hao' : 'thiết bị'))}</h1><p>Nhấn “Lưu thay đổi” để ghi trực tiếp vào database.</p></div><a href="${pageContext.request.contextPath}${kind == 'medicine' ? '/admin/medicine' : '/admin/catalog?tab='}${kind == 'medicine' ? '' : catalogReturnTab}">← Về danh sách</a></div>
       <c:if test="${not empty error}"><div class="catalog-form-error" role="alert"><c:out value="${error}" /></div></c:if>
-      <form class="catalog-edit-form" action="${pageContext.request.contextPath}/admin/catalog/${kind}" method="post" enctype="multipart/form-data">
+      <form class="catalog-edit-form" action="${pageContext.request.contextPath}${kind == 'medicine' ? '/admin/medicine/item' : '/admin/catalog/'}${kind == 'medicine' ? '' : kind}" method="post" enctype="multipart/form-data">
         <input type="hidden" name="csrf" value="${sessionScope.catalogCsrf}">
         <input type="hidden" name="id" value="${fn:escapeXml(item.id)}">
         <input type="hidden" name="returnTab" value="${catalogReturnTab}">
@@ -103,11 +101,11 @@
           <c:choose>
             <c:when test="${kind == 'service' && item.uploadedImage}"><div class="catalog-image-current"><span>Ảnh hiện tại</span><img class="catalog-image-preview" src="${pageContext.request.contextPath}/catalog-image?kind=service&amp;id=${item.id}" alt="Ảnh dịch vụ hiện tại"></div></c:when>
             <c:when test="${kind == 'service' && not empty item && not item.uploadedImage}"><div class="catalog-image-current"><span>Ảnh mặc định</span><img class="catalog-image-preview" src="${pageContext.request.contextPath}/assets/img/${item.defaultImagePath}" alt="Ảnh mặc định của dịch vụ"></div></c:when>
-            <c:when test="${kind == 'supply' && item.uploadedImage}"><div class="catalog-image-current"><span>Ảnh hiện tại</span><img class="catalog-image-preview" src="${pageContext.request.contextPath}/catalog-image?kind=supply&amp;id=${item.id}" alt="Ảnh vật tư hiện tại"></div></c:when>
+            <c:when test="${kind != 'service' && item.uploadedImage}"><div class="catalog-image-current"><span>Ảnh hiện tại</span><img class="catalog-image-preview" src="${pageContext.request.contextPath}/catalog-image?kind=${kind}&amp;id=${item.id}" alt="Ảnh vật tư hiện tại"></div></c:when>
           </c:choose>
           <div class="catalog-image-selected" id="catalogSelectedImage" hidden><span>Ảnh vừa chọn</span><img class="catalog-image-preview" alt="Ảnh minh họa vừa chọn"></div>
         </div>
-        <div class="catalog-form-actions"><a class="catalog-detail" href="${pageContext.request.contextPath}/admin/catalog?tab=${catalogReturnTab}">Hủy</a><button class="catalog-primary" type="submit"><i class="bi bi-check-lg"></i> Lưu thay đổi</button></div>
+        <div class="catalog-form-actions"><a class="catalog-detail" href="${pageContext.request.contextPath}${kind == 'medicine' ? '/admin/medicine' : '/admin/catalog?tab='}${kind == 'medicine' ? '' : catalogReturnTab}">Hủy</a><button class="catalog-primary" type="submit"><i class="bi bi-check-lg"></i> Lưu thay đổi</button></div>
       </form>
     </section>
   </div>

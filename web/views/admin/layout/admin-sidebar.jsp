@@ -139,7 +139,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="${pageContext.request.contextPath}/admin/catalog?tab=retail" class="${param.activeNav == 'retail' ? 'active' : ''}">
+                    <a href="${pageContext.request.contextPath}/admin/medicine" class="${param.activeNav == 'retail' ? 'active' : ''}">
                         <i class="bi bi-bag-check"></i>
                         Quản lý Vật tư bán lẻ
                     </a>

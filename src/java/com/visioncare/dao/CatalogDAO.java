@@ -12,7 +12,6 @@ import java.util.List;
 
 public class CatalogDAO {
     private static final String SERVICE_COLUMNS = "sc.Service_ID, sc.Service_Code, sc.Service_Name, sc.Price, sc.Category, sc.Summary, sc.Description, CASE WHEN sc.Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
-    private static final String SUPPLY_COLUMNS = "Supply_ID, Supply_Name, Category, Price, CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
 
     public List<CatalogService> listServices() throws Exception {
         List<CatalogService> items = new ArrayList<>();
@@ -73,19 +72,44 @@ public class CatalogDAO {
         }
     }
 
-    public List<MedicalSupply> listSupplies() throws Exception {
+    // Each catalog kind has its own table and identifier. The kind comes from the servlet URL.
+    private String table(String kind) {
+        switch (kind) {
+            case "supply": return "Medical_Supply";
+            case "consumable": return "Consumables";
+            case "medicine": return "Medicine";
+            default: throw new IllegalArgumentException("Loại vật tư không hợp lệ.");
+        }
+    }
+
+    private String key(String kind) {
+        switch (kind) {
+            case "supply": return "Supply_ID";
+            case "consumable": return "Consumable_ID";
+            case "medicine": return "Medicine_ID";
+            default: throw new IllegalArgumentException("Loại vật tư không hợp lệ.");
+        }
+    }
+
+    public List<MedicalSupply> listSupplies(String kind) throws Exception {
         List<MedicalSupply> items = new ArrayList<>();
+        String id = key(kind);
+        String sql = "SELECT " + id + " AS Supply_ID, Supply_Name, Category, Price, " +
+                "CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image FROM " + table(kind) + " ORDER BY " + id;
         try (Connection connection = DBContext.getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT " + SUPPLY_COLUMNS + " FROM Medical_Supply ORDER BY Supply_ID");
+             PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet result = statement.executeQuery()) {
             while (result.next()) items.add(supply(result));
         }
         return items;
     }
 
-    public MedicalSupply getSupply(int id) throws Exception {
+    public MedicalSupply getSupply(String kind, int id) throws Exception {
+        String sql = "SELECT " + key(kind) + " AS Supply_ID, Supply_Name, Category, Price, " +
+                "CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image FROM " + table(kind) +
+                " WHERE " + key(kind) + " = ?";
         try (Connection connection = DBContext.getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT " + SUPPLY_COLUMNS + " FROM Medical_Supply WHERE Supply_ID = ?")) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
             try (ResultSet result = statement.executeQuery()) {
                 return result.next() ? supply(result) : null;
@@ -93,22 +117,22 @@ public class CatalogDAO {
         }
     }
 
-    public boolean deleteSupply(int id) throws Exception {
+    public boolean deleteSupply(String kind, int id) throws Exception {
         try (Connection connection = DBContext.getConnection();
-             PreparedStatement statement = connection.prepareStatement("DELETE FROM Medical_Supply WHERE Supply_ID = ?")) {
+             PreparedStatement statement = connection.prepareStatement(
+                     "DELETE FROM " + table(kind) + " WHERE " + key(kind) + " = ?")) {
             statement.setInt(1, id);
             return statement.executeUpdate() == 1;
         }
     }
 
-    public int saveSupply(int id, String name, String category,
-            BigDecimal price, byte[] imageData,
-            String imageMimeType) throws Exception {
+    public int saveSupply(String kind, int id, String name, String category,
+            BigDecimal price, byte[] imageData, String imageMimeType) throws Exception {
         boolean create = id == 0;
         String sql = create
-            ? "INSERT INTO Medical_Supply (Supply_Name, Category, Price, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?)"
-            : "UPDATE Medical_Supply SET Supply_Name = ?, Category = ?, Price = ?" +
-              (imageData == null ? "" : ", Image_Data = ?, Image_Mime_Type = ?") + " WHERE Supply_ID = ?";
+            ? "INSERT INTO " + table(kind) + " (Supply_Name, Category, Price, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?)"
+            : "UPDATE " + table(kind) + " SET Supply_Name = ?, Category = ?, Price = ?" +
+              (imageData == null ? "" : ", Image_Data = ?, Image_Mime_Type = ?") + " WHERE " + key(kind) + " = ?";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, name);
@@ -147,9 +171,9 @@ public class CatalogDAO {
 
     public ImageData getImage(String kind, int id) throws Exception {
         String table = "service".equals(kind) ? "Service_Catalog" :
-                "supply".equals(kind) ? "Medical_Supply" : null;
+                "supply".equals(kind) || "consumable".equals(kind) || "medicine".equals(kind) ? table(kind) : null;
         if (table == null) return null;
-        String key = "service".equals(kind) ? "Service_ID" : "Supply_ID";
+        String key = "service".equals(kind) ? "Service_ID" : key(kind);
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(
                      "SELECT Image_Data, Image_Mime_Type FROM " + table + " WHERE " + key + " = ?")) {
