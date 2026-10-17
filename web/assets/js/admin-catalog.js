@@ -2,9 +2,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabs = [...document.querySelectorAll('.catalog-tab')];
   const servicesView = document.getElementById('servicesView');
   const suppliesView = document.getElementById('suppliesView');
+  const consumablesView = document.getElementById('consumablesView');
   if (servicesView && suppliesView) {
   const cards = [...document.querySelectorAll('.catalog-service')];
-  const rows = [...document.querySelectorAll('#suppliesView .catalog-table tbody tr')];
   const successToast = document.getElementById('catalogSuccessToast');
   if (successToast) {
     window.setTimeout(() => {
@@ -40,9 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function setTab(tab, updateUrl = true) {
-    tab = tab === 'supplies' ? 'supplies' : 'services';
-    servicesView.hidden = tab !== 'services';
-    suppliesView.hidden = tab !== 'supplies';
+    tab = ['services', 'supplies', 'consumables'].includes(tab) ? tab : 'services';
+    const views = { services: servicesView, supplies: suppliesView, consumables: consumablesView };
+    Object.entries(views).forEach(([name, view]) => { view.hidden = name !== tab; });
     tabs.forEach((button) => {
       const active = button.dataset.tab === tab;
       button.classList.toggle('is-active', active);
@@ -93,16 +93,25 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('serviceSearch').addEventListener('input', filterServices);
   filterServices();
 
-  document.getElementById('supplySearch').addEventListener('input', (event) => {
-    const term = event.target.value.trim().toLocaleLowerCase('vi');
-    let count = 0;
-    rows.forEach((row) => {
-      row.hidden = !row.textContent.toLocaleLowerCase('vi').includes(term);
-      if (!row.hidden) count++;
-    });
-    document.getElementById('supplyEmpty').hidden = count > 0;
+  [
+    ['suppliesView', 'supplySearch', 'supplyEmpty'],
+    ['consumablesView', 'consumableSearch', 'consumableEmpty']
+  ].forEach(([viewId, searchId, emptyId]) => {
+    const rows = [...document.querySelectorAll(`#${viewId} .catalog-table tbody tr`)];
+    const search = document.getElementById(searchId);
+    const empty = document.getElementById(emptyId);
+    const filter = () => {
+      const term = search.value.trim().toLocaleLowerCase('vi');
+      let count = 0;
+      rows.forEach((row) => {
+        row.hidden = !row.textContent.toLocaleLowerCase('vi').includes(term);
+        if (!row.hidden) count++;
+      });
+      empty.hidden = count > 0;
+    };
+    search.addEventListener('input', filter);
+    filter();
   });
-  document.getElementById('supplyEmpty').hidden = rows.length > 0;
   }
 
   const input = document.getElementById('catalogImageFile');
