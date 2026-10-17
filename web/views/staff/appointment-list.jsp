@@ -250,7 +250,7 @@
                                                             <a href="${pageContext.request.contextPath}/staff/appointment-detail?id=${appt.id}"
                                                                 class="fw-semibold text-dark hover-teal text-decoration-none"
                                                                 style="font-size: 14px;"
-                                                                title="<c:out value='${appt.patientName}'/>">
+                                                                title="${appt.patientName}">
                                                                 ${appt.patientName}
                                                             </a>
                                                         </td>
@@ -271,7 +271,7 @@
                                                         <td class="text-nowrap text-truncate">
                                                             <span class="fw-semibold text-dark"
                                                                 style="font-size: 13.5px;"
-                                                                title="<c:out value='${not empty appt.doctorName ? appt.doctorName : \"Chưa phân công\"}'/>">
+                                                                title="${not empty appt.doctorName ? appt.doctorName : 'Chưa phân công'}">
                                                                 ${not empty appt.doctorName ? appt.doctorName : 'Chưa phân công'}
                                                             </span>
                                                         </td>
@@ -283,7 +283,7 @@
                                                                     <span
                                                                         class="badge bg-light text-dark border px-2.5 py-1.5 fw-medium text-truncate"
                                                                         style="font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; max-width: 100%;"
-                                                                        title="<c:out value='${appt.roomName}'/>">
+                                                                        title="${appt.roomName}">
                                                                         <i class="bi bi-door-open text-success flex-shrink-0"></i>
                                                                         <span class="text-truncate">${appt.roomName}</span>
                                                                     </span>
@@ -314,7 +314,7 @@
                                                                 </c:when>
                                                                 <c:when test="${appt.status == 'Canceled'}">
                                                                     <span class="badge-status badge-canceled"
-                                                                        title="<c:out value='${not empty appt.medicalNotes ? appt.medicalNotes : \"Lịch hẹn đã hủy / vắng mặt\"}'/>">
+                                                                        title="${not empty appt.medicalNotes ? appt.medicalNotes : 'Lịch hẹn đã hủy / vắng mặt'}">
                                                                         Đã huỷ
                                                                     </span>
                                                                 </c:when>
@@ -342,12 +342,12 @@
                                                                     <button type="button"
                                                                         class="action-btn checkin btn-trigger-checkin"
                                                                         title="Check-in tiếp đón" data-id="${appt.id}"
-                                                                        data-name="<c:out value='${appt.patientName}'/>"
-                                                                        data-phone="<c:out value='${appt.phone}'/>"
-                                                                        data-doctor="<c:out value='${appt.doctorName}'/>"
-                                                                        data-room="<c:out value='${appt.roomName}'/>"
+                                                                        data-name="${appt.patientName}"
+                                                                        data-phone="${appt.phone}"
+                                                                        data-doctor="${appt.doctorName}"
+                                                                        data-room="${appt.roomName}"
                                                                         data-doctor-id="${appt.doctorId > 0 ? appt.doctorId : 0}"
-                                                                        data-time="<c:out value='${appt.timeSlot}'/>">
+                                                                        data-time="${appt.timeSlot}">
                                                                         <i class="bi bi-box-arrow-in-right"></i>
                                                                     </button>
 
@@ -355,10 +355,10 @@
                                                                     <button type="button"
                                                                         class="action-btn delete btn-trigger-cancel"
                                                                         title="Hủy lịch hẹn" data-id="${appt.id}"
-                                                                        data-name="<c:out value='${appt.patientName}'/>"
-                                                                        data-doctor="<c:out value='${appt.doctorName}'/>"
-                                                                        data-time="<c:out value='${appt.timeSlot}'/>"
-                                                                        data-date="<c:out value='${appt.appointmentDate}'/>">
+                                                                        data-name="${appt.patientName}"
+                                                                        data-doctor="${appt.doctorName}"
+                                                                        data-time="${appt.timeSlot}"
+                                                                        data-date="${appt.appointmentDate}">
                                                                         <i class="bi bi-trash"></i>
                                                                     </button>
                                                                 </c:if>

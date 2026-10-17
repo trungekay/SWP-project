@@ -333,53 +333,125 @@ INSERT INTO Employee_Profile (Account_ID, Room_ID, Full_Name, Phone, Specialty, 
 (11, 9,    N'ThS. Lê Văn C',              NULL, N'Medical Specialist tiểu phẫu',   N'BS-33333/EYE', NULL),
 (12, NULL, N'Lễ Tân Phạm Thị Lan',        NULL, N'Thu Ngân & Tiếp Đón',            NULL,            NULL);
 
+DECLARE @today DATE = CAST(SYSUTCDATETIME() AS DATE);
+
+-- Lịch làm việc chuẩn cho tất cả các Bác sĩ (ID 3 đến 8) và Kỹ thuật viên (ID 9 đến 11)
 INSERT INTO Work_Schedule
     (Doctor_Employee_ID, Specialist_Employee_ID, Work_Date, Slot, Start_Time, End_Time, Status)
 VALUES
-(3,    NULL, '2026-04-01', N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 3',  '09:00:00', '09:30:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 4',  '09:30:00', '10:00:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 5',  '10:00:00', '10:30:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 6',  '10:30:00', '11:00:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 7',  '11:00:00', '11:30:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 8',  '13:30:00', '14:00:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 9',  '14:00:00', '14:30:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 10', '14:30:00', '15:00:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 11', '15:00:00', '15:30:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 12', '15:30:00', '16:00:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 13', '16:00:00', '16:30:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 14', '16:30:00', '17:00:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 15', '17:00:00', '17:30:00', N'Available'),
-(NULL, 9,    '2026-04-01', N'Slot 1',  '08:00:00', '08:30:00', N'Available');
+-- Bác sĩ 3: BS. Trần Văn Nam (Nhãn khoa tổng quát) - Schedule_ID: 1 -> 15
+(3, NULL, @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(3, NULL, @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(3, NULL, @today, N'Slot 3',  '09:00:00', '09:30:00', N'Available'),
+(3, NULL, @today, N'Slot 4',  '09:30:00', '10:00:00', N'Available'),
+(3, NULL, @today, N'Slot 5',  '10:00:00', '10:30:00', N'Available'),
+(3, NULL, @today, N'Slot 6',  '10:30:00', '11:00:00', N'Available'),
+(3, NULL, @today, N'Slot 7',  '11:00:00', '11:30:00', N'Available'),
+(3, NULL, @today, N'Slot 8',  '13:30:00', '14:00:00', N'Available'),
+(3, NULL, @today, N'Slot 9',  '14:00:00', '14:30:00', N'Available'),
+(3, NULL, @today, N'Slot 10', '14:30:00', '15:00:00', N'Available'),
+(3, NULL, @today, N'Slot 11', '15:00:00', '15:30:00', N'Available'),
+(3, NULL, @today, N'Slot 12', '15:30:00', '16:00:00', N'Available'),
+(3, NULL, @today, N'Slot 13', '16:00:00', '16:30:00', N'Available'),
+(3, NULL, @today, N'Slot 14', '16:30:00', '17:00:00', N'Available'),
+(3, NULL, @today, N'Slot 15', '17:00:00', '17:30:00', N'Available'),
+
+-- Bác sĩ 4: TS.BS. Nguyễn Xuân Tịnh (Đo Khúc xạ & Kính) - Schedule_ID: 16 -> 25
+(4, NULL, @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(4, NULL, @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(4, NULL, @today, N'Slot 3',  '09:00:00', '09:30:00', N'Available'),
+(4, NULL, @today, N'Slot 4',  '09:30:00', '10:00:00', N'Available'),
+(4, NULL, @today, N'Slot 5',  '10:00:00', '10:30:00', N'Available'),
+(4, NULL, @today, N'Slot 6',  '10:30:00', '11:00:00', N'Available'),
+(4, NULL, @today, N'Slot 7',  '11:00:00', '11:30:00', N'Available'),
+(4, NULL, @today, N'Slot 8',  '13:30:00', '14:00:00', N'Available'),
+(4, NULL, @today, N'Slot 9',  '14:00:00', '14:30:00', N'Available'),
+(4, NULL, @today, N'Slot 10', '14:30:00', '15:00:00', N'Available'),
+
+-- Bác sĩ 5: BS. Lê Hoàng Lan (Phẫu thuật LASIK) - Schedule_ID: 26 -> 35
+(5, NULL, @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(5, NULL, @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(5, NULL, @today, N'Slot 3',  '09:00:00', '09:30:00', N'Available'),
+(5, NULL, @today, N'Slot 4',  '09:30:00', '10:00:00', N'Available'),
+(5, NULL, @today, N'Slot 5',  '10:00:00', '10:30:00', N'Available'),
+(5, NULL, @today, N'Slot 6',  '10:30:00', '11:00:00', N'Available'),
+(5, NULL, @today, N'Slot 7',  '11:00:00', '11:30:00', N'Available'),
+(5, NULL, @today, N'Slot 8',  '13:30:00', '14:00:00', N'Available'),
+(5, NULL, @today, N'Slot 9',  '14:00:00', '14:30:00', N'Available'),
+(5, NULL, @today, N'Slot 10', '14:30:00', '15:00:00', N'Available'),
+
+-- Bác sĩ 6: BS. Phạm Bảo Ngọc (Nhãn khoa trẻ em) - Schedule_ID: 36 -> 45
+(6, NULL, @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(6, NULL, @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(6, NULL, @today, N'Slot 3',  '09:00:00', '09:30:00', N'Available'),
+(6, NULL, @today, N'Slot 4',  '09:30:00', '10:00:00', N'Available'),
+(6, NULL, @today, N'Slot 5',  '10:00:00', '10:30:00', N'Available'),
+(6, NULL, @today, N'Slot 6',  '10:30:00', '11:00:00', N'Available'),
+(6, NULL, @today, N'Slot 7',  '11:00:00', '11:30:00', N'Available'),
+(6, NULL, @today, N'Slot 8',  '13:30:00', '14:00:00', N'Available'),
+(6, NULL, @today, N'Slot 9',  '14:00:00', '14:30:00', N'Available'),
+(6, NULL, @today, N'Slot 10', '14:30:00', '15:00:00', N'Available'),
+
+-- Bác sĩ 7: BS. Trần Quang Huy (Đục thủy tinh thể - Phaco) - Schedule_ID: 46 -> 55
+(7, NULL, @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(7, NULL, @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(7, NULL, @today, N'Slot 3',  '09:00:00', '09:30:00', N'Available'),
+(7, NULL, @today, N'Slot 4',  '09:30:00', '10:00:00', N'Available'),
+(7, NULL, @today, N'Slot 5',  '10:00:00', '10:30:00', N'Available'),
+(7, NULL, @today, N'Slot 6',  '10:30:00', '11:00:00', N'Available'),
+(7, NULL, @today, N'Slot 7',  '11:00:00', '11:30:00', N'Available'),
+(7, NULL, @today, N'Slot 8',  '13:30:00', '14:00:00', N'Available'),
+(7, NULL, @today, N'Slot 9',  '14:00:00', '14:30:00', N'Available'),
+(7, NULL, @today, N'Slot 10', '14:30:00', '15:00:00', N'Available'),
+
+-- Bác sĩ 8: BS. Ngô Tiến Dũng (Glaucoma & Võng mạc) - Schedule_ID: 56 -> 65
+(8, NULL, @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(8, NULL, @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(8, NULL, @today, N'Slot 3',  '09:00:00', '09:30:00', N'Available'),
+(8, NULL, @today, N'Slot 4',  '09:30:00', '10:00:00', N'Available'),
+(8, NULL, @today, N'Slot 5',  '10:00:00', '10:30:00', N'Available'),
+(8, NULL, @today, N'Slot 6',  '10:30:00', '11:00:00', N'Available'),
+(8, NULL, @today, N'Slot 7',  '11:00:00', '11:30:00', N'Available'),
+(8, NULL, @today, N'Slot 8',  '13:30:00', '14:00:00', N'Available'),
+(8, NULL, @today, N'Slot 9',  '14:00:00', '14:30:00', N'Available'),
+(8, NULL, @today, N'Slot 10', '14:30:00', '15:00:00', N'Available'),
+
+-- Kỹ thuật viên / Bác sĩ tiểu phẫu (Specialist 9, 10, 11) - Schedule_ID: 66 -> 71
+(NULL, 9,  @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(NULL, 9,  @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(NULL, 10, @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(NULL, 10, @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(NULL, 11, @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(NULL, 11, @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available');
 
 INSERT INTO Leave_Cancel_Request
     (Schedule_ID, Requester_Employee_ID, Approved_By_Employee_ID, leave_Date, Reason, request_status, approved_at)
 VALUES
-(3, 3, 2, '2026-04-01', N'Bác sĩ bận họp đột xuất', N'Pending', NULL);
+(3, 3, 2, @today, N'Bác sĩ bận họp đột xuất', N'Pending', NULL);
 
+-- Danh sách cuộc hẹn mẫu khớp 100% Khóa ngoại (Schedule_ID thực tế tương ứng với bác sĩ phụ trách)
 INSERT INTO Appointment (Patient_ID, Schedule_ID, Staff_Employee_ID, Status, created_at, checkin_time) VALUES
-(1, 1, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(2, 2, 12, N'Pending',   SYSUTCDATETIME(), NULL),
-(1, 60, 12, N'Pending', SYSUTCDATETIME(), NULL),
-(3, 846, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(4, 847, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(1, 61, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(5, 111, 12, N'Pending', SYSUTCDATETIME(), NULL),
-(5, 848, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(1, 849, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(8, 86, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(11, 850, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(3, 151, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(4, 204, 12, N'Pending', SYSUTCDATETIME(), NULL),
-(7, 851, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(10, 852, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(7, 127, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(9, 853, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(6, 854, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(6, 855, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(9, 211, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(2, 15, 12, N'Canceled', SYSUTCDATETIME(), NULL);
+(1, 1,  12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(2, 2,  12, N'Pending',   SYSUTCDATETIME(), NULL),
+(1, 3,  12, N'Pending',   SYSUTCDATETIME(), NULL),
+(3, 4,  12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(4, 5,  12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(1, 6,  12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(5, 7,  12, N'Pending',   SYSUTCDATETIME(), NULL),
+(5, 16, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(1, 17, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(8, 18, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(11, 26, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(3, 27, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(4, 28, 12, N'Pending',   SYSUTCDATETIME(), NULL),
+(7, 36, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(10, 37, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(7, 38, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(9, 46, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(6, 47, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(6, 56, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(9, 57, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(2, 8,  12, N'Canceled',  SYSUTCDATETIME(), NULL);
 
 INSERT INTO Medical_Record
     (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, examination_result, conclusion, Created_At)
@@ -405,14 +477,14 @@ VALUES
 (20, 8, N'Dịch vụ: Đo nhãn áp và chụp OCT võng mạc | Lý do: Tái khám định kỳ theo dõi nhãn áp sau điều trị', NULL, NULL, SYSUTCDATETIME()),
 (21, 3, N'Dịch vụ: Khám mắt tổng quát | Lý do: Bệnh nhân báo bận công tác đột xuất, xin hủy lịch khám', NULL, NULL, SYSUTCDATETIME());
 
--- Một danh mục dịch vụ dùng chung cho đặt lịch và Procedure_Order.
--- Sample images remain in web/assets/img; Image_Data is used for admin uploads.
+-- Danh mục dịch vụ chuẩn hoá phòng khám nhãn khoa VisionCare
+-- Bao gồm: Dịch vụ khám & tiền phẫu (cho bệnh nhân đặt lịch) và Phẫu thuật/Thủ thuật (cho bác sĩ chỉ định)
 INSERT INTO Service_Catalog
     (Service_Code, Service_Name, Price, Category, Summary, Description)
 VALUES
-('NK-01', N'Khám mắt tổng quát', 250000, N'Khám và tư vấn', N'Khám và chẩn đoán toàn diện các bệnh lý về mắt, phù hợp với mọi lứa tuổi.', N'Bao gồm đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt, đánh giá tình trạng giác mạc và thủy tinh thể.'),
+('NK-01', N'Khám mắt tổng quát & Soi đáy mắt', 200000, N'Khám và tư vấn', N'Khám và chẩn đoán toàn diện các bệnh lý về mắt, đo thị lực, kiểm tra áp lực nhãn cầu và soi đáy mắt.', N'Bao gồm đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt, đánh giá tình trạng giác mạc và thủy tinh thể.'),
 ('KX-02', N'Đo khúc xạ và tư vấn kính', 150000, N'Kiểm tra và chẩn đoán', N'Khám sàng lọc và đo độ khúc xạ với hệ thống đo tự động chuẩn xác.', N'Đo khúc xạ chính xác bằng máy tự động, thử thị lực và tư vấn tròng kính phù hợp.'),
-('LS-03', N'Phẫu thuật LASIK', 18000000, N'Điều trị và thủ thuật', N'Xóa cận không dao, thời gian phục hồi nhanh chóng.', N'Phẫu thuật khúc xạ laser LASIK/SMILE điều trị cận thị, viễn thị và loạn thị với công nghệ hiện đại.'),
+('LS-03', N'Khám tiền phẫu & Tư vấn xóa cận LASIK/SMILE', 500000, N'Khám và tư vấn', N'Khám chuyên sâu 8 bước bản đồ giác mạc, đo độ dày giác mạc, soi đáy mắt và tư vấn phương pháp xóa cận. Hoàn trừ 100% phí khám nếu thực hiện mổ.', N'Gói khám tiền phẫu bắt buộc để đánh giá mắt đủ điều kiện phẫu thuật khúc xạ (Femto-LASIK, ReLEx SMILE). Toàn bộ phí khám 500.000đ sẽ được trừ 100% vào chi phí ca mổ nếu quý khách tiến hành phẫu thuật.'),
 ('PE-04', N'Khám mắt trẻ em và tư vấn nhược thị', 300000, N'Khám và tư vấn', N'Sàng lọc sớm các tật khúc xạ tiến triển, tật lé và suy giảm thị lực ở trẻ nhỏ.', N'Sàng lọc cận thị sớm, điều trị nhược thị và lác mắt trong không gian khám thân thiện.'),
 ('TT-05', N'Phẫu thuật Phaco điều trị đục thủy tinh thể', 12000000, N'Điều trị và thủ thuật', N'Tái tạo tầm nhìn trong sáng bằng phương pháp tán nhuyễn Phaco tiên tiến.', N'Phẫu thuật thay thể thủy tinh nhân tạo điều trị đục thủy tinh thể an toàn, đường mổ siêu nhỏ.'),
 ('GL-06', N'Đo nhãn áp và chụp OCT võng mạc', 500000, N'Kiểm tra và chẩn đoán', N'Kiểm soát nhãn áp, bảo tồn thị trường thần kinh mắt và ngăn ngừa biến chứng mù lòa.', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.');
@@ -440,6 +512,23 @@ INSERT INTO Medicine (Supply_Name, Category, Price) VALUES
 (N'Miếng che mắt tập nhược thị', N'Phụ kiện & sản phẩm hỗ trợ', 60000);
 
 INSERT INTO Consumables (Supply_Name, Category, Price) VALUES
+('TT-05', N'Khám tầm soát & Tư vấn phẫu thuật Phaco (Đục thủy tinh thể)', 300000, N'Khám và tư vấn', N'Kiểm tra mức độ đục thể thủy tinh, đo công suất thể thủy tinh nhân tạo và tư vấn phẫu thuật Phaco. Hoàn trừ 100% phí khám nếu thực hiện mổ.', N'Khám sàng lọc và tư vấn phẫu thuật Phaco đặt kính nội nhãn. Toàn bộ phí khám được khấu trừ 100% vào chi phí ca mổ khi thực hiện phẫu thuật.'),
+('GL-06', N'Đo nhãn áp & Tầm soát Glaucoma', 250000, N'Khám và tư vấn', N'Kiểm tra áp lực nhãn cầu, soi góc tiền phòng và tầm soát phát hiện sớm bệnh lý thiên đầu thống (Glaucoma).', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.'),
+('KX-MAY', N'Đo khúc xạ máy', 100000, N'Kiểm tra và chẩn đoán', N'Đo độ khúc xạ bằng máy đo tự động kỹ thuật số.', NULL),
+('OCT-DM', N'Chụp OCT đáy mắt', 400000, N'Kiểm tra và chẩn đoán', N'Chụp cắt lớp quang học võng mạc, gai thị độ phân giải cao.', NULL),
+('KM-CVS', N'Khám & Điều trị Khô mắt (Hội chứng màn hình)', 200000, N'Khám và tư vấn', N'Đo màng phim nước mắt, kiểm tra tuyến Meibomius và điều trị khô rát mỏi mắt do sử dụng máy tính, điện thoại kéo dài.', N'Gói khám và phục hồi mắt chuyên sâu cho nhân viên văn phòng, học sinh sinh viên thường xuyên tiếp xúc màn hình điện tử.'),
+('KM-DM', N'Khám & Tầm soát Đáy mắt - Võng mạc tiểu đường', 300000, N'Khám và tư vấn', N'Chụp màu đáy mắt, soi võng mạc tầm soát biến chứng xuất huyết võng mạc ở người tiểu đường và cao huyết áp.', N'Quy trình chẩn đoán chuyên sâu giúp phát hiện sớm và can thiệp kịp thời các tổn thương võng mạc do đái tháo đường.'),
+('PT-LASIK', N'Phẫu thuật Femto-LASIK hai mắt', 18000000, N'Điều trị và thủ thuật', N'Phẫu thuật khúc xạ không dao Femtosecond Laser chính xác, phục hồi thị lực nhanh 10/10.', N'Phương pháp xóa cận viễn loạn hiện đại, an toàn, không đau, thời gian thực hiện chỉ 15 phút.'),
+('PT-SMILE', N'Phẫu thuật ReLEx SMILE xóa cận', 42000000, N'Điều trị và thủ thuật', N'Công nghệ phẫu thuật khúc xạ không vạt tiên tiến nhất, đường rạch siêu nhỏ 2mm bảo tồn giác mạc tối đa.', N'Kỹ thuật rút lõi mô giác mạc bằng công nghệ VisuMax từ Đức, giảm thiểu tối đa khô mắt sau mổ.'),
+('PT-PHACO', N'Phẫu thuật Phaco đặt thủy tinh thể nhân tạo', 12000000, N'Điều trị và thủ thuật', N'Tán nhuyễn thể thủy tinh đục bằng sóng siêu âm Phaco và đặt thể thủy tinh nhân tạo cao cấp đường mổ 2.2mm.', N'Ca phẫu thuật nhanh chóng 10-15 phút, xuất viện trong ngày, khôi phục thị lực sáng rõ cho người cao tuổi.'),
+('TP-LEO', N'Chích rạch chắp lẹo mi mắt', 250000, N'Điều trị và thủ thuật', N'Tiểu phẫu dẫn lưu ổ viêm chắp lẹo mí mắt an toàn, vô trùng, hạn chế tái phát và đảm bảo thẩm mỹ.', N'Thực hiện thủ thuật tại phòng tiểu phẫu vô khuẩn.'),
+('TP-LEDAO', N'Bơm thông rửa lệ đạo', 300000, N'Điều trị và thủ thuật', N'Thông tắc đường dẫn lệ giải quyết triệt để triệu chứng chảy nước mắt sống và viêm túi lệ mạn tính.', N'Quy trình thông rửa nhẹ nhàng với dụng cụ chuyên dụng.'),
+('TP-YAG', N'Bắn Laser YAG bao sau đục', 1500000, N'Điều trị và thủ thuật', N'Thủ thuật laser ngoại trú làm trong suốt lại bao sau thể thủy tinh sau phẫu thuật Phaco.', N'Không phẫu thuật, chỉ mất 5 phút, thị lực sáng rõ trở lại ngay sau khi bắn laser.');
+
+INSERT INTO Medical_Supply (Supply_Name, Category, Price) VALUES
+(N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Thuốc & Dung dịch', 95000),
+(N'Tròng kính Essilor Crizal Alize 1.60', N'Kính & Phụ kiện', 1250000),
+(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Thuốc & Dung dịch', 88000),
 (N'Que thử màu huỳnh quang Fluorescein Strips', N'Vật tư y tế tiêu hao', 320000);
 
 -- Các mục mẫu bổ sung; giá chỉ để minh họa.

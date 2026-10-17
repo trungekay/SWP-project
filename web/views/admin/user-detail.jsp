@@ -470,26 +470,30 @@
 
     <script>
         function selectRole(element) {
+            if (!element) return;
             document.querySelectorAll('.role-card').forEach(card => {
                 card.classList.remove('selected');
             });
             element.classList.add('selected');
 
             const radio = element.querySelector('input[type="radio"]');
-            const roleId = parseInt(radio.value);
-            const employeeFields = document.getElementById('employee-fields');
-            const patientFields = document.getElementById('patient-fields');
+            if (radio) {
+                radio.checked = true;
+                const roleId = parseInt(radio.value);
+                const employeeFields = document.getElementById('employee-fields');
+                const patientFields = document.getElementById('patient-fields');
 
-            if (roleId === 3 || roleId === 4) {
-                if (employeeFields) employeeFields.style.display = 'block';
-            } else {
-                if (employeeFields) employeeFields.style.display = 'none';
-            }
+                if (roleId === 3 || roleId === 4) {
+                    if (employeeFields) employeeFields.style.display = 'block';
+                } else {
+                    if (employeeFields) employeeFields.style.display = 'none';
+                }
 
-            if (roleId === 6) {
-                if (patientFields) patientFields.style.display = 'block';
-            } else {
-                if (patientFields) patientFields.style.display = 'none';
+                if (roleId === 6) {
+                    if (patientFields) patientFields.style.display = 'block';
+                } else {
+                    if (patientFields) patientFields.style.display = 'none';
+                }
             }
         }
     </script>

@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
   <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
     <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+    <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
       <%-- Include Header --%>
         <jsp:include page="/views/common/header.jsp">
@@ -159,6 +160,36 @@
             background: var(--primary-light);
             box-shadow: 0 4px 12px rgba(13, 148, 136, 0.15);
           }
+
+          .booking-cat-btn {
+            border: 1.5px solid #cbd5e1;
+            background: #ffffff;
+            color: #475569;
+            border-radius: 50px;
+            padding: 6px 16px;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+          }
+
+          .booking-cat-btn:hover {
+            border-color: #0d9488;
+            color: #0d9488;
+            background: #f0fdfa;
+          }
+
+          .booking-cat-btn.active {
+            background: #0d9488 !important;
+            border-color: #0d9488 !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
+          }
+
+          .booking-service-col {
+            transition: all 0.25s ease;
+          }
+
 
           .qr-box {
             background: #ffffff;
@@ -356,7 +387,7 @@
                                       class="btn btn-outline-secondary px-4 py-2 rounded-pill">
                                       <i class="bi bi-house me-2"></i>Về trang chủ
                                     </a>
-                                    <a href="${pageContext.request.contextPath}/profile"
+                                    <a href="${pageContext.request.contextPath}/views/profile/appointment-history.jsp"
                                       class="btn btn-primary px-4 py-2 rounded-pill"
                                       style="background: #0d9488; border-color: #0d9488;">
                                       <i class="bi bi-calendar-check me-2"></i>Xem lịch hẹn của tôi
@@ -428,8 +459,8 @@
 
                                               <div class="col-6 fs-6 text-dark fw-bold mt-2">
                                                 <c:choose>
-                                                  <c:when test="${appointment.balanceDue > 0}">Tiền cọc giữ chỗ cần thanh toán:</c:when>
-                                                  <c:otherwise>Tổng phí dịch vụ trọn gói:</c:otherwise>
+                                                  <c:when test="${appointment.balanceDue > 0}">Tiền cọc cần thanh toán:</c:when>
+                                                  <c:otherwise>Tổng phí khám cần thanh toán:</c:otherwise>
                                                 </c:choose>
                                               </div>
                                               <div class="col-6 fs-5 fw-bold text-success text-end mt-2">
@@ -443,6 +474,13 @@
                                                 <div class="col-6 text-danger small">Số tiền còn lại (thanh toán tại phòng khám):</div>
                                                 <div class="col-6 text-danger small text-end fw-bold">
                                                   <fmt:formatNumber value="${appointment.balanceDue}" type="number" groupingUsed="true" /> ₫
+                                                </div>
+                                              </c:if>
+                                              <c:if test="${fn:contains(appointment.serviceName, 'tiền phẫu') or fn:contains(appointment.serviceName, 'tầm soát')}">
+                                                <div class="col-12 mt-2">
+                                                  <div class="alert alert-success py-2 px-3 small rounded-3 mb-0 text-start">
+                                                    <i class="bi bi-gift-fill me-1"></i> <b>Chính sách ưu đãi:</b> 100% phí khám tiền phẫu này sẽ được <b>khấu trừ trực tiếp vào chi phí ca mổ</b> nếu quý khách đủ điều kiện và tiến hành phẫu thuật tại VisionCare.
+                                                  </div>
                                                 </div>
                                               </c:if>
                                             </div>
@@ -498,16 +536,68 @@
                                                         <h5 class="fw-bold mb-0 text-dark">Chọn Bệnh Lý / Dịch Vụ Khám
                                                           Mắt &amp; Bác Sĩ</h5>
                                                       </div>
-                                                      <p class="text-muted small mb-3">Vui lòng chọn triệu chứng hoặc
-                                                        dịch vụ bạn có nhu cầu thăm khám:</p>
+                                                      <div class="booking-category-bar mb-3 p-3 bg-light rounded-4 border">
+                                                        <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                                                          <span class="text-dark small fw-bold">
+                                                            <i class="bi bi-funnel-fill text-teal me-1" style="color: #0d9488;"></i> Phân loại dịch vụ thăm khám:
+                                                          </span>
+                                                          <span class="badge bg-white text-secondary border small">
+                                                            <i class="bi bi-layers me-1"></i>${fn:length(services)} gói dịch vụ
+                                                          </span>
+                                                        </div>
+                                                        <div class="d-flex flex-wrap gap-2" id="bookingCategoryButtons">
+                                                          <button type="button" class="btn booking-cat-btn active" data-bgroup="all" onclick="filterBookingCategory('all', this)">
+                                                            <i class="bi bi-grid-fill me-1"></i> Tất cả
+                                                          </button>
+                                                          <button type="button" class="btn booking-cat-btn" data-bgroup="kham_khucxa" onclick="filterBookingCategory('kham_khucxa', this)">
+                                                            <i class="bi bi-eye-fill me-1"></i> Khám &amp; Khúc xạ
+                                                          </button>
+                                                          <button type="button" class="btn booking-cat-btn" data-bgroup="tienphau_tamsoat" onclick="filterBookingCategory('tienphau_tamsoat', this)">
+                                                            <i class="bi bi-shield-check me-1"></i> Tiền phẫu &amp; Tầm soát
+                                                          </button>
+                                                          <button type="button" class="btn booking-cat-btn" data-bgroup="treem" onclick="filterBookingCategory('treem', this)">
+                                                            <i class="bi bi-heart-pulse-fill me-1"></i> Mắt trẻ em
+                                                          </button>
+                                                          <button type="button" class="btn booking-cat-btn" data-bgroup="thuthuat" onclick="filterBookingCategory('thuthuat', this)">
+                                                            <i class="bi bi-bandaid-fill me-1"></i> Thủ thuật ngoại trú
+                                                          </button>
+                                                        </div>
+                                                      </div>
 
-                                                      <div class="row g-3 mb-4">
+                                                      <div class="row g-3 mb-4" id="bookingServicesGrid">
                                                         <c:forEach var="svc" items="${services}" varStatus="status">
-                                                          <div class="col-md-6 col-lg-4">
-                                                            <label class="d-block h-100">
+                                                          <c:set var="bGroup" value="kham_khucxa" />
+                                                          <c:set var="bGroupLabel" value="Khám & Khúc xạ" />
+                                                          <c:set var="bBadgeStyle" value="background: #ccfbf1; color: #0f766e; border: 1px solid #99f6e4;" />
+                                                          <c:choose>
+                                                            <c:when test="${svc.specialty == 'children' or fn:contains(svc.code, 'PE')}">
+                                                              <c:set var="bGroup" value="treem" />
+                                                              <c:set var="bGroupLabel" value="Mắt trẻ em" />
+                                                              <c:set var="bBadgeStyle" value="background: #fce7f3; color: #be185d; border: 1px solid #fbcfe8;" />
+                                                            </c:when>
+                                                            <c:when test="${svc.specialty == 'lasik' or svc.specialty == 'cataract' or svc.code == 'LS-03' or svc.code == 'TT-05' or svc.code == 'GL-06' or svc.code == 'OCT-DM' or svc.code == 'KM-DM'}">
+                                                              <c:set var="bGroup" value="tienphau_tamsoat" />
+                                                              <c:set var="bGroupLabel" value="Tiền phẫu & Tầm soát" />
+                                                              <c:set var="bBadgeStyle" value="background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe;" />
+                                                            </c:when>
+                                                            <c:when test="${fn:startsWith(svc.code, 'TP-')}">
+                                                              <c:set var="bGroup" value="thuthuat" />
+                                                              <c:set var="bGroupLabel" value="Thủ thuật" />
+                                                              <c:set var="bBadgeStyle" value="background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa;" />
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                              <c:set var="bGroup" value="kham_khucxa" />
+                                                              <c:set var="bGroupLabel" value="Khám & Khúc xạ" />
+                                                              <c:set var="bBadgeStyle" value="background: #ccfbf1; color: #0f766e; border: 1px solid #99f6e4;" />
+                                                            </c:otherwise>
+                                                          </c:choose>
+
+                                                          <div class="col-md-6 col-lg-4 booking-service-col" data-bgroup="${bGroup}">
+                                                            <label class="d-block h-100 mb-0">
                                                               <input type="radio" class="d-none service-radio"
                                                                 name="serviceId" value="${svc.id}"
                                                                 data-specialty="${svc.specialty}"
+                                                                data-bgroup="${bGroup}"
                                                                 data-name="${svc.name}" data-price="${svc.price}"
                                                                 onchange="filterDoctorsByService(this)"
                                                                 ${(selectedServiceId==svc.id or (empty selectedServiceId
@@ -517,9 +607,12 @@
                                                                 <div>
                                                                   <div
                                                                     class="d-flex justify-content-between align-items-start mb-2">
-                                                                    <span
-                                                                      class="badge bg-light text-secondary border small">${svc.code
-                                                                      != null ? svc.code : 'DV'}</span>
+                                                                    <div class="d-flex align-items-center gap-1 flex-wrap">
+                                                                      <span class="badge bg-light text-secondary border small">${svc.code != null ? svc.code : 'DV'}</span>
+                                                                      <span class="badge rounded-pill small" style="${bBadgeStyle}; font-size: 11px;">
+                                                                        ${bGroupLabel}
+                                                                      </span>
+                                                                    </div>
                                                                     <span class="text-teal fw-bold"
                                                                       style="color: #0d9488;">
                                                                       <fmt:formatNumber value="${svc.price}"
@@ -527,11 +620,16 @@
                                                                     </span>
                                                                   </div>
                                                                   <h6 class="fw-bold text-dark mb-1">${svc.name}</h6>
+                                                                  <c:if test="${svc.code == 'LS-03' or svc.code == 'TT-05' or fn:contains(svc.name, 'tiền phẫu') or fn:contains(svc.name, 'tầm soát')}">
+                                                                    <div class="mb-1">
+                                                                      <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: 10.5px;">
+                                                                        <i class="bi bi-gift-fill me-1"></i>Trừ 100% vào chi phí mổ
+                                                                      </span>
+                                                                    </div>
+                                                                  </c:if>
                                                                   <p class="text-muted small mb-0 text-truncate-2"
-                                                                    style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12px;">
-                                                                    ${svc.summary != null ? svc.summary : 'Dịch vụ khám
-                                                                    nhãn khoa chất lượng cao với trang thiết bị chuẩn
-                                                                    quốc tế.'}
+                                                                    style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12px; min-height: 34px;">
+                                                                    ${svc.summary != null ? svc.summary : 'Dịch vụ khám nhãn khoa chất lượng cao với trang thiết bị chuẩn quốc tế.'}
                                                                   </p>
                                                                 </div>
                                                               </div>
@@ -873,12 +971,12 @@
                                                                         <div
                                                                           class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                                                                           <div>
-                                                                            <span class="text-muted small d-block" id="feeLabelText">Phí khám chuyên khoa ban đầu:</span>
+                                                                            <span class="text-muted small d-block" id="feeLabelText">Chi phí dịch vụ (Thanh toán giữ chỗ):</span>
                                                                             <div class="d-flex align-items-baseline gap-2">
                                                                               <strong class="fs-4 text-teal"
-                                                                                style="color: #0d9488;" id="feeDisplayAmount">200.000 ₫</strong>
+                                                                                style="color: #0d9488;" id="feeDisplayAmount">-- ₫</strong>
                                                                               <span
-                                                                                class="badge bg-light text-secondary border" id="feeBadgeText">Đã bao gồm VAT &amp; Phí tư vấn</span>
+                                                                                class="badge bg-success bg-opacity-10 text-success border border-success" id="feeBadgeText">Thanh toán giữ chỗ lịch hẹn 100%</span>
                                                                             </div>
                                                                             <div id="feeRemainingNotice" class="text-muted small mt-1" style="display: none;"></div>
                                                                           </div>
@@ -1138,6 +1236,26 @@
               }
             }
 
+            // Phân loại danh mục dịch vụ trong màn hình đặt lịch
+            function filterBookingCategory(group, btn) {
+              document.querySelectorAll('.booking-cat-btn').forEach(b => b.classList.remove('active'));
+              if (btn) {
+                btn.classList.add('active');
+              } else {
+                const targetBtn = document.querySelector('.booking-cat-btn[data-bgroup="' + group + '"]');
+                if (targetBtn) targetBtn.classList.add('active');
+              }
+
+              const cols = document.querySelectorAll('.booking-service-col');
+              cols.forEach(col => {
+                if (group === 'all' || col.getAttribute('data-bgroup') === group) {
+                  col.style.display = '';
+                } else {
+                  col.style.display = 'none';
+                }
+              });
+            }
+
             // Khi người dùng chọn bác sĩ trong dropdown
             function onDoctorSelectChange() {
               const doctorSelect = document.getElementById('doctorSelect');
@@ -1160,6 +1278,15 @@
               });
               if (matchedRadio && !matchedRadio.checked) {
                 matchedRadio.checked = true;
+                updateFeeDisplay();
+
+                // Đảm bảo thẻ dịch vụ được hiển thị nếu đang bị ẩn bởi bộ lọc nhóm
+                const parentCol = matchedRadio.closest('.booking-service-col');
+                if (parentCol && parentCol.style.display === 'none') {
+                  const allBtn = document.querySelector('.booking-cat-btn[data-bgroup="all"]');
+                  filterBookingCategory('all', allBtn);
+                }
+
                 const filterNotice = document.getElementById('doctorFilterNotice');
                 if (filterNotice) {
                   filterNotice.innerHTML = '<i class="bi bi-info-circle-fill text-teal me-1" style="color:#0d9488;"></i>' +
@@ -1311,41 +1438,31 @@
               }
             }
 
-            // Cập nhật hiển thị phí khám động theo dịch vụ được chọn
+            // Cập nhật hiển thị phí khám động theo dịch vụ được chọn (Chi phí gói dịch vụ là phí giữ chỗ luôn)
             function updateFeeDisplay() {
               const checkedSvc = document.querySelector('input[name="serviceId"]:checked');
               if (!checkedSvc) return;
-              const price = parseFloat(checkedSvc.dataset.price) || 200000;
+              const price = parseFloat(checkedSvc.dataset.price) || 0;
+              const svcName = (checkedSvc.dataset.name || '').toLowerCase();
               const labelEl = document.getElementById('feeLabelText');
               const amountEl = document.getElementById('feeDisplayAmount');
               const badgeEl = document.getElementById('feeBadgeText');
               const noticeEl = document.getElementById('feeRemainingNotice');
 
-              if (price <= 200000) {
-                if (labelEl) labelEl.textContent = 'Tổng phí dịch vụ trọn gói:';
-                if (amountEl) amountEl.textContent = price.toLocaleString('vi-VN') + ' ₫';
-                if (badgeEl) {
-                  badgeEl.className = 'badge bg-success bg-opacity-10 text-success border border-success';
-                  badgeEl.textContent = 'Thanh toán 100% khi đặt lịch';
-                }
-                if (noticeEl) {
-                  noticeEl.style.display = 'block';
+              if (labelEl) labelEl.textContent = 'Chi phí dịch vụ (Thanh toán giữ chỗ):';
+              if (amountEl) amountEl.textContent = price.toLocaleString('vi-VN') + ' ₫';
+              if (badgeEl) {
+                badgeEl.className = 'badge bg-success bg-opacity-10 text-success border border-success';
+                badgeEl.textContent = 'Thanh toán giữ chỗ lịch hẹn 100%';
+              }
+              if (noticeEl) {
+                noticeEl.style.display = 'block';
+                if (svcName.includes('tiền phẫu') || svcName.includes('tầm soát')) {
                   noticeEl.className = 'text-success small mt-1';
-                  noticeEl.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Đã bao gồm toàn bộ phí khám &amp; tư vấn chuyên khoa. Không phát sinh thêm phí khám tại phòng khám.';
-                }
-              } else {
-                const deposit = 200000;
-                const remaining = price - deposit;
-                if (labelEl) labelEl.textContent = 'Phí đặt cọc giữ chỗ khám ban đầu:';
-                if (amountEl) amountEl.textContent = deposit.toLocaleString('vi-VN') + ' ₫';
-                if (badgeEl) {
-                  badgeEl.className = 'badge bg-warning bg-opacity-10 text-warning border border-warning';
-                  badgeEl.textContent = 'Đặt cọc giữ chỗ online';
-                }
-                if (noticeEl) {
-                  noticeEl.style.display = 'block';
+                  noticeEl.innerHTML = '<i class="bi bi-gift-fill me-1"></i>Chi phí khám này dùng để giữ chỗ lịch hẹn và <b>được khấu trừ 100% vào chi phí ca mổ</b> nếu quý khách tiến hành phẫu thuật.';
+                } else {
                   noticeEl.className = 'text-muted small mt-1';
-                  noticeEl.innerHTML = '<i class="bi bi-info-circle-fill text-teal me-1" style="color:#0d9488;"></i>Tổng giá gói dịch vụ: <b class="text-dark">' + price.toLocaleString('vi-VN') + ' ₫</b>. Số tiền còn lại <b class="text-danger">' + remaining.toLocaleString('vi-VN') + ' ₫</b> sẽ thanh toán tại quầy thu ngân sau khi khám xong.';
+                  noticeEl.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>Chi phí dịch vụ trọn gói dùng để xác nhận và giữ chỗ khung giờ tiếp đón với bác sĩ chuyên khoa.';
                 }
               }
             }

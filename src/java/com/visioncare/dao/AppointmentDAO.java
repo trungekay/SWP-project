@@ -128,7 +128,7 @@ public class AppointmentDAO {
                 }
             }
             if (depositAmount <= 0) {
-                depositAmount = totalAmount <= 200000 && totalAmount > 0 ? totalAmount : 200000;
+                depositAmount = totalAmount > 0 ? totalAmount : 200000;
                 balanceDue = totalAmount > depositAmount ? (totalAmount - depositAmount) : 0;
             }
 
