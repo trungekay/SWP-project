@@ -117,7 +117,8 @@ public class DoctorWaitingListServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
-        if (!"start".equals(request.getParameter("action"))) {
+        String action = request.getParameter("action");
+        if (!"start".equals(action) && !"complete".equals(action)) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
@@ -132,12 +133,18 @@ public class DoctorWaitingListServlet extends HttpServlet {
         }
 
         try {
-            boolean started = doctorQueueDAO.startExamination(
-                    appointmentId, doctor.getActorId(), Date.valueOf(LocalDate.now(CLINIC_ZONE)));
-            if (started) {
+            Date clinicDate = Date.valueOf(LocalDate.now(CLINIC_ZONE));
+            boolean updated = "start".equals(action)
+                    ? doctorQueueDAO.startExamination(appointmentId, doctor.getActorId(), clinicDate)
+                    : doctorQueueDAO.completeExamination(appointmentId, doctor.getActorId(), clinicDate);
+            if (updated && "start".equals(action)) {
                 response.sendRedirect(request.getContextPath() + "/doctor/patient-detail?id=" + appointmentId);
+            } else if (updated) {
+                session.setAttribute("doctorQueueMessage", "Đã hoàn tất ca khám #APPT-" + appointmentId + ".");
+                response.sendRedirect(request.getContextPath() + "/doctor/waiting-list?date="
+                        + clinicDate + "&status=Completed");
             } else {
-                session.setAttribute("doctorQueueMessage", "Không thể gọi ca này vào khám. Hãy làm mới danh sách và kiểm tra ca đang khám.");
+                session.setAttribute("doctorQueueMessage", "Không thể cập nhật ca khám này. Hãy làm mới danh sách và kiểm tra trạng thái hiện tại.");
                 response.sendRedirect(returnToQueue(request));
             }
         } catch (Exception error) {

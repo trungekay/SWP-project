@@ -390,8 +390,8 @@ VALUES
 ('PE-04', N'Khám mắt trẻ em và tư vấn nhược thị', 300000, N'Khám và tư vấn', N'Sàng lọc sớm các tật khúc xạ tiến triển, tật lé và suy giảm thị lực ở trẻ nhỏ.', N'Sàng lọc cận thị sớm, điều trị nhược thị và lác mắt trong không gian khám thân thiện.'),
 ('TT-05', N'Phẫu thuật Phaco điều trị đục thủy tinh thể', 12000000, N'Điều trị và thủ thuật', N'Tái tạo tầm nhìn trong sáng bằng phương pháp tán nhuyễn Phaco tiên tiến.', N'Phẫu thuật thay thể thủy tinh nhân tạo điều trị đục thủy tinh thể an toàn, đường mổ siêu nhỏ.'),
 ('GL-06', N'Đo nhãn áp và chụp OCT võng mạc', 500000, N'Kiểm tra và chẩn đoán', N'Kiểm soát nhãn áp, bảo tồn thị trường thần kinh mắt và ngăn ngừa biến chứng mù lòa.', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.'),
--- Hai dịch vụ cũ có nội dung khác với các gói dịch vụ hiện có.
-('KX-MAY', N'Đo khúc xạ máy', 100000, N'Kiểm tra và chẩn đoán', NULL, NULL),
+-- Dịch vụ khám khô mắt độc lập với gói đo khúc xạ KX-02.
+('KM-09', N'Khám và tư vấn khô mắt', 200000, N'Khám và tư vấn', N'Đánh giá nguyên nhân khô mắt và tư vấn chăm sóc phù hợp.', N'Khám bề mặt nhãn cầu, đánh giá phim nước mắt và tư vấn hướng điều trị theo kết quả thăm khám.'),
 ('OCT-DM', N'Chụp OCT đáy mắt', 400000, N'Kiểm tra và chẩn đoán', NULL, NULL);
 
 INSERT INTO Medical_Supply (Supply_Name, Category, Price) VALUES

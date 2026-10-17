@@ -187,6 +187,29 @@
                                                 </c:choose>
                                             </form>
                                         </c:if>
+                                        <c:if test="${item.status eq 'In_Progress'}">
+                                            <form action="${pageContext.request.contextPath}/doctor/waiting-list" method="post">
+                                                <input type="hidden" name="action" value="complete">
+                                                <input type="hidden" name="appointmentId" value="${item.id}">
+                                                <input type="hidden" name="csrfToken" value="<c:out value='${csrfToken}' />">
+                                                <input type="hidden" name="date" value="<c:out value='${selectedDate}' />">
+                                                <input type="hidden" name="status" value="<c:out value='${selectedStatus}' />">
+                                                <input type="hidden" name="keyword" value="<c:out value='${keyword}' />">
+                                                <c:choose>
+                                                    <c:when test="${not isToday}">
+                                                        <button class="doctor-queue-button doctor-queue-button-primary" type="button" disabled
+                                                                title="Chỉ có thể hoàn tất ca khám trong ngày hôm nay">
+                                                            <i class="bi bi-check2" aria-hidden="true"></i> Hoàn tất
+                                                        </button>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <button class="doctor-queue-button doctor-queue-button-primary" type="submit">
+                                                            <i class="bi bi-check2" aria-hidden="true"></i> Hoàn tất
+                                                        </button>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </form>
+                                        </c:if>
                                     </div>
                                 </article>
                             </c:forEach>

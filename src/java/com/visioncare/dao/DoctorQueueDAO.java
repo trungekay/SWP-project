@@ -8,6 +8,22 @@ import java.sql.SQLException;
 
 /** Status transition for a doctor's own checked-in appointment. */
 public class DoctorQueueDAO {
+    /** Complete only the signed-in doctor's checked-in appointment for today. */
+    public boolean completeExamination(int appointmentId, int doctorEmployeeId, Date clinicDate) throws Exception {
+        String sql = "UPDATE a SET a.Status = 'Completed' "
+                + "FROM Appointment a "
+                + "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID "
+                + "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? "
+                + "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, appointmentId);
+            ps.setInt(2, doctorEmployeeId);
+            ps.setDate(3, clinicDate);
+            return ps.executeUpdate() == 1;
+        }
+    }
+
     public boolean startExamination(int appointmentId, int doctorEmployeeId, Date clinicDate) throws Exception {
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
