@@ -362,9 +362,9 @@ public class InvoiceDAO {
 
         // Fetch additional procedures (if any, excluding base examination already covered by consultation deposit)
         long totalProcedureCost = 0;
-        String sqlProcedures = "SELECT po.Order_ID, s.Service_ID, s.Service_Name, s.Actual_Price, po.Status " +
+        String sqlProcedures = "SELECT po.Order_ID, s.Service_ID, s.Service_Name, po.Actual_Price, po.Status " +
                               "FROM Procedure_Order po " +
-                              "JOIN Service s ON po.Service_ID = s.Service_ID " +
+                              "JOIN Service_Catalog s ON po.Service_ID = s.Service_ID " +
                               "JOIN Medical_Record m ON po.Record_ID = m.Record_ID " +
                               "JOIN Master_Invoice i ON m.Appointment_ID = i.Appointment_ID " +
                               "WHERE i.Invoice_ID = ?";

@@ -141,9 +141,9 @@ public class MedicalRecordDAO {
 
     private List<Map<String, Object>> loadProcedures(Connection conn, int recordId) {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT po.Order_ID, po.Status, s.Service_Name, s.Actual_Price, esp.Full_Name AS Specialist_Name " +
+        String sql = "SELECT po.Order_ID, po.Status, s.Service_Name, po.Actual_Price, esp.Full_Name AS Specialist_Name " +
                      "FROM Procedure_Order po " +
-                     "JOIN Service s ON po.Service_ID = s.Service_ID " +
+                     "JOIN Service_Catalog s ON po.Service_ID = s.Service_ID " +
                      "LEFT JOIN Employee_Profile esp ON po.Specialist_Employee_ID = esp.Employee_ID " +
                      "WHERE po.Record_ID = ? ORDER BY po.Order_ID ASC";
 
