@@ -23,8 +23,8 @@
         <jsp:include page="/views/employee/layout/employee-header.jsp" />
         <div class="page-content doctor-detail-page">
             <nav class="doctor-detail-breadcrumb" aria-label="Điều hướng">
-                <a href="${pageContext.request.contextPath}/employee/schedule">
-                    <i class="bi bi-arrow-left" aria-hidden="true"></i> Lịch làm việc
+                <a href="${pageContext.request.contextPath}/doctor/waiting-list">
+                    <i class="bi bi-arrow-left" aria-hidden="true"></i> Hàng đợi khám bệnh
                 </a>
                 <i class="bi bi-chevron-right" aria-hidden="true"></i>
                 <span aria-current="page">Chi tiết bệnh nhân</span>
@@ -36,8 +36,8 @@
                         <div class="doctor-detail-empty-icon"><i class="bi bi-person-x" aria-hidden="true"></i></div>
                         <h1>Không tìm thấy ca khám</h1>
                         <p>Ca khám này không tồn tại hoặc bạn chưa được phân công khám bệnh nhân.</p>
-                        <a class="doctor-detail-button doctor-detail-button-primary" href="${pageContext.request.contextPath}/employee/schedule">
-                            <i class="bi bi-arrow-left" aria-hidden="true"></i> Về lịch làm việc
+                        <a class="doctor-detail-button doctor-detail-button-primary" href="${pageContext.request.contextPath}/doctor/waiting-list">
+                            <i class="bi bi-arrow-left" aria-hidden="true"></i> Về hàng đợi khám bệnh
                         </a>
                     </div>
                 </c:when>

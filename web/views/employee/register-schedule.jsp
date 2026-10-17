@@ -122,6 +122,12 @@
                     class="btn btn-outline-secondary btn-sm px-3 py-2 fw-semibold rounded-pill d-inline-flex align-items-center gap-1">
                     <i class="bi bi-arrow-left"></i> Xem lịch
                   </a>
+                  <c:if test="${sessionScope.user.role == 'doctor'}">
+                    <a href="${pageContext.request.contextPath}/doctor/waiting-list"
+                      class="btn btn-outline-secondary btn-sm px-3 py-2 fw-semibold rounded-pill d-inline-flex align-items-center gap-1">
+                      <i class="bi bi-people"></i> Hàng đợi khám bệnh
+                    </a>
+                  </c:if>
 
                   <button type="submit" id="btnSubmitSchedule" class="btn-submit-schedule btn-sm px-3 py-2 rounded-pill"
                     disabled>

@@ -20,20 +20,26 @@
             </a>
         </li>
 
+        <c:if test="${sessionScope.user.role == 'doctor'}">
+            <li>
+                <a href="${pageContext.request.contextPath}/doctor/waiting-list" class="${param.activeNav == 'doctor-waiting' || param.activeNav == 'examination' ? 'active' : ''}">
+                    <i class="bi bi-people"></i>
+                    Hàng đợi khám bệnh
+                </a>
+            </li>
+            <li>
+                <a href="${pageContext.request.contextPath}/views/profile/manage.jsp" class="${param.activeNav == 'profile' ? 'active' : ''}">
+                    <i class="bi bi-person-circle"></i>
+                    Hồ sơ cá nhân
+                </a>
+            </li>
+        </c:if>
+
         <c:if test="${sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist' || sessionScope.user.roleId == 4 || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2}">
             <li>
                 <a href="${pageContext.request.contextPath}/specialist/waiting-list" class="${param.activeNav == 'waiting-list' ? 'active' : ''}">
                     <i class="bi bi-clipboard2-pulse"></i>
                     Hàng đợi cận lâm sàng
-                </a>
-            </li>
-        </c:if>
-
-        <c:if test="${sessionScope.user.role == 'doctor'}">
-            <li>
-                <a href="javascript:void(0);" class="${param.activeNav == 'examination' ? 'active' : ''}" title="Chức năng đang phát triển" style="opacity: 0.85;">
-                    <i class="bi bi-file-earmark-medical"></i>
-                    Khám bệnh & Bệnh án
                 </a>
             </li>
         </c:if>

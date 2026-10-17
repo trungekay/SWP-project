@@ -1,20 +1,11 @@
--- Fresh database setup: this script drops and recreates eye_clinic_db.
--- Service_Catalog is the single service table; Procedure_Order.Service_ID references it.
--- Service_Catalog does not have the obsolete Created_By column.
-
-USE master;
-GO
-IF EXISTS (SELECT name FROM sys.databases WHERE name = N'eye_clinic_db')
-BEGIN
-    ALTER DATABASE eye_clinic_db SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE eye_clinic_db;
-END
-GO
-CREATE DATABASE eye_clinic_db;
-GO
+-- Run against the existing eye_clinic_db. This file never drops or creates a database.
+-- Initial schema and sample data are added only when this database is empty.
 USE eye_clinic_db;
-GO
+IF DB_NAME() <> N'eye_clinic_db'
+    THROW 50000, N'Chỉ chạy script trong eye_clinic_db hiện có.', 1;
 
+IF OBJECT_ID(N'dbo.Role', N'U') IS NULL
+BEGIN
 CREATE TABLE Role (
     Role_ID     INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     Role_Name   NVARCHAR(50) NOT NULL UNIQUE
@@ -60,6 +51,16 @@ CREATE TABLE Medical_Supply (
         N'Thuốc & Dung dịch', N'Kính & Phụ kiện', N'Vật tư y tế tiêu hao', N'Khác'))
 );
 
+CREATE TABLE Consumables (
+    Consumable_ID INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    Supply_Name NVARCHAR(255) NOT NULL,
+    Category NVARCHAR(100) NOT NULL,
+    Price DECIMAL(18,0) NOT NULL,
+    Image_Data VARBINARY(MAX) NULL,
+    Image_Mime_Type VARCHAR(50) NULL,
+    CONSTRAINT CHK_Consumables_Price CHECK (Price >= 0),
+    CONSTRAINT CHK_Consumables_Category CHECK (Category = N'Vật tư y tế tiêu hao')
+);
 CREATE TABLE Room (
     Room_ID     INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     Room_Name   NVARCHAR(100) NOT NULL UNIQUE
@@ -214,7 +215,6 @@ CREATE TABLE Refund_Request (
     FOREIGN KEY (approved_by_employee_id) REFERENCES Employee_Profile(Employee_ID),
     FOREIGN KEY (Patient_ID)              REFERENCES Patient(Patient_ID)
 );
-GO
 
 ALTER TABLE Account ADD CONSTRAINT CHK_Account_Status
     CHECK (Account_Status IN (N'Active', N'Inactive', N'Banned', N'Locked','Deleted'));
@@ -245,7 +245,6 @@ ALTER TABLE Payment_Transaction ADD CONSTRAINT CHK_Transaction_Amount CHECK (Amo
 ALTER TABLE Refund_Request ADD CONSTRAINT CHK_Refund_Amount CHECK (Refund_Amount > 0);
 ALTER TABLE Refund_Request ADD CONSTRAINT CHK_Refund_Status
     CHECK (Status IN (N'Pending', N'Approved', N'Rejected'));
-GO
 
 INSERT INTO Role (Role_Name) VALUES
 (N'System_Admin'), (N'Director'), (N'Doctor'),
@@ -398,7 +397,9 @@ VALUES
 INSERT INTO Medical_Supply (Supply_Name, Category, Price) VALUES
 (N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Thuốc & Dung dịch', 95000),
 (N'Tròng kính Essilor Crizal Alize 1.60', N'Kính & Phụ kiện', 1250000),
-(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Thuốc & Dung dịch', 88000),
+(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Thuốc & Dung dịch', 88000);
+
+INSERT INTO Consumables (Supply_Name, Category, Price) VALUES
 (N'Que thử màu huỳnh quang Fluorescein Strips', N'Vật tư y tế tiêu hao', 320000);
 
 -- Service_ID 7/8 là hai dịch vụ cũ vừa thêm sau sáu dịch vụ hiện có.
@@ -476,4 +477,122 @@ INSERT INTO Refund_Request
     (Invoice_ID, created_by_employee_id, approved_by_employee_id, Patient_ID, Refund_Amount, Reason, Status)
 VALUES
 (1, 12, 2, 1, 50000, N'Bệnh nhân hủy dịch vụ phát sinh thêm', N'Approved');
-GO
+
+-- Retail catalog table required by the merged category migration.
+CREATE TABLE dbo.Medicine (
+    Medicine_ID     INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    Supply_Name     NVARCHAR(255) NOT NULL,
+    Category        NVARCHAR(100) NOT NULL,
+    Price           DECIMAL(18,0) NOT NULL,
+    Image_Data      VARBINARY(MAX) NULL,
+    Image_Mime_Type VARCHAR(50) NULL,
+    CONSTRAINT CHK_Medicine_Price CHECK (Price >= 0),
+    CONSTRAINT CHK_Medicine_Category CHECK (Category IN (
+        N'Thuốc & dung dịch', N'Kính gọng & tròng kính', N'Kính áp tròng',
+        N'Phụ kiện & sản phẩm hỗ trợ', N'Khác'))
+);
+
+-- Merged from migrate_retail_categories.sql.
+SET XACT_ABORT ON;
+BEGIN TRANSACTION;
+
+IF OBJECT_ID(N'dbo.Medicine_Retail_Backup_20261017', N'U') IS NULL
+    SELECT * INTO dbo.Medicine_Retail_Backup_20261017 FROM dbo.Medicine;
+
+CREATE TABLE #RetailCatalog (
+    Supply_Name NVARCHAR(255) NOT NULL PRIMARY KEY,
+    Category NVARCHAR(100) NOT NULL,
+    Price DECIMAL(18,0) NOT NULL
+);
+
+INSERT INTO #RetailCatalog (Supply_Name, Category, Price) VALUES
+(N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Thuốc & dung dịch', 95000),
+(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Thuốc & dung dịch', 88000),
+(N'Thuốc mỡ tra mắt (3,5g)', N'Thuốc & dung dịch', 65000),
+(N'Dung dịch rửa mắt vô trùng (100 ml)', N'Thuốc & dung dịch', 45000),
+(N'Nước mắt nhân tạo không chất bảo quản (hộp 10 ống)', N'Thuốc & dung dịch', 135000),
+(N'Gọng kính nhựa TR90', N'Kính gọng & tròng kính', 320000),
+(N'Gọng kính kim loại', N'Kính gọng & tròng kính', 450000),
+(N'Tròng kính Essilor Crizal Alize 1.60', N'Kính gọng & tròng kính', 1250000),
+(N'Tròng kính lọc ánh sáng xanh 1.56', N'Kính gọng & tròng kính', 650000),
+(N'Kính râm chống tia UV400', N'Kính gọng & tròng kính', 280000),
+(N'Kính áp tròng mềm dùng một ngày (-2.00D)', N'Kính áp tròng', 180000),
+(N'Kính áp tròng mềm dùng một tháng (-2.00D)', N'Kính áp tròng', 250000),
+(N'Kính áp tròng cứng RGP (1 chiếc)', N'Kính áp tròng', 1200000),
+(N'Kính Ortho-K (1 chiếc)', N'Kính áp tròng', 7500000),
+(N'Dung dịch ngâm và vệ sinh kính áp tròng (240ml)', N'Kính áp tròng', 98000),
+(N'Hộp đựng kính cứng', N'Phụ kiện & sản phẩm hỗ trợ', 35000),
+(N'Khăn lau kính microfiber', N'Phụ kiện & sản phẩm hỗ trợ', 20000),
+(N'Dây đeo kính thể thao', N'Phụ kiện & sản phẩm hỗ trợ', 45000),
+(N'Hộp đựng kính áp tròng', N'Phụ kiện & sản phẩm hỗ trợ', 25000),
+(N'Miếng che mắt tập nhược thị', N'Phụ kiện & sản phẩm hỗ trợ', 60000);
+
+ALTER TABLE dbo.Medicine DROP CONSTRAINT CHK_Medicine_Category;
+
+-- Keep existing IDs, prices and images for matching products; remove surplus rows.
+DELETE m FROM dbo.Medicine AS m
+WHERE NOT EXISTS (SELECT 1 FROM #RetailCatalog AS c WHERE c.Supply_Name = m.Supply_Name);
+
+;WITH Duplicates AS (
+    SELECT Medicine_ID, ROW_NUMBER() OVER (PARTITION BY Supply_Name ORDER BY Medicine_ID) AS rn
+    FROM dbo.Medicine
+)
+DELETE FROM Duplicates WHERE rn > 1;
+
+UPDATE m SET Category = c.Category
+FROM dbo.Medicine AS m
+JOIN #RetailCatalog AS c ON c.Supply_Name = m.Supply_Name;
+
+INSERT INTO dbo.Medicine (Supply_Name, Category, Price)
+SELECT c.Supply_Name, c.Category, c.Price
+FROM #RetailCatalog AS c
+WHERE NOT EXISTS (SELECT 1 FROM dbo.Medicine AS m WHERE m.Supply_Name = c.Supply_Name);
+
+ALTER TABLE dbo.Medicine WITH CHECK ADD CONSTRAINT CHK_Medicine_Category CHECK (Category IN (
+    N'Thuốc & dung dịch', N'Kính gọng & tròng kính', N'Kính áp tròng',
+    N'Phụ kiện & sản phẩm hỗ trợ', N'Khác'));
+
+IF (SELECT COUNT(*) FROM dbo.Medicine) <> 20
+    THROW 50001, N'Danh mục bán lẻ phải có đúng 20 sản phẩm.', 1;
+
+COMMIT TRANSACTION;
+END;
+
+-- Bring an existing catalog up to date without recreating the database.
+SET XACT_ABORT ON;
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    IF OBJECT_ID(N'dbo.Consumables', N'U') IS NULL
+    BEGIN
+        CREATE TABLE dbo.Consumables (
+            Consumable_ID INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+            Supply_Name NVARCHAR(255) NOT NULL,
+            Category NVARCHAR(100) NOT NULL,
+            Price DECIMAL(18,0) NOT NULL,
+            Image_Data VARBINARY(MAX) NULL,
+            Image_Mime_Type VARCHAR(50) NULL,
+            CONSTRAINT CHK_Consumables_Price CHECK (Price >= 0),
+            CONSTRAINT CHK_Consumables_Category CHECK (Category = N'Vật tư y tế tiêu hao')
+        );
+    END;
+
+    -- Keep existing items and uploaded images when separating consumables from equipment.
+    INSERT INTO dbo.Consumables (Supply_Name, Category, Price, Image_Data, Image_Mime_Type)
+    SELECT source.Supply_Name, source.Category, source.Price, source.Image_Data, source.Image_Mime_Type
+    FROM dbo.Medical_Supply AS source
+    WHERE source.Category = N'Vật tư y tế tiêu hao'
+      AND NOT EXISTS (
+          SELECT 1 FROM dbo.Consumables AS target
+          WHERE target.Supply_Name = source.Supply_Name
+            AND target.Category = source.Category
+      );
+
+    DELETE FROM dbo.Medical_Supply WHERE Category = N'Vật tư y tế tiêu hao';
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
