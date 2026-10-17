@@ -15,10 +15,10 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   
-  <!-- Layout CSS (Staff & Admin Design System) -->
-  <jsp:include page="/views/staff/layout/staff-css.jsp" />
+  <!-- Layout CSS (Employee Unified Design System) -->
+  <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/employee.css">
   <!-- Custom Styles for Specialist Patient Detail (Screen 35) -->
-  <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/specialist-patient-detail.css">
+  <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/specialist-patient-detail.css?v=1.1">
 </head>
 <body>
 
@@ -212,12 +212,11 @@
                   <table class="table history-table mb-0">
                     <thead>
                       <tr>
-                        <th style="width: 120px;">Ngày khám</th>
-                        <th style="width: 190px;">Bác sĩ phụ trách</th>
-                        <th>Chẩn đoán lâm sàng</th>
-                        <th>Kết quả đo & Khám mắt</th>
-                        <th style="width: 200px;">Kết luận của Bác sĩ</th>
-                        <th style="width: 120px; text-align: center;">Thao tác</th>
+                        <th style="width: 110px; white-space: nowrap;">Ngày khám</th>
+                        <th style="width: 170px; white-space: nowrap;">Bác sĩ phụ trách</th>
+                        <th style="white-space: nowrap;">Chẩn đoán lâm sàng</th>
+                        <th style="width: 190px; white-space: nowrap;">Kết luận của Bác sĩ</th>
+                        <th style="width: 120px; white-space: nowrap; text-align: center;">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -247,18 +246,6 @@
                                 </c:when>
                                 <c:otherwise>
                                   <span class="text-muted fst-italic">Không có ghi chú</span>
-                                </c:otherwise>
-                              </c:choose>
-                            </div>
-                          </td>
-                          <td>
-                            <div class="text-secondary small" style="line-height: 1.4;">
-                              <c:choose>
-                                <c:when test="${not empty rec.examinationResult}">
-                                  <c:out value="${rec.examinationResult}" />
-                                </c:when>
-                                <c:otherwise>
-                                  <span class="text-muted fst-italic">Chưa có kết quả kiểm tra</span>
                                 </c:otherwise>
                               </c:choose>
                             </div>

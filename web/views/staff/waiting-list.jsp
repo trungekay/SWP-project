@@ -18,7 +18,7 @@
                     href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
                 <!-- Employee / Staff Unified Layout CSS -->
-                <jsp:include page="/views/employee/layout/employee-css.jsp" />
+                <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/employee.css">
             </head>
 
             <body>

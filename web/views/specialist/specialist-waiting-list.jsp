@@ -14,8 +14,8 @@
   <!-- Bootstrap 5 CSS & Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <!-- Layout CSS (Staff & Admin Design System) -->
-  <jsp:include page="/views/staff/layout/staff-css.jsp" />
+  <!-- Layout CSS (Employee Unified Design System) -->
+  <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/employee.css">
   <!-- Screen 34 Dedicated Enhancements -->
   <link href="${pageContext.request.contextPath}/assets/css/specialist-waiting-list.css" rel="stylesheet">
 </head>
@@ -148,7 +148,7 @@
         <div class="px-3 pt-3 pb-2 bg-light border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <a href="${pageContext.request.contextPath}/specialist/waiting-list?status=all&keyword=${keyword}&date=${selectedDate}&scope=${selectedScope}"
-               class="btn btn-sm ${selectedStatus == 'all' || empty selectedStatus ? 'btn-dark fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
+               class="btn btn-sm ${selectedStatus == 'all' || empty selectedStatus ? 'btn-teal text-white fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
               <i class="bi bi-people-fill me-1"></i> Tất cả (${statusCounts['all'] != null ? statusCounts['all'] : 0})
             </a>
             <a href="${pageContext.request.contextPath}/specialist/waiting-list?status=Pending&keyword=${keyword}&date=${selectedDate}&scope=${selectedScope}"
@@ -188,7 +188,7 @@
                     <th>Bác sĩ & Chẩn đoán sơ bộ</th>
                     <th style="width: 110px;">Thời gian</th>
                     <th style="width: 125px; text-align: center;">Trạng thái</th>
-                    <th style="width: 140px; text-align: center;">Thao tác</th>
+                    <th style="width: 160px; text-align: center;">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -274,29 +274,42 @@
                           <c:when test="${item.status == 'Pending'}">
                             <span class="badge-status badge-pending">Chờ thực hiện</span>
                           </c:when>
-                          <c:otherwise>
+                          <c:when test="${item.status == 'In_Progress'}">
+                            <span class="badge-status badge-inprogress"><span class="pulse-dot me-1"></span>Đang làm</span>
+                          </c:when>
+                          <c:when test="${item.status == 'Completed'}">
                             <span class="badge-status badge-completed">Đã hoàn tất</span>
+                          </c:when>
+                          <c:otherwise>
+                            <span class="badge-status badge-cancelled">Đã hủy</span>
                           </c:otherwise>
                         </c:choose>
                       </td>
 
                       <!-- Thao tác -->
                       <td class="text-center text-nowrap">
-                        <div class="d-flex align-items-center justify-content-center gap-1.5">
+                        <div class="d-flex align-items-center justify-content-center gap-2">
                           <c:choose>
                             <c:when test="${item.status == 'Pending'}">
                               <a href="${pageContext.request.contextPath}/specialist/procedure-detail?orderId=${item.orderId}" 
-                                 class="btn btn-sm btn-teal d-inline-flex align-items-center gap-1 py-1 px-2.5 shadow-sm" 
-                                 style="font-size: 12.5px; border-radius: 6px; font-weight: 600;"
+                                 class="btn-action-execute shadow-sm" 
                                  title="Thực hiện thủ thuật & ghi nhận kết quả">
                                 <i class="bi bi-play-fill"></i>
                                 <span>Thực hiện</span>
                               </a>
                             </c:when>
+                            <c:when test="${item.status == 'In_Progress'}">
+                              <a href="${pageContext.request.contextPath}/specialist/procedure-detail?orderId=${item.orderId}" 
+                                 class="btn-action-execute shadow-sm" 
+                                 style="background-color: #0284c7 !important;"
+                                 title="Tiếp tục thực hiện thủ thuật">
+                                <i class="bi bi-play-circle-fill"></i>
+                                <span>Tiếp tục</span>
+                              </a>
+                            </c:when>
                             <c:otherwise>
                               <a href="${pageContext.request.contextPath}/specialist/procedure-detail?orderId=${item.orderId}" 
-                                 class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1 py-1 px-2" 
-                                 style="font-size: 12px; border-radius: 6px; font-weight: 600;"
+                                 class="btn-action-view-result" 
                                  title="Xem kết quả thủ thuật">
                                 <i class="bi bi-eye"></i>
                                 <span>Xem KQ</span>
@@ -305,8 +318,7 @@
                           </c:choose>
 
                           <a href="${pageContext.request.contextPath}/specialist/patient-detail?patientId=${item.patientId}&orderId=${item.orderId}" 
-                             class="btn btn-sm btn-light border py-1 px-2 text-secondary" 
-                             style="border-radius: 6px;"
+                             class="btn-action-patient-card" 
                              title="Xem hồ sơ bệnh nhân">
                             <i class="bi bi-person-vcard"></i>
                           </a>
