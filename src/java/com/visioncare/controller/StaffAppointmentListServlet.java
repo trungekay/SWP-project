@@ -27,9 +27,6 @@ public class StaffAppointmentListServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            // Tự động quét và hủy các ca hẹn quá hạn/quá giờ mà không đến check-in
-            appointmentDAO.autoCancelExpiredAppointments();
-
             String dateParam = request.getParameter("date");
             String statusParam = request.getParameter("status");
             String doctorIdParam = request.getParameter("doctorId");
@@ -101,6 +98,10 @@ public class StaffAppointmentListServlet extends HttpServlet {
             request.setAttribute("checkedInCount", checkedInCount);
             request.setAttribute("completedCount", completedCount);
             request.setAttribute("canceledCount", canceledCount);
+
+            String servletPath = request.getServletPath();
+            String currentNav = "/staff/check-in".equals(servletPath) ? "checkin" : "appointments";
+            request.setAttribute("navActive", currentNav);
 
             request.getRequestDispatcher("/views/staff/appointment-list.jsp").forward(request, response);
         } catch (Exception e) {

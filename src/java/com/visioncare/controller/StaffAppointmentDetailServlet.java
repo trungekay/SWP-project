@@ -27,9 +27,6 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
         }
 
         try {
-            // Tự động quét và hủy các ca hẹn quá hạn/quá giờ mà không đến check-in
-            appointmentDAO.autoCancelExpiredAppointments();
-
             int apptId = Integer.parseInt(idParam.trim());
             Appointment appointment = appointmentDAO.getAppointmentById(apptId);
             if (appointment == null) {

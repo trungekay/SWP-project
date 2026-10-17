@@ -48,22 +48,22 @@
                         <c:when test="${not empty sessionScope.user.fullName}">
                             ${sessionScope.user.fullName.substring(0, 1).toUpperCase()}
                         </c:when>
-                        <c:otherwise>VC</c:otherwise>
+                        <c:otherwise>L</c:otherwise>
                     </c:choose>
                 </div>
                 <div class="user-info">
-                    <p class="name">${not empty sessionScope.user.fullName ? sessionScope.user.fullName : 'Nhân sự'}</p>
+                    <p class="name">${not empty sessionScope.user.fullName ? sessionScope.user.fullName : 'Lễ Tân Phạm Thị Lan'}</p>
                     <p class="role">
                         <c:choose>
                             <c:when test="${sessionScope.user.role == 'admin'}">Quản trị viên (Admin)</c:when>
                             <c:when test="${sessionScope.user.role == 'staff'}">Nhân viên (Staff)</c:when>
                             <c:when test="${sessionScope.user.role == 'doctor'}">Bác sĩ (Doctor)</c:when>
-                            <c:when test="${sessionScope.user.role == 'medical_specialist'}">Chuyên viên Khúc xạ</c:when>
-                            <c:otherwise>${sessionScope.user.role}</c:otherwise>
+                            <c:when test="${sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist'}">Kỹ thuật viên (Specialist)</c:when>
+                            <c:otherwise>Nhân viên (Staff)</c:otherwise>
                         </c:choose>
                     </p>
                 </div>
-                <i class="bi bi-chevron-down" style="font-size: 12px; color: #64748b; margin-left: 4px;"></i>
+                <i class="bi bi-chevron-down" style="font-size: 13px; color: #64748b; margin-left: 4px;"></i>
             </div>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li><a class="dropdown-item" href="${pageContext.request.contextPath}/views/profile/manage.jsp"><i class="bi bi-person"></i> Hồ sơ cá nhân</a></li>

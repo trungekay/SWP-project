@@ -1,7 +1,7 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <jsp:include page="/views/admin/layout/admin-css.jsp" />
 <style>
-    /* Custom enhancements for Staff & Receptionist Portal */
+    /* Custom enhancements for Employee & Staff Portal */
     :root {
         --vc-teal: #008b74;
         --vc-teal-dark: #00705d;
@@ -242,59 +242,122 @@
         background-color: #f8fafc;
     }
 
-    /* Action Icons (Minimalist style matching user-list) */
+    /* Action Buttons (Exact User Management style) */
     .action-btns {
-        display: flex;
-        gap: 14px;
+        display: inline-flex;
+        gap: 6px;
         align-items: center;
         justify-content: center;
     }
-    .action-btn {
-        color: #64748b;
-        font-size: 17px;
-        text-decoration: none;
-        background: none;
-        border: none;
-        padding: 4px;
-        cursor: pointer;
-        transition: color 0.2s, transform 0.15s;
+    .action-btn,
+    .custom-table .btn-sm,
+    .table-custom .btn-sm {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+        min-height: 32px;
+        padding: 0;
+        font-size: 13.5px;
+        border-radius: 6px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        text-decoration: none;
+        border: 1px solid transparent;
+        transition: all 0.18s ease;
+        cursor: pointer;
         line-height: 1;
-        border-radius: 4px;
     }
-    .action-btn:hover {
-        color: #0284c7;
-        transform: scale(1.15);
+    .action-btn:hover,
+    .custom-table .btn-sm:hover,
+    .table-custom .btn-sm:hover {
+        transform: translateY(-2px);
     }
-    .action-btn.checkin {
-        color: #008b74;
+
+    /* 1. Primary / Edit / View (Green soft pastel like user-list) */
+    .action-btn:not(.checkin):not(.warning):not(.delete):not(.success):not(.complete):not([disabled]),
+    .custom-table .btn-outline-primary,
+    .table-custom .btn-outline-primary {
+        color: #18a05e !important;
+        border-color: #bbf7d0 !important;
+        background-color: #f0fdf4 !important;
     }
-    .action-btn.checkin:hover {
-        color: #005a4b;
-        transform: scale(1.2);
+    .action-btn:not(.checkin):not(.warning):not(.delete):not(.success):not(.complete):not([disabled]):hover,
+    .custom-table .btn-outline-primary:hover,
+    .table-custom .btn-outline-primary:hover {
+        background-color: #18a05e !important;
+        border-color: #18a05e !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 6px rgba(24, 160, 94, 0.25) !important;
     }
-    .action-btn.delete {
-        color: #64748b;
+
+    /* 2. Success / Check-in / Start / Complete (Brand Green) */
+    .action-btn.checkin,
+    .action-btn.complete,
+    .action-btn.success,
+    .custom-table .btn-outline-success,
+    .table-custom .btn-outline-success {
+        color: #16a34a !important;
+        border-color: #bbf7d0 !important;
+        background-color: #f0fdf4 !important;
     }
-    .action-btn.delete:hover {
-        color: #e11d48;
-        transform: scale(1.2);
+    .action-btn.checkin:hover,
+    .action-btn.complete:hover,
+    .action-btn.success:hover,
+    .custom-table .btn-outline-success:hover,
+    .table-custom .btn-outline-success:hover {
+        background-color: #16a34a !important;
+        border-color: #16a34a !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25) !important;
     }
-    .action-btn.warning {
-        color: #d97706;
+
+    /* 3. Warning / Skip / Lock (Amber / Yellow) */
+    .action-btn.warning,
+    .custom-table .btn-outline-warning,
+    .table-custom .btn-outline-warning {
+        color: #d97706 !important;
+        border-color: #fde68a !important;
+        background-color: #fffbeb !important;
     }
-    .action-btn.warning:hover {
-        color: #b45309;
-        transform: scale(1.2);
+    .action-btn.warning:hover,
+    .custom-table .btn-outline-warning:hover,
+    .table-custom .btn-outline-warning:hover {
+        background-color: #d97706 !important;
+        border-color: #d97706 !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25) !important;
     }
-    .action-btn.complete {
-        color: #008b74;
+
+    /* 4. Danger / Delete / Cancel / Absent (Red / Coral) */
+    .action-btn.delete,
+    .action-btn.danger,
+    .custom-table .btn-outline-danger,
+    .table-custom .btn-outline-danger {
+        color: #dc2626 !important;
+        border-color: #fecaca !important;
+        background-color: #fef2f2 !important;
     }
-    .action-btn.complete:hover {
-        color: #005a4b;
-        transform: scale(1.2);
+    .action-btn.delete:hover,
+    .action-btn.danger:hover,
+    .custom-table .btn-outline-danger:hover,
+    .table-custom .btn-outline-danger:hover {
+        background-color: #dc2626 !important;
+        border-color: #dc2626 !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25) !important;
+    }
+
+    /* 5. Disabled / Busy doctor */
+    .action-btn[disabled],
+    .custom-table .btn-sm[disabled] {
+        opacity: 0.45 !important;
+        cursor: not-allowed !important;
+        transform: none !important;
+        box-shadow: none !important;
+        background-color: #f8fafc !important;
+        border-color: #e2e8f0 !important;
+        color: #94a3b8 !important;
     }
 
     /* Table Action Buttons */
@@ -381,9 +444,9 @@
         color: #ffffff;
     }
 
-    /* Badges */
+    /* Badges - Unified Clinic Status System */
     .badge-status {
-        padding: 6px 12px;
+        padding: 5px 12px;
         border-radius: 20px;
         font-size: 12.5px;
         font-weight: 600;
@@ -391,6 +454,7 @@
         align-items: center;
         gap: 6px;
         white-space: nowrap;
+        line-height: 1.4;
     }
     .badge-status::before {
         content: "";
@@ -398,34 +462,40 @@
         height: 6px;
         border-radius: 50%;
         display: inline-block;
+        flex-shrink: 0;
     }
     .badge-pending {
         background-color: #fef3c7;
         color: #b45309;
+        border: 1px solid #fde68a;
     }
     .badge-pending::before { background-color: #f59e0b; }
 
     .badge-confirmed {
         background-color: #e0f2fe;
         color: #0369a1;
+        border: 1px solid #bae6fd;
     }
     .badge-confirmed::before { background-color: #0ea5e9; }
 
     .badge-in-progress {
-        background-color: #e0e7ff;
-        color: #4338ca;
+        background-color: #ede9fe;
+        color: #6d28d9;
+        border: 1px solid #ddd6fe;
     }
-    .badge-in-progress::before { background-color: #6366f1; }
+    .badge-in-progress::before { background-color: #8b5cf6; }
 
     .badge-completed {
         background-color: #dcfce7;
         color: #15803d;
+        border: 1px solid #bbf7d0;
     }
-    .badge-completed::before { background-color: #22c55e; }
+    .badge-completed::before { background-color: #16a34a; }
 
     .badge-canceled {
         background-color: #fee2e2;
         color: #b91c1c;
+        border: 1px solid #fecaca;
     }
     .badge-canceled::before { background-color: #ef4444; }
 
@@ -687,35 +757,6 @@
 
     .btn-modal-teal:hover {
         background-color: #0f766e;
-        color: white;
-    }
-
-    .modal-icon-warning {
-        width: 64px;
-        height: 64px;
-        border-radius: 50%;
-        background-color: #fef3c7;
-        color: #d97706;
-        font-size: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 20px;
-    }
-
-    .btn-modal-warning {
-        background-color: #f59e0b;
-        border: none;
-        color: white;
-        padding: 10px 24px;
-        border-radius: 8px;
-        font-weight: 500;
-        min-width: 100px;
-        transition: all 0.2s ease;
-    }
-
-    .btn-modal-warning:hover {
-        background-color: #d97706;
         color: white;
     }
 
