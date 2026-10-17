@@ -24,7 +24,7 @@
             <li>
                 <a href="${pageContext.request.contextPath}/specialist/waiting-list" class="${param.activeNav == 'waiting-list' ? 'active' : ''}">
                     <i class="bi bi-clipboard2-pulse"></i>
-                    Hàng đợi
+                    Hàng đợi cận lâm sàng
                 </a>
             </li>
         </c:if>

@@ -69,15 +69,13 @@ public class ProcedureOrderDAO {
         List<Object> params = new ArrayList<>();
 
         if (specialistId != null && specialistId > 0) {
-            sql.append("AND po.Specialist_Employee_ID = ? ");
+            sql.append("AND (po.Specialist_Employee_ID = ? OR po.Specialist_Employee_ID IS NULL) ");
             params.add(specialistId);
         }
 
         if (status != null && !status.trim().isEmpty() && !"all".equalsIgnoreCase(status.trim())) {
             sql.append("AND po.Status = ? ");
             params.add(status.trim());
-        } else {
-            sql.append("AND po.Status != 'Cancelled' ");
         }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
@@ -114,18 +112,19 @@ public class ProcedureOrderDAO {
     }
 
     /**
-     * Đếm số lượng order theo các trạng thái trong hàng đợi (Chờ thực hiện & Đã hoàn tất)
+     * Đếm số lượng order theo các trạng thái để hiển thị badge số lượng
      */
     public Map<String, Integer> getOrderStatusCounts(Integer specialistId) throws Exception {
         Map<String, Integer> counts = new HashMap<>();
         counts.put("all", 0);
         counts.put("pending", 0);
         counts.put("completed", 0);
+        counts.put("cancelled", 0);
 
-        StringBuilder sql = new StringBuilder("SELECT po.Status, COUNT(*) AS Total FROM Procedure_Order po WHERE po.Status != 'Cancelled' ");
+        StringBuilder sql = new StringBuilder("SELECT po.Status, COUNT(*) AS Total FROM Procedure_Order po ");
         List<Object> params = new ArrayList<>();
         if (specialistId != null && specialistId > 0) {
-            sql.append("AND po.Specialist_Employee_ID = ? ");
+            sql.append("WHERE (po.Specialist_Employee_ID = ? OR po.Specialist_Employee_ID IS NULL) ");
             params.add(specialistId);
         }
         sql.append("GROUP BY po.Status ");
@@ -145,6 +144,8 @@ public class ProcedureOrderDAO {
                         counts.put("pending", cnt);
                     } else if ("Completed".equalsIgnoreCase(st)) {
                         counts.put("completed", cnt);
+                    } else if ("Cancelled".equalsIgnoreCase(st)) {
+                        counts.put("cancelled", cnt);
                     }
                 }
                 counts.put("all", total);
