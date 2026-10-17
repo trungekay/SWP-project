@@ -512,10 +512,10 @@ public class BookAppointmentServlet extends HttpServlet {
             appointment.setTotalAmount(totalServicePrice);
 
             // Quy định thu phí:
-            // - Dịch vụ có giá <= 200.000đ (ví dụ đo khúc xạ 150.000đ): Thu đúng 100% giá dịch vụ.
-            // - Các dịch vụ chuyên khoa khác (> 200.000đ): Chỉ thu trước phí khám ban đầu / tiền cọc 200.000đ, phần còn lại thanh toán sau khi khám xong.
-            long fee = totalServicePrice <= 200000 && totalServicePrice > 0 ? totalServicePrice : 200000;
-            long balanceDue = totalServicePrice > fee ? (totalServicePrice - fee) : 0;
+            // - Dịch vụ đặt lịch trực tuyến là các gói Khám & Tiền phẫu: thu đúng 100% chi phí khám của gói đó.
+            // - balanceDue = 0 (trọn gói phí khám). Nếu là khám tiền phẫu, phí này sẽ được khấu trừ 100% vào ca mổ khi phẫu thuật.
+            long fee = totalServicePrice > 0 ? totalServicePrice : 200000;
+            long balanceDue = 0;
             appointment.setFee(fee);
             appointment.setBalanceDue(balanceDue);
 
@@ -578,9 +578,21 @@ public class BookAppointmentServlet extends HttpServlet {
     }
 
     private void prepareFormData(HttpServletRequest request) throws Exception {
-        // Tải danh mục bệnh lý / dịch vụ hoàn toàn từ Database (Service_Catalog)
-        List<CatalogService> services = catalogDAO.listServices();
-        request.setAttribute("services", services);
+        // Tải danh mục bệnh lý / dịch vụ khám & tư vấn hoàn toàn từ Database (Service_Catalog)
+        List<CatalogService> allServices = catalogDAO.listServices();
+        List<CatalogService> bookingServices = new java.util.ArrayList<>();
+        if (allServices != null) {
+            for (CatalogService cs : allServices) {
+                // Chỉ hiển thị các gói Khám & Tư vấn / Sàng lọc tiền phẫu trên form Đặt lịch khám
+                // (Các ca đại phẫu thuật được Bác sĩ khám lâm sàng và chỉ định riêng trong hồ sơ bệnh án)
+                if ("Khám và tư vấn".equalsIgnoreCase(cs.getCategory())
+                        || "Kiểm tra và chẩn đoán".equalsIgnoreCase(cs.getCategory())
+                        || (cs.getPrice() != null && cs.getPrice().longValue() <= 1000000)) {
+                    bookingServices.add(cs);
+                }
+            }
+        }
+        request.setAttribute("services", bookingServices);
 
         // Tải danh sách bác sĩ hoàn toàn từ Database (Employee_Profile)
         List<Doctor> doctors = doctorDAO.getAll();

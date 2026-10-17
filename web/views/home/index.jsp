@@ -229,48 +229,220 @@
 
             </section><!-- /Stats Section -->
 
-            <!-- Services Section: same Service_Catalog rows as the admin page -->
+            <!-- Services Section: Categorized Service_Catalog -->
             <section id="services" class="services section light-background">
               <span id="service"></span>
-              <div class="container section-title">
+              <style>
+                .svc-filter-btn {
+                  border: 1.5px solid #cbd5e1;
+                  background: #ffffff;
+                  color: #475569;
+                  border-radius: 50px;
+                  padding: 8px 22px;
+                  font-weight: 600;
+                  font-size: 14px;
+                  transition: all 0.25s ease;
+                  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+                }
+                .svc-filter-btn:hover {
+                  border-color: #0d9488;
+                  color: #0d9488;
+                  background: #f0fdfa;
+                  transform: translateY(-2px);
+                }
+                .svc-filter-btn.active {
+                  background: #0d9488 !important;
+                  border-color: #0d9488 !important;
+                  color: #ffffff !important;
+                  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.28);
+                }
+                .svc-filter-btn.active .badge {
+                  background: rgba(255, 255, 255, 0.25) !important;
+                  color: #ffffff !important;
+                }
+                .service-card-col {
+                  transition: opacity 0.3s ease, transform 0.3s ease;
+                }
+                .service-card-modern {
+                  border-radius: 16px;
+                  transition: transform 0.25s ease, box-shadow 0.25s ease;
+                  overflow: hidden;
+                }
+                .service-card-modern:hover {
+                  transform: translateY(-5px);
+                  box-shadow: 0 12px 24px rgba(13, 148, 136, 0.12) !important;
+                }
+              </style>
+
+              <c:set var="countKham" value="0" />
+              <c:set var="countChandoan" value="0" />
+              <c:set var="countDieutri" value="0" />
+              <c:set var="lasikPreopId" value="3" />
+              <c:set var="phacoPreopId" value="5" />
+              <c:forEach items="${catalogServices}" var="s">
+                <c:choose>
+                  <c:when test="${s.category == 'Kiểm tra và chẩn đoán'}">
+                    <c:set var="countChandoan" value="${countChandoan + 1}" />
+                  </c:when>
+                  <c:when test="${s.category == 'Điều trị và thủ thuật'}">
+                    <c:set var="countDieutri" value="${countDieutri + 1}" />
+                  </c:when>
+                  <c:otherwise>
+                    <c:set var="countKham" value="${countKham + 1}" />
+                  </c:otherwise>
+                </c:choose>
+                <c:if test="${s.code == 'LS-03'}"><c:set var="lasikPreopId" value="${s.id}" /></c:if>
+                <c:if test="${s.code == 'TT-05'}"><c:set var="phacoPreopId" value="${s.id}" /></c:if>
+              </c:forEach>
+
+              <div class="container section-title" data-aos="fade-up">
                 <h2>Dịch vụ nhãn khoa</h2>
-                <p>Các dịch vụ thăm khám và điều trị mắt tại VisionCare (${catalogServices.size()} dịch vụ)</p>
+                <p>Khám chữa mắt toàn diện, trang thiết bị hiện đại và phẫu thuật kỹ thuật cao tại VisionCare (${catalogServices.size()} dịch vụ)</p>
               </div>
-              <div class="container">
-                <div class="row gy-4">
+
+              <div class="container" data-aos="fade-up" data-aos-delay="100">
+                <!-- Bộ lọc phân loại dịch vụ -->
+                <div class="d-flex justify-content-center flex-wrap gap-2 mb-4">
+                  <button type="button" class="btn svc-filter-btn active" data-filter="all" onclick="filterServices('all', this)">
+                    <i class="bi bi-grid-fill me-1"></i> Tất cả dịch vụ
+                    <span class="badge rounded-pill bg-light text-secondary ms-1">${fn:length(catalogServices)}</span>
+                  </button>
+                  <button type="button" class="btn svc-filter-btn" data-filter="kham" onclick="filterServices('kham', this)">
+                    <i class="bi bi-person-check-fill me-1"></i> Khám &amp; Tư vấn
+                    <span class="badge rounded-pill bg-light text-secondary ms-1">${countKham}</span>
+                  </button>
+                  <button type="button" class="btn svc-filter-btn" data-filter="chandoan" onclick="filterServices('chandoan', this)">
+                    <i class="bi bi-clipboard2-pulse-fill me-1"></i> Kiểm tra &amp; Chẩn đoán
+                    <span class="badge rounded-pill bg-light text-secondary ms-1">${countChandoan}</span>
+                  </button>
+                  <button type="button" class="btn svc-filter-btn" data-filter="dieutri" onclick="filterServices('dieutri', this)">
+                    <i class="bi bi-hospital-fill me-1"></i> Phẫu thuật &amp; Thủ thuật
+                    <span class="badge rounded-pill bg-light text-secondary ms-1">${countDieutri}</span>
+                  </button>
+                </div>
+
+                <div class="row gy-4" id="homeServicesGrid">
                   <c:forEach items="${catalogServices}" var="service">
-                    <div class="col-lg-4 col-md-6">
-                      <div class="card service-card border-0 shadow-sm h-100">
-                        <c:choose>
-                          <c:when test="${service.uploadedImage}">
-                            <img
-                              src="${pageContext.request.contextPath}/catalog-image?kind=service&amp;id=${service.id}"
-                              class="card-img-top" alt="${fn:escapeXml(service.name)}"
-                              style="height: 200px; object-fit: cover;">
-                          </c:when>
-                          <c:otherwise>
-                            <img
-                              src="${pageContext.request.contextPath}/assets/img/${service.defaultImagePath}"
-                              class="card-img-top" alt="${fn:escapeXml(service.name)}"
-                              style="height: 200px; object-fit: cover;">
-                          </c:otherwise>
-                        </c:choose>
-                        <div class="card-body p-4 text-center">
-                          <h4 class="card-title fw-bold mb-3">
-                            <c:out value="${service.name}" />
-                          </h4>
-                          <p class="card-text text-muted mb-2">
-                            <c:out value="${service.summary}" />
-                          </p>
-                          <p class="fw-semibold mb-4 text-teal" style="color: #0d9488;">
-                            <fmt:formatNumber value="${service.price}" pattern="#,##0" /> VNĐ
-                          </p>
-                          <div class="d-flex justify-content-center gap-2 flex-wrap">
-                            <a href="#departments"
-                              onclick="document.getElementById('department-link-${service.id}').click();"
-                              class="btn btn-outline-secondary rounded-pill px-3">Chi tiết</a>
-                            <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${service.id}"
-                              class="btn btn-dental rounded-pill px-3 shadow-sm"><i class="bi bi-calendar-check me-1"></i>Đặt lịch khám</a>
+                    <c:set var="svcCatGroup" value="kham" />
+                    <c:choose>
+                      <c:when test="${service.category == 'Kiểm tra và chẩn đoán'}">
+                        <c:set var="svcCatGroup" value="chandoan" />
+                      </c:when>
+                      <c:when test="${service.category == 'Điều trị và thủ thuật'}">
+                        <c:set var="svcCatGroup" value="dieutri" />
+                      </c:when>
+                      <c:otherwise>
+                        <c:set var="svcCatGroup" value="kham" />
+                      </c:otherwise>
+                    </c:choose>
+
+                    <div class="col-lg-4 col-md-6 service-card-col" data-cat-group="${svcCatGroup}">
+                      <div class="card service-card-modern border-0 shadow-sm h-100 bg-white">
+                        <div class="position-relative">
+                          <c:choose>
+                            <c:when test="${service.uploadedImage}">
+                              <img
+                                src="${pageContext.request.contextPath}/catalog-image?kind=service&amp;id=${service.id}"
+                                class="card-img-top" alt="${fn:escapeXml(service.name)}"
+                                style="height: 200px; object-fit: cover;">
+                            </c:when>
+                            <c:otherwise>
+                              <img
+                                src="${pageContext.request.contextPath}/assets/img/${service.defaultImagePath}"
+                                class="card-img-top" alt="${fn:escapeXml(service.name)}"
+                                style="height: 200px; object-fit: cover;">
+                            </c:otherwise>
+                          </c:choose>
+
+                          <!-- Badge Phân loại nổi bật trên ảnh -->
+                          <div class="position-absolute top-0 start-0 m-3">
+                            <c:choose>
+                              <c:when test="${svcCatGroup == 'dieutri'}">
+                                <span class="badge rounded-pill px-3 py-2 fw-semibold shadow-sm" style="background: rgba(239, 68, 68, 0.9); color: #ffffff;">
+                                  <i class="bi bi-shield-plus me-1"></i>${service.category}
+                                </span>
+                              </c:when>
+                              <c:when test="${svcCatGroup == 'chandoan'}">
+                                <span class="badge rounded-pill px-3 py-2 fw-semibold shadow-sm" style="background: rgba(59, 130, 246, 0.9); color: #ffffff;">
+                                  <i class="bi bi-clipboard2-pulse me-1"></i>${service.category}
+                                </span>
+                              </c:when>
+                              <c:otherwise>
+                                <span class="badge rounded-pill px-3 py-2 fw-semibold shadow-sm" style="background: rgba(13, 148, 136, 0.9); color: #ffffff;">
+                                  <i class="bi bi-eye me-1"></i>${service.category}
+                                </span>
+                              </c:otherwise>
+                            </c:choose>
+                          </div>
+
+                          <div class="position-absolute top-0 end-0 m-3">
+                            <span class="badge bg-dark bg-opacity-75 text-white px-2 py-1 small rounded-pill">
+                              ${service.code != null ? service.code : 'DV'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div class="card-body p-4 d-flex flex-column justify-content-between">
+                          <div>
+                            <h5 class="card-title fw-bold mb-2 text-dark">
+                              <c:out value="${service.name}" />
+                            </h5>
+                            <p class="card-text text-muted mb-2 small" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 38px;">
+                              <c:out value="${service.summary}" />
+                            </p>
+
+                            <!-- Ghi chú đặc quyền / Tiền phẫu hoàn trừ phí -->
+                            <c:if test="${service.code == 'LS-03' or service.code == 'TT-05' or fn:contains(service.name, 'tiền phẫu') or fn:contains(service.name, 'tầm soát')}">
+                              <div class="mb-3">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill py-1 px-2 small">
+                                  <i class="bi bi-gift-fill me-1"></i>Trừ 100% vào chi phí mổ
+                                </span>
+                              </div>
+                            </c:if>
+                            <c:if test="${service.code == 'PT-LASIK' or service.code == 'PT-SMILE' or service.code == 'PT-PHACO'}">
+                              <div class="mb-3">
+                                <span class="badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill py-1 px-2 small">
+                                  <i class="bi bi-info-circle-fill me-1 text-warning"></i>Chỉ định sau khám chuyên sâu
+                                </span>
+                              </div>
+                            </c:if>
+                          </div>
+
+                          <div>
+                            <div class="d-flex justify-content-between align-items-center mb-3 pt-2 border-top">
+                              <span class="text-muted small">Chi phí dịch vụ:</span>
+                              <span class="fs-5 fw-bold" style="color: #0d9488;">
+                                <fmt:formatNumber value="${service.price}" pattern="#,##0" /> VNĐ
+                              </span>
+                            </div>
+
+                            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                              <a href="#departments"
+                                onclick="document.getElementById('department-link-${service.id}').click();"
+                                class="btn btn-outline-secondary rounded-pill px-3 btn-sm">
+                                <i class="bi bi-info-circle me-1"></i>Chi tiết
+                              </a>
+                              <c:choose>
+                                <c:when test="${service.code == 'PT-LASIK' or service.code == 'PT-SMILE'}">
+                                  <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${lasikPreopId}"
+                                    class="btn btn-dental rounded-pill px-3 btn-sm shadow-sm" title="Đăng ký khám tiền phẫu để đánh giá điều kiện xóa cận">
+                                    <i class="bi bi-calendar-check me-1"></i>Đăng ký khám tiền phẫu
+                                  </a>
+                                </c:when>
+                                <c:when test="${service.code == 'PT-PHACO'}">
+                                  <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${phacoPreopId}"
+                                    class="btn btn-dental rounded-pill px-3 btn-sm shadow-sm" title="Đăng ký khám tầm soát đục thủy tinh thể">
+                                    <i class="bi bi-calendar-check me-1"></i>Đăng ký tầm soát Phaco
+                                  </a>
+                                </c:when>
+                                <c:otherwise>
+                                  <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${service.id}"
+                                    class="btn btn-dental rounded-pill px-3 btn-sm shadow-sm">
+                                    <i class="bi bi-calendar-check me-1"></i>Đặt lịch khám
+                                  </a>
+                                </c:otherwise>
+                              </c:choose>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -278,6 +450,24 @@
                   </c:forEach>
                 </div>
               </div>
+
+              <script>
+                function filterServices(group, btn) {
+                  document.querySelectorAll('.svc-filter-btn').forEach(b => b.classList.remove('active'));
+                  if (btn) btn.classList.add('active');
+
+                  const cols = document.querySelectorAll('.service-card-col');
+                  cols.forEach(col => {
+                    if (group === 'all' || col.getAttribute('data-cat-group') === group) {
+                      col.style.display = '';
+                      col.style.opacity = '1';
+                    } else {
+                      col.style.display = 'none';
+                      col.style.opacity = '0';
+                    }
+                  });
+                }
+              </script>
             </section><!-- /Services Section -->
 
             <!-- Appointment Section -->

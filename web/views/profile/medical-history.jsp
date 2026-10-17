@@ -192,7 +192,7 @@
             <div class="container">
               <ol>
                 <li><a href="${pageContext.request.contextPath}/home">Trang chủ</a></li>
-                <li><a href="${pageContext.request.contextPath}/profile/manage">Hồ sơ cá nhân</a></li>
+                <li><a href="${pageContext.request.contextPath}/views/profile/manage.jsp">Hồ sơ cá nhân</a></li>
                 <li class="current">Lịch sử khám bệnh</li>
               </ol>
             </div>
@@ -295,10 +295,9 @@
                                           </a>
                                         </c:when>
                                         <c:otherwise>
-                                          <a href="${pageContext.request.contextPath}/profile/invoice-detail?id=1"
-                                            class="action-btn" title="Xem hóa đơn">
+                                          <span class="action-btn text-muted" title="Chưa có hóa đơn" style="opacity: 0.4; cursor: not-allowed;">
                                             <i class="bi bi-receipt"></i>
-                                          </a>
+                                          </span>
                                         </c:otherwise>
                                       </c:choose>
                                     </div>

@@ -16,7 +16,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet(name = "AdminBillingServlet", urlPatterns = {"/admin/billing"})
+@WebServlet(name = "AdminBillingServlet", urlPatterns = {"/admin/billing", "/admin/dashboard"})
 public class AdminBillingServlet extends HttpServlet {
 
     private final InvoiceDAO invoiceDAO = new InvoiceDAO();
