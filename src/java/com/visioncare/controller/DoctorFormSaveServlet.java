@@ -2,7 +2,9 @@ package com.visioncare.controller;
 
 import com.visioncare.dao.AppointmentDAO;
 import com.visioncare.dao.DoctorFormDAO;
+import com.visioncare.dao.MedicineDAO;
 import com.visioncare.model.Appointment;
+import com.visioncare.model.Medicine;
 import com.visioncare.model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -14,6 +16,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +46,7 @@ public class DoctorFormSaveServlet extends HttpServlet {
     };
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
     private final DoctorFormDAO formDAO = new DoctorFormDAO();
+    private final MedicineDAO medicineDAO = new MedicineDAO();
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -89,15 +93,28 @@ public class DoctorFormSaveServlet extends HttpServlet {
             List<Map<String, String>> medicines = prescription ? medicineRows(request) : new ArrayList<>();
             boolean includeMedication = prescription && "true".equals(request.getParameter("includeMedication"));
             boolean includeGlasses = prescription && "true".equals(request.getParameter("includeGlasses"));
+            List<Medicine> medicineCatalog = prescription ? medicineDAO.listPrescribable() : List.of();
             List<String> errors = prescription
                     ? DoctorFormValidator.prescription(values, medicines, includeMedication, includeGlasses)
                     : DoctorFormValidator.examination(values);
+            if (includeMedication) {
+                Set<String> availableNames = new HashSet<>();
+                for (Medicine item : medicineCatalog) availableNames.add(item.getName());
+                if (availableNames.isEmpty()) errors.add("Danh mục thuốc chưa có dữ liệu.");
+                for (int i = 0; i < medicines.size(); i++) {
+                    String name = medicines.get(i).getOrDefault("medicineName", "");
+                    if (!name.isBlank() && !availableNames.contains(name)) {
+                        errors.add("Thuốc " + (i + 1) + ": chọn tên thuốc trong danh mục.");
+                    }
+                }
+            }
             if (!errors.isEmpty()) {
                 if (medicines.isEmpty()) medicines.add(new HashMap<>());
                 response.setStatus(422);
                 request.setAttribute("appointment", appointment);
                 request.setAttribute("formValues", values);
                 request.setAttribute("medicineRows", medicines);
+                if (prescription) request.setAttribute("medicineCatalog", medicineCatalog);
                 request.setAttribute("includeMedication", includeMedication);
                 request.setAttribute("includeGlasses", includeGlasses);
                 request.setAttribute("csrfToken", csrf);

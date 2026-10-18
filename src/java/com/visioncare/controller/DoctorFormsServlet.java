@@ -2,7 +2,9 @@ package com.visioncare.controller;
 
 import com.visioncare.dao.AppointmentDAO;
 import com.visioncare.dao.DoctorFormDAO;
+import com.visioncare.dao.MedicineDAO;
 import com.visioncare.model.Appointment;
+import com.visioncare.model.Medicine;
 import com.visioncare.model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -25,6 +27,7 @@ import java.util.UUID;
 public class DoctorFormsServlet extends HttpServlet {
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
     private final DoctorFormDAO formDAO = new DoctorFormDAO();
+    private final MedicineDAO medicineDAO = new MedicineDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -67,6 +70,8 @@ public class DoctorFormsServlet extends HttpServlet {
                 DoctorFormDAO.PrescriptionSnapshot saved = formDAO.loadPrescription(appointmentId);
                 formValues = saved.getValues();
                 medicineRows = saved.getMedicines();
+                List<Medicine> medicineCatalog = medicineDAO.listPrescribable();
+                request.setAttribute("medicineCatalog", medicineCatalog);
                 if (!medicineRows.isEmpty() || saved.isIncludeGlasses()) {
                     includeMedication = saved.isIncludeMedication();
                     includeGlasses = saved.isIncludeGlasses();

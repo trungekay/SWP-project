@@ -88,7 +88,14 @@
                                 <legend>Thuốc <span data-medicine-number><c:out value="${row.count}" /></span></legend>
                                 <button type="button" class="doctor-form-remove" data-remove-medicine aria-label="Xóa thuốc"><i class="bi bi-trash3" aria-hidden="true"></i> Xóa</button>
                                 <div class="doctor-form-fields">
-                                    <label class="doctor-form-field doctor-form-span"><span>Tên thuốc <em>*</em></span><input name="medicines[${row.index}].medicineName" data-name="medicineName" type="text" maxlength="255" required value="<c:out value='${medicine.medicineName}' />"></label>
+                                    <label class="doctor-form-field doctor-form-span"><span>Tên thuốc <em>*</em></span>
+                                        <select name="medicines[${row.index}].medicineName" data-name="medicineName" required>
+                                            <option value="" ${empty medicine.medicineName ? 'selected' : ''}>Chọn thuốc trong danh mục</option>
+                                            <c:forEach var="catalogMedicine" items="${medicineCatalog}">
+                                                <option value="<c:out value='${catalogMedicine.name}' />" ${medicine.medicineName eq catalogMedicine.name ? 'selected' : ''}><c:out value="${catalogMedicine.name}" /></option>
+                                            </c:forEach>
+                                        </select>
+                                    </label>
                                     <label class="doctor-form-field"><span>Hàm lượng / dạng dùng</span><input name="medicines[${row.index}].strength" data-name="strength" type="text" maxlength="100" value="<c:out value='${medicine.strength}' />"></label>
                                     <label class="doctor-form-field"><span>Liều dùng <em>*</em></span><input name="medicines[${row.index}].dosage" data-name="dosage" type="text" maxlength="100" required value="<c:out value='${medicine.dosage}' />"></label>
                                     <label class="doctor-form-field"><span>Tần suất <em>*</em></span><input name="medicines[${row.index}].frequency" data-name="frequency" type="text" maxlength="100" required value="<c:out value='${medicine.frequency}' />"></label>
@@ -169,7 +176,12 @@
         <legend>Thuốc <span data-medicine-number></span></legend>
         <button type="button" class="doctor-form-remove" data-remove-medicine aria-label="Xóa thuốc"><i class="bi bi-trash3" aria-hidden="true"></i> Xóa</button>
         <div class="doctor-form-fields">
-            <label class="doctor-form-field doctor-form-span"><span>Tên thuốc <em>*</em></span><input data-name="medicineName" type="text" maxlength="255" placeholder="Nhập tên thuốc hoặc hoạt chất" required></label>
+            <label class="doctor-form-field doctor-form-span"><span>Tên thuốc <em>*</em></span><select data-name="medicineName" required>
+                <option value="">Chọn thuốc trong danh mục</option>
+                <c:forEach var="catalogMedicine" items="${medicineCatalog}">
+                    <option value="<c:out value='${catalogMedicine.name}' />"><c:out value="${catalogMedicine.name}" /></option>
+                </c:forEach>
+            </select></label>
             <label class="doctor-form-field"><span>Hàm lượng / dạng dùng</span><input data-name="strength" type="text" maxlength="100" placeholder="VD: 0,5% · Dung dịch nhỏ mắt"></label>
             <label class="doctor-form-field"><span>Liều dùng <em>*</em></span><input data-name="dosage" type="text" maxlength="100" placeholder="VD: 1 giọt mỗi mắt" required></label>
             <label class="doctor-form-field"><span>Tần suất <em>*</em></span><input data-name="frequency" type="text" maxlength="100" placeholder="VD: 3 lần/ngày" required></label>

@@ -24,6 +24,19 @@ public class MedicineDAO {
         return items;
     }
 
+    /** Medicines available for a doctor's prescription, excluding glasses and accessories. */
+    public List<Medicine> listPrescribable() throws Exception {
+        List<Medicine> items = new ArrayList<>();
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT " + COLUMNS + " FROM Medicine " +
+                     "WHERE Category = N'Thuốc & dung dịch' ORDER BY Supply_Name, Medicine_ID");
+             ResultSet result = statement.executeQuery()) {
+            while (result.next()) items.add(read(result));
+        }
+        return items;
+    }
+
     public Medicine get(int id) throws Exception {
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(
