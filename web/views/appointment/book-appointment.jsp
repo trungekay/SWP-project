@@ -413,10 +413,26 @@
                                                 style="max-width: 260px; min-height: 260px;">
                                             </div>
 
-                                            <div class="mt-3">
-                                              <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
-                                                <i class="bi bi-clock me-1"></i>Hạn thanh toán: 15 phút
-                                              </span>
+                                            <%-- ĐỒNG HỒ ĐẾM NGƯỢC THỜI HẠN THANH TOÁN (COUNTDOWN TIMER) --%>
+                                            <div class="mt-3 p-3 rounded-4 border bg-white shadow-sm text-start" id="paymentCountdownCard">
+                                              <div class="d-flex align-items-center justify-content-between mb-2">
+                                                <span class="text-muted small fw-semibold">
+                                                  <i class="bi bi-stopwatch text-danger me-1"></i>Thời gian giữ chỗ:
+                                                </span>
+                                                <span class="fs-5 fw-bold text-danger font-monospace" id="paymentCountdownTimer">15:00</span>
+                                              </div>
+                                              <div class="progress" style="height: 6px; border-radius: 6px; background-color: #f1f5f9;">
+                                                <div id="countdownProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-danger"
+                                                  role="progressbar" style="width: 100%; transition: width 1s linear;"></div>
+                                              </div>
+                                              <div class="d-flex justify-content-between align-items-center mt-2">
+                                                <small class="text-muted" style="font-size: 11px;">
+                                                  <i class="bi bi-shield-lock me-1 text-teal" style="color: #0d9488;"></i>Đang giữ chỗ lịch hẹn
+                                                </small>
+                                                <small class="text-danger fw-semibold" style="font-size: 11px;" id="countdownStatusText">
+                                                  Còn hiệu lực
+                                                </small>
+                                              </div>
                                             </div>
                                           </div>
                                         </div>
@@ -440,6 +456,14 @@
                                               <div class="col-6 text-muted">Thời gian hẹn:</div>
                                               <div class="col-6 fw-bold text-danger text-end">${appointment.timeSlot} —
                                                 ${appointment.appointmentDate}</div>
+
+                                              <div class="col-6 text-muted">Thời hạn thanh toán:</div>
+                                              <div class="col-6 fw-bold text-end">
+                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle font-monospace px-2 py-1" id="ticketCountdownBadge">
+                                                  <i class="bi bi-stopwatch me-1"></i>15:00
+                                                </span>
+                                              </div>
+
 
                                               <div class="col-12 border-top my-2"></div>
 
@@ -486,28 +510,43 @@
                                             </div>
                                           </div>
 
-                                          <form method="post"
-                                            action="${pageContext.request.contextPath}/book-appointment">
-                                            <input type="hidden" name="action" value="confirmPayment">
-                                            <input type="hidden" name="appointmentId" value="${appointment.id}">
-                                            <input type="hidden" name="orderCode" value="${orderCode}">
-                                            <input type="hidden" name="email" value="${appointment.email}">
+                                          <div id="paymentActionArea">
+                                            <form method="post"
+                                              action="${pageContext.request.contextPath}/book-appointment">
+                                              <input type="hidden" name="action" value="confirmPayment">
+                                              <input type="hidden" name="appointmentId" value="${appointment.id}">
+                                              <input type="hidden" name="orderCode" value="${orderCode}">
+                                              <input type="hidden" name="email" value="${appointment.email}">
 
-                                            <div class="d-grid gap-2">
-                                              <div class="alert alert-info py-2 px-3 small rounded-3 mb-2 d-flex align-items-center">
-                                                <div class="spinner-grow spinner-grow-sm text-info me-2" role="status"></div>
-                                                <span>Hệ thống tự động kiểm tra biến động số dư. Trang sẽ <b>tự động chuyển sang Thành công</b> ngay khi hoàn tất chuyển khoản!</span>
+                                              <div class="d-grid gap-2">
+                                                <div class="alert alert-info py-2 px-3 small rounded-3 mb-2 d-flex align-items-center">
+                                                  <div class="spinner-grow spinner-grow-sm text-info me-2" role="status"></div>
+                                                  <span>Hệ thống tự động kiểm tra biến động số dư. Trang sẽ <b>tự động chuyển sang Thành công</b> ngay khi hoàn tất chuyển khoản!</span>
+                                                </div>
+                                                <button type="submit"
+                                                  class="btn btn-success btn-lg py-3 rounded-3 shadow-sm fw-bold">
+                                                  <i class="bi bi-shield-check me-2"></i>Tôi đã chuyển khoản (Kiểm tra thanh toán)
+                                                </button>
+                                                <a href="${pageContext.request.contextPath}/book-appointment"
+                                                  class="btn btn-link text-muted text-center mt-2">
+                                                  <i class="bi bi-arrow-left me-1"></i>Hủy và chọn lại lịch khác
+                                                </a>
                                               </div>
-                                              <button type="submit"
-                                                class="btn btn-success btn-lg py-3 rounded-3 shadow-sm fw-bold">
-                                                <i class="bi bi-shield-check me-2"></i>Tôi đã chuyển khoản (Kiểm tra thanh toán)
-                                              </button>
-                                              <a href="${pageContext.request.contextPath}/book-appointment"
-                                                class="btn btn-link text-muted text-center mt-2">
-                                                <i class="bi bi-arrow-left me-1"></i>Hủy và chọn lại lịch khác
-                                              </a>
+                                            </form>
+                                          </div>
+
+                                          <div id="paymentExpiredArea" class="d-none text-center">
+                                            <div class="alert alert-danger rounded-4 p-4 shadow-sm mb-3">
+                                              <i class="bi bi-exclamation-octagon-fill text-danger fs-1 d-block mb-2"></i>
+                                              <h5 class="fw-bold text-danger mb-1">Mã QR đã hết hạn thanh toán (Quá 15 phút)</h5>
+                                              <p class="text-muted small mb-0">
+                                                Khung giờ này đã tạm hết thời gian giữ chỗ ưu tiên. Quý khách vui lòng tạo lại lịch hẹn mới để hoàn tất đặt chỗ.
+                                              </p>
                                             </div>
-                                          </form>
+                                            <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-primary btn-lg py-3 rounded-pill shadow-sm fw-bold w-100" style="background:#0d9488; border-color:#0d9488;">
+                                              <i class="bi bi-arrow-repeat me-2"></i>Đặt lại lịch hẹn mới
+                                            </a>
+                                          </div>
                                         </div>
                                       </div>
                                     </c:if>
@@ -1730,14 +1769,79 @@
                 updateDoctorPreview();
               }
 
-              // Tự động kiểm tra trạng thái thanh toán PayOS (Auto Polling)
+              // Tự động kiểm tra trạng thái thanh toán PayOS (Auto Polling) & Đồng hồ đếm ngược (Countdown Timer)
               <c:if test="${step == 'payment'}">
                 const currentApptId = '${appointmentId != null ? appointmentId : appointment.id}';
                 let pollAttempts = 0;
+                let checkInterval = null;
+
+                // Khởi tạo thời hạn thanh toán 15 phút (900s) lưu trong sessionStorage để không bị reset khi F5
+                const storageKey = 'vc_pay_expire_' + currentApptId;
+                let expireTimestamp = sessionStorage.getItem(storageKey);
+                const now = Date.now();
+                if (!expireTimestamp || isNaN(expireTimestamp) || parseInt(expireTimestamp) < now) {
+                  expireTimestamp = now + (15 * 60 * 1000); // 15 phút
+                  sessionStorage.setItem(storageKey, expireTimestamp);
+                } else {
+                  expireTimestamp = parseInt(expireTimestamp);
+                }
+
+                function updatePaymentCountdown() {
+                  const remainingMs = expireTimestamp - Date.now();
+                  const remainingSec = Math.max(0, Math.floor(remainingMs / 1000));
+                  const m = Math.floor(remainingSec / 60);
+                  const s = remainingSec % 60;
+                  const formatted = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+
+                  const timerEl = document.getElementById('paymentCountdownTimer');
+                  const ticketEl = document.getElementById('ticketCountdownBadge');
+                  const barEl = document.getElementById('countdownProgressBar');
+                  const statusEl = document.getElementById('countdownStatusText');
+
+                  if (timerEl) timerEl.textContent = formatted;
+                  if (ticketEl) ticketEl.innerHTML = '<i class="bi bi-stopwatch me-1"></i>' + formatted;
+
+                  const percent = Math.min(100, Math.max(0, (remainingSec / 900) * 100));
+                  if (barEl) barEl.style.width = percent + '%';
+
+                  // Đổi màu trực quan theo thời gian còn lại
+                  if (remainingSec <= 120) { // Dưới 2 phút: Đỏ cảnh báo khẩn
+                    if (barEl) { barEl.className = 'progress-bar progress-bar-striped progress-bar-animated bg-danger'; }
+                    if (timerEl) { timerEl.className = 'fs-5 fw-bold text-danger font-monospace'; }
+                    if (statusEl) { statusEl.textContent = 'Sắp hết hạn!'; statusEl.className = 'text-danger fw-bold'; }
+                  } else if (remainingSec <= 300) { // Dưới 5 phút: Cam chú ý
+                    if (barEl) { barEl.className = 'progress-bar progress-bar-striped progress-bar-animated bg-warning'; }
+                    if (timerEl) { timerEl.className = 'fs-5 fw-bold text-warning font-monospace'; }
+                    if (statusEl) { statusEl.textContent = 'Hạn còn dưới 5 phút'; statusEl.className = 'text-warning fw-semibold'; }
+                  } else { // Bình thường: Xanh giữ chỗ an toàn
+                    if (barEl) { barEl.className = 'progress-bar progress-bar-striped progress-bar-animated'; barEl.style.backgroundColor = '#0d9488'; }
+                    if (timerEl) { timerEl.className = 'fs-5 fw-bold font-monospace'; timerEl.style.color = '#0d9488'; }
+                    if (statusEl) { statusEl.textContent = 'Đang có hiệu lực'; statusEl.className = 'text-muted fw-semibold'; }
+                  }
+
+                  if (remainingSec <= 0) {
+                    clearInterval(countdownInterval);
+                    if (checkInterval) clearInterval(checkInterval);
+                    sessionStorage.removeItem(storageKey);
+
+                    if (timerEl) timerEl.textContent = '00:00 (Hết hạn)';
+                    if (statusEl) { statusEl.textContent = 'Đã hết hạn'; statusEl.className = 'text-danger fw-bold'; }
+                    if (barEl) { barEl.style.width = '0%'; }
+
+                    const actionArea = document.getElementById('paymentActionArea');
+                    const expiredArea = document.getElementById('paymentExpiredArea');
+                    if (actionArea) actionArea.classList.add('d-none');
+                    if (expiredArea) expiredArea.classList.remove('d-none');
+                  }
+                }
+
+                updatePaymentCountdown();
+                const countdownInterval = setInterval(updatePaymentCountdown, 1000);
+
                 if (currentApptId) {
-                  const checkInterval = setInterval(function () {
+                  checkInterval = setInterval(function () {
                     pollAttempts++;
-                    if (pollAttempts > 180) { // Quá 15 phút thì dừng polling
+                    if (pollAttempts > 360) { // Tối đa 15 phút (mỗi 2.5s)
                       clearInterval(checkInterval);
                       return;
                     }
@@ -1746,6 +1850,8 @@
                       .then(data => {
                         if (data && data.isPaid) {
                           clearInterval(checkInterval);
+                          clearInterval(countdownInterval);
+                          sessionStorage.removeItem(storageKey);
                           // Tự động chuyển thẳng sang màn hình thành công!
                           window.location.href = '${pageContext.request.contextPath}/book-appointment?step=success&id=' + currentApptId;
                         }
