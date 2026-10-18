@@ -10,11 +10,12 @@ public class CatalogService {
     private final String category;
     private final String summary;
     private final String description;
+    private final String imagePath;
     private final boolean uploadedImage;
 
     public CatalogService(int id, String code, String name, BigDecimal price,
             String category, String summary, String description,
-            boolean uploadedImage) {
+            String imagePath, boolean uploadedImage) {
         this.id = id;
         this.code = code;
         this.name = name;
@@ -22,7 +23,14 @@ public class CatalogService {
         this.category = category;
         this.summary = summary;
         this.description = description;
+        this.imagePath = imagePath;
         this.uploadedImage = uploadedImage;
+    }
+
+    public CatalogService(int id, String code, String name, BigDecimal price,
+            String category, String summary, String description,
+            boolean uploadedImage) {
+        this(id, code, name, price, category, summary, description, null, uploadedImage);
     }
 
     public int getId() { return id; }
@@ -33,19 +41,69 @@ public class CatalogService {
     public String getCategoryName() { return category; }
     public String getSummary() { return summary; }
     public String getDescription() { return description; }
+    public String getImagePath() { return imagePath; }
     public boolean isUploadedImage() { return uploadedImage; }
 
     public String getDefaultImagePath() {
-        if (code != null) {
-            String c = code.toUpperCase(java.util.Locale.ROOT);
-            if (c.contains("NK") || c.contains("CVS")) return "departments-1.jpg";
-            if (c.contains("KX")) return "departments-2.jpg";
-            if (c.contains("LS") || c.contains("LASIK") || c.contains("SMILE")) return "departments-3.jpg";
-            if (c.contains("PE")) return "departments-4.jpg";
-            if (c.contains("TT") || c.contains("PHACO")) return "departments-5.jpg";
-            if (c.contains("GL") || c.contains("DM") || c.contains("OCT")) return "gallery/gallery-1.jpg";
+        if (imagePath != null && !imagePath.trim().isEmpty()) {
+            return imagePath.trim();
         }
-        return "departments-1.jpg";
+        if (code != null) {
+            String c = code.toUpperCase(java.util.Locale.ROOT).trim();
+            // 1. Khám tổng quát & Soi đáy mắt
+            if (c.equals("NK-01") || c.startsWith("NK")) return "services/service-general.jpg";
+            // 2. Đo khúc xạ và tư vấn kính
+            if (c.equals("KX-02")) return "services/service-refraction.jpg";
+            // 3. Khám tiền phẫu LASIK/SMILE
+            if (c.equals("LS-03") || c.startsWith("LS")) return "services/service-lasik-consult.jpg";
+            // 4. Khám mắt trẻ em và nhược thị
+            if (c.equals("PE-04") || c.startsWith("PE")) return "services/service-pediatric.jpg";
+            // 5. Khám tầm soát & Tư vấn phẫu thuật Phaco
+            if (c.equals("TT-05") || c.startsWith("TT")) return "departments-5.jpg";
+            // 6. Đo nhãn áp & Tầm soát Glaucoma
+            if (c.equals("GL-06") || c.startsWith("GL")) return "services/service-glaucoma.jpg";
+            // 7. Đo khúc xạ máy
+            if (c.contains("KX-MAY") || c.contains("MAY")) return "services/service-autorefraction.jpg";
+            // 8. Chụp OCT đáy mắt
+            if (c.contains("OCT")) return "services/service-retina.jpg";
+            // 9. Khám & Điều trị Khô mắt
+            if (c.contains("CVS")) return "services/service-dry-eye.jpg";
+            // 10. Khám đáy mắt - võng mạc tiểu đường
+            if (c.contains("KM-DM") || (c.contains("KM") && c.contains("DM"))) return "services/service-fundus.jpg";
+            // 11. Phẫu thuật Femto-LASIK
+            if (c.contains("LASIK")) return "services/service-lasik.jpg";
+            // 12. Phẫu thuật ReLEx SMILE
+            if (c.contains("SMILE")) return "gallery/gallery-1.jpg";
+            // 13. Phẫu thuật Phaco đục thủy tinh thể
+            if (c.contains("PHACO")) return "services/service-cataract.jpg";
+            // 14. Chích rạch chắp lẹo
+            if (c.contains("LEO")) return "gallery/gallery-6.jpg";
+            // 15. Bơm thông rửa lệ đạo
+            if (c.contains("LEDAO")) return "gallery/gallery-8.jpg";
+            // 16. Bắn Laser YAG
+            if (c.contains("YAG")) return "services/service-procedure.jpg";
+            // Fallback according to category/code patterns
+            if (c.contains("KX")) return "services/service-refraction.jpg";
+        }
+        if (name != null) {
+            String n = name.toLowerCase(java.util.Locale.ROOT);
+            if (n.contains("tiền phẫu") || (n.contains("tư vấn") && n.contains("cận"))) return "services/service-lasik-consult.jpg";
+            if (n.contains("khúc xạ máy") || n.contains("máy đo")) return "services/service-autorefraction.jpg";
+            if (n.contains("khúc xạ") || n.contains("kính")) return "services/service-refraction.jpg";
+            if (n.contains("smile")) return "gallery/gallery-1.jpg";
+            if (n.contains("lasik") || n.contains("xóa cận")) return "services/service-lasik.jpg";
+            if (n.contains("trẻ em") || n.contains("nhược thị")) return "services/service-pediatric.jpg";
+            if (n.contains("tầm soát") && n.contains("phaco")) return "departments-5.jpg";
+            if (n.contains("thủy tinh thể") || n.contains("phaco")) return "services/service-cataract.jpg";
+            if (n.contains("khô mắt") || n.contains("màn hình")) return "services/service-dry-eye.jpg";
+            if (n.contains("tiểu đường") || n.contains("võng mạc")) return "services/service-fundus.jpg";
+            if (n.contains("glaucoma") || n.contains("nhãn áp")) return "services/service-glaucoma.jpg";
+            if (n.contains("oct")) return "services/service-retina.jpg";
+            if (n.contains("lẹo")) return "gallery/gallery-6.jpg";
+            if (n.contains("lệ đạo")) return "gallery/gallery-8.jpg";
+            if (n.contains("yag") || n.contains("laser")) return "services/service-procedure.jpg";
+        }
+        return "services/service-general.jpg";
     }
 
     public String getSpecialty() {

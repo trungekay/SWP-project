@@ -719,10 +719,12 @@
                               <c:choose>
                                 <c:when test="${service.uploadedImage}"><img
                                     src="${pageContext.request.contextPath}/catalog-image?kind=service&amp;id=${service.id}"
-                                    alt="${fn:escapeXml(service.name)}" class="img-fluid"></c:when>
+                                    alt="${fn:escapeXml(service.name)}" class="img-fluid rounded-4 shadow-sm"
+                                    style="max-height: 280px; width: 100%; object-fit: cover;"></c:when>
                                 <c:otherwise><img
                                     src="${pageContext.request.contextPath}/assets/img/${service.defaultImagePath}"
-                                    alt="${fn:escapeXml(service.name)}" class="img-fluid"></c:otherwise>
+                                    alt="${fn:escapeXml(service.name)}" class="img-fluid rounded-4 shadow-sm"
+                                    style="max-height: 280px; width: 100%; object-fit: cover;"></c:otherwise>
                               </c:choose>
                             </div>
                           </div>
@@ -995,6 +997,41 @@
                     </div>
                   </div>
 
+                </div>
+              </div>
+
+              <!-- Bản đồ chỉ đường Google Maps -->
+              <div class="container mt-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+                  <div class="p-3 bg-light border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="badge rounded-circle p-2" style="background: rgba(13, 148, 136, 0.1); color: #0d9488;">
+                        <i class="bi bi-geo-alt-fill fs-5"></i>
+                      </span>
+                      <div>
+                        <strong class="d-block text-dark">Phòng khám Chuyên khoa Mắt VisionCare</strong>
+                        <span class="text-muted small">456 Lê Thị Riêng, Quận 10, TP. Hồ Chí Minh &bull; Giờ khám: Thứ 2 – Thứ 7 (07:30 – 17:00)</span>
+                      </div>
+                    </div>
+                    <a href="https://maps.google.com/?q=456+L%C3%AA+Th%E1%BB%8B+Ri%C3%AAng,+Qu%E1%BA%ADn+10,+TP.HCM"
+                       target="_blank" rel="noopener noreferrer"
+                       class="btn btn-sm rounded-pill px-3 py-1 fw-semibold"
+                       style="color: #0d9488; border: 1.5px solid #0d9488; background: #ffffff;">
+                      <i class="bi bi-box-arrow-up-right me-1"></i> Mở bản đồ chỉ đường
+                    </a>
+                  </div>
+                  <div class="position-relative" style="height: 380px; width: 100%;">
+                    <iframe
+                      title="Bản đồ chỉ đường đến Phòng khám Chuyên khoa Mắt VisionCare"
+                      src="https://maps.google.com/maps?q=456+L%C3%AA+Th%E1%BB%8B+Ri%C3%AAng%2C+Qu%E1%BA%ADn+10%2C+TP.HCM&amp;t=&amp;z=16&amp;ie=UTF8&amp;iwloc=&amp;output=embed"
+                      width="100%"
+                      height="100%"
+                      style="border:0;"
+                      allowfullscreen=""
+                      loading="lazy"
+                      referrerpolicy="no-referrer-when-downgrade">
+                    </iframe>
+                  </div>
                 </div>
               </div>
 

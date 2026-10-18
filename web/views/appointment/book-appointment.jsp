@@ -635,6 +635,7 @@
                                                                 data-bgroup="${bGroup}"
                                                                 data-name="${svc.name}" data-price="${svc.price}"
                                                                 onchange="filterDoctorsByService(this)"
+                                                                onclick="filterDoctorsByService(this)"
                                                                 ${(selectedServiceId==svc.id or (empty selectedServiceId
                                                                 and status.first)) ? 'checked' : '' }>
                                                               <div
@@ -668,10 +669,16 @@
                                                                       </span>
                                                                     </div>
                                                                   </c:if>
-                                                                  <p class="text-muted small mb-0 text-truncate-2"
-                                                                    style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12px; min-height: 34px;">
-                                                                    ${svc.summary != null ? svc.summary : 'Dịch vụ khám nhãn khoa chất lượng cao với trang thiết bị chuẩn quốc tế.'}
-                                                                  </p>
+                                                                  <div class="service-desc-box mb-1">
+                                                                    <p class="text-secondary small mb-0 lh-base" style="font-size: 12px;">
+                                                                      ${svc.summary != null ? svc.summary : 'Dịch vụ khám nhãn khoa chất lượng cao với trang thiết bị chuẩn quốc tế.'}
+                                                                    </p>
+                                                                    <c:if test="${not empty svc.description and svc.description != svc.summary}">
+                                                                      <p class="text-muted small mb-0 mt-1 lh-sm" style="font-size: 11.5px; opacity: 0.9;">
+                                                                        <i class="bi bi-info-circle text-teal me-1" style="color: #0d9488;"></i>${svc.description}
+                                                                      </p>
+                                                                    </c:if>
+                                                                  </div>
                                                                 </div>
                                                                 <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
                                                                   <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted p-0"
@@ -1335,7 +1342,6 @@
 
               let matchedCount = 0;
               let firstMatchedValue = '';
-              let currentMatches = false;
               const currentVal = doctorSelect.value;
 
               Array.from(doctorSelect.options).forEach(opt => {
@@ -1377,33 +1383,39 @@
                   opt.text = (bgroup === 'thuthuat' ? '★ [Bác sĩ khám lâm sàng chỉ định] ' : '★ [Đúng chuyên khoa] ') + baseText;
                   matchedCount++;
                   if (!firstMatchedValue) firstMatchedValue = opt.value;
-                  if (opt.value === currentVal) currentMatches = true;
                 } else {
                   opt.text = baseText;
                 }
               });
 
-              // Nếu bác sĩ hiện tại chưa được chọn hoặc không trùng chuyên khoa (hoặc đang chọn thủ thuật mà bác sĩ hiện tại không phải tổng quát), tự động gợi ý bác sĩ chuyên khoa phù hợp
-              if ((!currentMatches || (bgroup === 'thuthuat' && !currentMatches)) && firstMatchedValue) {
+              // Khi ấn vào dịch vụ: luôn tự động chỉ định và chọn ngay bác sĩ chuyên khoa phù hợp nhất
+              if (!firstMatchedValue) {
+                const defaultDoc = Array.from(doctorSelect.options).find(opt => opt.value && (opt.dataset.dept === 'general' || (opt.dataset.specialty || '').toLowerCase().includes('tổng quát')));
+                if (defaultDoc) firstMatchedValue = defaultDoc.value;
+                else if (doctorSelect.options.length > 1) firstMatchedValue = doctorSelect.options[1].value;
+              }
+              if (firstMatchedValue) {
                 doctorSelect.value = firstMatchedValue;
               }
+
+              const selectedDocOpt = doctorSelect.selectedOptions[0];
+              const assignedDocName = selectedDocOpt ? (selectedDocOpt.dataset.name || selectedDocOpt.text) : '';
 
               if (filterTag) filterTag.classList.remove('d-none');
               if (filterNotice) {
                 if (bgroup === 'thuthuat') {
                   filterNotice.innerHTML = '<i class="bi bi-shield-check text-primary me-1"></i>' +
-                    'Thủ thuật cần khám lâm sàng trước: Đã tự động chỉ định <b>Bác sĩ khám mắt tổng quát</b> tiếp nhận cho gói: <b class="text-dark">' + serviceName + '</b>.';
+                    'Thủ thuật cần khám lâm sàng trước: Đã tự động chỉ định <b>Bác sĩ khám mắt tổng quát (' + assignedDocName + ')</b> tiếp nhận cho gói: <b class="text-dark">' + serviceName + '</b>.';
                 } else {
                   filterNotice.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>' +
-                    'Gợi ý <b>' + matchedCount + ' bác sĩ</b> chuyên khoa phù hợp cho: <b class="text-dark">' + serviceName + '</b>. (Bạn vẫn có thể tự do chọn bất kỳ bác sĩ nào khác bên dưới)';
+                    'Đã tự động chỉ định bác sĩ chuyên khoa: <b class="text-teal" style="color:#0d9488;">' + assignedDocName + '</b> cho dịch vụ: <b class="text-dark">' + serviceName + '</b>. (Bạn vẫn có thể tự do chọn bác sĩ khác trong danh sách bên dưới)';
                 }
                 filterNotice.classList.remove('d-none');
               }
 
               updateDoctorPreview();
 
-              // Cập nhật Banner cảnh báo quy trình y khoa cho dịch vụ đang chọn
-              const bgroup = radioElement.dataset.bgroup || '';
+              // Cập nhật Banner cảnh báo quy trình y khoa cho dịch vụ đang chọn (tái sử dụng bgroup, không khai báo lại const)
               const protocolBox = document.getElementById('serviceProtocolAlertBox');
               if (protocolBox) {
                 if (bgroup === 'thuthuat') {
@@ -1545,10 +1557,28 @@
               const docRoom = selectedOpt.dataset.room || 'Phòng khám chuyên khoa';
               const docAvatar = selectedOpt.dataset.avatar || '${pageContext.request.contextPath}/assets/img/doctors/doctors-1.jpg';
 
-              document.getElementById('docPreviewName').textContent = docName;
-              document.getElementById('docPreviewSpecialty').textContent = 'Chuyên khoa: ' + docSpecialty;
-              document.getElementById('docPreviewRoom').textContent = 'Vị trí: ' + docRoom;
-              document.getElementById('docPreviewAvatar').src = docAvatar;
+              const nameEl = document.getElementById('docPreviewName');
+              if (nameEl) nameEl.textContent = docName;
+              const specEl = document.getElementById('docPreviewSpecialty');
+              if (specEl) specEl.textContent = 'Chuyên khoa: ' + docSpecialty;
+              const roomEl = document.getElementById('docPreviewRoom');
+              if (roomEl) roomEl.textContent = 'Vị trí: ' + docRoom;
+              const avatarEl = document.getElementById('docPreviewAvatar');
+              if (avatarEl) avatarEl.src = docAvatar;
+
+              const badgeEl = document.getElementById('docMatchBadge');
+              if (badgeEl) {
+                const checkedRadio = document.querySelector('input.service-radio:checked');
+                const bgroup = checkedRadio ? (checkedRadio.dataset.bgroup || '').toLowerCase().trim() : '';
+                if (bgroup === 'thuthuat') {
+                  badgeEl.className = 'badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill small';
+                  badgeEl.innerHTML = '<i class="bi bi-shield-check text-warning me-1"></i>Bác sĩ khám lâm sàng chỉ định';
+                } else {
+                  badgeEl.className = 'badge rounded-pill small';
+                  badgeEl.style.cssText = 'background: #ccfbf1; color: #0f766e; border: 1px solid #99f6e4;';
+                  badgeEl.innerHTML = '<i class="bi bi-star-fill text-warning me-1"></i>Bác sĩ chỉ định theo chuyên khoa';
+                }
+              }
 
               previewCard.classList.remove('d-none');
             }
@@ -1758,12 +1788,30 @@
               const docSelect = document.getElementById('doctorSelect');
               const checkedSvc = document.querySelector('input[name="serviceId"]:checked');
 
+              // Gắn sự kiện click trực tiếp vào từng service-card
+              document.querySelectorAll('.service-card').forEach(function (card) {
+                card.addEventListener('click', function (e) {
+                  if (e.target.closest('[data-bs-toggle="modal"]')) return;
+                  const label = card.closest('label');
+                  const radio = label ? label.querySelector('input.service-radio') : null;
+                  if (radio) {
+                    radio.checked = true;
+                    filterDoctorsByService(radio);
+                  }
+                });
+              });
+
               // Nếu có selectedDoctorId từ trang trước (ví dụ: nhấn nút "Đặt lịch" ở card bác sĩ trên HomePage)
               const initialDocId = '${selectedDoctorId}';
               if (initialDocId && docSelect) {
                 docSelect.value = initialDocId;
                 onDoctorSelectChange();
               } else if (checkedSvc) {
+                const bg = (checkedSvc.dataset.bgroup || '').toLowerCase().trim();
+                if (bg && bg !== 'all') {
+                  const catBtn = document.querySelector('.booking-cat-btn[data-bgroup="' + bg + '"]');
+                  if (catBtn) filterBookingCategory(bg, catBtn);
+                }
                 filterDoctorsByService(checkedSvc);
               } else {
                 updateDoctorPreview();
