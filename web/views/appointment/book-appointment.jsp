@@ -490,22 +490,17 @@
                                             action="${pageContext.request.contextPath}/book-appointment">
                                             <input type="hidden" name="action" value="confirmPayment">
                                             <input type="hidden" name="appointmentId" value="${appointment.id}">
+                                            <input type="hidden" name="orderCode" value="${orderCode}">
                                             <input type="hidden" name="email" value="${appointment.email}">
 
                                             <div class="d-grid gap-2">
                                               <div class="alert alert-info py-2 px-3 small rounded-3 mb-2 d-flex align-items-center">
                                                 <div class="spinner-grow spinner-grow-sm text-info me-2" role="status"></div>
-                                                <span>Hệ thống tự động kiểm tra biến động số dư qua PayOS. Trang sẽ <b>tự động chuyển sang Thành công</b> ngay khi hoàn tất chuyển khoản!</span>
+                                                <span>Hệ thống tự động kiểm tra biến động số dư. Trang sẽ <b>tự động chuyển sang Thành công</b> ngay khi hoàn tất chuyển khoản!</span>
                                               </div>
-                                              <c:if test="${not empty payosCheckoutUrl}">
-                                                <a href="${payosCheckoutUrl}" target="_blank"
-                                                  class="btn btn-primary btn-lg py-3 rounded-3 fw-bold text-white shadow-sm mb-2" style="background:#0d9488; border-color:#0d9488;">
-                                                  <i class="bi bi-credit-card-2-front me-2"></i>Mở cổng thanh toán PayOS trực tiếp
-                                                </a>
-                                              </c:if>
                                               <button type="submit"
                                                 class="btn btn-success btn-lg py-3 rounded-3 shadow-sm fw-bold">
-                                                <i class="bi bi-shield-check me-2"></i>Tôi đã thanh toán (Xác nhận thủ công)
+                                                <i class="bi bi-shield-check me-2"></i>Tôi đã chuyển khoản (Kiểm tra thanh toán)
                                               </button>
                                               <a href="${pageContext.request.contextPath}/book-appointment"
                                                 class="btn btn-link text-muted text-center mt-2">
@@ -895,17 +890,38 @@
                                                                       </div>
                                                                     </div>
 
-                                                                    <c:if test="${not empty loggedUser}">
-                                                                      <div
-                                                                        class="alert alert-light border d-flex align-items-center rounded-3 p-2 px-3 mb-3 small">
-                                                                        <i
-                                                                          class="bi bi-person-check-fill text-success fs-5 me-2"></i>
-                                                                        <span>Đang đăng nhập với tài khoản:
-                                                                          <b>${loggedUser.fullName}</b>
-                                                                          (${loggedUser.email}). Thông tin đã được tự
-                                                                          động điền.</span>
+                                                                    <div class="card bg-light border rounded-3 p-3 mb-3">
+                                                                      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                                                        <div class="d-flex align-items-center">
+                                                                          <i class="bi bi-person-circle fs-4 me-2 text-primary" style="color: #0d9488 !important;"></i>
+                                                                          <div>
+                                                                            <div class="fw-bold text-dark small" id="bookingProfileTitle">
+                                                                              <c:choose>
+                                                                                <c:when test="${not empty loggedUser}">Tài khoản đặt lịch: ${loggedUser.fullName}</c:when>
+                                                                                <c:otherwise>Thông tin người đặt lịch khám</c:otherwise>
+                                                                              </c:choose>
+                                                                            </div>
+                                                                            <div class="text-muted small" id="bookingForNotice">
+                                                                              <c:choose>
+                                                                                <c:when test="${not empty loggedUser}">Hệ thống đã tự động điền thông tin của bạn. Nhấn "Đăng ký cho người khác" nếu bạn đặt lịch cho người thân.</c:when>
+                                                                                <c:otherwise>Vui lòng điền thông tin chính xác của người đi khám.</c:otherwise>
+                                                                              </c:choose>
+                                                                            </div>
+                                                                          </div>
+                                                                        </div>
+                                                                        <div class="d-flex align-items-center gap-2">
+                                                                          <button type="button" class="btn btn-sm btn-outline-primary fw-semibold rounded-pill px-3 shadow-sm" id="btnBookForOther" onclick="setBookingForOther()" style="border-color:#0d9488; color:#0d9488;">
+                                                                            <i class="bi bi-person-plus-fill me-1"></i> Đăng ký cho người khác
+                                                                          </button>
+                                                                          <button type="button" class="btn btn-sm btn-primary fw-semibold rounded-pill px-3 shadow-sm" id="btnBookForSelf" onclick="refillMyInfo()" style="display:none; background:#0d9488; border-color:#0d9488;">
+                                                                            <i class="bi bi-person-check-fill me-1"></i> Đặt cho bản thân
+                                                                          </button>
+                                                                          <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold rounded-pill px-3 shadow-sm" onclick="clearPatientForm()" title="Xóa toàn bộ ô nhập để điền lại từ đầu">
+                                                                            <i class="bi bi-arrow-counterclockwise me-1"></i> Điền lại thông tin
+                                                                          </button>
+                                                                        </div>
                                                                       </div>
-                                                                    </c:if>
+                                                                    </div>
 
                                                                     <div class="row g-3">
                                                                       <div class="col-md-6">
@@ -1470,6 +1486,64 @@
               }
             }
 
+            // Xử lý chuyển đổi: Đặt cho bản thân / Đăng ký cho người khác / Điền lại thông tin
+            const loggedUserProfile = {
+              name: '<c:out value="${loggedUser.fullName}" default="" />',
+              phone: '<c:out value="${loggedUser.phone}" default="" />',
+              email: '<c:out value="${loggedUser.email}" default="" />',
+              dob: '<c:out value="${loggedUser.dob}" default="" />'
+            };
+
+            function setBookingForOther() {
+              document.getElementById('patientName').value = '';
+              document.getElementById('patientPhone').value = '';
+              document.getElementById('patientDob').value = '';
+              document.getElementById('visitReason').value = '';
+
+              const title = document.getElementById('bookingProfileTitle');
+              if (title) title.innerHTML = '<span class="text-primary"><i class="bi bi-people-fill me-1"></i> Đang đăng ký cho người khác / người thân</span>';
+
+              const notice = document.getElementById('bookingForNotice');
+              if (notice) notice.innerHTML = 'Vui lòng nhập họ tên, số điện thoại và ngày sinh của người trực tiếp đi khám mắt.';
+
+              const btnOther = document.getElementById('btnBookForOther');
+              const btnSelf = document.getElementById('btnBookForSelf');
+              if (btnOther) btnOther.style.display = 'none';
+              if (btnSelf) btnSelf.style.display = 'inline-block';
+
+              document.getElementById('patientName').focus();
+            }
+
+            function refillMyInfo() {
+              document.getElementById('patientName').value = loggedUserProfile.name || '';
+              document.getElementById('patientPhone').value = loggedUserProfile.phone || '';
+              document.getElementById('patientEmail').value = loggedUserProfile.email || '';
+              document.getElementById('patientDob').value = loggedUserProfile.dob || '';
+              document.getElementById('visitReason').value = '';
+
+              const title = document.getElementById('bookingProfileTitle');
+              if (title) title.innerText = 'Tài khoản đặt lịch: ' + (loggedUserProfile.name || '');
+
+              const notice = document.getElementById('bookingForNotice');
+              if (notice) notice.innerText = 'Hệ thống đã tự động điền thông tin của bạn. Nhấn "Đăng ký cho người khác" nếu bạn đặt lịch cho người thân.';
+
+              const btnOther = document.getElementById('btnBookForOther');
+              const btnSelf = document.getElementById('btnBookForSelf');
+              if (btnOther) btnOther.style.display = 'inline-block';
+              if (btnSelf) btnSelf.style.display = 'none';
+            }
+
+            function clearPatientForm() {
+              if (confirm('Bạn có muốn xóa toàn bộ thông tin người khám để nhập lại từ đầu không?')) {
+                document.getElementById('patientName').value = '';
+                document.getElementById('patientPhone').value = '';
+                document.getElementById('patientEmail').value = '';
+                document.getElementById('patientDob').value = '';
+                document.getElementById('visitReason').value = '';
+                document.getElementById('patientName').focus();
+              }
+            }
+
             // Tự động khởi tạo khi tải trang
             document.addEventListener('DOMContentLoaded', function () {
               updateFeeDisplay();
@@ -1498,7 +1572,7 @@
                       clearInterval(checkInterval);
                       return;
                     }
-                    fetch('${pageContext.request.contextPath}/book-appointment?action=checkPayment&appointmentId=' + currentApptId)
+                    fetch('${pageContext.request.contextPath}/book-appointment?action=checkPayment&appointmentId=' + currentApptId + '&orderCode=${orderCode}')
                       .then(res => res.json())
                       .then(data => {
                         if (data && data.isPaid) {
