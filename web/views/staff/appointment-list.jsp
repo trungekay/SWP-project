@@ -88,7 +88,7 @@
                             <!-- 1. Tổng lịch hẹn -->
                             <div class="col-sm-6 col-xl-3 d-flex">
                                 <a href="${pageContext.request.contextPath}/staff/appointments?date=${selectedDate}&status=all&doctorId=${selectedDoctorId}&keyword=${param.keyword}"
-                                    class="metric-card w-100 text-decoration-none ${selectedStatus == 'all' ? 'border border-2 border-primary shadow-sm bg-light' : ''}">
+                                    class="metric-card w-100 text-decoration-none ${selectedStatus == 'all' || empty selectedStatus ? 'border border-2 border-primary shadow-sm bg-light' : ''}">
                                     <div class="metric-icon-box metric-icon-teal">
                                         <i class="bi bi-calendar4-event"></i>
                                     </div>
@@ -156,8 +156,7 @@
                                     <!-- 1. Thanh tìm kiếm nhanh (Tên, SĐT, Mã hẹn) -->
                                     <div class="search-filter-input flex-grow-1" style="max-width: 520px;">
                                         <i class="bi bi-search"></i>
-                                        <input type="text" name="keyword" value="${param.keyword}"
-                                            placeholder="Nhập SĐT, tên hoặc mã hẹn (#APPT-3)..." class="w-100"
+                                        <input type="text" name="keyword" value="${param.keyword}" class="w-100"
                                             style="height: 40px; font-size: 14px; border-radius: 8px;">
                                     </div>
 
@@ -179,7 +178,7 @@
                                                 title="Chọn ngày hẹn">
                                         </div>
 
-                                        <!-- Nút Tra cứu -->
+                                        <!-- Nút Tra cứu & Nút Tải lại -->
                                         <div class="d-flex align-items-center gap-2">
                                             <button type="submit"
                                                 class="btn btn-teal px-3.5 text-nowrap d-flex align-items-center justify-content-center gap-1.5 shadow-sm"
@@ -187,6 +186,13 @@
                                                 <i class="bi bi-search"></i>
                                                 <span>Tra cứu</span>
                                             </button>
+                                            <a href="${pageContext.request.contextPath}/staff/appointments?status=all"
+                                                class="btn btn-outline-secondary px-3 text-nowrap d-flex align-items-center justify-content-center gap-1.5 shadow-sm"
+                                                style="height: 40px; font-weight: 500; border-radius: 8px;"
+                                                title="Tải lại danh sách (Tất cả lịch hẹn)">
+                                                <i class="bi bi-arrow-clockwise"></i>
+                                                <span>Tải lại</span>
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
@@ -196,7 +202,7 @@
                             <div class="px-3 pt-3 pb-2 bg-light border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
                                 <div class="d-flex align-items-center gap-2 flex-wrap">
                                     <a href="${pageContext.request.contextPath}/staff/appointments?date=${selectedDate}&status=all&doctorId=${selectedDoctorId}&keyword=${param.keyword}"
-                                        class="btn btn-sm ${selectedStatus == 'all' ? 'btn-dark fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
+                                        class="btn btn-sm ${selectedStatus == 'all' || empty selectedStatus ? 'btn-dark fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
                                         <i class="bi bi-calendar4-event me-1"></i> Tất cả (${totalCount})
                                     </a>
                                     <a href="${pageContext.request.contextPath}/staff/appointments?date=${selectedDate}&status=Pending&doctorId=${selectedDoctorId}&keyword=${param.keyword}"
@@ -266,7 +272,14 @@
                                                             <div class="fw-semibold text-dark" style="font-size: 13px;">
                                                                 <i class="bi bi-clock text-teal me-1"
                                                                     style="color: var(--primary-color);"></i>
-                                                                ${appt.timeSlot}
+                                                                <c:choose>
+                                                                    <c:when test="${not empty appt.timeSlot && not empty appt.endTime}">
+                                                                        ${appt.timeSlot} - ${appt.endTime}
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        ${appt.timeSlot}
+                                                                    </c:otherwise>
+                                                                </c:choose>
                                                             </div>
                                                             <div class="text-muted small mt-0.5" style="font-size: 12px;">
                                                                 <i class="bi bi-calendar3 me-1"></i>${appt.appointmentDate}
@@ -619,11 +632,24 @@
                                         <!-- Ngày sinh -->
                                         <div class="col-md-5">
                                             <label class="form-label small fw-semibold text-dark mb-1">
-                                                Ngày sinh <span class="text-muted fw-normal">(Không bắt buộc)</span>
+                                                Ngày sinh
                                             </label>
-                                            <input type="date" name="dob" id="walkinDob"
-                                                class="form-control form-control-sm shadow-none"
-                                                style="border-radius: 8px; font-size: 13.5px; padding: 7px 12px;">
+                                            <div class="input-group input-group-sm position-relative">
+                                                <input type="text" name="dob" id="walkinDob"
+                                                    class="form-control form-control-sm shadow-none"
+                                                    placeholder="dd/mm/yyyy" maxlength="10"
+                                                    style="border-radius: 8px 0 0 8px; font-size: 13.5px; padding: 7px 12px;"
+                                                    oninput="formatDobInput(this)">
+                                                <button type="button" class="btn btn-outline-secondary px-2.5" id="btnPickWalkinDob"
+                                                    style="border-radius: 0 8px 8px 0; border-color: #cbd5e1; background: #f8fafc;"
+                                                    title="Mở lịch chọn ngày sinh"
+                                                    onclick="triggerNativeDobPicker()">
+                                                    <i class="bi bi-calendar-event text-secondary"></i>
+                                                </button>
+                                                <input type="date" id="nativeDobPicker" tabindex="-1"
+                                                    style="position: absolute; right: 0; bottom: 0; opacity: 0; pointer-events: none; width: 0; height: 0;"
+                                                    onchange="onNativeDobChange(this.value)">
+                                            </div>
                                         </div>
 
                                         <!-- Bác sĩ phụ trách -->
@@ -834,6 +860,56 @@
                 <!-- Bootstrap 5 JS -->
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
                 <script>
+                    function formatDobInput(input) {
+                        var v = (input.value || '').replace(/[^0-9]/g, '');
+                        if (v.length > 8) v = v.substring(0, 8);
+                        var formatted = '';
+                        if (v.length > 0) {
+                            formatted = v.substring(0, Math.min(2, v.length));
+                        }
+                        if (v.length >= 3) {
+                            formatted += '/' + v.substring(2, Math.min(4, v.length));
+                        }
+                        if (v.length >= 5) {
+                            formatted += '/' + v.substring(4, 8);
+                        }
+                        input.value = formatted;
+
+                        if (v.length === 8) {
+                            var d = v.substring(0, 2);
+                            var m = v.substring(2, 4);
+                            var y = v.substring(4, 8);
+                            var nativePicker = document.getElementById('nativeDobPicker');
+                            if (nativePicker) {
+                                nativePicker.value = y + '-' + m + '-' + d;
+                            }
+                        }
+                    }
+
+                    function triggerNativeDobPicker() {
+                        var nativePicker = document.getElementById('nativeDobPicker');
+                        if (nativePicker) {
+                            if (typeof nativePicker.showPicker === 'function') {
+                                nativePicker.showPicker();
+                            } else {
+                                nativePicker.focus();
+                                nativePicker.click();
+                            }
+                        }
+                    }
+
+                    function onNativeDobChange(val) {
+                        if (!val) return;
+                        var parts = val.split('-');
+                        if (parts.length === 3) {
+                            var dobInput = document.getElementById('walkinDob');
+                            if (dobInput) {
+                                dobInput.value = parts[2] + '/' + parts[1] + '/' + parts[0];
+                                dobInput.classList.add('is-valid');
+                            }
+                        }
+                    }
+
                     var phoneTimer = null;
                     function checkWalkinPhone(phone) {
                         clearTimeout(phoneTimer);
@@ -876,8 +952,23 @@
                                             nameInput.classList.add('is-valid');
                                         }
                                         if (dobInput) {
-                                            dobInput.value = data.dob || '';
-                                            dobInput.classList.add('is-valid');
+                                            if (data.dob && data.dob.indexOf('-') !== -1) {
+                                                var p = data.dob.split('-');
+                                                if (p.length === 3) {
+                                                    dobInput.value = p[2] + '/' + p[1] + '/' + p[0];
+                                                    var nativePicker = document.getElementById('nativeDobPicker');
+                                                    if (nativePicker) nativePicker.value = data.dob;
+                                                } else {
+                                                    dobInput.value = data.dob;
+                                                }
+                                            } else {
+                                                dobInput.value = data.dob || '';
+                                            }
+                                            if (dobInput.value) {
+                                                dobInput.classList.add('is-valid');
+                                            } else {
+                                                dobInput.classList.remove('is-valid');
+                                            }
                                         }
 
                                         if (data.hasApptToday) {

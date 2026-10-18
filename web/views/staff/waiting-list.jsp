@@ -69,11 +69,6 @@
                             <div class="page-title">
                                 <h2 class="mb-0">Danh Sách Chờ</h2>
                             </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <a href="${pageContext.request.contextPath}/staff/appointments" class="btn btn-teal-outline">
-                                    <i class="bi bi-calendar4-event me-1"></i> Quản lý lịch hẹn
-                                </a>
-                            </div>
                         </div>
 
                         <!-- KPI Queue Summary Cards (Bấm để lọc theo trạng thái) -->
@@ -149,8 +144,7 @@
                                     <!-- 1. Thanh tìm kiếm nhanh (Tên, SĐT, Mã hẹn) -->
                                     <div class="search-filter-input flex-grow-1" style="max-width: 520px;">
                                         <i class="bi bi-search"></i>
-                                        <input type="text" name="keyword" value="${param.keyword}"
-                                            placeholder="Nhập SĐT, tên hoặc mã hẹn (#APPT-3)..." class="w-100"
+                                        <input type="text" name="keyword" value="${param.keyword}" class="w-100"
                                             style="height: 40px; font-size: 14px; border-radius: 8px;">
                                     </div>
 
@@ -172,7 +166,7 @@
                                                 title="Chọn ngày khám">
                                         </div>
 
-                                        <!-- Nút Tra cứu -->
+                                        <!-- Nút Tra cứu & Nút Tải lại -->
                                         <div class="d-flex align-items-center gap-2">
                                             <button type="submit"
                                                 class="btn btn-teal px-3.5 text-nowrap d-flex align-items-center justify-content-center gap-1.5 shadow-sm"
@@ -180,6 +174,13 @@
                                                 <i class="bi bi-search"></i>
                                                 <span>Tra cứu</span>
                                             </button>
+                                            <a href="${pageContext.request.contextPath}/staff/waiting-list"
+                                                class="btn btn-outline-secondary px-3 text-nowrap d-flex align-items-center justify-content-center gap-1.5 shadow-sm"
+                                                style="height: 40px; font-weight: 500; border-radius: 8px;"
+                                                title="Tải lại danh sách">
+                                                <i class="bi bi-arrow-clockwise"></i>
+                                                <span>Tải lại</span>
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
@@ -209,16 +210,27 @@
 
                             <!-- Queue Table -->
                             <div class="table-container">
-                                <table class="custom-table">
+                                <table class="custom-table" style="table-layout: fixed; width: 100%;">
+                                    <colgroup>
+                                        <col style="width: 65px;">
+                                        <col style="width: 110px;">
+                                        <col style="width: 17%;">
+                                        <col style="width: 14%;">
+                                        <col style="width: 17%;">
+                                        <col style="width: 17%;">
+                                        <col style="width: 125px;">
+                                        <col style="width: 155px;">
+                                    </colgroup>
                                     <thead>
                                         <tr>
-                                            <th style="width: 70px;">STT</th>
-                                            <th>Mã Hẹn</th>
-                                            <th>Bệnh Nhân</th>
-                                            <th>Bác Sĩ</th>
-                                            <th>Phòng Khám</th>
-                                            <th>Trạng Thái</th>
-                                            <th class="text-center" style="width: 170px;">Thao Tác</th>
+                                            <th class="text-center text-nowrap" style="width: 65px;">STT</th>
+                                            <th class="text-center text-nowrap" style="width: 110px;">Mã Hẹn</th>
+                                            <th class="text-nowrap" style="width: 17%;">Bệnh Nhân</th>
+                                            <th class="text-nowrap" style="width: 14%;">Ca Khám</th>
+                                            <th class="text-nowrap" style="width: 17%;">Bác Sĩ</th>
+                                            <th class="text-nowrap" style="width: 17%;">Phòng Khám</th>
+                                            <th class="text-center text-nowrap" style="width: 125px;">Trạng Thái</th>
+                                            <th class="text-center text-nowrap" style="width: 155px;">Thao Tác</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -230,7 +242,7 @@
                                                     <c:set var="isPastAppt" value="${not empty apptDateStr && apptDateStr < currentDateStr}" />
                                                     <tr class="${appt.status == 'In_Progress' ? 'row-examining' : ''}">
                                                         <!-- STT / Queue Number -->
-                                                        <td>
+                                                        <td class="text-center">
                                                             <div
                                                                 class="queue-badge ${appt.status == 'In_Progress' ? 'queue-badge-active' : ''}">
                                                                 #${appt.queueNumber}
@@ -238,15 +250,16 @@
                                                         </td>
 
                                                         <!-- Mã Hẹn -->
-                                                        <td>
+                                                        <td class="text-center text-nowrap">
                                                             <span class="fw-bold text-dark">#APPT-${appt.id}</span>
                                                         </td>
 
                                                         <!-- Bệnh Nhân -->
                                                         <td>
-                                                            <div class="patient-name-title">
+                                                            <div class="patient-name-title text-truncate">
                                                                 <a href="${pageContext.request.contextPath}/staff/appointment-detail?id=${appt.id}"
-                                                                    class="text-decoration-none text-dark hover-teal">
+                                                                    class="text-decoration-none text-dark hover-teal"
+                                                                    title="${appt.patientName}">
                                                                     ${appt.patientName}
                                                                 </a>
                                                             </div>
@@ -256,11 +269,41 @@
                                                             </div>
                                                         </td>
 
+                                                        <!-- Ca Khám (Thời gian từ mấy giờ đến mấy giờ) -->
+                                                        <td class="text-nowrap">
+                                                            <div class="fw-semibold text-dark d-flex align-items-center gap-1.5" style="font-size: 13px;">
+                                                                <i class="bi bi-clock-fill" style="color: var(--primary-color, #0d9488); font-size: 13px;"></i>
+                                                                <span>
+                                                                    <c:choose>
+                                                                        <c:when test="${not empty appt.timeSlot && not empty appt.endTime}">
+                                                                            ${appt.timeSlot} - ${appt.endTime}
+                                                                        </c:when>
+                                                                        <c:when test="${not empty appt.timeSlot}">
+                                                                            ${appt.timeSlot}
+                                                                        </c:when>
+                                                                        <c:otherwise>
+                                                                            --:--
+                                                                        </c:otherwise>
+                                                                    </c:choose>
+                                                                </span>
+                                                            </div>
+                                                            <c:if test="${not empty appt.slotName && !fn:containsIgnoreCase(appt.slotName, 'Slot Khám')}">
+                                                                <div class="text-muted small mt-0.5" style="font-size: 11px; padding-left: 17px;">
+                                                                    ${appt.slotName}
+                                                                </div>
+                                                            </c:if>
+                                                        </td>
+
                                                         <!-- Bác Sĩ -->
                                                         <td>
-                                                            <div class="fw-semibold text-dark">${not empty
-                                                                appt.doctorName ? appt.doctorName : 'Chưa phân công'}
+                                                            <div class="fw-semibold text-dark text-truncate" title="${not empty appt.doctorName ? appt.doctorName : 'Chưa phân công'}">
+                                                                ${not empty appt.doctorName ? appt.doctorName : 'Chưa phân công'}
                                                             </div>
+                                                            <c:if test="${not empty appt.department}">
+                                                                <div class="text-muted small text-truncate" style="font-size: 11.5px;" title="${appt.department}">
+                                                                    ${appt.department}
+                                                                </div>
+                                                            </c:if>
                                                         </td>
 
                                                         <!-- Phòng Khám -->
@@ -268,7 +311,9 @@
                                                             <c:choose>
                                                                 <c:when test="${not empty appt.roomName}">
                                                                     <span
-                                                                        class="badge bg-light text-dark border px-2 py-1 fw-semibold">
+                                                                        class="badge bg-light text-dark border px-2 py-1 fw-semibold text-wrap text-start"
+                                                                        style="font-size: 12px; line-height: 1.35;"
+                                                                        title="${appt.roomName}">
                                                                         <i
                                                                             class="bi bi-door-open text-success me-1"></i>${appt.roomName}
                                                                     </span>
@@ -340,10 +385,18 @@
                                                                                         <i class="bi bi-hourglass-split"></i>
                                                                                     </button>
                                                                                 </c:when>
+                                                                                <c:when test="${callableApptIds != null && !callableApptIds.contains(appt.id)}">
+                                                                                    <button type="button" class="action-btn"
+                                                                                        disabled
+                                                                                        title="Chưa đến lượt: Bác sĩ vẫn còn ca khám trước đó chưa khám. Bắt buộc phải gọi ca trước theo đúng thứ tự slot!"
+                                                                                        data-bs-toggle="tooltip">
+                                                                                        <i class="bi bi-lock-fill text-muted"></i>
+                                                                                    </button>
+                                                                                </c:when>
                                                                                 <c:otherwise>
                                                                                     <button type="button"
                                                                                         class="action-btn checkin btn-trigger-start"
-                                                                                        title="Gọi bệnh nhân vào phòng khám" data-bs-toggle="tooltip"
+                                                                                        title="Gọi bệnh nhân vào phòng khám (Đúng lượt ca khám)" data-bs-toggle="tooltip"
                                                                                         data-id="${appt.id}"
                                                                                         data-name="${appt.patientName}">
                                                                                         <i class="bi bi-box-arrow-in-right"></i>
@@ -351,10 +404,10 @@
                                                                                 </c:otherwise>
                                                                             </c:choose>
 
-                                                                            <!-- 3. Bỏ qua lượt (Vàng pastel - Xếp xuống cuối hàng đợi) -->
+                                                                            <!-- 3. Bỏ qua lượt (Vàng pastel - Hoán đổi lượt với ca tiếp theo sau mình) -->
                                                                             <button type="button"
                                                                                 class="action-btn warning btn-trigger-skip"
-                                                                                title="Bỏ qua lượt: Chuyển bệnh nhân xuống cuối hàng đợi hôm nay nếu tạm vắng mặt" data-bs-toggle="tooltip"
+                                                                                title="Bỏ qua lượt: Đổi ca khám với lượt tiếp theo sau mình để nhường lượt vào khám" data-bs-toggle="tooltip"
                                                                                 data-id="${appt.id}"
                                                                                 data-name="${appt.patientName}">
                                                                                 <i class="bi bi-arrow-down-circle"></i>
@@ -404,7 +457,7 @@
                                             </c:when>
                                             <c:otherwise>
                                                 <tr>
-                                                    <td colspan="7" class="text-center py-5">
+                                                    <td colspan="8" class="text-center py-5">
                                                         <div class="text-muted">
                                                             <c:choose>
                                                                 <c:when test="${selectedStatus == 'Confirmed'}">
@@ -566,9 +619,9 @@
                     </div>
                 </div>
 
-                <!-- Modal Bỏ Qua Lượt / Xếp cuối hàng đợi -->
+                <!-- Modal Bỏ Qua Lượt / Đổi lượt với ca tiếp theo sau mình -->
                 <div class="modal fade" id="skipModal" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered" style="max-width: 430px;">
+                    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"
@@ -580,7 +633,7 @@
                                 </div>
                                 <h3 class="modal-title-custom">Bỏ qua lượt khám?</h3>
                                 <p class="modal-text mb-3">
-                                    Bệnh nhân <strong id="skipModalPatientName" class="text-dark">---</strong> (<span id="skipModalApptCode" class="fw-bold text-secondary">#APPT-0</span>) sẽ được <strong>chuyển xuống cuối hàng đợi hôm nay</strong> để gọi bệnh nhân kế tiếp vào phòng khám.
+                                    Bệnh nhân <strong id="skipModalPatientName" class="text-dark">---</strong> (<span id="skipModalApptCode" class="fw-bold text-secondary">#APPT-0</span>) sẽ <strong>chuyển đổi ca khám với lượt tiếp theo sau mình</strong> để nhường lượt cho bệnh nhân kế tiếp vào phòng khám.
                                 </p>
                                 <form action="${pageContext.request.contextPath}/staff/waiting-list" method="post" id="skipForm" class="m-0">
                                     <input type="hidden" name="action" value="skip">
@@ -589,7 +642,7 @@
                                     <div class="modal-actions">
                                         <button type="button" class="btn btn-modal-cancel" data-bs-dismiss="modal">Hủy</button>
                                         <button type="submit" class="btn btn-modal-warning">
-                                            <i class="bi bi-arrow-down-circle me-1"></i> Xếp cuối hàng
+                                            <i class="bi bi-arrow-down-circle me-1"></i> Đổi lượt ca sau
                                         </button>
                                     </div>
                                 </form>

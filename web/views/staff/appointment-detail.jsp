@@ -897,9 +897,9 @@
                     </div>
                 </div>
 
-                <!-- Modal Bỏ Qua Lượt / Xếp Cuối Hàng Đợi -->
+                <!-- Modal Bỏ Qua Lượt / Đổi lượt với ca tiếp theo sau mình -->
                 <div class="modal fade" id="skipModal" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered" style="max-width: 430px;">
+                    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"
@@ -911,7 +911,7 @@
                                 </div>
                                 <h3 class="modal-title-custom">Bỏ qua lượt khám?</h3>
                                 <p class="modal-text mb-3">
-                                    Bệnh nhân <strong class="text-dark">${appointment.patientName}</strong> (#APPT-${appointment.id}) sẽ được <strong>chuyển xuống cuối hàng đợi hôm nay</strong> để gọi bệnh nhân kế tiếp vào phòng khám.
+                                    Bệnh nhân <strong class="text-dark">${appointment.patientName}</strong> (#APPT-${appointment.id}) sẽ <strong>chuyển đổi ca khám với lượt tiếp theo sau mình</strong> để nhường lượt cho bệnh nhân kế tiếp vào phòng khám.
                                 </p>
                                 <form action="${pageContext.request.contextPath}/staff/appointment-detail" method="post"
                                     class="m-0">
@@ -921,7 +921,7 @@
                                         <button type="button" class="btn btn-modal-cancel"
                                             data-bs-dismiss="modal">Hủy</button>
                                         <button type="submit" class="btn btn-modal-warning">
-                                            <i class="bi bi-arrow-down-circle me-1"></i> Xếp cuối hàng
+                                            <i class="bi bi-arrow-down-circle me-1"></i> Đổi lượt ca sau
                                         </button>
                                     </div>
                                 </form>

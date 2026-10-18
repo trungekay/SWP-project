@@ -153,10 +153,8 @@ public class StaffAppointmentListServlet extends HttpServlet {
             String filterStatus;
             if (statusParam != null && !statusParam.trim().isEmpty()) {
                 filterStatus = statusParam.trim();
-            } else if (!keyword.isEmpty()) {
-                filterStatus = "all";
             } else {
-                filterStatus = "Pending";
+                filterStatus = "all";
             }
 
             // Lấy toàn bộ lịch hẹn trong ngày để tính chỉ số KPI tiếp đón
@@ -337,9 +335,23 @@ public class StaffAppointmentListServlet extends HttpServlet {
 
                     Date dob = null;
                     if (dobStr != null && !dobStr.trim().isEmpty()) {
+                        String s = dobStr.trim();
                         try {
-                            dob = Date.valueOf(dobStr.trim());
-                        } catch (IllegalArgumentException ignored) {}
+                            if (s.contains("/")) {
+                                String[] parts = s.split("/");
+                                if (parts.length == 3) {
+                                    int d = Integer.parseInt(parts[0].trim());
+                                    int m = Integer.parseInt(parts[1].trim());
+                                    int y = Integer.parseInt(parts[2].trim());
+                                    if (y < 100) {
+                                        y += (y > 26 ? 1900 : 2000);
+                                    }
+                                    dob = Date.valueOf(String.format("%04d-%02d-%02d", y, m, d));
+                                }
+                            } else if (s.contains("-")) {
+                                dob = Date.valueOf(s);
+                            }
+                        } catch (Exception ignored) {}
                     }
 
                     int serviceId = 0;

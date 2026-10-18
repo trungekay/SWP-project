@@ -833,6 +833,7 @@ public class AppointmentDAO {
             "CONVERT(VARCHAR(19), a.checkin_time, 120) AS Checkin_Time_Str, " +
             "p.Full_Name AS Patient_Name, p.Phone AS Patient_Phone, p.DOB AS Patient_DOB, p.Address AS Patient_Address, " +
             "ws.Work_Date, " +
+            "ws.Slot AS Slot_Name, " +
             "CONVERT(VARCHAR(5), ws.Start_Time, 108) AS Start_Time_Str, " +
             "CONVERT(VARCHAR(5), ws.End_Time, 108) AS End_Time_Str, " +
             "ws.Doctor_Employee_ID, " +
@@ -908,6 +909,7 @@ public class AppointmentDAO {
                      "CONVERT(VARCHAR(19), a.checkin_time, 120) AS Checkin_Time_Str, " +
                      "p.Full_Name AS Patient_Name, p.Phone AS Patient_Phone, p.DOB AS Patient_DOB, p.Address AS Patient_Address, " +
                      "ws.Work_Date, " +
+                     "ws.Slot AS Slot_Name, " +
                      "CONVERT(VARCHAR(5), ws.Start_Time, 108) AS Start_Time_Str, " +
                      "CONVERT(VARCHAR(5), ws.End_Time, 108) AS End_Time_Str, " +
                      "ws.Doctor_Employee_ID, " +
@@ -1150,6 +1152,7 @@ public class AppointmentDAO {
             "CONVERT(VARCHAR(19), a.checkin_time, 120) AS Checkin_Time_Str, " +
             "p.Full_Name AS Patient_Name, p.Phone AS Patient_Phone, p.DOB AS Patient_DOB, p.Address AS Patient_Address, " +
             "ws.Work_Date, " +
+            "ws.Slot AS Slot_Name, " +
             "CONVERT(VARCHAR(5), ws.Start_Time, 108) AS Start_Time_Str, " +
             "CONVERT(VARCHAR(5), ws.End_Time, 108) AS End_Time_Str, " +
             "ws.Doctor_Employee_ID, " +
@@ -1212,7 +1215,7 @@ public class AppointmentDAO {
             params.add("%" + cleanKw + "%");
         }
 
-        sql.append(" ORDER BY CASE WHEN a.Status = 'In_Progress' THEN 0 WHEN a.Status = 'Confirmed' THEN 1 ELSE 2 END, a.checkin_time ASC, ws.Start_Time ASC");
+        sql.append(" ORDER BY CASE WHEN a.Status = 'In_Progress' THEN 0 WHEN a.Status = 'Confirmed' THEN 1 ELSE 2 END, ws.Start_Time ASC, a.checkin_time ASC");
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
@@ -1247,8 +1250,20 @@ public class AppointmentDAO {
         a.setDob(rs.getDate("Patient_DOB"));
         a.setAddress(rs.getString("Patient_Address"));
         a.setAppointmentDate(rs.getDate("Work_Date"));
-        a.setTimeSlot(rs.getString("Start_Time_Str"));
-        a.setEndTime(rs.getString("End_Time_Str"));
+        try {
+            a.setSlotName(rs.getString("Slot_Name"));
+        } catch (SQLException ignored) {}
+        String stStr = rs.getString("Start_Time_Str");
+        String etStr = rs.getString("End_Time_Str");
+        if ((etStr == null || etStr.trim().isEmpty()) && stStr != null && stStr.matches("\\d{2}:\\d{2}")) {
+            try {
+                java.time.LocalTime st = java.time.LocalTime.parse(stStr);
+                java.time.LocalTime et = st.plusMinutes(30);
+                etStr = String.format("%02d:%02d", et.getHour(), et.getMinute());
+            } catch (Exception ignored) {}
+        }
+        a.setTimeSlot(stStr);
+        a.setEndTime(etStr);
         a.setDoctorId(rs.getInt("Doctor_Employee_ID"));
         a.setDoctorName(rs.getString("Doctor_Name"));
         a.setDepartment(rs.getString("Doctor_Specialty"));
@@ -1285,12 +1300,153 @@ public class AppointmentDAO {
         return a;
     }
 
-    public boolean skipQueue(int appointmentId) throws Exception {
-        String sql = "UPDATE Appointment SET Status = 'Confirmed', checkin_time = SYSUTCDATETIME() WHERE Appointment_ID = ? AND Status = 'Confirmed'";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, appointmentId);
-            return ps.executeUpdate() > 0;
+    public String skipQueue(int appointmentId) throws Exception {
+        String infoSql = "SELECT a.Appointment_ID, a.Patient_ID, p.Full_Name AS PatientName, a.Status, " +
+                         "       a.Schedule_ID, ws.Doctor_Employee_ID, ws.Work_Date, ws.Slot, ws.Start_Time, ws.End_Time " +
+                         "FROM Appointment a " +
+                         "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
+                         "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
+                         "WHERE a.Appointment_ID = ?";
+
+        try (Connection conn = DBContext.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                int curApptId = appointmentId;
+                String curPatientName = "";
+                int curScheduleId = -1;
+                int doctorId = -1;
+                java.sql.Date workDate = null;
+                String curSlot = "";
+                java.sql.Time curStartTime = null;
+
+                try (PreparedStatement ps = conn.prepareStatement(infoSql)) {
+                    ps.setInt(1, curApptId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            curPatientName = rs.getString("PatientName");
+                            curScheduleId = rs.getInt("Schedule_ID");
+                            doctorId = rs.getInt("Doctor_Employee_ID");
+                            workDate = rs.getDate("Work_Date");
+                            curSlot = rs.getString("Slot");
+                            curStartTime = rs.getTime("Start_Time");
+                        } else {
+                            conn.rollback();
+                            throw new Exception("Không tìm thấy thông tin ca khám #" + curApptId);
+                        }
+                    }
+                }
+
+                // 1. Tìm ca khám tiếp theo của CÙNG BÁC SĨ trong CÙNG NGÀY có khung giờ sau ca hiện tại
+                // Ưu tiên ca đã check-in (Confirmed) trong phòng chờ trước, sau đó tới ca Pending
+                String findNextApptSql = "SELECT TOP 1 a2.Appointment_ID, a2.Schedule_ID, ws2.Slot, ws2.Start_Time, ws2.End_Time, " +
+                                         "             a2.Patient_ID, p2.Full_Name AS NextPatientName, a2.Status " +
+                                         "FROM Appointment a2 " +
+                                         "JOIN Work_Schedule ws2 ON a2.Schedule_ID = ws2.Schedule_ID " +
+                                         "JOIN Patient p2 ON a2.Patient_ID = p2.Patient_ID " +
+                                         "WHERE ws2.Work_Date = ? " +
+                                         "  AND ws2.Doctor_Employee_ID = ? " +
+                                         "  AND ws2.Start_Time > CAST(? AS TIME) " +
+                                         "  AND a2.Status IN ('Confirmed', 'Pending') " +
+                                         "ORDER BY CASE WHEN a2.Status = 'Confirmed' THEN 0 ELSE 1 END, ws2.Start_Time ASC";
+
+                int nextApptId = -1;
+                int nextScheduleId = -1;
+                String nextPatientName = "";
+                String nextSlot = "";
+
+                try (PreparedStatement ps = conn.prepareStatement(findNextApptSql)) {
+                    ps.setDate(1, workDate);
+                    ps.setInt(2, doctorId);
+                    ps.setString(3, curStartTime.toString());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            nextApptId = rs.getInt("Appointment_ID");
+                            nextScheduleId = rs.getInt("Schedule_ID");
+                            nextPatientName = rs.getString("NextPatientName");
+                            nextSlot = rs.getString("Slot");
+                        }
+                    }
+                }
+
+                if (nextApptId > 0 && nextScheduleId > 0) {
+                    // HOÁN ĐỔI KHUNG GIỜ GIỮA 2 BỆNH NHÂN:
+                    // Bệnh nhân sau (VD: Nguyễn Văn An) nhận slot trước (Slot 2 của Bình)
+                    // Bệnh nhân bị bỏ qua (VD: Trần Thị Bình) nhận slot sau (Slot 3 của An)
+                    String updateCur = "UPDATE Appointment SET Schedule_ID = ?, checkin_time = SYSUTCDATETIME() WHERE Appointment_ID = ?";
+                    try (PreparedStatement ps = conn.prepareStatement(updateCur)) {
+                        ps.setInt(1, nextScheduleId);
+                        ps.setInt(2, curApptId);
+                        ps.executeUpdate();
+                    }
+
+                    String updateNext = "UPDATE Appointment SET Schedule_ID = ? WHERE Appointment_ID = ?";
+                    try (PreparedStatement ps = conn.prepareStatement(updateNext)) {
+                        ps.setInt(1, curScheduleId);
+                        ps.setInt(2, nextApptId);
+                        ps.executeUpdate();
+                    }
+
+                    conn.commit();
+                    return "Đã đổi lượt khám thành công: Bệnh nhân " + nextPatientName + " đã thay thế " + curSlot + " của " + curPatientName + ", và " + curPatientName + " được chuyển sang " + nextSlot + ".";
+                }
+
+                // 2. Nếu không có ca khám nào đặt sau, kiểm tra xem có Slot Available nào còn trống của bác sĩ này hôm nay không
+                String findAvailableSlotSql = "SELECT TOP 1 ws3.Schedule_ID, ws3.Slot, ws3.Start_Time, ws3.End_Time " +
+                                              "FROM Work_Schedule ws3 " +
+                                              "WHERE ws3.Work_Date = ? " +
+                                              "  AND ws3.Doctor_Employee_ID = ? " +
+                                              "  AND ws3.Start_Time > CAST(? AS TIME) " +
+                                              "  AND ws3.Status = 'Available' " +
+                                              "  AND ws3.Schedule_ID NOT IN (SELECT Schedule_ID FROM Appointment WHERE Status NOT IN ('Canceled')) " +
+                                              "ORDER BY ws3.Start_Time ASC";
+
+                int emptySlotScheduleId = -1;
+                String emptySlotName = "";
+                try (PreparedStatement ps = conn.prepareStatement(findAvailableSlotSql)) {
+                    ps.setDate(1, workDate);
+                    ps.setInt(2, doctorId);
+                    ps.setString(3, curStartTime.toString());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            emptySlotScheduleId = rs.getInt("Schedule_ID");
+                            emptySlotName = rs.getString("Slot");
+                        }
+                    }
+                }
+
+                if (emptySlotScheduleId > 0) {
+                    // Chuyển bệnh nhân sang khung giờ trống kế tiếp
+                    String updateAppt = "UPDATE Appointment SET Schedule_ID = ?, checkin_time = SYSUTCDATETIME() WHERE Appointment_ID = ?";
+                    try (PreparedStatement ps = conn.prepareStatement(updateAppt)) {
+                        ps.setInt(1, emptySlotScheduleId);
+                        ps.setInt(2, curApptId);
+                        ps.executeUpdate();
+                    }
+
+                    // Cập nhật trạng thái slot mới thành Booked và slot cũ thành Available
+                    String updateNewSlot = "UPDATE Work_Schedule SET Status = 'Booked' WHERE Schedule_ID = ?";
+                    try (PreparedStatement ps = conn.prepareStatement(updateNewSlot)) {
+                        ps.setInt(1, emptySlotScheduleId);
+                        ps.executeUpdate();
+                    }
+
+                    String updateOldSlot = "UPDATE Work_Schedule SET Status = 'Available' WHERE Schedule_ID = ?";
+                    try (PreparedStatement ps = conn.prepareStatement(updateOldSlot)) {
+                        ps.setInt(1, curScheduleId);
+                        ps.executeUpdate();
+                    }
+
+                    conn.commit();
+                    return "Đã chuyển lượt cho bệnh nhân " + curPatientName + " từ " + curSlot + " sang khung giờ trống kế tiếp (" + emptySlotName + ").";
+                }
+
+                // 3. Trường hợp không còn ca khám hay khung giờ tiếp theo nào của bác sĩ hôm nay
+                conn.rollback();
+                throw new Exception("Bệnh nhân " + curPatientName + " đã ở ca khám cuối cùng của bác sĩ hôm nay, không có ca tiếp theo để hoán đổi.");
+            } catch (Exception ex) {
+                conn.rollback();
+                throw ex;
+            }
         }
     }
 

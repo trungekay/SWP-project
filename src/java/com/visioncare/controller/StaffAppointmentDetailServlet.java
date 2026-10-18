@@ -145,11 +145,15 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
                     session.setAttribute("errorMessage", "Không thể ghi nhận vắng mặt cho ca khám #" + apptId);
                 }
             } else if ("skip".equalsIgnoreCase(action)) {
-                boolean success = appointmentDAO.skipQueue(apptId);
-                if (success) {
-                    session.setAttribute("successMessage", "Đã bỏ qua lượt cho bệnh nhân (#APPT-" + apptId + ") và chuyển xuống cuối hàng đợi.");
-                } else {
-                    session.setAttribute("errorMessage", "Không thể chuyển lượt cho ca khám #" + apptId);
+                try {
+                    String resultMsg = appointmentDAO.skipQueue(apptId);
+                    if (resultMsg != null && !resultMsg.isEmpty()) {
+                        session.setAttribute("successMessage", resultMsg);
+                    } else {
+                        session.setAttribute("errorMessage", "Không thể chuyển lượt cho ca khám #" + apptId);
+                    }
+                } catch (Exception e) {
+                    session.setAttribute("errorMessage", "Không thể bỏ qua lượt: " + e.getMessage());
                 }
             } else if ("cancel".equalsIgnoreCase(action)) {
                 String reasonSelect = request.getParameter("cancelReasonSelect");

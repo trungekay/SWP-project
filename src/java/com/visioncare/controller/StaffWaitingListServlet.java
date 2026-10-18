@@ -20,7 +20,10 @@ import java.io.IOException;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -99,6 +102,31 @@ public class StaffWaitingListServlet extends HttpServlet {
                     .map(Appointment::getDoctorId)
                     .collect(Collectors.toSet());
 
+            // Quy tắc y tế: Bắt buộc theo từng slot đối với lịch 1 bác sĩ
+            // Với mỗi bác sĩ: chỉ ca Confirmed có ca/slot sớm nhất mới ĐƯỢC PHÉP GỌI khi bác sĩ đó rảnh
+            Set<Integer> callableApptIds = new HashSet<>();
+            Map<Integer, Appointment> nextCallableByDoctor = new HashMap<>();
+            for (Appointment a : allDayQueue) {
+                if ("Confirmed".equalsIgnoreCase(a.getStatus()) && a.getDoctorId() > 0) {
+                    int docId = a.getDoctorId();
+                    if (!busyDoctorIds.contains(docId)) {
+                        Appointment cur = nextCallableByDoctor.get(docId);
+                        if (cur == null) {
+                            nextCallableByDoctor.put(docId, a);
+                        } else {
+                            String t1 = a.getTimeSlot() != null ? a.getTimeSlot() : "";
+                            String t2 = cur.getTimeSlot() != null ? cur.getTimeSlot() : "";
+                            if (t1.compareTo(t2) < 0) {
+                                nextCallableByDoctor.put(docId, a);
+                            }
+                        }
+                    }
+                }
+            }
+            for (Appointment a : nextCallableByDoctor.values()) {
+                callableApptIds.add(a.getId());
+            }
+
             // Lấy danh sách hiển thị theo status và keyword
             List<Appointment> waitingList = appointmentDAO.getWaitingList(queryDate, filterStatus, doctorId, roomId, keyword);
             List<Doctor> doctors = doctorDAO.getAll();
@@ -136,6 +164,7 @@ public class StaffWaitingListServlet extends HttpServlet {
             request.setAttribute("totalCompleted", totalCompleted);
             request.setAttribute("totalQueue", totalQueue);
             request.setAttribute("busyDoctorIds", busyDoctorIds);
+            request.setAttribute("callableApptIds", callableApptIds);
 
             request.getRequestDispatcher("/views/staff/waiting-list.jsp").forward(request, response);
         } catch (Exception e) {
@@ -204,15 +233,15 @@ public class StaffWaitingListServlet extends HttpServlet {
             if (apptIdParam != null && !apptIdParam.trim().isEmpty()) {
                 try {
                     int apptId = Integer.parseInt(apptIdParam.trim());
-                    boolean success = appointmentDAO.skipQueue(apptId);
-                    if (success) {
-                        session.setAttribute("successMessage", "Đã bỏ qua lượt cho bệnh nhân (#APPT-" + apptId + ") và chuyển xuống cuối hàng đợi.");
+                    String resultMsg = appointmentDAO.skipQueue(apptId);
+                    if (resultMsg != null && !resultMsg.isEmpty()) {
+                        session.setAttribute("successMessage", resultMsg);
                     } else {
                         session.setAttribute("errorMessage", "Không thể chuyển lượt cho ca khám #APPT-" + apptId);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
-                    session.setAttribute("errorMessage", "Lỗi chuyển lượt: " + e.getMessage());
+                    session.setAttribute("errorMessage", "Không thể bỏ qua lượt: " + e.getMessage());
                 }
             }
         } else if ("updateStatus".equalsIgnoreCase(action)) {
@@ -254,6 +283,31 @@ public class StaffWaitingListServlet extends HttpServlet {
                                         response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
                                     }
                                     return;
+                                }
+
+                                // Bắt buộc theo từng slot đối với lịch 1 bác sĩ:
+                                // Không được gọi ca sau (ví dụ Ca 6) nếu bác sĩ đó vẫn còn ca trước (ví dụ Ca 2) đang ở trạng thái 'Confirmed'
+                                if (targetAppt.getDoctorId() > 0) {
+                                    Appointment earlierAppt = currentQueue.stream()
+                                            .filter(a -> "Confirmed".equalsIgnoreCase(a.getStatus())
+                                                    && a.getId() != apptId
+                                                    && a.getDoctorId() == targetAppt.getDoctorId()
+                                                    && (a.getTimeSlot() != null && targetAppt.getTimeSlot() != null && a.getTimeSlot().compareTo(targetAppt.getTimeSlot()) < 0))
+                                            .findFirst().orElse(null);
+                                    if (earlierAppt != null) {
+                                        String earlierTime = earlierAppt.getTimeSlot() + (earlierAppt.getEndTime() != null ? " - " + earlierAppt.getEndTime() : "");
+                                        session.setAttribute("errorMessage", "Không thể gọi ca này vào khám! Bác sĩ "
+                                                + (targetAppt.getDoctorName() != null ? targetAppt.getDoctorName() : "")
+                                                + " bắt buộc phải khám tuần tự theo từng ca. Hiện vẫn còn ca trước (#APPT-" + earlierAppt.getId()
+                                                + " - " + earlierTime + ") đang chờ khám!");
+                                        String returnUrl = request.getParameter("returnUrl");
+                                        if (returnUrl != null && !returnUrl.trim().isEmpty() && !returnUrl.contains(".jsp")) {
+                                            response.sendRedirect(returnUrl);
+                                        } else {
+                                            response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
+                                        }
+                                        return;
+                                    }
                                 }
                             }
                         }
@@ -298,9 +352,23 @@ public class StaffWaitingListServlet extends HttpServlet {
 
                     Date dob = null;
                     if (dobStr != null && !dobStr.trim().isEmpty()) {
+                        String s = dobStr.trim();
                         try {
-                            dob = Date.valueOf(dobStr.trim());
-                        } catch (IllegalArgumentException ignored) {}
+                            if (s.contains("/")) {
+                                String[] parts = s.split("/");
+                                if (parts.length == 3) {
+                                    int d = Integer.parseInt(parts[0].trim());
+                                    int m = Integer.parseInt(parts[1].trim());
+                                    int y = Integer.parseInt(parts[2].trim());
+                                    if (y < 100) {
+                                        y += (y > 26 ? 1900 : 2000);
+                                    }
+                                    dob = Date.valueOf(String.format("%04d-%02d-%02d", y, m, d));
+                                }
+                            } else if (s.contains("-")) {
+                                dob = Date.valueOf(s);
+                            }
+                        } catch (Exception ignored) {}
                     }
 
                     int serviceId = 0;
