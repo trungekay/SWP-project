@@ -1807,6 +1807,11 @@
                 docSelect.value = initialDocId;
                 onDoctorSelectChange();
               } else if (checkedSvc) {
+                const bg = (checkedSvc.dataset.bgroup || '').toLowerCase().trim();
+                if (bg && bg !== 'all') {
+                  const catBtn = document.querySelector('.booking-cat-btn[data-bgroup="' + bg + '"]');
+                  if (catBtn) filterBookingCategory(bg, catBtn);
+                }
                 filterDoctorsByService(checkedSvc);
               } else {
                 updateDoctorPreview();

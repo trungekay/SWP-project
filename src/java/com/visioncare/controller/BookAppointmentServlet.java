@@ -576,11 +576,11 @@ public class BookAppointmentServlet extends HttpServlet {
         List<CatalogService> bookingServices = new java.util.ArrayList<>();
         if (allServices != null) {
             for (CatalogService cs : allServices) {
-                // Chỉ hiển thị các gói Khám & Tư vấn / Sàng lọc tiền phẫu trên form Đặt lịch khám
-                // (Các ca đại phẫu thuật được Bác sĩ khám lâm sàng và chỉ định riêng trong hồ sơ bệnh án)
-                if ("Khám và tư vấn".equalsIgnoreCase(cs.getCategory())
-                        || "Kiểm tra và chẩn đoán".equalsIgnoreCase(cs.getCategory())
-                        || (cs.getPrice() != null && cs.getPrice().longValue() <= 1000000)) {
+                // Hiển thị các gói Khám & Tư vấn, Kiểm tra & Chẩn đoán, và Thủ thuật ngoại trú (TP-LEO, TP-LEDAO, TP-YAG)
+                // Chỉ loại trừ các ca đại phẫu thuật lớn (PT-LASIK, PT-SMILE, PT-PHACO) vì bắt buộc phải đăng ký khám tiền phẫu trước
+                String c = cs.getCode() != null ? cs.getCode().toUpperCase(java.util.Locale.ROOT).trim() : "";
+                boolean isMajorSurgery = c.startsWith("PT-");
+                if (!isMajorSurgery) {
                     bookingServices.add(cs);
                 }
             }
