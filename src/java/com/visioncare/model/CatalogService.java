@@ -10,11 +10,12 @@ public class CatalogService {
     private final String category;
     private final String summary;
     private final String description;
+    private final String imagePath;
     private final boolean uploadedImage;
 
     public CatalogService(int id, String code, String name, BigDecimal price,
             String category, String summary, String description,
-            boolean uploadedImage) {
+            String imagePath, boolean uploadedImage) {
         this.id = id;
         this.code = code;
         this.name = name;
@@ -22,7 +23,14 @@ public class CatalogService {
         this.category = category;
         this.summary = summary;
         this.description = description;
+        this.imagePath = imagePath;
         this.uploadedImage = uploadedImage;
+    }
+
+    public CatalogService(int id, String code, String name, BigDecimal price,
+            String category, String summary, String description,
+            boolean uploadedImage) {
+        this(id, code, name, price, category, summary, description, null, uploadedImage);
     }
 
     public int getId() { return id; }
@@ -33,9 +41,13 @@ public class CatalogService {
     public String getCategoryName() { return category; }
     public String getSummary() { return summary; }
     public String getDescription() { return description; }
+    public String getImagePath() { return imagePath; }
     public boolean isUploadedImage() { return uploadedImage; }
 
     public String getDefaultImagePath() {
+        if (imagePath != null && !imagePath.trim().isEmpty()) {
+            return imagePath.trim();
+        }
         if (code != null) {
             String c = code.toUpperCase(java.util.Locale.ROOT).trim();
             // 1. Khám tổng quát & Soi đáy mắt
