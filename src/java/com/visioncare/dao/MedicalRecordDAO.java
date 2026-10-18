@@ -54,6 +54,7 @@ public class MedicalRecordDAO {
         if (accountId != null) {
             sql.append("AND p.Account_ID = ? ");
         }
+        sql.append("ORDER BY CASE WHEN m.Record_ID = ? THEN 0 ELSE 1 END");
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
@@ -62,6 +63,7 @@ public class MedicalRecordDAO {
             if (accountId != null) {
                 ps.setInt(3, accountId);
             }
+            ps.setInt(accountId == null ? 3 : 4, id);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -99,33 +101,35 @@ public class MedicalRecordDAO {
                     record.put("patientPhone", rs.getString("Patient_Phone"));
                     java.sql.Date dob = rs.getDate("Patient_DOB");
                     record.put("patientDob", dob != null ? dateOnlyFormat.format(dob) : "Chưa cập nhật");
-                    record.put("patientAddress", rs.getString("Patient_Address") != null ? rs.getString("Patient_Address") : "456 Lê Thị Riêng, Quận 10, TP.HCM");
+                    record.put("patientAddress", rs.getString("Patient_Address") != null ? rs.getString("Patient_Address") : "Chưa cập nhật");
                     record.put("patientEmail", rs.getString("Patient_Email") != null ? rs.getString("Patient_Email") : "Chưa cập nhật");
 
                     // Doctor details
                     String rawDoc = rs.getString("Doctor_Name");
-                    String docName = rawDoc != null && !rawDoc.trim().isEmpty() ? rawDoc.trim() : "BS. Trần Văn Nam";
+                    String docName = rawDoc != null && !rawDoc.trim().isEmpty() ? rawDoc.trim() : "Chưa cập nhật";
                     if (!docName.startsWith("BS.") && !docName.startsWith("BS ") && !docName.startsWith("Bác sĩ ")) {
                         docName = "BS. " + docName;
                     }
                     record.put("doctorName", docName);
-                    record.put("doctorSpecialty", rs.getString("Doctor_Specialty") != null ? rs.getString("Doctor_Specialty") : "Chuyên khoa Mắt (Nhãn khoa)");
-                    record.put("doctorPhone", rs.getString("Doctor_Phone") != null ? rs.getString("Doctor_Phone") : "1800 599 988");
-                    record.put("roomName", rs.getString("Room_Name") != null ? rs.getString("Room_Name") : "Phòng khám Mắt 101");
+                    record.put("doctorSpecialty", rs.getString("Doctor_Specialty") != null ? rs.getString("Doctor_Specialty") : "Chưa cập nhật");
+                    record.put("doctorPhone", rs.getString("Doctor_Phone") != null ? rs.getString("Doctor_Phone") : "Chưa cập nhật");
+                    record.put("roomName", rs.getString("Room_Name") != null ? rs.getString("Room_Name") : "Chưa cập nhật");
 
                     // Clinical details
                     String diag = rs.getString("Clinical_Diagnosis");
-                    record.put("clinicalDiagnosis", diag != null && !diag.trim().isEmpty() ? diag : "Khám mắt tổng quát");
+                    record.put("clinicalDiagnosis", diag != null && !diag.trim().isEmpty() ? diag : "Chưa cập nhật");
 
                     String examResult = rs.getString("examination_result");
                     record.put("examinationResult", examResult != null && !examResult.trim().isEmpty() 
                             ? examResult 
-                            : "Thị lực MP: 10/10, MT: 8/10. Kết mạc hơi cương tụ nhẹ. Nhãn áp hai mắt trong giới hạn bình thường (16 mmHg). Thủy tinh thể trong suốt.");
+                            : "Chưa cập nhật");
 
                     String conclusion = rs.getString("conclusion");
                     record.put("conclusion", conclusion != null && !conclusion.trim().isEmpty() 
                             ? conclusion 
-                            : "Tình trạng ổn định. Đã kê đơn thuốc kháng viêm nhỏ mắt và nước mắt nhân tạo. Đề nghị tái khám nếu triệu chứng không thuyên giảm sau 7 ngày.");
+                            : "Chưa cập nhật");
+
+                    loadExaminationDetail(conn, recordId, record);
 
                     // Load Procedures (Cận lâm sàng & Thủ thuật)
                     record.put("procedures", loadProcedures(conn, recordId));
@@ -139,9 +143,33 @@ public class MedicalRecordDAO {
         return record;
     }
 
+    private void loadExaminationDetail(Connection conn, int recordId, Map<String, Object> record) throws Exception {
+        String sql = "SELECT Chief_Complaint, Medical_History, OD_Uncorrected, OS_Uncorrected, " +
+                "OD_Corrected, OS_Corrected, OD_IOP, OS_IOP, Anterior_Findings, Posterior_Findings, Follow_Up_Date " +
+                "FROM Examination_Detail WHERE Record_ID = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, recordId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return;
+                record.put("chiefComplaint", rs.getString("Chief_Complaint"));
+                record.put("medicalHistory", rs.getString("Medical_History"));
+                record.put("odUncorrected", rs.getString("OD_Uncorrected"));
+                record.put("osUncorrected", rs.getString("OS_Uncorrected"));
+                record.put("odCorrected", rs.getString("OD_Corrected"));
+                record.put("osCorrected", rs.getString("OS_Corrected"));
+                record.put("odIop", rs.getString("OD_IOP"));
+                record.put("osIop", rs.getString("OS_IOP"));
+                record.put("anteriorFindings", rs.getString("Anterior_Findings"));
+                record.put("posteriorFindings", rs.getString("Posterior_Findings"));
+                java.sql.Date followUp = rs.getDate("Follow_Up_Date");
+                record.put("followUpDate", followUp == null ? null : dateOnlyFormat.format(followUp));
+            }
+        }
+    }
+
     private List<Map<String, Object>> loadProcedures(Connection conn, int recordId) {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT po.Order_ID, po.Status, s.Service_Name, po.Actual_Price, esp.Full_Name AS Specialist_Name " +
+        String sql = "SELECT po.Order_ID, po.Status, po.Referral_Notes, s.Service_Name, po.Actual_Price, esp.Full_Name AS Specialist_Name " +
                      "FROM Procedure_Order po " +
                      "JOIN Service_Catalog s ON po.Service_ID = s.Service_ID " +
                      "LEFT JOIN Employee_Profile esp ON po.Specialist_Employee_ID = esp.Employee_ID " +
@@ -158,8 +186,9 @@ public class MedicalRecordDAO {
                     item.put("serviceName", rs.getString("Service_Name"));
                     item.put("priceFmt", String.format("%,d đ", rs.getLong("Actual_Price")));
                     item.put("status", rs.getString("Status"));
+                    item.put("referralNotes", rs.getString("Referral_Notes"));
                     String specName = rs.getString("Specialist_Name");
-                    item.put("specialistName", specName != null ? specName : "KTV. Nhãn khoa VisionCare");
+                    item.put("specialistName", specName != null ? specName : "Chưa phân công");
                     list.add(item);
                 }
             }
@@ -172,7 +201,7 @@ public class MedicalRecordDAO {
 
     private void loadPrescription(Connection conn, int recordId, Map<String, Object> record) {
         List<Map<String, Object>> medicines = new ArrayList<>();
-        String doctorNotes = "Nhỏ thuốc đúng giờ, giữ vệ sinh mắt sạch sẽ, tái khám sau 7 ngày nếu mắt còn đỏ hoặc khó chịu.";
+        String doctorNotes = "Chưa có lời dặn của bác sĩ.";
         Timestamp presCreated = null;
 
         String sqlPres = "SELECT Prescription_ID, Doctor_Notes, created_at FROM Prescription WHERE Record_ID = ? ORDER BY Prescription_ID DESC";
@@ -211,7 +240,7 @@ public class MedicalRecordDAO {
                         med.put("medicineName", rs.getString("Medicine_Name"));
                         med.put("quantity", rs.getInt("Quantity"));
                         String dosage = rs.getString("Dosage_Instruction");
-                        med.put("dosageInstruction", dosage != null ? dosage : "Theo hướng dẫn của bác sĩ");
+                        med.put("dosageInstruction", dosage != null ? dosage : "Chưa cập nhật");
                         medicines.add(med);
                     }
                 }

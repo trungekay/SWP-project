@@ -54,6 +54,9 @@
 .doctor-form-matrix td{min-width:145px}
 .doctor-form-matrix input{min-height:38px}
 .doctor-form-hint{margin:12px 0 0;color:#8797a0;font-size:11px}
+.doctor-form-prior-diagnoses{margin-top:18px;padding:14px 16px;border:1px solid #d9e9e5;border-radius:10px;background:#f7fbf9;color:#405960}
+.doctor-form-prior-diagnoses strong{display:block;margin-bottom:7px;font-size:12px}
+.doctor-form-prior-diagnoses p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.6}
 .doctor-form-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .doctor-form-choice{position:relative;cursor:pointer}
 .doctor-form-choice input{position:absolute;top:18px;right:17px;width:17px;height:17px;accent-color:#008b74}
@@ -66,6 +69,28 @@
 .doctor-form-medicine-list{display:grid;gap:16px}
 .doctor-form-medicine{position:relative;min-width:0;padding:19px;border:1px solid #dfe9ee;border-radius:12px;background:#fbfdfd}
 .doctor-form-medicine legend{float:none;width:auto;margin:0 0 14px;padding:0;color:#17353a;font-size:14px;font-weight:750}
+.doctor-form-medicine-name{position:relative}
+.doctor-form-medicine-name>label{color:#3c5260}
+.doctor-form-combobox{position:relative;min-width:0}
+.doctor-form-suggestions{position:absolute;z-index:30;top:calc(100% + 6px);left:0;right:0;max-height:264px;overflow-y:auto;padding:6px;border:1px solid #cde6df;border-radius:11px;background:#fff;box-shadow:0 12px 30px rgba(24,69,62,.14)}
+.doctor-form-suggestions[hidden]{display:none}
+.doctor-form-suggestion{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:8px 10px;border:0;border-radius:7px;background:transparent;color:#23453f;font:inherit;font-size:12px;font-weight:600;text-align:left;cursor:pointer}
+.doctor-form-suggestion i{display:grid;flex:0 0 26px;width:26px;height:26px;place-items:center;border-radius:7px;background:#eaf8f3;color:#07876f;font-size:13px}
+.doctor-form-suggestion:hover,.doctor-form-suggestion.is-active{background:#eaf8f3;color:#006f5c}
+.doctor-form-suggestion:focus-visible{outline:2px solid #17a58e;outline-offset:-2px}
+.doctor-form-suggestion-empty{padding:11px 12px;color:#69817a;font-size:12px;font-weight:500;line-height:1.5}
+.doctor-form-quantity-unit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.doctor-form-dose-field{display:grid;gap:9px;color:#3c5260;font-size:12px;font-weight:700}
+.doctor-form-dose-field em{color:#c95050;font-style:normal}
+.doctor-form-dose-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.doctor-form-dose-row{display:flex;align-items:center;gap:8px;min-width:0;padding:8px 10px;border:1px solid #dce9e7;border-radius:10px;background:#f8fcfa}
+.doctor-form-dose-row:has(input[type=checkbox]:checked){border-color:#75c9b5;background:#f0faf6}
+.doctor-form-dose-row label{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;margin:0;color:#29594c;cursor:pointer;font-size:12px;font-weight:750}
+.doctor-form-dose-row input[type=checkbox]{width:16px;height:16px;margin:0;accent-color:#008b74}
+.doctor-form-dose-row>input{flex:1;min-width:0;min-height:38px;padding:8px 9px;border:1px solid #d8e3e9;border-radius:8px;background:#fff;color:#17353a;font:inherit;font-size:12px;font-weight:500}
+.doctor-form-dose-row>input:focus{outline:none;border-color:#17a58e;box-shadow:0 0 0 3px rgba(23,165,142,.13)}
+.doctor-form-dose-row>input:disabled{background:#edf3f1;color:#8b9d98}
+.doctor-form-legacy-dose{display:block;padding:10px 12px;border:1px solid #ecdfb9;border-radius:8px;background:#fffbef;color:#796027;font-size:11px;font-weight:500;line-height:1.5}
 .doctor-form-remove{position:absolute;top:15px;right:15px;border:0;background:transparent;color:#a45050;font-size:12px;font-weight:700}
 .doctor-form-remove:hover{color:#c63b3b}
 .doctor-form-add{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:9px 13px;margin-top:15px;border:1px dashed #70c7b5;border-radius:9px;background:#f5fcfa;color:#008b74;font-size:12px;font-weight:750}
@@ -75,7 +100,7 @@
 .doctor-form-glasses-table td{min-width:108px}
 .doctor-form-glasses-extra{margin-top:20px}
 .doctor-form-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;padding-top:2px}
-.doctor-form-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:43px;padding:10px 16px;border:1px solid transparent;border-radius:10px;text-decoration:none;font-size:12px;font-weight:750;line-height:1.2}
+.doctor-form-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:43px;padding:10px 16px;border:1px solid transparent;border-radius:10px;text-decoration:none;font-family:'Inter',Arial,sans-serif;font-size:13px;font-weight:700;line-height:1.2}
 .doctor-form-button.secondary{border-color:#d7e4e8;background:#fff;color:#39545d}
 .doctor-form-button.secondary:hover{background:#f4f9f8;color:#008b74}
 .doctor-form-button.primary{background:#008b74;color:#fff}
@@ -96,16 +121,39 @@
 .doctor-form-aside-tip{display:flex;gap:10px;padding:15px;border:1px solid #d8eee7;border-radius:12px;background:#f3fbf8;color:#4f7468}
 .doctor-form-aside-tip i{color:#008b74;font-size:18px}
 .doctor-form-aside-tip p{margin:0;font-size:11px;line-height:1.55}
-.doctor-form-modal[hidden],[hidden]{display:none!important}
-.doctor-form-modal{position:fixed;z-index:2000;inset:0;display:grid;place-items:center;padding:18px}
-.doctor-form-modal-backdrop{position:absolute;inset:0;background:rgba(13,39,48,.54)}
-.doctor-form-modal-panel{position:relative;width:min(680px,100%);max-height:min(85vh,820px);overflow:auto;padding:28px;border-radius:17px;background:#fff;box-shadow:0 24px 80px rgba(0,0,0,.2)}
-.doctor-form-modal-panel h2{margin:7px 0 20px;color:#17353a;font-size:24px}
-.doctor-form-modal-close{position:absolute;top:17px;right:18px;border:0;background:transparent;color:#647985;font-size:18px}
-.doctor-form-preview-group{padding:13px 0;border-top:1px solid #e5edef}
-.doctor-form-preview-group strong{display:block;margin-bottom:5px;color:#516a74;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
-.doctor-form-preview-group p{margin:0;color:#17353a;font-size:13px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
-.doctor-form-button:focus-visible,.doctor-form-add:focus-visible,.doctor-form-remove:focus-visible,.doctor-form-breadcrumb a:focus-visible,.doctor-form-aside-link:focus-visible,.doctor-form-modal-close:focus-visible{outline:3px solid #3bc8af;outline-offset:2px}
+[hidden]{display:none!important}
+.doctor-form-surgery{margin-top:22px;padding-top:20px;border-top:1px solid #e8eef1}
+.doctor-form-surgery-toggle{min-height:42px;padding:10px 15px;border-color:#a9d9cc;background:#f1faf7;color:#087b68;font-size:13px;box-shadow:0 2px 5px rgba(0,139,116,.04)}
+.doctor-form-surgery-toggle i{font-size:16px;line-height:1}
+.doctor-form-surgery-toggle:hover,.doctor-form-surgery-toggle.is-active{border-color:#008b74;background:#e6f6f0;color:#006b58}
+.doctor-form-referral-status{display:flex;align-items:flex-start;gap:12px;max-width:570px;margin-top:15px;padding:13px 15px;border:1px solid #d6e7ed;border-radius:12px;background:#f7fafc;color:#365469}
+.doctor-form-referral-status-icon{display:grid;flex:0 0 34px;width:34px;height:34px;place-items:center;border-radius:9px;background:#e6f0f5;color:#34718b;font-size:17px}
+.doctor-form-referral-status div{display:grid;gap:3px}
+.doctor-form-referral-status small{color:#657f8a;font-size:10px;font-weight:800;letter-spacing:.8px}
+.doctor-form-referral-status strong{font-size:13px;line-height:1.35}
+.doctor-form-referral-status div>span{font-size:11px;line-height:1.45}
+.doctor-form-referral-status.pending{border-color:#f0dfb8;background:#fffaf0;color:#805d1a}
+.doctor-form-referral-status.pending .doctor-form-referral-status-icon{background:#fff0cd;color:#a97213}
+.doctor-form-referral-status.active{border-color:#c9e0f4;background:#f3f9ff;color:#27618f}
+.doctor-form-referral-status.active .doctor-form-referral-status-icon{background:#e2f0fc;color:#2474aa}
+.doctor-form-referral-status.completed{border-color:#cce9db;background:#f1fbf5;color:#237650}
+.doctor-form-referral-status.completed .doctor-form-referral-status-icon{background:#dff5e8;color:#168250}
+.doctor-form-referral-status.cancelled{border-color:#e4e9ed;background:#f7f8f9;color:#65717a}
+.doctor-form-surgery-panel{display:grid;gap:16px;margin-top:17px;padding:20px;border:1px solid #cde9df;border-radius:12px;background:#f7fcfa}
+.doctor-form-surgery-panel>p{margin:0;color:#52736a;font-size:12px;line-height:1.5}
+.doctor-form-surgery-panel .doctor-form-fields{margin:0}
+.doctor-form-returned-result{border-color:#bfe6d6;background:#fbfffd}
+.doctor-form-returned-meta{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 18px}
+.doctor-form-returned-meta span{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:99px;background:#e8f7ef;color:#246c50;font-size:12px;font-weight:650}
+.doctor-form-returned-body{display:grid;gap:14px}
+.doctor-form-returned-body>div{padding:15px 17px;border:1px solid #dbece5;border-radius:11px;background:#fff}
+.doctor-form-returned-body strong{display:block;margin-bottom:8px;color:#315c4b;font-size:12px}
+.doctor-form-returned-body p{margin:0;color:#253d35;font-size:13px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.doctor-form-actions [data-exam-submit] span{font-family:Arial,'Segoe UI',sans-serif;font-weight:700;letter-spacing:normal}
+.doctor-form-page[data-readonly="true"] :is(input,textarea,select):disabled{opacity:1;background:#f8faf9;color:#304b43;cursor:default}
+.doctor-form-button:focus-visible,.doctor-form-add:focus-visible,.doctor-form-remove:focus-visible,.doctor-form-breadcrumb a:focus-visible,.doctor-form-aside-link:focus-visible{outline:3px solid #3bc8af;outline-offset:2px}
 @media(max-width:1100px){.doctor-form-layout{grid-template-columns:minmax(0,1fr)}.doctor-form-aside{position:static;grid-row:1}.doctor-form-aside-card{display:none}.doctor-form-aside-tip{max-width:none}}
+@media(max-width:800px){.doctor-form-dose-grid{grid-template-columns:1fr}}
 @media(max-width:767px){.sidebar{display:none}.main-wrapper{margin-left:0}.top-header{padding:0 16px}}
 @media(max-width:700px){.doctor-form-page{padding:20px 16px 56px}.doctor-form-heading{align-items:flex-start}.doctor-form-state{display:none}.doctor-form-patient{flex-wrap:wrap;padding:17px}.doctor-form-patient-side{width:100%;padding-top:12px;border-top:1px solid #dcece7;text-align:left}.doctor-form-card{padding:19px 16px}.doctor-form-fields,.doctor-form-choice-grid{grid-template-columns:1fr}.doctor-form-span{grid-column:auto}.doctor-form-actions{justify-content:stretch}.doctor-form-button{flex:1 1 auto}.doctor-form-medicine{padding:15px}}
+@media(max-width:700px){.doctor-form-quantity-unit{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}

@@ -367,7 +367,7 @@ public class InvoiceDAO {
                               "JOIN Service_Catalog s ON po.Service_ID = s.Service_ID " +
                               "JOIN Medical_Record m ON po.Record_ID = m.Record_ID " +
                               "JOIN Master_Invoice i ON m.Appointment_ID = i.Appointment_ID " +
-                              "WHERE i.Invoice_ID = ?";
+                              "WHERE i.Invoice_ID = ? AND (po.Referral_Notes IS NULL OR po.Status = 'Completed')";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sqlProcedures)) {
             ps.setInt(1, invoiceId);
@@ -399,13 +399,13 @@ public class InvoiceDAO {
 
         // Fetch Prescriptions (Thuốc kê đơn)
         long totalMedCost = 0;
-        String sqlMeds = "SELECT pd.Medicine_Name, pd.Quantity, pd.Dosage_Instruction, " +
-                         "COALESCE(ms.Price, 50000) AS Unit_Price " +
+        String sqlMeds = "SELECT pd.Medicine_Name, pd.Quantity, pd.Dosage_Instruction, pd.Is_Custom_Medicine, " +
+                         "CASE WHEN pd.Is_Custom_Medicine = 1 THEN 0 ELSE COALESCE(ms.Price, 50000) END AS Unit_Price " +
                          "FROM Prescription_Detail pd " +
                          "JOIN Prescription p ON pd.Prescription_ID = p.Prescription_ID " +
                          "JOIN Medical_Record m ON p.Record_ID = m.Record_ID " +
                          "JOIN Master_Invoice i ON m.Appointment_ID = i.Appointment_ID " +
-                         "LEFT JOIN Medicine ms ON (pd.Medicine_Name LIKE '%' + ms.Supply_Name + '%' OR ms.Supply_Name LIKE '%' + pd.Medicine_Name + '%') " +
+                         "LEFT JOIN Medicine ms ON pd.Is_Custom_Medicine = 0 AND (pd.Medicine_Name LIKE '%' + ms.Supply_Name + '%' OR ms.Supply_Name LIKE '%' + pd.Medicine_Name + '%') " +
                          "WHERE i.Invoice_ID = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sqlMeds)) {
@@ -417,10 +417,11 @@ public class InvoiceDAO {
                     String dosage = rs.getString("Dosage_Instruction");
                     int qty = rs.getInt("Quantity");
                     if (qty <= 0) qty = 1;
+                    boolean customMedicine = rs.getBoolean("Is_Custom_Medicine");
                     long unitPrice = rs.getLong("Unit_Price");
                     
                     // Chuẩn hóa đơn giá thuốc thực tế phòng khám
-                    if (unitPrice <= 0 || unitPrice == 50000) {
+                    if (!customMedicine && (unitPrice <= 0 || unitPrice == 50000)) {
                         if (medName != null && medName.toLowerCase().contains("tobradex")) {
                             unitPrice = 50000;
                         } else if (medName != null && medName.toLowerCase().contains("sanlein")) {
@@ -431,12 +432,12 @@ public class InvoiceDAO {
 
                     item.put("stt", stt++);
                     item.put("name", medName + (dosage != null && !dosage.trim().isEmpty() ? " (" + dosage.trim() + ")" : ""));
-                    item.put("type", "Thuốc kê đơn");
+                    item.put("type", customMedicine ? "Thuốc nhập tay (chưa định giá)" : "Thuốc kê đơn");
                     item.put("quantity", qty);
                     item.put("unitPrice", unitPrice);
-                    item.put("unitPriceFmt", formatVND(unitPrice));
+                    item.put("unitPriceFmt", customMedicine ? "Chưa định giá" : formatVND(unitPrice));
                     item.put("totalPrice", linePrice);
-                    item.put("totalPriceFmt", formatVND(linePrice));
+                    item.put("totalPriceFmt", customMedicine ? "Chưa định giá" : formatVND(linePrice));
                     items.add(item);
                     totalMedCost += linePrice;
                 }

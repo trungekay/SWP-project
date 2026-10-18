@@ -50,8 +50,18 @@ public final class DoctorFormValidator {
                 Map<String, String> row = medicines.get(i);
                 String prefix = "Thuốc " + (i + 1) + ": ";
                 required(row, "medicineName", prefix + "tên thuốc", 255, errors);
-                required(row, "dosage", prefix + "liều dùng", 100, errors);
-                required(row, "frequency", prefix + "tần suất", 100, errors);
+                int selectedDoses = 0;
+                for (String[] session : new String[][]{{"morning", "morningDose", "sáng"},
+                        {"afternoon", "afternoonDose", "chiều"}, {"evening", "eveningDose", "tối"}}) {
+                    String selected = row.getOrDefault(session[0], "");
+                    if (!selected.isBlank() && !"true".equals(selected)) {
+                        errors.add(prefix + "buổi " + session[2] + " không hợp lệ.");
+                    } else if ("true".equals(selected)) {
+                        selectedDoses++;
+                        required(row, session[1], prefix + "liều buổi " + session[2], 100, errors);
+                    }
+                }
+                if (selectedDoses == 0) errors.add(prefix + "chọn ít nhất một buổi dùng thuốc.");
                 optional(row, "strength", prefix + "hàm lượng", 100, errors);
                 optional(row, "duration", prefix + "thời gian", 100, errors);
                 optional(row, "instructions", prefix + "hướng dẫn", 255, errors);

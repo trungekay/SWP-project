@@ -23,6 +23,19 @@ public class CatalogDAO {
         return items;
     }
 
+    public List<CatalogService> listSurgeryServices() throws Exception {
+        List<CatalogService> items = new ArrayList<>();
+        String sql = "SELECT " + SERVICE_COLUMNS + " FROM Service_Catalog sc "
+                + "WHERE sc.Service_Code IN ('LS-03', 'TT-05') OR sc.Service_Code LIKE 'PT-%' "
+                + "ORDER BY sc.Service_Code";
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet result = statement.executeQuery()) {
+            while (result.next()) items.add(service(result));
+        }
+        return items;
+    }
+
     public CatalogService getService(int id) throws Exception {
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement("SELECT " + SERVICE_COLUMNS + " FROM Service_Catalog sc WHERE sc.Service_ID = ?")) {

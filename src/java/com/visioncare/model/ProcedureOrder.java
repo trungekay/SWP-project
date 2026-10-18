@@ -12,6 +12,7 @@ public class ProcedureOrder {
     private int recordId;
     private int serviceId;
     private String status; // 'Pending', 'Completed', 'Cancelled'
+    private String referralNotes;
 
     // Service info
     private String serviceName;
@@ -80,6 +81,9 @@ public class ProcedureOrder {
     public void setStatus(String status) {
         this.status = status;
     }
+
+    public String getReferralNotes() { return referralNotes; }
+    public void setReferralNotes(String referralNotes) { this.referralNotes = referralNotes; }
 
     public String getServiceName() {
         return serviceName;

@@ -1,9 +1,11 @@
 package com.visioncare.controller;
 
 import com.visioncare.dao.AppointmentDAO;
+import com.visioncare.dao.CatalogDAO;
 import com.visioncare.dao.DoctorFormDAO;
 import com.visioncare.dao.MedicineDAO;
 import com.visioncare.model.Appointment;
+import com.visioncare.model.CatalogService;
 import com.visioncare.model.Medicine;
 import com.visioncare.model.User;
 import jakarta.servlet.ServletException;
@@ -16,7 +18,6 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,19 +35,20 @@ public class DoctorFormSaveServlet extends HttpServlet {
         "chiefComplaint", "medicalHistory", "odUncorrected", "osUncorrected",
         "odCorrected", "osCorrected", "odIop", "osIop",
         "anteriorFindings", "posteriorFindings", "clinicalDiagnosis",
-        "examinationResult", "conclusion", "followUpDate"
+        "examinationResult", "conclusion", "followUpDate", "surgeryServiceId", "surgeryNotes"
     };
     private static final String[] PRESCRIPTION_FIELDS = {
         "odSph", "odCyl", "odAxis", "odAdd", "osSph", "osCyl", "osAxis", "osAdd",
         "pd", "lensType", "glassesNotes", "doctorNotes", "followUpDate"
     };
     private static final String[] MEDICINE_FIELDS = {
-        "medicineName", "strength", "dosage", "frequency", "duration",
-        "quantity", "unit", "instructions"
+        "medicineName", "strength", "morning", "morningDose", "afternoon", "afternoonDose",
+        "evening", "eveningDose", "duration", "quantity", "unit", "instructions"
     };
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
     private final DoctorFormDAO formDAO = new DoctorFormDAO();
     private final MedicineDAO medicineDAO = new MedicineDAO();
+    private final CatalogDAO catalogDAO = new CatalogDAO();
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -88,31 +90,44 @@ public class DoctorFormSaveServlet extends HttpServlet {
                 return;
             }
             boolean prescription = request.getServletPath().contains("/prescription/");
+            boolean referSurgery = !prescription && "refer".equals(request.getParameter("submitAction"));
             Map<String, String> values = values(request,
                     prescription ? PRESCRIPTION_FIELDS : EXAM_FIELDS);
             List<Map<String, String>> medicines = prescription ? medicineRows(request) : new ArrayList<>();
             boolean includeMedication = prescription && "true".equals(request.getParameter("includeMedication"));
             boolean includeGlasses = prescription && "true".equals(request.getParameter("includeGlasses"));
             List<Medicine> medicineCatalog = prescription ? medicineDAO.listPrescribable() : List.of();
+            List<CatalogService> surgeryServices = prescription ? List.of() : catalogDAO.listSurgeryServices();
             List<String> errors = prescription
                     ? DoctorFormValidator.prescription(values, medicines, includeMedication, includeGlasses)
                     : DoctorFormValidator.examination(values);
-            if (includeMedication) {
-                Set<String> availableNames = new HashSet<>();
-                for (Medicine item : medicineCatalog) availableNames.add(item.getName());
-                if (availableNames.isEmpty()) errors.add("Danh mục thuốc chưa có dữ liệu.");
-                for (int i = 0; i < medicines.size(); i++) {
-                    String name = medicines.get(i).getOrDefault("medicineName", "");
-                    if (!name.isBlank() && !availableNames.contains(name)) {
-                        errors.add("Thuốc " + (i + 1) + ": chọn tên thuốc trong danh mục.");
-                    }
+            Integer surgeryServiceId = null;
+            if (referSurgery) {
+                try {
+                    surgeryServiceId = Integer.valueOf(values.get("surgeryServiceId"));
+                } catch (RuntimeException invalidId) {
+                    errors.add("Chọn loại phẫu thuật.");
                 }
+                final Integer selectedServiceId = surgeryServiceId;
+                if (selectedServiceId != null && surgeryServices.stream().noneMatch(s -> s.getId() == selectedServiceId)) {
+                    errors.add("Loại phẫu thuật không hợp lệ.");
+                }
+                String notes = values.get("surgeryNotes");
+                if (notes == null || notes.isBlank()) errors.add("Nhập ghi chú chỉ định phẫu thuật.");
+                else if (notes.length() > 2000) errors.add("Ghi chú chỉ định tối đa 2000 ký tự.");
             }
             if (!errors.isEmpty()) {
+                if (!prescription) {
+                    Map<String, String> savedContext = formDAO.loadExamination(appointmentId);
+                    values.put("previousDiagnoses", savedContext.getOrDefault("previousDiagnoses", ""));
+                    values.put("surgeryStatus", savedContext.getOrDefault("surgeryStatus", ""));
+                }
                 if (medicines.isEmpty()) medicines.add(new HashMap<>());
                 response.setStatus(422);
                 request.setAttribute("appointment", appointment);
                 request.setAttribute("formValues", values);
+                request.setAttribute("surgeryServices", surgeryServices);
+                request.setAttribute("surgeryOpen", referSurgery);
                 request.setAttribute("medicineRows", medicines);
                 if (prescription) request.setAttribute("medicineCatalog", medicineCatalog);
                 request.setAttribute("includeMedication", includeMedication);
@@ -125,12 +140,21 @@ public class DoctorFormSaveServlet extends HttpServlet {
                 return;
             }
             if (prescription) {
+                for (Map<String, String> medicine : medicines) {
+                    String name = medicine.getOrDefault("medicineName", "");
+                    boolean inCatalog = medicineCatalog.stream()
+                            .anyMatch(item -> item.getName().equalsIgnoreCase(name));
+                    medicine.put("customMedicine", String.valueOf(!inCatalog));
+                }
                 formDAO.savePrescription(appointmentId, doctor.getActorId(),
                         values, medicines, includeMedication, includeGlasses);
                 session.setAttribute("doctorFormMessage", "Đã lưu đơn thuốc/kính.");
             } else {
-                formDAO.saveExamination(appointmentId, doctor.getActorId(), values);
-                session.setAttribute("doctorFormMessage", "Đã lưu kết quả khám.");
+                formDAO.saveExamination(appointmentId, doctor.getActorId(), values,
+                        referSurgery ? surgeryServiceId : null, values.get("surgeryNotes"));
+                session.setAttribute("doctorFormMessage", referSurgery
+                        ? "Đã lưu phiếu khám và gửi chỉ định phẫu thuật vào hàng đợi bác sĩ thủ thuật."
+                        : "Đã lưu kết quả khám.");
             }
             String formPath = prescription ? "/doctor/prescription" : "/doctor/examination";
             response.sendRedirect(request.getContextPath() + formPath + "?id=" + appointmentId);

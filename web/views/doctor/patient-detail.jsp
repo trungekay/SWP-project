@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css">
     <jsp:include page="/views/admin/layout/admin-css.jsp" />
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-patient-detail.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-patient-detail.css?v=3">
 </head>
 <body>
     <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
@@ -48,13 +48,13 @@
                             <h1>Chi tiết bệnh nhân</h1>
                             <p>Xem thông tin người bệnh, ca hẹn hôm nay và những lần khám trước.</p>
                         </div>
-                        <c:if test="${appointment.status eq 'In_Progress'}">
+                        <c:if test="${appointment.status eq 'In_Progress' || appointment.status eq 'Completed'}">
                             <div class="doctor-detail-desktop-actions">
                             <c:choose>
                                 <c:when test="${not empty examinationUrl}">
                                     <a class="doctor-detail-button doctor-detail-button-primary doctor-detail-desktop-action"
                                        href="<c:out value='${examinationUrl}' />">
-                                        <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i> Mở phiếu khám
+                                        <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i> ${appointment.status eq 'Completed' ? 'Xem phiếu khám' : 'Mở phiếu khám'}
                                     </a>
                                 </c:when>
                                 <c:otherwise>
@@ -170,6 +170,22 @@
                         </section>
                     </div>
 
+                    <section class="doctor-detail-card doctor-detail-staff-notes" aria-labelledby="staff-notes-heading">
+                        <div class="doctor-detail-card-heading">
+                            <span class="doctor-detail-card-icon teal"><i class="bi bi-journal-medical" aria-hidden="true"></i></span>
+                            <div>
+                                <h2 id="staff-notes-heading">Ghi chú từ nhân viên tiếp nhận</h2>
+                                <p>Triệu chứng và thông tin staff đã ghi cho ca khám này</p>
+                            </div>
+                        </div>
+                        <c:choose>
+                            <c:when test="${not empty appointment.medicalNotes}">
+                                <p class="doctor-detail-staff-notes-content"><c:out value="${appointment.medicalNotes}" /></p>
+                            </c:when>
+                            <c:otherwise><p class="doctor-detail-muted">Chưa có ghi chú từ nhân viên tiếp nhận.</p></c:otherwise>
+                        </c:choose>
+                    </section>
+
                     <section class="doctor-detail-card doctor-detail-history" aria-labelledby="history-heading">
                         <div class="doctor-detail-card-heading doctor-detail-history-heading">
                             <span class="doctor-detail-card-icon violet"><i class="bi bi-clock-history" aria-hidden="true"></i></span>
@@ -202,6 +218,7 @@
                                             </div>
                                             <h3><c:out value="${record.clinicalDiagnosis}" default="Chưa có chẩn đoán" /></h3>
                                             <p class="doctor-detail-history-doctor"><i class="bi bi-person-badge" aria-hidden="true"></i> BS. <c:out value="${record.doctorName}" default="Chưa cập nhật" /></p>
+                                            <a class="doctor-detail-history-link" href="${pageContext.request.contextPath}/profile/medical-record?id=${record.recordId}"><i class="bi bi-file-earmark-medical" aria-hidden="true"></i> Chi tiết lần khám</a>
                                             <c:if test="${not empty record.examinationResult or not empty record.conclusion}">
                                                 <details class="doctor-detail-history-more">
                                                     <summary>Xem kết quả khám <i class="bi bi-chevron-down" aria-hidden="true"></i></summary>
@@ -222,13 +239,13 @@
                         </c:choose>
                     </section>
 
-                    <c:if test="${appointment.status eq 'In_Progress'}">
+                    <c:if test="${appointment.status eq 'In_Progress' || appointment.status eq 'Completed'}">
                         <div class="doctor-detail-mobile-action">
                             <c:choose>
                                 <c:when test="${not empty examinationUrl}">
                                     <a class="doctor-detail-button doctor-detail-button-primary"
                                        href="<c:out value='${examinationUrl}' />">
-                                        <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i> Mở phiếu khám
+                                        <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i> ${appointment.status eq 'Completed' ? 'Xem phiếu khám' : 'Mở phiếu khám'}
                                     </a>
                                 </c:when>
                                 <c:otherwise>

@@ -1,6 +1,7 @@
 package com.visioncare.controller;
 
 import com.visioncare.dao.AppointmentDAO;
+import com.visioncare.dao.CatalogDAO;
 import com.visioncare.dao.DoctorFormDAO;
 import com.visioncare.dao.MedicineDAO;
 import com.visioncare.model.Appointment;
@@ -28,6 +29,7 @@ public class DoctorFormsServlet extends HttpServlet {
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
     private final DoctorFormDAO formDAO = new DoctorFormDAO();
     private final MedicineDAO medicineDAO = new MedicineDAO();
+    private final CatalogDAO catalogDAO = new CatalogDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -54,14 +56,16 @@ public class DoctorFormsServlet extends HttpServlet {
 
         try {
             Appointment appointment = appointmentDAO.getAppointmentById(appointmentId);
+            boolean prescription = request.getServletPath().endsWith("/prescription");
             if (appointment == null || appointment.getDoctorId() != doctor.getActorId()
                     || appointment.getCheckinTime() == null || appointment.getCheckinTime().isBlank()
-                    || !"In_Progress".equals(appointment.getStatus())) {
+                    || !("In_Progress".equals(appointment.getStatus())
+                         || (!prescription && "Completed".equals(appointment.getStatus())))) {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
                 return;
             }
 
-            boolean prescription = request.getServletPath().endsWith("/prescription");
+            request.setAttribute("readOnly", "Completed".equals(appointment.getStatus()));
             Map<String, String> formValues;
             List<Map<String, String>> medicineRows = new ArrayList<>();
             boolean includeMedication = true;
@@ -78,6 +82,7 @@ public class DoctorFormsServlet extends HttpServlet {
                 }
             } else {
                 formValues = formDAO.loadExamination(appointmentId);
+                request.setAttribute("surgeryServices", catalogDAO.listSurgeryServices());
             }
             if (medicineRows.isEmpty()) medicineRows.add(new HashMap<>());
             String csrf = (String) session.getAttribute("doctorFormCsrf");

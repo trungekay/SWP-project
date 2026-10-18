@@ -42,19 +42,115 @@ public class DoctorFormDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, appointmentId);
             try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) return values;
-                put(values, "clinicalDiagnosis", rs.getString("Clinical_Diagnosis"));
-                put(values, "examinationResult", rs.getString("examination_result"));
-                put(values, "conclusion", rs.getString("conclusion"));
-                for (int i = 0; i < EXAM_KEYS.length; i++) {
-                    put(values, EXAM_KEYS[i], rs.getString(EXAM_COLUMNS[i]));
+                if (rs.next()) {
+                    put(values, "clinicalDiagnosis", rs.getString("Clinical_Diagnosis"));
+                    put(values, "examinationResult", rs.getString("examination_result"));
+                    put(values, "conclusion", rs.getString("conclusion"));
+                    for (int i = 0; i < EXAM_KEYS.length; i++) {
+                        put(values, EXAM_KEYS[i], rs.getString(EXAM_COLUMNS[i]));
+                    }
+                }
+            }
+        }
+        if (values.getOrDefault("chiefComplaint", "").isBlank()) {
+            String staffNote = values.get("clinicalDiagnosis");
+            if (staffNote != null && !staffNote.isBlank()
+                    && values.getOrDefault("examinationResult", "").isBlank()) {
+                values.put("chiefComplaint", staffNote);
+                values.put("chiefComplaintSource", "Lấy từ ghi chú tiếp nhận");
+            }
+        }
+        if (values.getOrDefault("medicalHistory", "").isBlank()) {
+            String history = latestPatientHistory(appointmentId);
+            if (history != null) {
+                values.put("medicalHistory", history);
+                values.put("medicalHistorySource", "Lấy từ lần khám đã hoàn tất gần nhất");
+            }
+        }
+        values.put("previousDiagnoses", previousDiagnoses(appointmentId));
+        String referralSql = "SELECT TOP 1 po.Service_ID, po.Referral_Notes, po.Status, " +
+                "po.Result_Text, po.Result_Conclusion, po.Completed_At, " +
+                "sc.Service_Name, specialist.Full_Name AS Specialist_Name " +
+                "FROM Medical_Record m JOIN Procedure_Order po ON po.Record_ID = m.Record_ID " +
+                "JOIN Service_Catalog sc ON sc.Service_ID = po.Service_ID " +
+                "LEFT JOIN Employee_Profile specialist ON specialist.Employee_ID = po.Specialist_Employee_ID " +
+                "WHERE m.Appointment_ID = ? AND po.Referral_Notes IS NOT NULL ORDER BY po.Order_ID DESC";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(referralSql)) {
+            ps.setInt(1, appointmentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    values.put("surgeryServiceId", String.valueOf(rs.getInt("Service_ID")));
+                    put(values, "surgeryNotes", rs.getString("Referral_Notes"));
+                    put(values, "surgeryStatus", rs.getString("Status"));
+                    put(values, "surgeryServiceName", rs.getString("Service_Name"));
+                    if ("Completed".equalsIgnoreCase(rs.getString("Status"))) {
+                        String result = rs.getString("Result_Text");
+                        if (result != null) {
+                            put(values, "surgeryResult", result.replaceFirst("(?s)^\\[OD_UCVA:.*?\\]\\s*\\[OS_UCVA:.*?\\]\\s*\\[PD:.*?\\]\\s*", "").trim());
+                        }
+                        put(values, "surgeryConclusion", rs.getString("Result_Conclusion"));
+                        put(values, "surgerySpecialist", rs.getString("Specialist_Name"));
+                        if (rs.getTimestamp("Completed_At") != null) {
+                            put(values, "surgeryCompletedAt", rs.getTimestamp("Completed_At").toString().replace('T', ' '));
+                        }
+                    }
                 }
             }
         }
         return values;
     }
 
-    public void saveExamination(int appointmentId, int doctorId, Map<String, String> values) throws Exception {
+    private String latestPatientHistory(int appointmentId) throws Exception {
+        String sql = "SELECT TOP 1 e.Medical_History FROM Appointment currentAppt " +
+                "JOIN Work_Schedule currentWs ON currentWs.Schedule_ID = currentAppt.Schedule_ID " +
+                "JOIN Appointment previousAppt ON previousAppt.Patient_ID = currentAppt.Patient_ID " +
+                "JOIN Work_Schedule previousWs ON previousWs.Schedule_ID = previousAppt.Schedule_ID " +
+                "JOIN Medical_Record m ON m.Appointment_ID = previousAppt.Appointment_ID " +
+                "JOIN Examination_Detail e ON e.Record_ID = m.Record_ID " +
+                "WHERE currentAppt.Appointment_ID = ? AND previousAppt.Appointment_ID <> ? " +
+                "AND (previousWs.Work_Date < currentWs.Work_Date OR " +
+                "(previousWs.Work_Date = currentWs.Work_Date AND previousWs.Start_Time < currentWs.Start_Time)) " +
+                "AND previousAppt.Status = 'Completed' " +
+                "AND NULLIF(LTRIM(RTRIM(e.Medical_History)), '') IS NOT NULL " +
+                "ORDER BY previousWs.Work_Date DESC, previousWs.Start_Time DESC";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, appointmentId);
+            ps.setInt(2, appointmentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getString(1) : null;
+            }
+        }
+    }
+
+    private String previousDiagnoses(int appointmentId) throws Exception {
+        String sql = "SELECT TOP 5 CONVERT(VARCHAR(10), previousWs.Work_Date, 103) AS VisitDate, " +
+                "m.Clinical_Diagnosis FROM Appointment currentAppt " +
+                "JOIN Work_Schedule currentWs ON currentWs.Schedule_ID = currentAppt.Schedule_ID " +
+                "JOIN Appointment previousAppt ON previousAppt.Patient_ID = currentAppt.Patient_ID " +
+                "JOIN Work_Schedule previousWs ON previousWs.Schedule_ID = previousAppt.Schedule_ID " +
+                "JOIN Medical_Record m ON m.Appointment_ID = previousAppt.Appointment_ID " +
+                "WHERE currentAppt.Appointment_ID = ? AND previousAppt.Appointment_ID <> ? " +
+                "AND (previousWs.Work_Date < currentWs.Work_Date OR " +
+                "(previousWs.Work_Date = currentWs.Work_Date AND previousWs.Start_Time < currentWs.Start_Time)) " +
+                "AND previousAppt.Status = 'Completed' " +
+                "AND NULLIF(LTRIM(RTRIM(m.Clinical_Diagnosis)), '') IS NOT NULL " +
+                "ORDER BY previousWs.Work_Date DESC, previousWs.Start_Time DESC, m.Record_ID DESC";
+        List<String> lines = new ArrayList<>();
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, appointmentId);
+            ps.setInt(2, appointmentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) lines.add(rs.getString("VisitDate") + ": " + rs.getString("Clinical_Diagnosis"));
+            }
+        }
+        return String.join("\n", lines);
+    }
+
+    public void saveExamination(int appointmentId, int doctorId, Map<String, String> values,
+                                Integer surgeryServiceId, String surgeryNotes) throws Exception {
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
             conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
@@ -94,11 +190,57 @@ public class DoctorFormDAO {
                         ps.executeUpdate();
                     }
                 }
+                if (surgeryServiceId != null) {
+                    saveSurgeryReferral(conn, recordId, surgeryServiceId, surgeryNotes);
+                }
                 conn.commit();
             } catch (Exception error) {
                 conn.rollback();
                 throw error;
             }
+        }
+    }
+
+    private void saveSurgeryReferral(Connection conn, int recordId, int serviceId, String notes) throws Exception {
+        BigDecimal price;
+        String serviceSql = "SELECT Price FROM Service_Catalog WHERE Service_ID = ? " +
+                "AND (Service_Code IN ('LS-03', 'TT-05') OR Service_Code LIKE 'PT-%')";
+        try (PreparedStatement ps = conn.prepareStatement(serviceSql)) {
+            ps.setInt(1, serviceId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) throw new IllegalArgumentException("Dịch vụ phẫu thuật không hợp lệ.");
+                price = rs.getBigDecimal(1);
+            }
+        }
+        String existingSql = "SELECT TOP 1 Order_ID, Status FROM Procedure_Order WITH (UPDLOCK, HOLDLOCK) " +
+                "WHERE Record_ID = ? AND Referral_Notes IS NOT NULL ORDER BY Order_ID DESC";
+        try (PreparedStatement ps = conn.prepareStatement(existingSql)) {
+            ps.setInt(1, recordId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    if (!"Pending".equals(rs.getString("Status"))) {
+                        throw new IllegalStateException("Chỉ định đã được bác sĩ thủ thuật tiếp nhận; không thể sửa từ phiếu khám.");
+                    }
+                    try (PreparedStatement update = conn.prepareStatement(
+                            "UPDATE Procedure_Order SET Service_ID = ?, Actual_Price = ?, Referral_Notes = ? WHERE Order_ID = ?")) {
+                        update.setInt(1, serviceId);
+                        update.setBigDecimal(2, price);
+                        update.setNString(3, notes);
+                        update.setInt(4, rs.getInt("Order_ID"));
+                        update.executeUpdate();
+                    }
+                    return;
+                }
+            }
+        }
+        try (PreparedStatement insert = conn.prepareStatement(
+                "INSERT INTO Procedure_Order (Record_ID, Service_ID, Specialist_Employee_ID, Status, Actual_Price, Referral_Notes) " +
+                "VALUES (?, ?, NULL, 'Pending', ?, ?)")) {
+            insert.setInt(1, recordId);
+            insert.setInt(2, serviceId);
+            insert.setBigDecimal(3, price);
+            insert.setNString(4, notes);
+            insert.executeUpdate();
         }
     }
 
@@ -127,7 +269,8 @@ public class DoctorFormDAO {
             if (prescriptionId == 0) return new PrescriptionSnapshot(values, medicines, false, false);
             try (PreparedStatement ps = conn.prepareStatement(
                     "SELECT Medicine_Name, Strength, Dosage, Frequency, Duration, Quantity, Unit, " +
-                    "Additional_Instruction, Dosage_Instruction FROM Prescription_Detail " +
+                    "Additional_Instruction, Dosage_Instruction, Morning_Dose, Afternoon_Dose, Evening_Dose " +
+                    "FROM Prescription_Detail " +
                     "WHERE Prescription_ID = ? ORDER BY Detail_ID")) {
                 ps.setInt(1, prescriptionId);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -135,9 +278,22 @@ public class DoctorFormDAO {
                         Map<String, String> row = new HashMap<>();
                         put(row, "medicineName", rs.getString("Medicine_Name"));
                         put(row, "strength", rs.getString("Strength"));
-                        String dosage = rs.getString("Dosage");
-                        put(row, "dosage", dosage == null ? rs.getString("Dosage_Instruction") : dosage);
-                        put(row, "frequency", rs.getString("Frequency"));
+                        for (String[] session : new String[][]{{"morning", "Morning_Dose"},
+                                {"afternoon", "Afternoon_Dose"}, {"evening", "Evening_Dose"}}) {
+                            String dose = rs.getString(session[1]);
+                            put(row, session[0], dose == null ? "" : "true");
+                            put(row, session[0] + "Dose", dose);
+                        }
+                        if (row.get("morning").isBlank() && row.get("afternoon").isBlank()
+                                && row.get("evening").isBlank()) {
+                            String legacy = rs.getString("Dosage_Instruction");
+                            if (legacy == null || legacy.isBlank()) {
+                                legacy = String.join("; ", java.util.stream.Stream.of(
+                                        rs.getString("Dosage"), rs.getString("Frequency"))
+                                        .filter(part -> part != null && !part.isBlank()).toList());
+                            }
+                            put(row, "legacySchedule", legacy);
+                        }
                         put(row, "duration", rs.getString("Duration"));
                         put(row, "quantity", rs.getString("Quantity"));
                         put(row, "unit", rs.getString("Unit"));
@@ -215,26 +371,38 @@ public class DoctorFormDAO {
                 if (includeMedication) {
                     String sql = "INSERT INTO Prescription_Detail " +
                             "(Prescription_ID, Medicine_Name, Quantity, Dosage_Instruction, Strength, " +
-                            "Dosage, Frequency, Duration, Unit, Additional_Instruction) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                            "Dosage, Frequency, Duration, Unit, Additional_Instruction, " +
+                            "Morning_Dose, Afternoon_Dose, Evening_Dose, Is_Custom_Medicine) " +
+                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                     try (PreparedStatement ps = conn.prepareStatement(sql)) {
                         for (Map<String, String> row : medicines) {
+                            List<String> sessions = new ArrayList<>();
                             List<String> parts = new ArrayList<>();
-                            for (String key : new String[]{"dosage", "frequency", "duration", "instructions"}) {
-                                String part = row.get(key);
-                                if (part != null && !part.isBlank()) parts.add(part);
+                            for (String[] slot : new String[][]{{"morning", "morningDose", "Sáng"},
+                                    {"afternoon", "afternoonDose", "Chiều"}, {"evening", "eveningDose", "Tối"}}) {
+                                if ("true".equals(row.get(slot[0]))) {
+                                    sessions.add(slot[2]);
+                                    parts.add(slot[2] + ": " + row.get(slot[1]));
+                                }
                             }
-                            String instruction = String.join("; ", parts);
+                            String duration = blankToNull(row.get("duration"));
+                            if (duration != null) parts.add("Thời gian: " + duration);
+                            String extra = blankToNull(row.get("instructions"));
+                            if (extra != null) parts.add(extra);
                             ps.setInt(1, prescriptionId);
                             ps.setNString(2, row.get("medicineName"));
                             ps.setInt(3, Integer.parseInt(row.get("quantity")));
-                            ps.setNString(4, instruction);
+                            ps.setNString(4, String.join("; ", parts));
                             ps.setNString(5, blankToNull(row.get("strength")));
-                            ps.setNString(6, row.get("dosage"));
-                            ps.setNString(7, row.get("frequency"));
-                            ps.setNString(8, blankToNull(row.get("duration")));
+                            ps.setNull(6, Types.NVARCHAR);
+                            ps.setNString(7, String.join(", ", sessions));
+                            ps.setNString(8, duration);
                             ps.setNString(9, row.get("unit"));
-                            ps.setNString(10, blankToNull(row.get("instructions")));
+                            ps.setNString(10, extra);
+                            ps.setNString(11, "true".equals(row.get("morning")) ? row.get("morningDose") : null);
+                            ps.setNString(12, "true".equals(row.get("afternoon")) ? row.get("afternoonDose") : null);
+                            ps.setNString(13, "true".equals(row.get("evening")) ? row.get("eveningDose") : null);
+                            ps.setBoolean(14, "true".equals(row.get("customMedicine")));
                             ps.addBatch();
                         }
                         ps.executeBatch();

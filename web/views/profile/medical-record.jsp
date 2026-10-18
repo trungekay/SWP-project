@@ -183,9 +183,10 @@
                                     <i class="bi bi-clock me-1"></i>Ngày khám: ${record.createdDate}
                                 </div>
                                 <div class="mt-2">
-                                    <span class="badge-soft-success">
-                                        <i class="bi bi-check-circle-fill"></i> Hoàn thành khám
-                                    </span>
+                                    <c:choose>
+                                        <c:when test="${record.appointmentStatus eq 'Completed'}"><span class="badge-soft-success"><i class="bi bi-check-circle-fill"></i> Hoàn thành khám</span></c:when>
+                                        <c:otherwise><span class="badge-soft-info"><i class="bi bi-clock-history"></i> <c:out value="${record.appointmentStatus}" /></span></c:otherwise>
+                                    </c:choose>
                                 </div>
                             </div>
                         </div>
@@ -266,22 +267,34 @@
                                 <i class="bi bi-journal-check"></i> Kết quả khám & Chẩn đoán lâm sàng
                             </div>
                             <div class="p-3 bg-light rounded-3 border">
-                                <div class="mb-3">
-                                    <span class="text-muted small fw-medium">Chẩn đoán của Bác sĩ:</span>
-                                    <div class="fw-bold text-dark fs-6 mt-1 p-2 rounded bg-white border border-light-subtle">
-                                        <i class="bi bi-activity text-teal me-2"></i>${record.clinicalDiagnosis}
-                                    </div>
-                                </div>
+                                <c:if test="${not empty record.chiefComplaint}">
+                                    <div class="mb-3"><span class="text-muted small fw-medium">Triệu chứng chính:</span><div class="text-dark small mt-1 p-2 rounded bg-white border border-light-subtle" style="white-space:pre-wrap"><c:out value="${record.chiefComplaint}" /></div></div>
+                                </c:if>
+                                <c:if test="${not empty record.medicalHistory}">
+                                    <div class="mb-3"><span class="text-muted small fw-medium">Tiền sử mắt và bệnh sử liên quan:</span><div class="text-dark small mt-1 p-2 rounded bg-white border border-light-subtle" style="white-space:pre-wrap"><c:out value="${record.medicalHistory}" /></div></div>
+                                </c:if>
+                                <c:if test="${not empty record.odUncorrected or not empty record.osUncorrected or not empty record.odIop or not empty record.osIop}">
+                                    <div class="mb-3"><span class="text-muted small fw-medium">Thị lực và nhãn áp:</span><div class="text-dark small mt-1 p-2 rounded bg-white border border-light-subtle">
+                                        <div>OD: không kính <c:out value="${record.odUncorrected}" default="—" />, có kính <c:out value="${record.odCorrected}" default="—" />, nhãn áp <c:out value="${record.odIop}" default="—" /> mmHg</div>
+                                        <div>OS: không kính <c:out value="${record.osUncorrected}" default="—" />, có kính <c:out value="${record.osCorrected}" default="—" />, nhãn áp <c:out value="${record.osIop}" default="—" /> mmHg</div>
+                                    </div></div>
+                                </c:if>
+                                <c:if test="${not empty record.anteriorFindings}"><div class="mb-3"><span class="text-muted small fw-medium">Bán phần trước:</span><div class="text-dark small mt-1 p-2 rounded bg-white border border-light-subtle" style="white-space:pre-wrap"><c:out value="${record.anteriorFindings}" /></div></div></c:if>
+                                <c:if test="${not empty record.posteriorFindings}"><div class="mb-3"><span class="text-muted small fw-medium">Đáy mắt / bán phần sau:</span><div class="text-dark small mt-1 p-2 rounded bg-white border border-light-subtle" style="white-space:pre-wrap"><c:out value="${record.posteriorFindings}" /></div></div></c:if>
                                 <div class="mb-3">
                                     <span class="text-muted small fw-medium">Kết quả kiểm tra mắt & thị lực:</span>
                                     <div class="text-dark small mt-1 p-2 rounded bg-white border border-light-subtle" style="line-height: 1.6;">
-                                        ${record.examinationResult}
+                                        <c:out value="${record.examinationResult}" />
                                     </div>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted small fw-medium">Chẩn đoán của Bác sĩ:</span>
+                                    <div class="fw-bold text-dark fs-6 mt-1 p-2 rounded bg-white border border-light-subtle"><i class="bi bi-activity text-teal me-2"></i><c:out value="${record.clinicalDiagnosis}" /></div>
                                 </div>
                                 <div class="mb-0">
                                     <span class="text-muted small fw-medium">Kết luận chuyên môn & Hướng xử trí:</span>
                                     <div class="text-dark small mt-1 p-2 rounded bg-white border border-light-subtle" style="line-height: 1.6;">
-                                        ${record.conclusion}
+                                        <c:out value="${record.conclusion}" />
                                     </div>
                                 </div>
                             </div>
@@ -308,7 +321,7 @@
                                             <c:forEach var="proc" items="${record.procedures}">
                                                 <tr>
                                                     <td class="text-center">${proc.stt}</td>
-                                                    <td class="fw-semibold text-dark">${proc.serviceName}</td>
+                                                    <td class="fw-semibold text-dark"><c:out value="${proc.serviceName}" /><c:if test="${not empty proc.referralNotes}"><div class="small text-muted fw-normal mt-1" style="white-space:pre-wrap"><c:out value="${proc.referralNotes}" /></div></c:if></td>
                                                     <td><i class="bi bi-person me-1 text-muted"></i>${proc.specialistName}</td>
                                                     <td class="text-end text-muted">${proc.priceFmt}</td>
                                                     <td class="text-center">
@@ -375,7 +388,7 @@
                                     <i class="bi bi-chat-heart me-2"></i>Lời dặn của Bác sĩ & Hướng dẫn tái khám:
                                 </div>
                                 <div class="text-dark small" style="line-height: 1.6;">
-                                    ${record.doctorNotes}
+                                    <c:out value="${record.doctorNotes}" />
                                 </div>
                             </div>
                         </div>

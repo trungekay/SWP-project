@@ -11,8 +11,8 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css">
     <jsp:include page="/views/admin/layout/admin-css.jsp" />
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css">
-    <script defer src="${pageContext.request.contextPath}/assets/js/doctor-forms.js"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=8">
+    <script defer charset="UTF-8" src="${pageContext.request.contextPath}/assets/js/doctor-forms.js?v=7"></script>
 </head>
 <body>
 <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
@@ -20,7 +20,7 @@
 </jsp:include>
 <main class="main-wrapper">
     <jsp:include page="/views/employee/layout/employee-header.jsp" />
-    <div class="page-content doctor-form-page" data-doctor-form="examination">
+    <div class="page-content doctor-form-page" data-doctor-form="examination" data-readonly="${readOnly}" data-surgery-initial="${surgeryOpen || not empty formValues.surgeryNotes}" data-surgery-can-refer="${empty formValues.surgeryStatus || formValues.surgeryStatus eq 'Pending'}">
         <nav class="doctor-form-breadcrumb" aria-label="Điều hướng">
             <a href="${pageContext.request.contextPath}/doctor/waiting-list">Hàng đợi khám bệnh</a>
             <i class="bi bi-chevron-right" aria-hidden="true"></i>
@@ -35,7 +35,7 @@
                 <h1>Phiếu khám lâm sàng</h1>
                 <p>Ghi nhận thị lực, dấu hiệu nhãn khoa và kết luận của ca khám.</p>
             </div>
-            <span class="doctor-form-state"><i class="bi bi-pencil-square" aria-hidden="true"></i> Đang nhập liệu</span>
+            <span class="doctor-form-state"><i class="bi ${readOnly ? 'bi-lock' : 'bi-pencil-square'}" aria-hidden="true"></i> ${readOnly ? 'Chỉ xem' : 'Đang nhập liệu'}</span>
         </header>
 
         <section class="doctor-form-patient" aria-label="Thông tin bệnh nhân">
@@ -74,11 +74,16 @@
                     <div class="doctor-form-fields">
                         <label class="doctor-form-field doctor-form-span"><span>Triệu chứng chính</span>
                             <textarea name="chiefComplaint" rows="3" maxlength="1000" placeholder="Ví dụ: Nhìn mờ mắt phải trong 2 tuần, tăng khi đọc gần..."><c:out value="${formValues.chiefComplaint}" /></textarea>
+                            <c:if test="${not empty formValues.chiefComplaintSource}"><small class="doctor-form-hint"><c:out value="${formValues.chiefComplaintSource}" />. Hãy kiểm tra và cập nhật nếu cần.</small></c:if>
                         </label>
                         <label class="doctor-form-field doctor-form-span"><span>Tiền sử mắt và bệnh sử liên quan</span>
                             <textarea name="medicalHistory" rows="2" maxlength="1000" placeholder="Bệnh mắt trước đây, bệnh nền, dị ứng, thuốc đang dùng..."><c:out value="${formValues.medicalHistory}" /></textarea>
+                            <c:if test="${not empty formValues.medicalHistorySource}"><small class="doctor-form-hint"><c:out value="${formValues.medicalHistorySource}" />. Hãy kiểm tra và cập nhật nếu cần.</small></c:if>
                         </label>
                     </div>
+                    <c:if test="${not empty formValues.previousDiagnoses}">
+                        <div class="doctor-form-prior-diagnoses"><strong>Chẩn đoán từ các lần khám trước</strong><p><c:out value="${formValues.previousDiagnoses}" /></p></div>
+                    </c:if>
                 </section>
 
                 <section class="doctor-form-card" aria-labelledby="exam-vision-heading">
@@ -110,6 +115,34 @@
                     </div>
                 </section>
 
+                <section class="doctor-form-card" aria-labelledby="exam-result-heading">
+                    <div class="doctor-form-card-heading">
+                        <span class="doctor-form-icon blue"><i class="bi bi-clipboard2-data" aria-hidden="true"></i></span>
+                        <div><h2 id="exam-result-heading">Kết quả khám</h2><p>Tóm tắt kết quả trước khi đưa ra chẩn đoán</p></div>
+                    </div>
+                    <div class="doctor-form-fields">
+                        <label class="doctor-form-field doctor-form-span"><span>Kết quả khám <em>*</em></span><textarea name="examinationResult" rows="4" maxlength="4000" required placeholder="Tóm tắt các kết quả khám và nhận định chính"><c:out value="${formValues.examinationResult}" /></textarea></label>
+                    </div>
+                </section>
+
+                <c:if test="${formValues.surgeryStatus eq 'Completed'}">
+                    <section class="doctor-form-card doctor-form-returned-result" aria-labelledby="surgery-result-heading">
+                        <div class="doctor-form-card-heading">
+                            <span class="doctor-form-icon green"><i class="bi bi-clipboard2-pulse" aria-hidden="true"></i></span>
+                            <div><h2 id="surgery-result-heading">Kết quả phẫu thuật / thủ thuật</h2><p>Kết quả bác sĩ thủ thuật đã gửi về phiếu khám này</p></div>
+                        </div>
+                        <div class="doctor-form-returned-meta">
+                            <span><i class="bi bi-activity" aria-hidden="true"></i> <c:out value="${formValues.surgeryServiceName}" /></span>
+                            <c:if test="${not empty formValues.surgerySpecialist}"><span><i class="bi bi-person-badge" aria-hidden="true"></i> <c:out value="${formValues.surgerySpecialist}" /></span></c:if>
+                            <c:if test="${not empty formValues.surgeryCompletedAt}"><span><i class="bi bi-clock" aria-hidden="true"></i> <c:out value="${formValues.surgeryCompletedAt}" /></span></c:if>
+                        </div>
+                        <div class="doctor-form-returned-body">
+                            <div><strong>Kết quả thực hiện</strong><p><c:out value="${not empty formValues.surgeryResult ? formValues.surgeryResult : 'Chưa ghi nhận kết quả chi tiết.'}" /></p></div>
+                            <div><strong>Kết luận của bác sĩ thủ thuật</strong><p><c:out value="${not empty formValues.surgeryConclusion ? formValues.surgeryConclusion : 'Chưa ghi nhận kết luận.'}" /></p></div>
+                        </div>
+                    </section>
+                </c:if>
+
                 <section class="doctor-form-card" aria-labelledby="exam-conclusion-heading">
                     <div class="doctor-form-card-heading">
                         <span class="doctor-form-icon violet"><i class="bi bi-journal-check" aria-hidden="true"></i></span>
@@ -117,16 +150,47 @@
                     </div>
                     <div class="doctor-form-fields">
                         <label class="doctor-form-field doctor-form-span"><span>Chẩn đoán lâm sàng <em>*</em></span><input name="clinicalDiagnosis" type="text" maxlength="255" required placeholder="Nhập chẩn đoán lâm sàng" value="<c:out value='${formValues.clinicalDiagnosis}' />"></label>
-                        <label class="doctor-form-field doctor-form-span"><span>Kết quả khám <em>*</em></span><textarea name="examinationResult" rows="4" maxlength="4000" required placeholder="Tóm tắt các kết quả khám và nhận định chính"><c:out value="${formValues.examinationResult}" /></textarea></label>
                         <label class="doctor-form-field doctor-form-span"><span>Kết luận và hướng xử trí <em>*</em></span><textarea name="conclusion" rows="3" maxlength="4000" required placeholder="Kết luận, chỉ định bổ sung hoặc hướng điều trị"><c:out value="${formValues.conclusion}" /></textarea></label>
                         <label class="doctor-form-field"><span>Ngày tái khám dự kiến</span><input name="followUpDate" type="date" value="<c:out value='${formValues.followUpDate}' />"></label>
+                    </div>
+                    <div class="doctor-form-surgery">
+                        <button class="doctor-form-button doctor-form-surgery-toggle" type="button" data-surgery-toggle aria-expanded="false" aria-controls="surgery-referral-fields">
+                            <i class="bi bi-clipboard2-plus" aria-hidden="true"></i> Chỉ định phẫu thuật
+                        </button>
+                        <c:if test="${not empty formValues.surgeryStatus}">
+                            <c:choose>
+                                <c:when test="${formValues.surgeryStatus eq 'Pending'}"><c:set var="referralStatusLabel" value="Chờ bác sĩ thủ thuật tiếp nhận" /><c:set var="referralStatusTone" value="pending" /></c:when>
+                                <c:when test="${formValues.surgeryStatus eq 'In_Progress'}"><c:set var="referralStatusLabel" value="Đang thực hiện" /><c:set var="referralStatusTone" value="active" /></c:when>
+                                <c:when test="${formValues.surgeryStatus eq 'Completed'}"><c:set var="referralStatusLabel" value="Đã hoàn tất" /><c:set var="referralStatusTone" value="completed" /></c:when>
+                                <c:otherwise><c:set var="referralStatusLabel" value="Đã hủy" /><c:set var="referralStatusTone" value="cancelled" /></c:otherwise>
+                            </c:choose>
+                            <div class="doctor-form-referral-status ${referralStatusTone}" role="status">
+                                <span class="doctor-form-referral-status-icon"><i class="bi bi-clipboard2-check" aria-hidden="true"></i></span>
+                                <div><small>CHỈ ĐỊNH HIỆN TẠI</small><strong><c:out value="${referralStatusLabel}" /></strong><span>Phiếu khám đã được chuyển đến hàng đợi bác sĩ thủ thuật.</span></div>
+                            </div>
+                        </c:if>
+                        <div id="surgery-referral-fields" class="doctor-form-surgery-panel" data-surgery-panel hidden>
+                            <p><c:choose><c:when test="${empty formValues.surgeryStatus || formValues.surgeryStatus eq 'Pending'}">Phiếu khám và ghi chú sẽ được gửi vào hàng đợi bác sĩ thủ thuật khi lưu.</c:when><c:otherwise>Chỉ định đã được tiếp nhận. Thông tin bên dưới chỉ để xem.</c:otherwise></c:choose></p>
+                            <div class="doctor-form-fields">
+                                <label class="doctor-form-field doctor-form-span"><span>Loại phẫu thuật <em>*</em></span>
+                                    <select name="surgeryServiceId" data-surgery-required disabled>
+                                        <option value="">Chọn dịch vụ phẫu thuật</option>
+                                        <c:forEach var="service" items="${surgeryServices}">
+                                            <option value="${service.id}" ${formValues.surgeryServiceId eq service.id ? 'selected' : ''}><c:out value="${service.name}" /></option>
+                                        </c:forEach>
+                                    </select>
+                                </label>
+                                <label class="doctor-form-field doctor-form-span"><span>Ghi chú cho bác sĩ thủ thuật <em>*</em></span>
+                                    <textarea name="surgeryNotes" rows="3" maxlength="2000" data-surgery-required disabled placeholder="Lý do chỉ định, mắt cần can thiệp, lưu ý trước phẫu thuật..."><c:out value="${formValues.surgeryNotes}" /></textarea>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
                 <div class="doctor-form-actions">
                     <a class="doctor-form-button secondary" href="${pageContext.request.contextPath}/doctor/patient-detail?id=${appointment.id}">Quay lại hồ sơ</a>
-                    <button class="doctor-form-button secondary" type="button" data-preview-button><i class="bi bi-eye" aria-hidden="true"></i> Xem trước</button>
-                    <button class="doctor-form-button primary" type="submit"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Lưu phiếu khám</button>
+                    <c:if test="${not readOnly}"><button class="doctor-form-button primary" type="submit" name="submitAction" value="save" data-exam-submit data-label-save="Lưu phiếu khám" data-label-refer="Lưu và gửi chỉ định"><i class="bi bi-cloud-arrow-up" data-exam-submit-icon aria-hidden="true"></i><span data-exam-submit-label>Lưu phiếu khám</span></button></c:if>
                 </div>
             </form>
 
@@ -136,23 +200,13 @@
                     <ol class="doctor-form-steps">
                         <li class="current"><span>1</span><div><strong>Khám lâm sàng</strong><small>Nhập kết quả và kết luận</small></div></li>
                         <li><span>2</span><div><strong>Kê đơn</strong><small>Thuốc và kính nếu cần</small></div></li>
-                        <li><span>3</span><div><strong>Hoàn tất ca khám</strong><small>Cập nhật trạng thái hàng đợi</small></div></li>
                     </ol>
-                    <a class="doctor-form-aside-link" href="${pageContext.request.contextPath}/doctor/prescription?id=${appointment.id}">Sang phiếu kê đơn <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                    <c:if test="${not readOnly}"><a class="doctor-form-aside-link" href="${pageContext.request.contextPath}/doctor/prescription?id=${appointment.id}">Sang phiếu kê đơn <i class="bi bi-arrow-right" aria-hidden="true"></i></a></c:if>
                 </div>
                 <div class="doctor-form-aside-tip"><i class="bi bi-shield-check" aria-hidden="true"></i><p>Kiểm tra đúng bệnh nhân và mắt phải/trái trước khi hoàn tất nội dung y khoa.</p></div>
             </aside>
         </div>
     </div>
 </main>
-<div class="doctor-form-modal" data-preview-modal hidden>
-    <div class="doctor-form-modal-backdrop" data-close-preview></div>
-    <section class="doctor-form-modal-panel" role="dialog" aria-modal="true" aria-labelledby="preview-title">
-        <button type="button" class="doctor-form-modal-close" data-close-preview aria-label="Đóng xem trước"><i class="bi bi-x-lg"></i></button>
-        <span class="doctor-form-eyebrow">XEM TRƯỚC · CHƯA LƯU</span>
-        <h2 id="preview-title">Phiếu khám lâm sàng</h2>
-        <div data-preview-content></div>
-    </section>
-</div>
 </body>
 </html>

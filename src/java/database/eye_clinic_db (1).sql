@@ -154,6 +154,10 @@ CREATE TABLE Procedure_Order (
     Service_ID              INT NOT NULL,
     Actual_Price            DECIMAL(18,0) NOT NULL,
     Status                  NVARCHAR(50) NOT NULL DEFAULT (N'Pending'),
+    Referral_Notes          NVARCHAR(2000) NULL,
+    Result_Text             NVARCHAR(MAX) NULL,
+    Result_Conclusion       NVARCHAR(MAX) NULL,
+    Completed_At            DATETIME2 NULL,
     FOREIGN KEY (Specialist_Employee_ID) REFERENCES Employee_Profile(Employee_ID),
     FOREIGN KEY (Record_ID)              REFERENCES Medical_Record(Record_ID),
     FOREIGN KEY (Service_ID)             REFERENCES Service_Catalog(Service_ID),
@@ -174,6 +178,10 @@ CREATE TABLE Prescription_Detail (
     Quantity            INT NOT NULL,
     Dosage_Instruction  NVARCHAR(MAX) NULL,
     Medicine_Name       NVARCHAR(255) NOT NULL,
+    Morning_Dose        NVARCHAR(100) NULL,
+    Afternoon_Dose      NVARCHAR(100) NULL,
+    Evening_Dose        NVARCHAR(100) NULL,
+    Is_Custom_Medicine  BIT NOT NULL DEFAULT(0),
     FOREIGN KEY (Prescription_ID) REFERENCES Prescription(Prescription_ID) ON DELETE CASCADE
 );
 
@@ -625,6 +633,9 @@ BEGIN TRY
         );
     END;
 
+    IF COL_LENGTH('dbo.Procedure_Order', 'Referral_Notes') IS NULL
+        ALTER TABLE dbo.Procedure_Order ADD Referral_Notes NVARCHAR(2000) NULL;
+
     IF COL_LENGTH('dbo.Prescription', 'Follow_Up_Date') IS NULL
         ALTER TABLE dbo.Prescription ADD Follow_Up_Date DATE NULL;
     IF COL_LENGTH('dbo.Prescription_Detail', 'Strength') IS NULL
@@ -639,6 +650,14 @@ BEGIN TRY
         ALTER TABLE dbo.Prescription_Detail ADD Unit NVARCHAR(20) NULL;
     IF COL_LENGTH('dbo.Prescription_Detail', 'Additional_Instruction') IS NULL
         ALTER TABLE dbo.Prescription_Detail ADD Additional_Instruction NVARCHAR(255) NULL;
+    IF COL_LENGTH('dbo.Prescription_Detail', 'Morning_Dose') IS NULL
+        ALTER TABLE dbo.Prescription_Detail ADD Morning_Dose NVARCHAR(100) NULL;
+    IF COL_LENGTH('dbo.Prescription_Detail', 'Afternoon_Dose') IS NULL
+        ALTER TABLE dbo.Prescription_Detail ADD Afternoon_Dose NVARCHAR(100) NULL;
+    IF COL_LENGTH('dbo.Prescription_Detail', 'Evening_Dose') IS NULL
+        ALTER TABLE dbo.Prescription_Detail ADD Evening_Dose NVARCHAR(100) NULL;
+    IF COL_LENGTH('dbo.Prescription_Detail', 'Is_Custom_Medicine') IS NULL
+        ALTER TABLE dbo.Prescription_Detail ADD Is_Custom_Medicine BIT NOT NULL DEFAULT(0);
 
     IF OBJECT_ID(N'dbo.Eyeglass_Prescription', N'U') IS NULL
     BEGIN

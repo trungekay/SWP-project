@@ -24,6 +24,7 @@ public class ProcedureOrderDAO {
         "    po.Record_ID, " +
         "    po.Service_ID, " +
         "    po.Status, " +
+        "    po.Referral_Notes, " +
         "    s.Service_Name, " +
         "    po.Actual_Price AS Service_Price, " +
         "    spec.Full_Name AS Specialist_Name, " +
@@ -32,8 +33,8 @@ public class ProcedureOrderDAO {
         "    mr.Appointment_ID, " +
         "    mr.Doctor_Employee_ID, " +
         "    mr.Clinical_Diagnosis, " +
-        "    mr.examination_result, " +
-        "    mr.conclusion, " +
+        "    po.Result_Text AS examination_result, " +
+        "    po.Result_Conclusion AS conclusion, " +
         "    mr.Created_At AS Record_Created_At, " +
         "    doc.Full_Name AS Doctor_Name, " +
         "    p.Patient_ID, " +
@@ -384,17 +385,28 @@ public class ProcedureOrderDAO {
         }
     }
 
-    /**
-     * Cập nhật kết quả cận lâm sàng / ghi chú kết luận vào Medical_Record
-     */
-    public boolean updateMedicalRecordResults(int recordId, String examinationResult, String conclusion) throws Exception {
-        String sql = "UPDATE Medical_Record SET examination_result = ?, conclusion = ? WHERE Record_ID = ?";
+    /** Keep specialist findings on the order so the doctor's clinical record remains intact. */
+    public boolean saveResults(int orderId, Integer specialistEmployeeId, String examinationResult,
+                               String conclusion, String status) throws Exception {
+        String sql = "UPDATE Procedure_Order SET Result_Text = ?, Result_Conclusion = ?, " +
+                "Status = ?, Specialist_Employee_ID = ?, Completed_At = CASE WHEN ? = 'Completed' " +
+                "THEN COALESCE(Completed_At, SYSDATETIME()) ELSE Completed_At END " +
+                "WHERE Order_ID = ? AND Status <> 'Cancelled' " +
+                "AND (Status <> 'Completed' OR ? = 'Completed')";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, examinationResult);
-            ps.setString(2, conclusion);
-            ps.setInt(3, recordId);
-            return ps.executeUpdate() > 0;
+            ps.setNString(1, examinationResult);
+            ps.setNString(2, conclusion);
+            ps.setString(3, status);
+            if (specialistEmployeeId != null && specialistEmployeeId > 0) ps.setInt(4, specialistEmployeeId);
+            else ps.setNull(4, Types.INTEGER);
+            ps.setString(5, status);
+            ps.setInt(6, orderId);
+            ps.setString(7, status);
+            if (ps.executeUpdate() != 1) {
+                throw new SQLException("Procedure order is unavailable for saving results");
+            }
+            return true;
         }
     }
 
@@ -442,6 +454,7 @@ public class ProcedureOrderDAO {
         po.setRecordId(rs.getInt("Record_ID"));
         po.setServiceId(rs.getInt("Service_ID"));
         po.setStatus(rs.getString("Status"));
+        po.setReferralNotes(rs.getString("Referral_Notes"));
 
         po.setServiceName(rs.getString("Service_Name"));
         po.setServicePrice(rs.getDouble("Service_Price"));

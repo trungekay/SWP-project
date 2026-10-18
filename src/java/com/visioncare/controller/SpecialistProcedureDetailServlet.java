@@ -86,10 +86,10 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
             List<ProcedureOrder> todoList = procedureOrderDAO.getTodoListByRecordId(order.getRecordId());
 
             // Feature 3: Phân rã kết quả đo sang cấu trúc OD/OS để hiển thị lên form
-            Map<String, String> examData = parseExaminationResult(record != null ? record.getExaminationResult() : null);
+            Map<String, String> examData = parseExaminationResult(order.getExaminationResult());
 
             // Bỏ initial value ở trường kết luận (conclusion) nếu là ghi chú/chỉ định ban đầu của bác sĩ
-            String initialConclusion = (record != null && record.getConclusion() != null) ? record.getConclusion().trim() : "";
+            String initialConclusion = order.getConclusion() != null ? order.getConclusion().trim() : "";
             if (isDefaultOrDoctorInitialNote(initialConclusion, order)) {
                 initialConclusion = "";
             }
@@ -133,6 +133,11 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
 
         if (currentUser == null) {
             response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+        String role = currentUser.getRole() != null ? currentUser.getRole().trim().toLowerCase() : "";
+        if (!role.equals("medical_specialist") && !role.equals("doctor") && !role.equals("admin") && !role.equals("staff")) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
 
@@ -206,11 +211,10 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
                 String serializedExamResult = buildStructuredResult(request);
                 String conclusion = request.getParameter("conclusion");
 
-                procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "In_Progress");
-                procedureOrderDAO.updateMedicalRecordResults(
-                        order.getRecordId(),
+                procedureOrderDAO.saveResults(
+                        orderId, specialistEmployeeId,
                         serializedExamResult,
-                        conclusion != null ? conclusion.trim() : ""
+                        conclusion != null ? conclusion.trim() : "", "In_Progress"
                 );
 
                 session.setAttribute("successMessage", "Đã lưu nháp kết quả ca #CD-" + orderId + " thành công!");
@@ -221,11 +225,10 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
                 String serializedExamResult = buildStructuredResult(request);
                 String conclusion = request.getParameter("conclusion");
 
-                procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Completed");
-                procedureOrderDAO.updateMedicalRecordResults(
-                        order.getRecordId(),
+                procedureOrderDAO.saveResults(
+                        orderId, specialistEmployeeId,
                         serializedExamResult,
-                        conclusion != null ? conclusion.trim() : ""
+                        conclusion != null ? conclusion.trim() : "", "Completed"
                 );
 
                 session.setAttribute("successMessage", "Đã hoàn thành thủ thuật và trả kết quả về cho Bác sĩ thành công cho ca #CD-" + orderId + "!");
@@ -241,14 +244,11 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
                 // Nghiệp vụ 5: Cập nhật lại kết quả sau khi đã hoàn tất
                 String serializedExamResult = buildStructuredResult(request);
                 String conclusion = request.getParameter("conclusion");
-                System.out.println(">>> [DEBUG doPost updateResults] recordId=" + order.getRecordId() + ", result length=" + serializedExamResult.length() + ", conclusion=" + conclusion);
-
-                boolean updated = procedureOrderDAO.updateMedicalRecordResults(
-                        order.getRecordId(),
+                procedureOrderDAO.saveResults(
+                        orderId, specialistEmployeeId,
                         serializedExamResult,
-                        conclusion != null ? conclusion.trim() : ""
+                        conclusion != null ? conclusion.trim() : "", "Completed"
                 );
-                System.out.println(">>> [DEBUG doPost updateResults] updated=" + updated);
                 session.setAttribute("successMessage", "Đã lưu cập nhật kết quả cận lâm sàng thành công!");
                 response.sendRedirect(request.getContextPath() + "/specialist/procedure-detail?orderId=" + orderId);
 

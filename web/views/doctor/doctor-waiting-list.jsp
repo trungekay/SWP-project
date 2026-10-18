@@ -1,40 +1,25 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
-<jsp:include page="/views/common/header.jsp">
-    <jsp:param name="pageTitle" value="Hàng đợi khám bệnh" />
-    <jsp:param name="pageDescription" value="Theo dõi bệnh nhân đã check-in được phân công cho bác sĩ" />
-    <jsp:param name="bodyClass" value="starter-page-page doctor-queue-body" />
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hàng đợi khám bệnh - VisionCare</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css">
+    <jsp:include page="/views/admin/layout/admin-css.jsp" />
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-waiting-list.css?v=5">
+</head>
+<body class="doctor-queue-body">
+<jsp:include page="/views/employee/layout/employee-sidebar.jsp">
     <jsp:param name="activeNav" value="doctor-waiting" />
 </jsp:include>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/schedule.css">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-waiting-list.css?v=2">
 
-<main class="main">
-    <div class="schedule-container doctor-queue-page">
-            <section class="profile-header-card doctor-queue-profile" aria-label="Bác sĩ phụ trách">
-                <div class="doctor-queue-profile-main">
-                    <div class="avatar-badge" aria-hidden="true"><i class="bi bi-person-circle fs-2"></i></div>
-                    <div class="doctor-queue-profile-copy">
-                        <div class="doctor-queue-profile-line">
-                            <h2><c:out value="${doctorProfile.fullName}" default="Bác sĩ" /></h2>
-                            <span class="badge-code">Mã: BS-0<c:out value="${doctorProfile.actorId}" /></span>
-                            <span class="badge-room"><i class="bi bi-door-open-fill" aria-hidden="true"></i> <c:out value="${doctorProfile.roomName}" default="Chưa xếp phòng" /></span>
-                        </div>
-                        <c:if test="${not empty doctorProfile.specialty}"><p><i class="bi bi-briefcase" aria-hidden="true"></i> Chuyên môn: <strong><c:out value="${doctorProfile.specialty}" /></strong></p></c:if>
-                    </div>
-                </div>
-                <div class="doctor-queue-profile-actions">
-                    <a class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold" href="${pageContext.request.contextPath}/employee/schedule?year=${scheduleYear}&amp;week=${scheduleWeek}"><i class="bi bi-calendar-week me-1" aria-hidden="true"></i> Xem lịch</a>
-                    <a class="btn btn-primary btn-sm rounded-pill px-3 py-2 fw-semibold" href="${pageContext.request.contextPath}/employee/register-schedule?year=${scheduleYear}&amp;week=${scheduleWeek}"><i class="bi bi-calendar-plus me-1" aria-hidden="true"></i> Đăng ký lịch</a>
-                </div>
-            </section>
-            <nav class="doctor-queue-breadcrumb" aria-label="Điều hướng">
-                <a href="${pageContext.request.contextPath}/employee/schedule">Lịch làm việc</a>
-                <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                <span aria-current="page">Hàng đợi khám bệnh</span>
-            </nav>
-
+<main class="main-wrapper">
+    <jsp:include page="/views/employee/layout/employee-header.jsp" />
+    <div class="page-content doctor-queue-page">
             <header class="doctor-queue-heading">
                 <div>
                     <span class="doctor-queue-eyebrow">KHU VỰC BÁC SĨ</span>
@@ -73,6 +58,14 @@
                     <div><strong><c:out value="${totalCount}" default="0" /></strong><span>Tổng ca phù hợp</span></div>
                 </div>
             </section>
+
+            <c:if test="${overdueCount > 0}">
+                <div class="doctor-queue-overdue-notice" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                    <span><strong><c:out value="${overdueCount}" /> ca chưa hoàn tất đã quá 1 giờ sau giờ hẹn.</strong>
+                        Vui lòng kiểm tra và liên hệ bộ phận tiếp nhận để xử lý.</span>
+                </div>
+            </c:if>
 
             <section class="doctor-queue-panel" aria-labelledby="queue-heading">
                 <div class="doctor-queue-panel-top">
@@ -133,6 +126,7 @@
                         </div>
                         <div class="doctor-queue-list" role="list">
                             <c:forEach var="item" items="${appointments}">
+                                <c:set var="startWindowState" value="${startWindowStates[item.id]}" />
                                 <article class="doctor-queue-item" role="listitem">
                                     <div class="doctor-queue-patient">
                                         <div class="doctor-queue-avatar" aria-hidden="true"><c:out value="${fn:substring(item.patientName, 0, 1)}" default="BN" /></div>
@@ -145,6 +139,9 @@
                                         <span class="doctor-queue-mobile-label">Giờ hẹn / check-in</span>
                                         <strong><c:out value="${item.timeSlot}" default="--:--" /></strong>
                                         <small>Check-in <c:out value="${fn:substring(item.checkinTime, 11, 16)}" default="--:--" /></small>
+                                        <c:if test="${startWindowState eq 'late' && item.status ne 'Completed'}">
+                                            <small class="doctor-queue-overdue-label">Quá giờ hẹn, chưa hoàn tất khám</small>
+                                        </c:if>
                                     </div>
                                     <div class="doctor-queue-cell">
                                         <span class="doctor-queue-mobile-label">Phòng khám</span>
@@ -173,9 +170,27 @@
                                                 <input type="hidden" name="status" value="<c:out value='${selectedStatus}' />">
                                                 <input type="hidden" name="keyword" value="<c:out value='${keyword}' />">
                                                 <c:choose>
-                                                    <c:when test="${doctorBusy || not isToday}">
+                                                    <c:when test="${startWindowState eq 'early'}">
+                                                        <button class="doctor-queue-button doctor-queue-button-primary doctor-queue-button-unavailable" type="button"
+                                                                onclick="alert('Chưa đến giờ khám. Chỉ có thể bắt đầu trong vòng 1 giờ trước giờ hẹn.')">
+                                                            <i class="bi bi-play-fill" aria-hidden="true"></i> Gọi vào khám
+                                                        </button>
+                                                    </c:when>
+                                                    <c:when test="${startWindowState eq 'late'}">
+                                                        <button class="doctor-queue-button doctor-queue-button-primary doctor-queue-button-unavailable" type="button"
+                                                                onclick="alert('Đã quá giờ khám. Chỉ có thể bắt đầu trong vòng 1 giờ sau giờ hẹn.')">
+                                                            <i class="bi bi-play-fill" aria-hidden="true"></i> Gọi vào khám
+                                                        </button>
+                                                    </c:when>
+                                                    <c:when test="${startWindowState ne 'open'}">
+                                                        <button class="doctor-queue-button doctor-queue-button-primary doctor-queue-button-unavailable" type="button"
+                                                                onclick="alert('Không xác định được giờ hẹn. Vui lòng liên hệ bộ phận tiếp nhận.')">
+                                                            <i class="bi bi-play-fill" aria-hidden="true"></i> Gọi vào khám
+                                                        </button>
+                                                    </c:when>
+                                                    <c:when test="${doctorBusy}">
                                                         <button class="doctor-queue-button doctor-queue-button-primary" type="button" disabled
-                                                                title="${not isToday ? 'Chỉ có thể gọi vào khám trong ngày hôm nay' : 'Hãy hoàn tất ca đang khám trước'}">
+                                                                title="Hãy hoàn tất ca đang khám trước">
                                                             <i class="bi bi-play-fill" aria-hidden="true"></i> Gọi vào khám
                                                         </button>
                                                     </c:when>
@@ -219,4 +234,17 @@
             </section>
     </div>
 </main>
-<jsp:include page="/views/common/footer.jsp" />
+<c:if test="${isToday}">
+    <script>
+        setInterval(function () {
+            var active = document.activeElement;
+            if (document.visibilityState === 'visible'
+                    && !(active && active.closest('.doctor-queue-search'))) {
+                window.location.reload();
+            }
+        }, 60000);
+    </script>
+</c:if>
+<script src="${pageContext.request.contextPath}/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

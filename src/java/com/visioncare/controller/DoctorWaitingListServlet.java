@@ -2,9 +2,9 @@ package com.visioncare.controller;
 
 import com.visioncare.dao.AppointmentDAO;
 import com.visioncare.dao.DoctorQueueDAO;
-import com.visioncare.dao.WorkScheduleDAO;
 import com.visioncare.model.Appointment;
 import com.visioncare.model.User;
+import com.visioncare.util.ExaminationWindow;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -15,10 +15,12 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Date;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.WeekFields;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.net.URLEncoder;
@@ -30,7 +32,6 @@ public class DoctorWaitingListServlet extends HttpServlet {
     private static final DateTimeFormatter DISPLAY_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
     private final DoctorQueueDAO doctorQueueDAO = new DoctorQueueDAO();
-    private final WorkScheduleDAO workScheduleDAO = new WorkScheduleDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -64,6 +65,17 @@ public class DoctorWaitingListServlet extends HttpServlet {
             List<Appointment> appointments = "all_day".equals(selectedStatus) ? matchingDay
                     : matchingDay.stream().filter(a -> selectedStatus.equals(a.getStatus())).collect(Collectors.toList());
 
+            LocalDateTime clinicNow = LocalDateTime.now(CLINIC_ZONE);
+            Map<Integer, String> startWindowStates = new HashMap<>();
+            long overdueCount = 0;
+            for (Appointment appointment : matchingDay) {
+                String windowState = ExaminationWindow.state(appointment, clinicNow);
+                startWindowStates.put(appointment.getId(), windowState);
+                if ("late".equals(windowState) && !"Completed".equals(appointment.getStatus())) {
+                    overdueCount++;
+                }
+            }
+
             long waitingCount = matchingDay.stream().filter(a -> "Confirmed".equals(a.getStatus())).count();
             long examiningCount = matchingDay.stream().filter(a -> "In_Progress".equals(a.getStatus())).count();
             long completedCount = matchingDay.stream().filter(a -> "Completed".equals(a.getStatus())).count();
@@ -71,9 +83,6 @@ public class DoctorWaitingListServlet extends HttpServlet {
             if (!doctorBusy && !keyword.isEmpty()) {
                 doctorBusy = !appointmentDAO.getWaitingList(sqlDate, "In_Progress", doctorId, null, null).isEmpty();
             }
-            User profile = workScheduleDAO.getActorProfile(doctorId, "doctor");
-            WeekFields weekFields = WeekFields.ISO;
-
             HttpSession session = request.getSession();
             String csrfToken = (String) session.getAttribute("doctorQueueCsrf");
             if (csrfToken == null) {
@@ -82,20 +91,19 @@ public class DoctorWaitingListServlet extends HttpServlet {
             }
 
             request.setAttribute("appointments", appointments);
+            request.setAttribute("startWindowStates", startWindowStates);
+            request.setAttribute("overdueCount", overdueCount);
             request.setAttribute("waitingCount", waitingCount);
             request.setAttribute("examiningCount", examiningCount);
             request.setAttribute("completedCount", completedCount);
             request.setAttribute("totalCount", matchingDay.size());
             request.setAttribute("doctorBusy", doctorBusy);
-            request.setAttribute("doctorProfile", profile == null ? doctor : profile);
             request.setAttribute("selectedDate", day.toString());
             request.setAttribute("displayDate", day.format(DISPLAY_DATE));
             request.setAttribute("previousDate", day.minusDays(1).toString());
             request.setAttribute("nextDate", day.plusDays(1).toString());
             request.setAttribute("todayDate", today.toString());
             request.setAttribute("isToday", today.equals(day));
-            request.setAttribute("scheduleYear", day.get(weekFields.weekBasedYear()));
-            request.setAttribute("scheduleWeek", day.get(weekFields.weekOfWeekBasedYear()));
             request.setAttribute("selectedStatus", status);
             request.setAttribute("keyword", keyword);
             request.setAttribute("csrfToken", csrfToken);
@@ -135,7 +143,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
         try {
             Date clinicDate = Date.valueOf(LocalDate.now(CLINIC_ZONE));
             boolean updated = "start".equals(action)
-                    ? doctorQueueDAO.startExamination(appointmentId, doctor.getActorId(), clinicDate)
+                    ? doctorQueueDAO.startExamination(appointmentId, doctor.getActorId(), LocalDateTime.now(CLINIC_ZONE))
                     : doctorQueueDAO.completeExamination(appointmentId, doctor.getActorId(), clinicDate);
             if (updated && "start".equals(action)) {
                 response.sendRedirect(request.getContextPath() + "/doctor/patient-detail?id=" + appointmentId);
@@ -144,7 +152,16 @@ public class DoctorWaitingListServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/doctor/waiting-list?date="
                         + clinicDate + "&status=Completed");
             } else {
-                session.setAttribute("doctorQueueMessage", "Không thể cập nhật ca khám này. Hãy làm mới danh sách và kiểm tra trạng thái hiện tại.");
+                String message = "Không thể cập nhật ca khám này. Hãy làm mới danh sách và kiểm tra trạng thái hiện tại.";
+                if ("start".equals(action)) {
+                    Appointment appointment = appointmentDAO.getAppointmentById(appointmentId);
+                    if (appointment != null && appointment.getDoctorId() == doctor.getActorId()) {
+                        String state = ExaminationWindow.state(appointment, LocalDateTime.now(CLINIC_ZONE));
+                        if ("early".equals(state)) message = "Chưa đến giờ khám. Chỉ có thể bắt đầu trong vòng 1 giờ trước giờ hẹn.";
+                        if ("late".equals(state)) message = "Đã quá giờ khám. Chỉ có thể bắt đầu trong vòng 1 giờ sau giờ hẹn.";
+                    }
+                }
+                session.setAttribute("doctorQueueMessage", message);
                 response.sendRedirect(returnToQueue(request));
             }
         } catch (Exception error) {
