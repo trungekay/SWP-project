@@ -83,6 +83,10 @@
     box-shadow: 0 8px 16px rgba(0, 112, 93, .18);
 }
 
+.doctor-detail-desktop-actions { display: flex; align-items: center; gap: 10px; }
+.doctor-detail-button-secondary { border-color: #c9e3dc; background: #fff; color: #008b74; }
+.doctor-detail-button-secondary:hover { background: #effaf6; color: #00705d; }
+
 .doctor-detail-button:disabled {
     background: #d8e8e3;
     color: #5d8177;
@@ -256,7 +260,7 @@
     .sidebar { display: none; }
     .main-wrapper { margin-left: 0; }
     .top-header { padding: 0 16px; }
-    .doctor-detail-page { padding: 20px 16px 100px; }
+    .doctor-detail-page { padding: 20px 16px 150px; }
     .doctor-detail-desktop-action { display: none; }
     .doctor-detail-hero { padding: 22px 20px 0; }
     .doctor-detail-hero-main { gap: 13px; }
@@ -265,6 +269,7 @@
     .doctor-detail-card { padding: 20px 18px 22px; }
     .doctor-detail-mobile-action { display: block; position: fixed; z-index: 900; right: 0; bottom: 0; left: 0; padding: 12px 16px max(12px, env(safe-area-inset-bottom)); border-top: 1px solid #e2eaf0; background: rgba(255, 255, 255, .97); box-shadow: 0 -8px 24px rgba(22, 50, 60, .06); }
     .doctor-detail-mobile-action .doctor-detail-button { width: 100%; }
+    .doctor-detail-mobile-action .doctor-detail-button + .doctor-detail-button { margin-top: 8px; }
 }
 
 @media (max-width: 575px) {

@@ -60,6 +60,12 @@ public class DoctorPatientDetailServlet extends HttpServlet {
                     || !"Completed".equals(record.getAppointmentStatus()));
             request.setAttribute("appointment", appointment);
             request.setAttribute("history", history);
+            if ("In_Progress".equals(appointment.getStatus())) {
+                request.setAttribute("examinationUrl",
+                        request.getContextPath() + "/doctor/examination?id=" + appointmentId);
+                request.setAttribute("prescriptionUrl",
+                        request.getContextPath() + "/doctor/prescription?id=" + appointmentId);
+            }
             request.getRequestDispatcher("/views/doctor/patient-detail.jsp").forward(request, response);
         } catch (Exception error) {
             log("Cannot load doctor patient detail", error);

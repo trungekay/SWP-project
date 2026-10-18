@@ -49,6 +49,7 @@
                             <p>Xem thông tin người bệnh, ca hẹn hôm nay và những lần khám trước.</p>
                         </div>
                         <c:if test="${appointment.status eq 'In_Progress'}">
+                            <div class="doctor-detail-desktop-actions">
                             <c:choose>
                                 <c:when test="${not empty examinationUrl}">
                                     <a class="doctor-detail-button doctor-detail-button-primary doctor-detail-desktop-action"
@@ -63,6 +64,13 @@
                                     </button>
                                 </c:otherwise>
                             </c:choose>
+                            <c:if test="${not empty prescriptionUrl}">
+                                <a class="doctor-detail-button doctor-detail-button-secondary doctor-detail-desktop-action"
+                                   href="<c:out value='${prescriptionUrl}' />">
+                                    <i class="bi bi-prescription2" aria-hidden="true"></i> Kê đơn
+                                </a>
+                            </c:if>
+                            </div>
                         </c:if>
                     </header>
 
@@ -230,6 +238,12 @@
                                     </button>
                                 </c:otherwise>
                             </c:choose>
+                            <c:if test="${not empty prescriptionUrl}">
+                                <a class="doctor-detail-button doctor-detail-button-secondary"
+                                   href="<c:out value='${prescriptionUrl}' />">
+                                    <i class="bi bi-prescription2" aria-hidden="true"></i> Kê đơn
+                                </a>
+                            </c:if>
                         </div>
                     </c:if>
                 </c:otherwise>
