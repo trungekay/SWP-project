@@ -669,10 +669,16 @@
                                                                       </span>
                                                                     </div>
                                                                   </c:if>
-                                                                  <p class="text-muted small mb-0 text-truncate-2"
-                                                                    style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12px; min-height: 34px;">
-                                                                    ${svc.summary != null ? svc.summary : 'Dịch vụ khám nhãn khoa chất lượng cao với trang thiết bị chuẩn quốc tế.'}
-                                                                  </p>
+                                                                  <div class="service-desc-box mb-1">
+                                                                    <p class="text-secondary small mb-0 lh-base" style="font-size: 12px;">
+                                                                      ${svc.summary != null ? svc.summary : 'Dịch vụ khám nhãn khoa chất lượng cao với trang thiết bị chuẩn quốc tế.'}
+                                                                    </p>
+                                                                    <c:if test="${not empty svc.description and svc.description != svc.summary}">
+                                                                      <p class="text-muted small mb-0 mt-1 lh-sm" style="font-size: 11.5px; opacity: 0.9;">
+                                                                        <i class="bi bi-info-circle text-teal me-1" style="color: #0d9488;"></i>${svc.description}
+                                                                      </p>
+                                                                    </c:if>
+                                                                  </div>
                                                                 </div>
                                                                 <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
                                                                   <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted p-0"
