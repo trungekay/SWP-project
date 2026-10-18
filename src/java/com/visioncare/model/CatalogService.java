@@ -38,14 +38,24 @@ public class CatalogService {
     public String getDefaultImagePath() {
         if (code != null) {
             String c = code.toUpperCase(java.util.Locale.ROOT);
-            if (c.contains("NK") || c.contains("CVS")) return "departments-1.jpg";
-            if (c.contains("KX")) return "departments-2.jpg";
-            if (c.contains("LS") || c.contains("LASIK") || c.contains("SMILE")) return "departments-3.jpg";
-            if (c.contains("PE")) return "departments-4.jpg";
-            if (c.contains("TT") || c.contains("PHACO")) return "departments-5.jpg";
-            if (c.contains("GL") || c.contains("DM") || c.contains("OCT")) return "gallery/gallery-1.jpg";
+            if (c.contains("NK") || c.contains("CVS")) return "services/service-general.jpg";
+            if (c.contains("KX")) return "services/service-refraction.jpg";
+            if (c.contains("LS") || c.contains("LASIK") || c.contains("SMILE")) return "services/service-lasik.jpg";
+            if (c.contains("PE")) return "services/service-pediatric.jpg";
+            if (c.contains("TT") || c.contains("PHACO")) return "services/service-cataract.jpg";
+            if (c.contains("GL") || c.contains("DM") || c.contains("OCT")) return "services/service-retina.jpg";
+            if (c.startsWith("TP-") || c.contains("THUTHUAT") || c.contains("YAG") || c.contains("LEO") || c.contains("LEDAO")) return "services/service-procedure.jpg";
         }
-        return "departments-1.jpg";
+        if (name != null) {
+            String n = name.toLowerCase(java.util.Locale.ROOT);
+            if (n.contains("khúc xạ") || n.contains("kính")) return "services/service-refraction.jpg";
+            if (n.contains("lasik") || n.contains("smile") || n.contains("xóa cận")) return "services/service-lasik.jpg";
+            if (n.contains("trẻ em") || n.contains("nhược thị")) return "services/service-pediatric.jpg";
+            if (n.contains("thủy tinh thể") || n.contains("phaco")) return "services/service-cataract.jpg";
+            if (n.contains("glaucoma") || n.contains("võng mạc") || n.contains("đáy mắt") || n.contains("nhãn áp") || n.contains("oct")) return "services/service-retina.jpg";
+            if (n.contains("lẹo") || n.contains("lệ đạo") || n.contains("tiểu phẫu") || n.contains("thủ thuật") || n.contains("laser yag")) return "services/service-procedure.jpg";
+        }
+        return "services/service-general.jpg";
     }
 
     public String getSpecialty() {

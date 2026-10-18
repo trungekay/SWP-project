@@ -719,10 +719,12 @@
                               <c:choose>
                                 <c:when test="${service.uploadedImage}"><img
                                     src="${pageContext.request.contextPath}/catalog-image?kind=service&amp;id=${service.id}"
-                                    alt="${fn:escapeXml(service.name)}" class="img-fluid"></c:when>
+                                    alt="${fn:escapeXml(service.name)}" class="img-fluid rounded-4 shadow-sm"
+                                    style="max-height: 280px; width: 100%; object-fit: cover;"></c:when>
                                 <c:otherwise><img
                                     src="${pageContext.request.contextPath}/assets/img/${service.defaultImagePath}"
-                                    alt="${fn:escapeXml(service.name)}" class="img-fluid"></c:otherwise>
+                                    alt="${fn:escapeXml(service.name)}" class="img-fluid rounded-4 shadow-sm"
+                                    style="max-height: 280px; width: 100%; object-fit: cover;"></c:otherwise>
                               </c:choose>
                             </div>
                           </div>
