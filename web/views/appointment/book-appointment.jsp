@@ -591,6 +591,7 @@
                                                             <label class="d-block h-100 mb-0">
                                                               <input type="radio" class="d-none service-radio"
                                                                 name="serviceId" value="${svc.id}"
+                                                                data-code="${svc.code}"
                                                                 data-specialty="${svc.specialty}"
                                                                 data-bgroup="${bGroup}"
                                                                 data-name="${svc.name}" data-price="${svc.price}"
@@ -614,6 +615,13 @@
                                                                     </span>
                                                                   </div>
                                                                   <h6 class="fw-bold text-dark mb-1">${svc.name}</h6>
+                                                                  <c:if test="${bGroup == 'thuthuat'}">
+                                                                    <div class="mb-1">
+                                                                      <span class="badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill" style="font-size: 10px;">
+                                                                        <i class="bi bi-shield-exclamation text-warning me-1"></i>Bác sĩ khám trước khi làm thủ thuật
+                                                                      </span>
+                                                                    </div>
+                                                                  </c:if>
                                                                   <c:if test="${svc.code == 'LS-03' or svc.code == 'TT-05' or fn:contains(svc.name, 'tiền phẫu') or fn:contains(svc.name, 'tầm soát')}">
                                                                     <div class="mb-1">
                                                                       <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: 10.5px;">
@@ -626,11 +634,108 @@
                                                                     ${svc.summary != null ? svc.summary : 'Dịch vụ khám nhãn khoa chất lượng cao với trang thiết bị chuẩn quốc tế.'}
                                                                   </p>
                                                                 </div>
+                                                                <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                                                                  <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted p-0"
+                                                                    style="font-size: 11.5px;"
+                                                                    data-bs-toggle="modal" data-bs-target="#bookingServiceModal${svc.id}"
+                                                                    onclick="event.stopPropagation();">
+                                                                    <i class="bi bi-info-circle me-1 text-primary"></i>Chi tiết quy trình
+                                                                  </button>
+                                                                  <span class="text-teal small fw-semibold" style="font-size: 11px;">
+                                                                    Chọn gói <i class="bi bi-chevron-right"></i>
+                                                                  </span>
+                                                                </div>
                                                               </div>
                                                             </label>
                                                           </div>
                                                         </c:forEach>
                                                       </div>
+
+                                                      <%-- HỘP CẢNH BÁO LƯU Ý QUY TRÌNH Y KHOA NĂNG ĐỘNG --%>
+                                                      <div id="serviceProtocolAlertBox" class="mb-3" style="display: none;"></div>
+
+                                                      <%-- MODALS CHI TIẾT DỊCH VỤ TRONG MÀN HÌNH BOOKING --%>
+                                                      <c:forEach var="svc" items="${services}">
+                                                        <div class="modal fade" id="bookingServiceModal${svc.id}" tabindex="-1" aria-hidden="true">
+                                                          <div class="modal-dialog modal-dialog-centered">
+                                                            <div class="modal-content rounded-4 border-0 shadow">
+                                                              <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                                                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                                  <span class="badge bg-dark bg-opacity-75 rounded-pill px-2 py-1 small">${svc.code != null ? svc.code : 'DV'}</span>
+                                                                  <span class="badge rounded-pill px-3 py-1 small fw-semibold" style="color: #0d9488; background: #ccfbf1; border: 1px solid #99f6e4;">
+                                                                    ${svc.category}
+                                                                  </span>
+                                                                </div>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                              </div>
+                                                              <div class="modal-body pt-2 px-4 pb-3">
+                                                                <h5 class="fw-bold text-dark mt-2 mb-2">${svc.name}</h5>
+                                                                <div class="d-flex align-items-center justify-content-between p-3 rounded-3 mb-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                                                                  <span class="text-muted small">Chi phí dịch vụ:</span>
+                                                                  <span class="fs-5 fw-bold text-teal" style="color: #0d9488;">
+                                                                    <fmt:formatNumber value="${svc.price}" type="number" groupingUsed="true" /> ₫
+                                                                  </span>
+                                                                </div>
+                                                                <c:if test="${not empty svc.summary}">
+                                                                  <p class="text-secondary small fw-semibold mb-2">${svc.summary}</p>
+                                                                </c:if>
+                                                                <c:if test="${not empty svc.description}">
+                                                                  <p class="text-muted small mb-3">${svc.description}</p>
+                                                                </c:if>
+
+                                                                <c:choose>
+                                                                  <c:when test="${svc.surgery}">
+                                                                    <div class="alert alert-warning border border-warning rounded-4 p-3 mb-0 shadow-sm" style="background: #fffbeb;">
+                                                                      <div class="d-flex align-items-start">
+                                                                        <i class="bi bi-exclamation-triangle-fill fs-4 text-warning me-3 flex-shrink-0 mt-1"></i>
+                                                                        <div>
+                                                                          <h6 class="fw-bold text-dark mb-1">⚠️ LƯU Ý BẮT BUỘC: PHẢI KHÁM TIỀN PHẪU TRƯỚC</h6>
+                                                                          <p class="small text-secondary mb-0">
+                                                                            Theo quy chuẩn y khoa, bệnh nhân <strong>bắt buộc phải thực hiện gói Khám tiền phẫu chuyên sâu trước</strong> để Bác sĩ đo đạc các chỉ số giác mạc/đáy mắt và kết luận mắt có đủ điều kiện phẫu thuật hay không. Sau khi có chỉ định chính thức từ Bác sĩ, bệnh viện mới xếp lịch mổ.
+                                                                          </p>
+                                                                        </div>
+                                                                      </div>
+                                                                    </div>
+                                                                  </c:when>
+                                                                  <c:when test="${svc.procedure}">
+                                                                    <div class="alert alert-info border border-info rounded-4 p-3 mb-0 shadow-sm" style="background: #f0fdfa; border-color: #99f6e4 !important;">
+                                                                      <div class="d-flex align-items-start">
+                                                                        <i class="bi bi-shield-exclamation fs-4 text-teal me-3 flex-shrink-0 mt-1" style="color: #0d9488;"></i>
+                                                                        <div>
+                                                                          <h6 class="fw-bold text-dark mb-1">⚠️ LƯU Ý QUY TRÌNH THỦ THUẬT: BẮT BUỘC KHÁM TRƯỚC</h6>
+                                                                          <p class="small text-secondary mb-0">
+                                                                            Đối với thủ thuật / tiểu phẫu (như chích chắp lẹo, bơm thông lệ đạo...), bệnh nhân <strong>vẫn bắt buộc phải qua bước Thăm khám lâm sàng trực tiếp với Bác sĩ chuyên khoa trước</strong> để Bác sĩ dùng đèn sinh hiển vi đánh giá chính xác giai đoạn viêm nhiễm và chỉ định can thiệp an toàn, vô trùng nhất.
+                                                                          </p>
+                                                                        </div>
+                                                                      </div>
+                                                                    </div>
+                                                                  </c:when>
+                                                                  <c:when test="${svc.preOp}">
+                                                                    <div class="alert alert-success border border-success rounded-4 p-3 mb-0 shadow-sm" style="background: #f0fdf4;">
+                                                                      <div class="d-flex align-items-start">
+                                                                        <i class="bi bi-gift-fill fs-4 text-success me-3 flex-shrink-0 mt-1"></i>
+                                                                        <div>
+                                                                          <h6 class="fw-bold text-success mb-1">ĐẶC QUYỀN: HOÀN TRỪ 100% PHÍ KHÁM</h6>
+                                                                          <p class="small text-secondary mb-0">
+                                                                            Toàn bộ chi phí của gói khám tiền phẫu này sẽ được khấu trừ 100% vào chi phí ca mổ nếu quý khách phẫu thuật tại VisionCare.
+                                                                          </p>
+                                                                        </div>
+                                                                      </div>
+                                                                    </div>
+                                                                  </c:when>
+                                                                </c:choose>
+                                                              </div>
+                                                              <div class="modal-footer border-top-0 pt-0 px-4 pb-4 d-flex justify-content-between">
+                                                                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 btn-sm" data-bs-dismiss="modal">Đóng</button>
+                                                                <button type="button" class="btn btn-dental rounded-pill px-4 btn-sm shadow-sm" data-bs-dismiss="modal" onclick="selectServiceFromModal(${svc.id})">
+                                                                  <i class="bi bi-check2-circle me-1"></i>Chọn gói dịch vụ này
+                                                                </button>
+                                                              </div>
+                                                            </div>
+                                                          </div>
+                                                        </div>
+                                                      </c:forEach>
+
 
                                                       <div class="row g-3">
                                                         <div class="col-md-12">
@@ -1181,6 +1286,7 @@
               if (!radioElement) return;
               updateFeeDisplay();
               const specialtyCode = (radioElement.dataset.specialty || '').toLowerCase().trim();
+              const bgroup = (radioElement.dataset.bgroup || '').toLowerCase().trim();
               const serviceName = radioElement.dataset.name || 'Dịch vụ đã chọn';
               const doctorSelect = document.getElementById('doctorSelect');
               if (!doctorSelect) return;
@@ -1199,7 +1305,12 @@
                 const docSpecialty = (opt.dataset.specialty || '').toLowerCase().trim();
 
                 let isMatch = false;
-                if (!specialtyCode || specialtyCode === 'all') {
+                if (bgroup === 'thuthuat' || specialtyCode === 'thuthuat') {
+                  // Với Thủ thuật / Tiểu phẫu: Bắt buộc khám lâm sàng ban đầu -> chỉ định Bác sĩ khám mắt tổng quát
+                  if (docDept === 'general' || docSpecialty.includes('tổng quát')) {
+                    isMatch = true;
+                  }
+                } else if (!specialtyCode || specialtyCode === 'all') {
                   isMatch = true;
                 } else if (docDept === specialtyCode || docSpecialty.includes(specialtyCode)) {
                   isMatch = true;
@@ -1224,7 +1335,7 @@
 
                 const baseText = opt.dataset.name + ' — Chuyên khoa: ' + opt.dataset.specialty + (opt.dataset.room ? ' (' + opt.dataset.room + ')' : '');
                 if (isMatch) {
-                  opt.text = '★ [Đúng chuyên khoa] ' + baseText;
+                  opt.text = (bgroup === 'thuthuat' ? '★ [Bác sĩ khám lâm sàng chỉ định] ' : '★ [Đúng chuyên khoa] ') + baseText;
                   matchedCount++;
                   if (!firstMatchedValue) firstMatchedValue = opt.value;
                   if (opt.value === currentVal) currentMatches = true;
@@ -1233,23 +1344,81 @@
                 }
               });
 
-              // Nếu bác sĩ hiện tại chưa được chọn hoặc không trùng chuyên khoa, tự động gợi ý bác sĩ chuyên khoa phù hợp
-              if (!currentMatches && firstMatchedValue) {
+              // Nếu bác sĩ hiện tại chưa được chọn hoặc không trùng chuyên khoa (hoặc đang chọn thủ thuật mà bác sĩ hiện tại không phải tổng quát), tự động gợi ý bác sĩ chuyên khoa phù hợp
+              if ((!currentMatches || (bgroup === 'thuthuat' && !currentMatches)) && firstMatchedValue) {
                 doctorSelect.value = firstMatchedValue;
               }
 
               if (filterTag) filterTag.classList.remove('d-none');
               if (filterNotice) {
-                filterNotice.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>' +
-                  'Gợi ý <b>' + matchedCount + ' bác sĩ</b> chuyên khoa phù hợp cho: <b class="text-dark">' + serviceName + '</b>. (Bạn vẫn có thể tự do chọn bất kỳ bác sĩ nào khác bên dưới)';
+                if (bgroup === 'thuthuat') {
+                  filterNotice.innerHTML = '<i class="bi bi-shield-check text-primary me-1"></i>' +
+                    'Thủ thuật cần khám lâm sàng trước: Đã tự động chỉ định <b>Bác sĩ khám mắt tổng quát</b> tiếp nhận cho gói: <b class="text-dark">' + serviceName + '</b>.';
+                } else {
+                  filterNotice.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>' +
+                    'Gợi ý <b>' + matchedCount + ' bác sĩ</b> chuyên khoa phù hợp cho: <b class="text-dark">' + serviceName + '</b>. (Bạn vẫn có thể tự do chọn bất kỳ bác sĩ nào khác bên dưới)';
+                }
                 filterNotice.classList.remove('d-none');
               }
 
               updateDoctorPreview();
+
+              // Cập nhật Banner cảnh báo quy trình y khoa cho dịch vụ đang chọn
+              const bgroup = radioElement.dataset.bgroup || '';
+              const protocolBox = document.getElementById('serviceProtocolAlertBox');
+              if (protocolBox) {
+                if (bgroup === 'thuthuat') {
+                  protocolBox.style.display = 'block';
+                  protocolBox.innerHTML =
+                    '<div class="alert alert-warning border border-warning rounded-4 p-3 shadow-sm" style="background:#fffbeb;">' +
+                      '<div class="d-flex align-items-start">' +
+                        '<i class="bi bi-shield-exclamation fs-3 text-warning me-3 flex-shrink-0 mt-1"></i>' +
+                        '<div>' +
+                          '<h6 class="fw-bold text-dark mb-1">⚠️ LƯU Ý QUY TRÌNH THỦ THUẬT / TIỂU PHẪU: BẮT BUỘC KHÁM TRƯỚC</h6>' +
+                          '<p class="small text-secondary mb-0">' +
+                            'Đối với dịch vụ thủ thuật / tiểu phẫu (như chích chắp lẹo, bơm thông lệ đạo...), bệnh nhân <strong>bắt buộc phải qua bước Thăm khám lâm sàng trực tiếp với Bác sĩ chuyên khoa trước</strong>. Bác sĩ sẽ dùng đèn sinh hiển vi đánh giá chính xác mức độ tổn thương, giai đoạn viêm và chỉ định thời điểm làm thủ thuật an toàn, vô trùng nhất. Vui lòng chọn Bác sĩ tiếp nhận bên dưới để đặt lịch khám.' +
+                          '</p>' +
+                        '</div>' +
+                      '</div>' +
+                    '</div>';
+                } else if (bgroup === 'tienphau_tamsoat') {
+                  protocolBox.style.display = 'block';
+                  protocolBox.innerHTML =
+                    '<div class="alert alert-info border border-teal rounded-4 p-3 shadow-sm" style="background:#f0fdfa; border-color:#99f6e4 !important;">' +
+                      '<div class="d-flex align-items-start">' +
+                        '<i class="bi bi-shield-check fs-3 text-teal me-3 flex-shrink-0 mt-1" style="color:#0d9488;"></i>' +
+                        '<div>' +
+                          '<h6 class="fw-bold text-dark mb-1">🔬 QUY TRÌNH KHÁM TIỀN PHẪU / TẦM SOÁT ĐIỀU KIỆN MỔ:</h6>' +
+                          '<p class="small text-secondary mb-0">' +
+                            'Khám tiền phẫu chuyên sâu là bước điều kiện tiên quyết để xác nhận mắt có đủ tiêu chuẩn phẫu thuật xóa cận / thay thủy tinh thể hay không. Toàn bộ chi phí khám sẽ được <strong>hoàn trừ 100%</strong> vào giá gói phẫu thuật nếu quý khách thực hiện mổ tại VisionCare.' +
+                          '</p>' +
+                        '</div>' +
+                      '</div>' +
+                    '</div>';
+                } else {
+                  protocolBox.style.display = 'none';
+                  protocolBox.innerHTML = '';
+                }
+              }
+
               if (currentWizardStep === 2) {
                 onDoctorOrDateChange();
               }
             }
+
+            function selectServiceFromModal(serviceId) {
+              const radio = document.querySelector('input.service-radio[value="' + serviceId + '"]');
+              if (radio) {
+                radio.checked = true;
+                filterDoctorsByService(radio);
+                // Highlight card
+                const col = radio.closest('.booking-service-col');
+                if (col) {
+                  col.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }
+            }
+
 
             // Phân loại danh mục dịch vụ trong màn hình đặt lịch
             function filterBookingCategory(group, btn) {
