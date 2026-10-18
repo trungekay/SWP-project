@@ -11,6 +11,10 @@
 .doctor-form-heading h1{margin:7px 0 5px;color:#142b38;font-size:clamp(25px,2.5vw,34px);font-weight:750}
 .doctor-form-heading p{margin:0;color:#71818e;font-size:14px}
 .doctor-form-state{display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid #d5e9e2;border-radius:999px;background:#eefaf6;color:#16816b;font-size:12px;font-weight:700;white-space:nowrap}
+.doctor-form-notice{display:flex;align-items:flex-start;gap:9px;margin:0 0 20px;padding:13px 16px;border:1px solid;border-radius:10px;font-size:13px;line-height:1.5}
+.doctor-form-notice.success{border-color:#b8e4d4;background:#effaf5;color:#176b50}
+.doctor-form-notice.error{display:block;border-color:#f0c9c9;background:#fff5f5;color:#9b3939}
+.doctor-form-notice.error ul{margin:8px 0 0;padding-left:20px}
 .doctor-form-patient{display:flex;align-items:center;gap:17px;padding:21px 24px;margin-bottom:24px;border:1px solid #cbece4;border-radius:18px;background:linear-gradient(110deg,#effbf7,#fff 58%,#f4f9ff);box-shadow:0 10px 28px rgba(28,61,73,.05)}
 .doctor-form-avatar{display:grid;flex:0 0 56px;width:56px;height:56px;place-items:center;border:3px solid #fff;border-radius:16px;background:linear-gradient(145deg,#008b74,#17b59b);color:#fff;font-size:22px;font-weight:750;text-transform:uppercase}
 .doctor-form-patient-main{min-width:0;flex:1}

@@ -1,6 +1,7 @@
 package com.visioncare.controller;
 
 import com.visioncare.dao.AppointmentDAO;
+import com.visioncare.dao.DoctorFormDAO;
 import com.visioncare.model.Appointment;
 import com.visioncare.model.User;
 import jakarta.servlet.ServletException;
@@ -11,14 +12,19 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
- * Renders the doctor form screens. POST persistence belongs to the
- * examination and prescription workflows and is not implemented here.
+ * Renders the doctor form screens with their saved values.
  */
 @WebServlet(name = "DoctorFormsServlet", urlPatterns = {"/doctor/examination", "/doctor/prescription"})
 public class DoctorFormsServlet extends HttpServlet {
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
+    private final DoctorFormDAO formDAO = new DoctorFormDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -52,8 +58,40 @@ public class DoctorFormsServlet extends HttpServlet {
                 return;
             }
 
+            boolean prescription = request.getServletPath().endsWith("/prescription");
+            Map<String, String> formValues;
+            List<Map<String, String>> medicineRows = new ArrayList<>();
+            boolean includeMedication = true;
+            boolean includeGlasses = false;
+            if (prescription) {
+                DoctorFormDAO.PrescriptionSnapshot saved = formDAO.loadPrescription(appointmentId);
+                formValues = saved.getValues();
+                medicineRows = saved.getMedicines();
+                if (!medicineRows.isEmpty() || saved.isIncludeGlasses()) {
+                    includeMedication = saved.isIncludeMedication();
+                    includeGlasses = saved.isIncludeGlasses();
+                }
+            } else {
+                formValues = formDAO.loadExamination(appointmentId);
+            }
+            if (medicineRows.isEmpty()) medicineRows.add(new HashMap<>());
+            String csrf = (String) session.getAttribute("doctorFormCsrf");
+            if (csrf == null) {
+                csrf = UUID.randomUUID().toString();
+                session.setAttribute("doctorFormCsrf", csrf);
+            }
             request.setAttribute("appointment", appointment);
-            String view = request.getServletPath().endsWith("/prescription")
+            request.setAttribute("formValues", formValues);
+            request.setAttribute("medicineRows", medicineRows);
+            request.setAttribute("includeMedication", includeMedication);
+            request.setAttribute("includeGlasses", includeGlasses);
+            request.setAttribute("csrfToken", csrf);
+            String notice = (String) session.getAttribute("doctorFormMessage");
+            if (notice != null) {
+                request.setAttribute("formMessage", notice);
+                session.removeAttribute("doctorFormMessage");
+            }
+            String view = prescription
                     ? "/views/doctor/prescription-form.jsp"
                     : "/views/doctor/clinical-examination-form.jsp";
             request.getRequestDispatcher(view).forward(request, response);

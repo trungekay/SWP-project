@@ -53,9 +53,19 @@
             </div>
         </section>
 
+        <c:if test="${not empty formMessage}"><div class="doctor-form-notice success" role="status"><i class="bi bi-check-circle" aria-hidden="true"></i> <c:out value="${formMessage}" /></div></c:if>
+        <c:if test="${not empty formErrors}">
+            <div class="doctor-form-notice error" role="alert">
+                <strong>Vui lòng kiểm tra lại phiếu khám:</strong>
+                <ul><c:forEach var="error" items="${formErrors}"><li><c:out value="${error}" /></li></c:forEach></ul>
+            </div>
+        </c:if>
+
         <div class="doctor-form-layout">
-            <form id="examination-form" class="doctor-form-stack" autocomplete="off">
+            <form id="examination-form" class="doctor-form-stack" method="post"
+                  action="${pageContext.request.contextPath}/doctor/examination/save?id=${appointment.id}" autocomplete="off">
                 <input type="hidden" name="appointmentId" value="<c:out value='${appointment.id}' />">
+                <input type="hidden" name="csrfToken" value="<c:out value='${csrfToken}' />">
                 <section class="doctor-form-card" aria-labelledby="exam-complaint-heading">
                     <div class="doctor-form-card-heading">
                         <span class="doctor-form-icon"><i class="bi bi-chat-left-text" aria-hidden="true"></i></span>
@@ -63,10 +73,10 @@
                     </div>
                     <div class="doctor-form-fields">
                         <label class="doctor-form-field doctor-form-span"><span>Triệu chứng chính</span>
-                            <textarea name="chiefComplaint" rows="3" maxlength="1000" placeholder="Ví dụ: Nhìn mờ mắt phải trong 2 tuần, tăng khi đọc gần..."></textarea>
+                            <textarea name="chiefComplaint" rows="3" maxlength="1000" placeholder="Ví dụ: Nhìn mờ mắt phải trong 2 tuần, tăng khi đọc gần..."><c:out value="${formValues.chiefComplaint}" /></textarea>
                         </label>
                         <label class="doctor-form-field doctor-form-span"><span>Tiền sử mắt và bệnh sử liên quan</span>
-                            <textarea name="medicalHistory" rows="2" maxlength="1000" placeholder="Bệnh mắt trước đây, bệnh nền, dị ứng, thuốc đang dùng..."></textarea>
+                            <textarea name="medicalHistory" rows="2" maxlength="1000" placeholder="Bệnh mắt trước đây, bệnh nền, dị ứng, thuốc đang dùng..."><c:out value="${formValues.medicalHistory}" /></textarea>
                         </label>
                     </div>
                 </section>
@@ -80,9 +90,9 @@
                         <table class="doctor-form-matrix">
                             <thead><tr><th scope="col">Chỉ số</th><th scope="col">Mắt phải (OD)</th><th scope="col">Mắt trái (OS)</th></tr></thead>
                             <tbody>
-                                <tr><th scope="row">Thị lực không kính</th><td><input aria-label="Thị lực không kính mắt phải" name="odUncorrected" type="text" maxlength="20" placeholder="VD: 7/10"></td><td><input aria-label="Thị lực không kính mắt trái" name="osUncorrected" type="text" maxlength="20" placeholder="VD: 8/10"></td></tr>
-                                <tr><th scope="row">Thị lực có kính</th><td><input aria-label="Thị lực có kính mắt phải" name="odCorrected" type="text" maxlength="20" placeholder="VD: 10/10"></td><td><input aria-label="Thị lực có kính mắt trái" name="osCorrected" type="text" maxlength="20" placeholder="VD: 10/10"></td></tr>
-                                <tr><th scope="row">Nhãn áp (mmHg)</th><td><input aria-label="Nhãn áp mắt phải" name="odIop" type="number" min="0" max="80" step="0.1" placeholder="VD: 16"></td><td><input aria-label="Nhãn áp mắt trái" name="osIop" type="number" min="0" max="80" step="0.1" placeholder="VD: 17"></td></tr>
+                                <tr><th scope="row">Thị lực không kính</th><td><input aria-label="Thị lực không kính mắt phải" name="odUncorrected" type="text" maxlength="20" placeholder="VD: 7/10" value="<c:out value='${formValues.odUncorrected}' />"></td><td><input aria-label="Thị lực không kính mắt trái" name="osUncorrected" type="text" maxlength="20" placeholder="VD: 8/10" value="<c:out value='${formValues.osUncorrected}' />"></td></tr>
+                                <tr><th scope="row">Thị lực có kính</th><td><input aria-label="Thị lực có kính mắt phải" name="odCorrected" type="text" maxlength="20" placeholder="VD: 10/10" value="<c:out value='${formValues.odCorrected}' />"></td><td><input aria-label="Thị lực có kính mắt trái" name="osCorrected" type="text" maxlength="20" placeholder="VD: 10/10" value="<c:out value='${formValues.osCorrected}' />"></td></tr>
+                                <tr><th scope="row">Nhãn áp (mmHg)</th><td><input aria-label="Nhãn áp mắt phải" name="odIop" type="number" min="0" max="80" step="0.1" placeholder="VD: 16" value="<c:out value='${formValues.odIop}' />"></td><td><input aria-label="Nhãn áp mắt trái" name="osIop" type="number" min="0" max="80" step="0.1" placeholder="VD: 17" value="<c:out value='${formValues.osIop}' />"></td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -95,8 +105,8 @@
                         <div><h2 id="exam-findings-heading">Khám thực thể</h2><p>Ghi nhận phát hiện qua khám mắt</p></div>
                     </div>
                     <div class="doctor-form-fields">
-                        <label class="doctor-form-field"><span>Bán phần trước</span><textarea name="anteriorFindings" rows="4" maxlength="2000" placeholder="Giác mạc, kết mạc, tiền phòng, thể thủy tinh..."></textarea></label>
-                        <label class="doctor-form-field"><span>Đáy mắt / bán phần sau</span><textarea name="posteriorFindings" rows="4" maxlength="2000" placeholder="Võng mạc, hoàng điểm, gai thị..."></textarea></label>
+                        <label class="doctor-form-field"><span>Bán phần trước</span><textarea name="anteriorFindings" rows="4" maxlength="2000" placeholder="Giác mạc, kết mạc, tiền phòng, thể thủy tinh..."><c:out value="${formValues.anteriorFindings}" /></textarea></label>
+                        <label class="doctor-form-field"><span>Đáy mắt / bán phần sau</span><textarea name="posteriorFindings" rows="4" maxlength="2000" placeholder="Võng mạc, hoàng điểm, gai thị..."><c:out value="${formValues.posteriorFindings}" /></textarea></label>
                     </div>
                 </section>
 
@@ -106,19 +116,18 @@
                         <div><h2 id="exam-conclusion-heading">Chẩn đoán và kết luận</h2><p>Những thông tin cần thiết để tiếp tục điều trị</p></div>
                     </div>
                     <div class="doctor-form-fields">
-                        <label class="doctor-form-field doctor-form-span"><span>Chẩn đoán lâm sàng <em>*</em></span><input name="clinicalDiagnosis" type="text" maxlength="255" required placeholder="Nhập chẩn đoán lâm sàng"></label>
-                        <label class="doctor-form-field doctor-form-span"><span>Kết quả khám <em>*</em></span><textarea name="examinationResult" rows="4" maxlength="4000" required placeholder="Tóm tắt các kết quả khám và nhận định chính"></textarea></label>
-                        <label class="doctor-form-field doctor-form-span"><span>Kết luận và hướng xử trí <em>*</em></span><textarea name="conclusion" rows="3" maxlength="4000" required placeholder="Kết luận, chỉ định bổ sung hoặc hướng điều trị"></textarea></label>
-                        <label class="doctor-form-field"><span>Ngày tái khám dự kiến</span><input name="followUpDate" type="date"></label>
+                        <label class="doctor-form-field doctor-form-span"><span>Chẩn đoán lâm sàng <em>*</em></span><input name="clinicalDiagnosis" type="text" maxlength="255" required placeholder="Nhập chẩn đoán lâm sàng" value="<c:out value='${formValues.clinicalDiagnosis}' />"></label>
+                        <label class="doctor-form-field doctor-form-span"><span>Kết quả khám <em>*</em></span><textarea name="examinationResult" rows="4" maxlength="4000" required placeholder="Tóm tắt các kết quả khám và nhận định chính"><c:out value="${formValues.examinationResult}" /></textarea></label>
+                        <label class="doctor-form-field doctor-form-span"><span>Kết luận và hướng xử trí <em>*</em></span><textarea name="conclusion" rows="3" maxlength="4000" required placeholder="Kết luận, chỉ định bổ sung hoặc hướng điều trị"><c:out value="${formValues.conclusion}" /></textarea></label>
+                        <label class="doctor-form-field"><span>Ngày tái khám dự kiến</span><input name="followUpDate" type="date" value="<c:out value='${formValues.followUpDate}' />"></label>
                     </div>
                 </section>
 
                 <div class="doctor-form-actions">
                     <a class="doctor-form-button secondary" href="${pageContext.request.contextPath}/doctor/patient-detail?id=${appointment.id}">Quay lại hồ sơ</a>
                     <button class="doctor-form-button secondary" type="button" data-preview-button><i class="bi bi-eye" aria-hidden="true"></i> Xem trước</button>
-                    <button class="doctor-form-button primary" type="button" disabled title="Chưa có API lưu kết quả khám"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Lưu phiếu khám</button>
+                    <button class="doctor-form-button primary" type="submit"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Lưu phiếu khám</button>
                 </div>
-                <p class="doctor-form-save-note"><i class="bi bi-info-circle" aria-hidden="true"></i> Giao diện nhập liệu đã sẵn sàng. Chức năng lưu cần kết nối servlet xử lý POST; dữ liệu đang nhập chưa được lưu.</p>
             </form>
 
             <aside class="doctor-form-aside" aria-label="Các bước trong ca khám">

@@ -9,24 +9,30 @@
     const previewContent = modal?.querySelector("[data-preview-content]");
     let returnFocus = null;
 
-    // The POST handlers are not implemented yet. Keep browser Enter from implying a save.
-    form.addEventListener("submit", event => event.preventDefault());
+    form.addEventListener("submit", () => {
+        const save = form.querySelector('button[type="submit"]');
+        if (save) save.disabled = true;
+    });
 
     function renumberMedicines() {
         const rows = [...document.querySelectorAll("[data-medicine-list] .doctor-form-medicine")];
+        const medicationToggle = document.querySelector('[data-section-toggle="medication"]');
         rows.forEach((row, index) => {
             row.querySelector("[data-medicine-number]").textContent = String(index + 1);
             row.querySelectorAll("[data-name]").forEach(input => {
                 input.name = "medicines[" + index + "]." + input.dataset.name;
             });
-            row.querySelector("[data-remove-medicine]").disabled = rows.length === 1;
+            row.querySelector("[data-remove-medicine]").disabled =
+                rows.length === 1 || (medicationToggle && !medicationToggle.checked);
         });
+        const addButton = document.querySelector("[data-add-medicine]");
+        if (addButton) addButton.disabled = rows.length >= 20 || (medicationToggle && !medicationToggle.checked);
     }
 
     function addMedicine(focusNewRow = true) {
         const template = document.querySelector("#medicine-row-template");
         const list = document.querySelector("[data-medicine-list]");
-        if (!template || !list) return;
+        if (!template || !list || list.children.length >= 20) return;
         list.appendChild(template.content.cloneNode(true));
         renumberMedicines();
         if (focusNewRow) list.lastElementChild.querySelector("[data-name='medicineName']").focus();
@@ -48,12 +54,17 @@
             section.querySelectorAll("input,select,textarea,button").forEach(control => {
                 control.disabled = !toggle.checked;
             });
+            if (toggle.dataset.sectionToggle === "medication") renumberMedicines();
         };
         toggle.addEventListener("change", sync);
         sync();
     });
 
-    if (page.dataset.doctorForm === "prescription") addMedicine(false);
+    if (page.dataset.doctorForm === "prescription") {
+        const list = document.querySelector("[data-medicine-list]");
+        if (list && list.children.length === 0) addMedicine(false);
+        else renumberMedicines();
+    }
 
     function addPreviewLine(label, value) {
         if (!value || !previewContent) return;

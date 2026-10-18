@@ -53,17 +53,27 @@
             </div>
         </section>
 
+        <c:if test="${not empty formMessage}"><div class="doctor-form-notice success" role="status"><i class="bi bi-check-circle" aria-hidden="true"></i> <c:out value="${formMessage}" /></div></c:if>
+        <c:if test="${not empty formErrors}">
+            <div class="doctor-form-notice error" role="alert">
+                <strong>Vui lòng kiểm tra lại đơn:</strong>
+                <ul><c:forEach var="error" items="${formErrors}"><li><c:out value="${error}" /></li></c:forEach></ul>
+            </div>
+        </c:if>
+
         <div class="doctor-form-layout">
-            <form id="prescription-form" class="doctor-form-stack" autocomplete="off">
+            <form id="prescription-form" class="doctor-form-stack" method="post"
+                  action="${pageContext.request.contextPath}/doctor/prescription/save?id=${appointment.id}" autocomplete="off">
                 <input type="hidden" name="appointmentId" value="<c:out value='${appointment.id}' />">
+                <input type="hidden" name="csrfToken" value="<c:out value='${csrfToken}' />">
                 <section class="doctor-form-card" aria-labelledby="prescription-type-heading">
                     <div class="doctor-form-card-heading">
                         <span class="doctor-form-icon"><i class="bi bi-sliders" aria-hidden="true"></i></span>
                         <div><h2 id="prescription-type-heading">Nội dung kê đơn</h2><p>Chọn loại chỉ định phù hợp với ca khám</p></div>
                     </div>
                     <div class="doctor-form-choice-grid">
-                        <label class="doctor-form-choice"><input type="checkbox" name="includeMedication" value="true" checked data-section-toggle="medication"><span><i class="bi bi-capsule" aria-hidden="true"></i><strong>Thuốc</strong><small>Hoạt chất, liều dùng, số lượng</small></span></label>
-                        <label class="doctor-form-choice"><input type="checkbox" name="includeGlasses" value="true" data-section-toggle="glasses"><span><i class="bi bi-eyeglasses" aria-hidden="true"></i><strong>Kính</strong><small>Độ kính từng mắt và khoảng cách đồng tử</small></span></label>
+                        <label class="doctor-form-choice"><input type="checkbox" name="includeMedication" value="true" ${includeMedication ? 'checked' : ''} data-section-toggle="medication"><span><i class="bi bi-capsule" aria-hidden="true"></i><strong>Thuốc</strong><small>Hoạt chất, liều dùng, số lượng</small></span></label>
+                        <label class="doctor-form-choice"><input type="checkbox" name="includeGlasses" value="true" ${includeGlasses ? 'checked' : ''} data-section-toggle="glasses"><span><i class="bi bi-eyeglasses" aria-hidden="true"></i><strong>Kính</strong><small>Độ kính từng mắt và khoảng cách đồng tử</small></span></label>
                     </div>
                 </section>
 
@@ -72,7 +82,31 @@
                         <span class="doctor-form-icon blue"><i class="bi bi-capsule-pill" aria-hidden="true"></i></span>
                         <div><h2 id="medication-heading">Danh sách thuốc</h2><p>Thêm từng thuốc và hướng dẫn sử dụng</p></div>
                     </div>
-                    <div class="doctor-form-medicine-list" data-medicine-list></div>
+                    <div class="doctor-form-medicine-list" data-medicine-list>
+                        <c:forEach var="medicine" items="${medicineRows}" varStatus="row">
+                            <fieldset class="doctor-form-medicine">
+                                <legend>Thuốc <span data-medicine-number><c:out value="${row.count}" /></span></legend>
+                                <button type="button" class="doctor-form-remove" data-remove-medicine aria-label="Xóa thuốc"><i class="bi bi-trash3" aria-hidden="true"></i> Xóa</button>
+                                <div class="doctor-form-fields">
+                                    <label class="doctor-form-field doctor-form-span"><span>Tên thuốc <em>*</em></span><input name="medicines[${row.index}].medicineName" data-name="medicineName" type="text" maxlength="255" required value="<c:out value='${medicine.medicineName}' />"></label>
+                                    <label class="doctor-form-field"><span>Hàm lượng / dạng dùng</span><input name="medicines[${row.index}].strength" data-name="strength" type="text" maxlength="100" value="<c:out value='${medicine.strength}' />"></label>
+                                    <label class="doctor-form-field"><span>Liều dùng <em>*</em></span><input name="medicines[${row.index}].dosage" data-name="dosage" type="text" maxlength="100" required value="<c:out value='${medicine.dosage}' />"></label>
+                                    <label class="doctor-form-field"><span>Tần suất <em>*</em></span><input name="medicines[${row.index}].frequency" data-name="frequency" type="text" maxlength="100" required value="<c:out value='${medicine.frequency}' />"></label>
+                                    <label class="doctor-form-field"><span>Thời gian dùng</span><input name="medicines[${row.index}].duration" data-name="duration" type="text" maxlength="100" value="<c:out value='${medicine.duration}' />"></label>
+                                    <label class="doctor-form-field"><span>Số lượng <em>*</em></span><input name="medicines[${row.index}].quantity" data-name="quantity" type="number" min="1" max="999" step="1" required value="<c:out value='${medicine.quantity}' />"></label>
+                                    <label class="doctor-form-field"><span>Đơn vị</span><select name="medicines[${row.index}].unit" data-name="unit">
+                                        <option value="chai" ${medicine.unit eq 'chai' or empty medicine.unit ? 'selected' : ''}>Chai</option>
+                                        <option value="hộp" ${medicine.unit eq 'hộp' ? 'selected' : ''}>Hộp</option>
+                                        <option value="viên" ${medicine.unit eq 'viên' ? 'selected' : ''}>Viên</option>
+                                        <option value="tuýp" ${medicine.unit eq 'tuýp' ? 'selected' : ''}>Tuýp</option>
+                                        <option value="lọ" ${medicine.unit eq 'lọ' ? 'selected' : ''}>Lọ</option>
+                                        <option value="khác" ${medicine.unit eq 'khác' ? 'selected' : ''}>Khác</option>
+                                    </select></label>
+                                    <label class="doctor-form-field doctor-form-span"><span>Hướng dẫn thêm</span><input name="medicines[${row.index}].instructions" data-name="instructions" type="text" maxlength="255" value="<c:out value='${medicine.instructions}' />"></label>
+                                </div>
+                            </fieldset>
+                        </c:forEach>
+                    </div>
                     <button type="button" class="doctor-form-add" data-add-medicine><i class="bi bi-plus-circle" aria-hidden="true"></i> Thêm thuốc</button>
                 </section>
 
@@ -85,15 +119,15 @@
                         <table class="doctor-form-matrix doctor-form-glasses-table">
                             <thead><tr><th scope="col">Mắt</th><th scope="col">SPH</th><th scope="col">CYL</th><th scope="col">AXIS</th><th scope="col">ADD</th></tr></thead>
                             <tbody>
-                                <tr><th scope="row">Phải (OD)</th><td><input name="odSph" type="number" step="0.25" min="-30" max="30" aria-label="SPH mắt phải" placeholder="0.00"></td><td><input name="odCyl" type="number" step="0.25" min="-15" max="15" aria-label="CYL mắt phải" placeholder="0.00"></td><td><input name="odAxis" type="number" step="1" min="0" max="180" aria-label="AXIS mắt phải" placeholder="0–180"></td><td><input name="odAdd" type="number" step="0.25" min="0" max="6" aria-label="ADD mắt phải" placeholder="0.00"></td></tr>
-                                <tr><th scope="row">Trái (OS)</th><td><input name="osSph" type="number" step="0.25" min="-30" max="30" aria-label="SPH mắt trái" placeholder="0.00"></td><td><input name="osCyl" type="number" step="0.25" min="-15" max="15" aria-label="CYL mắt trái" placeholder="0.00"></td><td><input name="osAxis" type="number" step="1" min="0" max="180" aria-label="AXIS mắt trái" placeholder="0–180"></td><td><input name="osAdd" type="number" step="0.25" min="0" max="6" aria-label="ADD mắt trái" placeholder="0.00"></td></tr>
+                                <tr><th scope="row">Phải (OD)</th><td><input name="odSph" type="number" step="0.25" min="-30" max="30" aria-label="SPH mắt phải" placeholder="0.00" value="<c:out value='${formValues.odSph}' />"></td><td><input name="odCyl" type="number" step="0.25" min="-15" max="15" aria-label="CYL mắt phải" placeholder="0.00" value="<c:out value='${formValues.odCyl}' />"></td><td><input name="odAxis" type="number" step="1" min="0" max="180" aria-label="AXIS mắt phải" placeholder="0–180" value="<c:out value='${formValues.odAxis}' />"></td><td><input name="odAdd" type="number" step="0.25" min="0" max="6" aria-label="ADD mắt phải" placeholder="0.00" value="<c:out value='${formValues.odAdd}' />"></td></tr>
+                                <tr><th scope="row">Trái (OS)</th><td><input name="osSph" type="number" step="0.25" min="-30" max="30" aria-label="SPH mắt trái" placeholder="0.00" value="<c:out value='${formValues.osSph}' />"></td><td><input name="osCyl" type="number" step="0.25" min="-15" max="15" aria-label="CYL mắt trái" placeholder="0.00" value="<c:out value='${formValues.osCyl}' />"></td><td><input name="osAxis" type="number" step="1" min="0" max="180" aria-label="AXIS mắt trái" placeholder="0–180" value="<c:out value='${formValues.osAxis}' />"></td><td><input name="osAdd" type="number" step="0.25" min="0" max="6" aria-label="ADD mắt trái" placeholder="0.00" value="<c:out value='${formValues.osAdd}' />"></td></tr>
                             </tbody>
                         </table>
                     </div>
                     <div class="doctor-form-fields doctor-form-glasses-extra">
-                        <label class="doctor-form-field"><span>Khoảng cách đồng tử (PD, mm)</span><input name="pd" type="number" min="40" max="80" step="0.5" placeholder="VD: 62"></label>
-                        <label class="doctor-form-field"><span>Loại kính</span><select name="lensType"><option value="">Chọn loại kính</option><option value="distance">Kính nhìn xa</option><option value="near">Kính đọc gần</option><option value="progressive">Kính đa tròng</option><option value="other">Khác</option></select></label>
-                        <label class="doctor-form-field doctor-form-span"><span>Ghi chú về kính</span><textarea name="glassesNotes" rows="2" maxlength="1000" placeholder="Chất liệu tròng, lớp phủ, thời gian đeo..."></textarea></label>
+                        <label class="doctor-form-field"><span>Khoảng cách đồng tử (PD, mm)</span><input name="pd" type="number" min="40" max="80" step="0.5" placeholder="VD: 62" value="<c:out value='${formValues.pd}' />"></label>
+                        <label class="doctor-form-field"><span>Loại kính</span><select name="lensType"><option value="">Chọn loại kính</option><option value="distance" ${formValues.lensType eq 'distance' ? 'selected' : ''}>Kính nhìn xa</option><option value="near" ${formValues.lensType eq 'near' ? 'selected' : ''}>Kính đọc gần</option><option value="progressive" ${formValues.lensType eq 'progressive' ? 'selected' : ''}>Kính đa tròng</option><option value="other" ${formValues.lensType eq 'other' ? 'selected' : ''}>Khác</option></select></label>
+                        <label class="doctor-form-field doctor-form-span"><span>Ghi chú về kính</span><textarea name="glassesNotes" rows="2" maxlength="1000" placeholder="Chất liệu tròng, lớp phủ, thời gian đeo..."><c:out value="${formValues.glassesNotes}" /></textarea></label>
                     </div>
                 </section>
 
@@ -103,17 +137,16 @@
                         <div><h2 id="prescription-notes-heading">Dặn dò bệnh nhân</h2><p>Hướng dẫn dùng thuốc, theo dõi và tái khám</p></div>
                     </div>
                     <div class="doctor-form-fields">
-                        <label class="doctor-form-field doctor-form-span"><span>Lời dặn của bác sĩ</span><textarea name="doctorNotes" rows="4" maxlength="2000" placeholder="Ví dụ: Nhỏ thuốc đúng giờ; quay lại khi đau, đỏ hoặc nhìn mờ tăng..."></textarea></label>
-                        <label class="doctor-form-field"><span>Ngày tái khám dự kiến</span><input name="followUpDate" type="date"></label>
+                        <label class="doctor-form-field doctor-form-span"><span>Lời dặn của bác sĩ</span><textarea name="doctorNotes" rows="4" maxlength="2000" placeholder="Ví dụ: Nhỏ thuốc đúng giờ; quay lại khi đau, đỏ hoặc nhìn mờ tăng..."><c:out value="${formValues.doctorNotes}" /></textarea></label>
+                        <label class="doctor-form-field"><span>Ngày tái khám dự kiến</span><input name="followUpDate" type="date" value="<c:out value='${formValues.followUpDate}' />"></label>
                     </div>
                 </section>
 
                 <div class="doctor-form-actions">
                     <a class="doctor-form-button secondary" href="${pageContext.request.contextPath}/doctor/examination?id=${appointment.id}">Về phiếu khám</a>
                     <button class="doctor-form-button secondary" type="button" data-preview-button><i class="bi bi-eye" aria-hidden="true"></i> Xem trước</button>
-                    <button class="doctor-form-button primary" type="button" disabled title="Chưa có API lưu đơn thuốc và kính"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Lưu đơn</button>
+                    <button class="doctor-form-button primary" type="submit"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Lưu đơn</button>
                 </div>
-                <p class="doctor-form-save-note"><i class="bi bi-info-circle" aria-hidden="true"></i> Giao diện kê đơn đã sẵn sàng. Chức năng lưu cần kết nối servlet xử lý POST; dữ liệu đang nhập chưa được lưu.</p>
             </form>
 
             <aside class="doctor-form-aside" aria-label="Các bước trong ca khám">
