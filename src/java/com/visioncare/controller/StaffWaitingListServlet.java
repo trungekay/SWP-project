@@ -31,9 +31,6 @@ public class StaffWaitingListServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            // Tự động quét và hủy các ca hẹn quá hạn/quá giờ mà không đến check-in
-            appointmentDAO.autoCancelExpiredAppointments();
-
             String dateParam = request.getParameter("date");
             String statusParam = request.getParameter("status");
             String doctorIdParam = request.getParameter("doctorId");

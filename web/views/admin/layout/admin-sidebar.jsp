@@ -68,16 +68,16 @@
                     </a>
                 </li>
 
-                <!-- 2. Quản lý Lịch hẹn (Sổ xuống gồm 2 nội dung) -->
+                <!-- 2. Quản lý Lịch hẹn (Sổ xuống gồm 3 nội dung) -->
                 <li class="sidebar-dropdown">
-                    <a href="javascript:void(0);" onclick="toggleSubmenu('appt-sub', this);" class="${param.activeNav == 'appointments' || param.activeNav == 'checkin' ? 'active' : ''}">
+                    <a href="javascript:void(0);" onclick="toggleSubmenu('appt-sub', this);" class="${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'active' : ''}">
                         <div class="d-flex align-items-center gap-2">
                             <i class="bi bi-calendar2-check"></i>
                             <span>Quản lý Lịch hẹn</span>
                         </div>
-                        <i class="bi ${param.activeNav == 'appointments' || param.activeNav == 'checkin' ? 'bi-chevron-up' : 'bi-chevron-down'}" style="font-size: 11px;"></i>
+                        <i class="bi ${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'bi-chevron-up' : 'bi-chevron-down'}" style="font-size: 11px;"></i>
                     </a>
-                    <ul class="sidebar-submenu ${param.activeNav == 'appointments' || param.activeNav == 'checkin' ? 'show' : ''}" id="appt-sub">
+                    <ul class="sidebar-submenu ${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'show' : ''}" id="appt-sub">
                         <li>
                             <a href="${pageContext.request.contextPath}/staff/appointments" class="${param.activeNav == 'appointments' ? 'active' : ''}">
                                 <i class="bi bi-list-task"></i>
@@ -85,9 +85,9 @@
                             </a>
                         </li>
                         <li>
-                            <a href="${pageContext.request.contextPath}/staff/check-in" class="${param.activeNav == 'checkin' ? 'active' : ''}">
-                                <i class="bi bi-person-check"></i>
-                                <span>Check-in Bệnh nhân</span>
+                            <a href="${pageContext.request.contextPath}/staff/waiting-list" class="${param.activeNav == 'waiting-list' ? 'active' : ''}">
+                                <i class="bi bi-people"></i>
+                                <span>Hàng đợi phòng khám</span>
                             </a>
                         </li>
                     </ul>

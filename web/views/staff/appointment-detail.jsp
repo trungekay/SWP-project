@@ -17,21 +17,21 @@
                 <link rel="stylesheet"
                     href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-                <!-- Staff / Admin Layout CSS -->
-                <jsp:include page="/views/staff/layout/staff-css.jsp" />
+                <!-- Employee / Staff Unified Layout CSS -->
+                <jsp:include page="/views/employee/layout/employee-css.jsp" />
             </head>
 
             <body>
 
-                <!-- Staff Sidebar -->
-                <jsp:include page="/views/staff/layout/staff-sidebar.jsp">
+                <!-- Employee Unified Sidebar -->
+                <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
                     <jsp:param name="activeNav" value="appointments" />
                 </jsp:include>
 
                 <!-- Main Wrapper -->
                 <main class="main-wrapper">
                     <!-- Top Header -->
-                    <jsp:include page="/views/staff/layout/staff-header.jsp" />
+                    <jsp:include page="/views/employee/layout/employee-header.jsp" />
 
                     <!-- Page Content -->
                     <div class="page-content">
@@ -96,28 +96,22 @@
                                             <span class="badge bg-light text-dark border">#APPT-${appointment.id}</span>
                                             <c:choose>
                                                 <c:when test="${appointment.status == 'Pending'}">
-                                                    <span class="badge-status badge-pending">Chờ tiếp đón
-                                                        (Pending)</span>
+                                                    <span class="badge-status badge-pending" title="Chờ tiếp đón tại quầy lễ tân">Chờ tiếp đón</span>
                                                 </c:when>
                                                 <c:when test="${appointment.status == 'Confirmed'}">
-                                                    <span class="badge-status badge-confirmed">Chờ khám
-                                                        (Confirmed)</span>
+                                                    <span class="badge-status badge-confirmed" title="Đã tiếp đón, đang chờ vào khám">Chờ khám</span>
                                                 </c:when>
                                                 <c:when test="${appointment.status == 'In_Progress'}">
-                                                    <span class="badge-status badge-in-progress">Đang khám
-                                                        (In_Progress)</span>
+                                                    <span class="badge-status badge-in-progress" title="Bác sĩ đang thực hiện khám">Đang khám</span>
                                                 </c:when>
                                                 <c:when test="${appointment.status == 'Completed'}">
-                                                    <span class="badge-status badge-completed">Hoàn tất</span>
+                                                    <span class="badge-status badge-completed" title="Ca khám đã hoàn thành">Đã khám xong</span>
                                                 </c:when>
                                                 <c:when test="${appointment.status == 'Canceled'}">
-                                                    <span class="badge-status badge-canceled"><i
-                                                            class="bi bi-x-circle me-1"></i>Đã hủy / Quá hạn (Không
-                                                        đến)</span>
+                                                    <span class="badge-status badge-canceled" title="Lịch hẹn đã hủy / vắng mặt">Đã hủy / Vắng mặt</span>
                                                 </c:when>
                                                 <c:otherwise>
-                                                    <span
-                                                        class="badge-status badge-pending">${appointment.status}</span>
+                                                    <span class="badge-status badge-pending">${appointment.status}</span>
                                                 </c:otherwise>
                                             </c:choose>
                                         </div>
@@ -145,43 +139,12 @@
                                         </button>
                                     </c:if>
                                     <c:if test="${appointment.status == 'Confirmed'}">
-                                        <button type="button" class="btn btn-teal" data-bs-toggle="modal"
-                                            data-bs-target="#startExamModal">
-                                            <i class="bi bi-box-arrow-in-right"></i> Vào khám
-                                        </button>
-                                        <button type="button"
-                                            class="btn btn-outline-warning d-flex align-items-center gap-1"
-                                            data-bs-toggle="modal" data-bs-target="#skipModal"
-                                            title="Chuyển bệnh nhân xuống cuối hàng đợi hôm nay nếu tạm vắng mặt">
-                                            <i class="bi bi-arrow-down-circle"></i> Bỏ qua lượt
-                                        </button>
-                                        <button type="button"
-                                            class="btn btn-outline-danger d-flex align-items-center gap-1"
-                                            data-bs-toggle="modal" data-bs-target="#absentModal"
-                                            title="Báo vắng mặt và hủy ca khám khỏi hàng đợi">
-                                            <i class="bi bi-person-x"></i> Báo vắng mặt
-                                        </button>
-                                        <button type="button"
-                                            class="btn btn-light border d-flex align-items-center gap-1 text-secondary"
-                                            data-bs-toggle="modal" data-bs-target="#cancelModal">
-                                            <i class="bi bi-calendar-x"></i> Hủy lịch
-                                        </button>
                                         <a href="${pageContext.request.contextPath}/staff/waiting-list"
                                             class="btn btn-teal-outline">
                                             <i class="bi bi-people-fill"></i> Xem trong Hàng đợi
                                         </a>
                                     </c:if>
                                     <c:if test="${appointment.status == 'In_Progress'}">
-                                        <button type="button" class="btn btn-teal d-flex align-items-center gap-1"
-                                            data-bs-toggle="modal" data-bs-target="#completeModal">
-                                            <i class="bi bi-check2-circle"></i> Hoàn tất khám
-                                        </button>
-                                        <button type="button"
-                                            class="btn btn-outline-danger d-flex align-items-center gap-1"
-                                            data-bs-toggle="modal" data-bs-target="#absentModal"
-                                            title="Báo vắng mặt và hủy ca khám khỏi hàng đợi">
-                                            <i class="bi bi-person-x"></i> Báo vắng mặt
-                                        </button>
                                         <a href="${pageContext.request.contextPath}/staff/waiting-list"
                                             class="btn btn-teal-outline">
                                             <i class="bi bi-people-fill"></i> Xem trong Hàng đợi
@@ -299,89 +262,143 @@
 
                             <!-- Right Column: Record Medical Notes (Feature for Iter 2) -->
                             <div class="col-lg-5">
-                                <div class="content-card p-4">
-                                    <div class="detail-section-title">
-                                        <i class="bi bi-clipboard2-pulse text-teal"
-                                            style="color: var(--primary-color);"></i>
-                                        Ghi nhận Ghi chú Y tế Ban đầu
-                                    </div>
-                                    <p class="text-muted small mb-3">
-                                        Lễ tân ghi nhận triệu chứng sơ bộ, lý do đến khám hoặc các lưu ý đặc biệt để Bác
-                                        sĩ nắm trước khi vào phòng khám.
-                                    </p>
+                                <c:choose>
+                                    <c:when test="${appointment.status == 'Canceled'}">
+                                        <!-- Khi đã hủy / vắng mặt: Hiển thị Thẻ thông tin Hủy & Ghi chú cũ dạng Read-only -->
+                                        <div class="content-card p-4">
+                                            <div class="detail-section-title text-danger">
+                                                <i class="bi bi-clipboard2-x text-danger"></i>
+                                                Thông tin Hủy lịch & Vắng mặt
+                                            </div>
+                                            <p class="text-muted small mb-3">
+                                                Ca khám này đã được xác nhận kết thúc do bệnh nhân vắng mặt hoặc yêu cầu hủy lịch.
+                                            </p>
 
-                                    <!-- Quick symptom suggestions -->
-                                    <div class="mb-3">
-                                        <label class="info-label d-block mb-2">Gợi ý triệu chứng nhanh:</label>
-                                        <div class="d-flex flex-wrap gap-2">
-                                            <span class="quick-tag-badge"
-                                                onclick="appendNote('Khám mắt định kỳ, đo thị lực.')">+ Khám định
-                                                kỳ</span>
-                                            <span class="quick-tag-badge"
-                                                onclick="appendNote('Mắt đỏ, cộm xốn, chảy nước mắt 2 ngày nay.')">+ Đỏ
-                                                mắt, cộm xốn</span>
-                                            <span class="quick-tag-badge"
-                                                onclick="appendNote('Nhìn mờ đột ngột, chói mắt khi ra nắng.')">+ Nhìn
-                                                mờ</span>
-                                            <span class="quick-tag-badge"
-                                                onclick="appendNote('Tái khám theo hẹn của bác sĩ.')">+ Tái khám
-                                                hẹn</span>
-                                            <span class="quick-tag-badge"
-                                                onclick="appendNote('Có dị vật / bụi bay vào mắt.')">+ Dị vật mắt</span>
-                                            <span class="quick-tag-badge"
-                                                onclick="appendNote('Tiền sử cận thị, cần đo độ kính mới.')">+ Cắt kính
-                                                mới</span>
-                                        </div>
-                                    </div>
+                                            <div class="p-3 rounded-3 border mb-3" style="background-color: #fef2f2; border-color: #fecaca !important;">
+                                                <label class="info-label text-danger fw-bold d-block mb-1">
+                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Lý do vắng mặt đã xác nhận:
+                                                </label>
+                                                <p class="fw-semibold text-dark mb-0 ps-2" style="font-size: 14px;">
+                                                    <c:choose>
+                                                        <c:when test="${not empty appointment.reason}">
+                                                            ${appointment.reason}
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            Gọi tên nhiều lần không có mặt / Bệnh nhân không đến phòng khám đúng giờ hẹn
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                </p>
+                                            </div>
 
-                                    <!-- Notes Form -->
-                                    <form action="${pageContext.request.contextPath}/staff/appointment-detail"
-                                        method="post">
-                                        <input type="hidden" name="action" value="saveNotes">
-                                        <input type="hidden" name="appointmentId" value="${appointment.id}">
-                                        <input type="hidden" name="doctorId" value="${appointment.doctorId}">
-
-                                        <div class="mb-3">
-                                            <label for="medicalNotesInput" class="info-label fw-semibold text-dark">
-                                                Nội dung Ghi chú Y tế (Medical Notes):
-                                            </label>
-                                            <textarea id="medicalNotesInput" name="medicalNotes" rows="6"
-                                                class="notes-textarea"
-                                                placeholder="Nhập triệu chứng của bệnh nhân, lý do khám, tiền sử dị ứng hoặc ghi chú cho bác sĩ...">${appointment.medicalNotes}</textarea>
+                                            <c:if test="${not empty appointment.medicalNotes}">
+                                                <div class="mb-0">
+                                                    <label class="info-label fw-semibold text-dark mb-1">
+                                                        <i class="bi bi-journal-medical me-1"></i>Ghi chú y tế / Triệu chứng ban đầu:
+                                                    </label>
+                                                    <div class="p-2.5 rounded-2 bg-light border small text-secondary" style="line-height: 1.6;">
+                                                        ${appointment.medicalNotes}
+                                                    </div>
+                                                </div>
+                                            </c:if>
                                         </div>
 
-                                        <div class="d-flex align-items-center justify-content-between pt-2">
-                                            <span class="text-muted small">
-                                                <c:choose>
-                                                    <c:when test="${not empty appointment.medicalNotes}">
-                                                        <i class="bi bi-check-circle text-success me-1"></i>Đã có ghi
-                                                        chú lưu
-                                                    </c:when>
-                                                    <c:otherwise>
-                                                        <i class="bi bi-dash-circle text-muted me-1"></i>Chưa có ghi chú
-                                                    </c:otherwise>
-                                                </c:choose>
-                                            </span>
-                                            <button type="submit" class="btn btn-teal">
-                                                <i class="bi bi-floppy"></i> Lưu Ghi chú Y tế
-                                            </button>
+                                        <!-- Hướng dẫn xử lý -->
+                                        <div class="p-3 rounded-3 bg-light border mt-3">
+                                            <div class="d-flex align-items-center gap-2 mb-2 text-dark fw-semibold small">
+                                                <i class="bi bi-info-circle-fill text-primary"></i> Hướng dẫn nghiệp vụ tiếp đón
+                                            </div>
+                                            <p class="small text-muted mb-0" style="line-height: 1.6;">
+                                                Nếu bệnh nhân đến trễ và muốn được khám lại, vui lòng hướng dẫn bệnh nhân đặt một lịch hẹn mới hoặc chuyển sang tiếp đón ca khám vãng lai trong ngày nếu bác sĩ còn slot trống.
+                                            </p>
                                         </div>
-                                    </form>
-                                </div>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <!-- Khi bình thường: Cho phép nhập/sửa Medical Notes -->
+                                        <div class="content-card p-4">
+                                            <div class="detail-section-title">
+                                                <i class="bi bi-clipboard2-pulse text-teal"
+                                                    style="color: var(--primary-color);"></i>
+                                                Ghi nhận Ghi chú Y tế Ban đầu
+                                            </div>
+                                            <p class="text-muted small mb-3">
+                                                Lễ tân ghi nhận triệu chứng sơ bộ, lý do đến khám hoặc các lưu ý đặc biệt để Bác
+                                                sĩ nắm trước khi vào phòng khám.
+                                            </p>
 
-                                <!-- Flow Information Box -->
-                                <div class="p-3 rounded-3 bg-light border mt-3">
-                                    <div class="d-flex align-items-center gap-2 mb-2 text-dark fw-semibold small">
-                                        <i class="bi bi-lightbulb-fill text-warning"></i> Quy trình Tiếp đón Khám mắt
-                                    </div>
-                                    <ol class="small text-muted ps-3 mb-0" style="line-height: 1.6;">
-                                        <li>Kiểm tra thông tin cá nhân và số điện thoại của bệnh nhân.</li>
-                                        <li>Bấm <strong>Check-in</strong> để xác nhận bệnh nhân đã có mặt.</li>
-                                        <li>Ghi nhận triệu chứng ban đầu vào ô <strong>Medical Notes</strong>.</li>
-                                        <li>Hướng dẫn bệnh nhân sang khu vực ghế chờ theo dõi trên màn hình hàng đợi.
-                                        </li>
-                                    </ol>
-                                </div>
+                                            <!-- Quick symptom suggestions -->
+                                            <div class="mb-3">
+                                                <label class="info-label d-block mb-2">Gợi ý triệu chứng nhanh:</label>
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    <span class="quick-tag-badge"
+                                                        onclick="appendNote('Khám mắt định kỳ, đo thị lực.')">+ Khám định
+                                                        kỳ</span>
+                                                    <span class="quick-tag-badge"
+                                                        onclick="appendNote('Mắt đỏ, cộm xốn, chảy nước mắt 2 ngày nay.')">+ Đỏ
+                                                        mắt, cộm xốn</span>
+                                                    <span class="quick-tag-badge"
+                                                        onclick="appendNote('Nhìn mờ đột ngột, chói mắt khi ra nắng.')">+ Nhìn
+                                                        mờ</span>
+                                                    <span class="quick-tag-badge"
+                                                        onclick="appendNote('Tái khám theo hẹn của bác sĩ.')">+ Tái khám
+                                                        hẹn</span>
+                                                    <span class="quick-tag-badge"
+                                                        onclick="appendNote('Có dị vật / bụi bay vào mắt.')">+ Dị vật mắt</span>
+                                                    <span class="quick-tag-badge"
+                                                        onclick="appendNote('Tiền sử cận thị, cần đo độ kính mới.')">+ Cắt kính
+                                                        mới</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Notes Form -->
+                                            <form action="${pageContext.request.contextPath}/staff/appointment-detail"
+                                                method="post">
+                                                <input type="hidden" name="action" value="saveNotes">
+                                                <input type="hidden" name="appointmentId" value="${appointment.id}">
+                                                <input type="hidden" name="doctorId" value="${appointment.doctorId}">
+
+                                                <div class="mb-3">
+                                                    <label for="medicalNotesInput" class="info-label fw-semibold text-dark">
+                                                        Nội dung Ghi chú Y tế (Medical Notes):
+                                                    </label>
+                                                    <textarea id="medicalNotesInput" name="medicalNotes" rows="6"
+                                                        class="notes-textarea"
+                                                        placeholder="Nhập triệu chứng của bệnh nhân, lý do khám, tiền sử dị ứng hoặc ghi chú cho bác sĩ...">${appointment.medicalNotes}</textarea>
+                                                </div>
+
+                                                <div class="d-flex align-items-center justify-content-between pt-2">
+                                                    <span class="text-muted small">
+                                                        <c:choose>
+                                                            <c:when test="${not empty appointment.medicalNotes}">
+                                                                <i class="bi bi-check-circle text-success me-1"></i>Đã có ghi
+                                                                chú lưu
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                                <i class="bi bi-dash-circle text-muted me-1"></i>Chưa có ghi chú
+                                                            </c:otherwise>
+                                                        </c:choose>
+                                                    </span>
+                                                    <button type="submit" class="btn btn-teal">
+                                                        <i class="bi bi-floppy"></i> Lưu Ghi chú Y tế
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+
+                                        <!-- Flow Information Box -->
+                                        <div class="p-3 rounded-3 bg-light border mt-3">
+                                            <div class="d-flex align-items-center gap-2 mb-2 text-dark fw-semibold small">
+                                                <i class="bi bi-lightbulb-fill text-warning"></i> Quy trình Tiếp đón Khám mắt
+                                            </div>
+                                            <ol class="small text-muted ps-3 mb-0" style="line-height: 1.6;">
+                                                <li>Kiểm tra thông tin cá nhân và số điện thoại của bệnh nhân.</li>
+                                                <li>Bấm <strong>Check-in</strong> để xác nhận bệnh nhân đã có mặt.</li>
+                                                <li>Ghi nhận triệu chứng ban đầu vào ô <strong>Medical Notes</strong>.</li>
+                                                <li>Hướng dẫn bệnh nhân sang khu vực ghế chờ theo dõi trên màn hình hàng đợi.
+                                                </li>
+                                            </ol>
+                                        </div>
+                                    </c:otherwise>
+                                </c:choose>
                             </div>
                         </div>
 
@@ -515,6 +532,7 @@
                                             class="form-select form-select-sm shadow-none mb-2"
                                             style="border-radius: 8px; font-size: 13.5px;"
                                             onchange="toggleCustomReason(this)">
+                                            <option value="Liên hệ nhưng bệnh nhân báo bận không đến khám">Liên hệ nhưng bệnh nhân báo bận không đến khám</option>
                                             <option value="Bệnh nhân báo bận, yêu cầu đổi lịch sang ngày khác">Bệnh nhân
                                                 báo bận, yêu cầu đổi lịch sang ngày khác</option>
                                             <option value="Bệnh nhân không có nhu cầu khám nữa">Bệnh nhân không có nhu

@@ -467,7 +467,8 @@ public class AppointmentDAO {
             "doc.Full_Name AS Doctor_Name, doc.Specialty AS Doctor_Specialty, " +
             "rm.Room_Name, " +
             "stf.Full_Name AS Staff_Name, " +
-            "mr.Clinical_Diagnosis AS Medical_Notes " +
+            "mr.Clinical_Diagnosis AS Medical_Notes, " +
+            "mr.conclusion AS Cancel_Reason " +
             "FROM Appointment a " +
             "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
             "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
@@ -539,7 +540,8 @@ public class AppointmentDAO {
                      "doc.Full_Name AS Doctor_Name, doc.Specialty AS Doctor_Specialty, " +
                      "rm.Room_Name, " +
                      "stf.Full_Name AS Staff_Name, " +
-                     "mr.Clinical_Diagnosis AS Medical_Notes " +
+                     "mr.Clinical_Diagnosis AS Medical_Notes, " +
+                     "mr.conclusion AS Cancel_Reason " +
                      "FROM Appointment a " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
                      "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
@@ -664,10 +666,15 @@ public class AppointmentDAO {
                 }
             }
 
+            String formattedReason = noteReason;
+            if (!formattedReason.startsWith("Báo vắng mặt:") && !formattedReason.startsWith("Lễ tân hủy lịch:") && !formattedReason.startsWith("Hủy lịch:")) {
+                formattedReason = "Lễ tân hủy lịch: " + noteReason;
+            }
+
             if (exists) {
                 String sqlUpdateMR = "UPDATE Medical_Record SET conclusion = ? WHERE Appointment_ID = ?";
                 try (PreparedStatement psUpMR = conn.prepareStatement(sqlUpdateMR)) {
-                    psUpMR.setString(1, "Lễ tân hủy lịch: " + noteReason);
+                    psUpMR.setString(1, formattedReason);
                     psUpMR.setInt(2, appointmentId);
                     psUpMR.executeUpdate();
                 }
@@ -687,7 +694,7 @@ public class AppointmentDAO {
                     try (PreparedStatement psInsMR = conn.prepareStatement(sqlInsMR)) {
                         psInsMR.setInt(1, appointmentId);
                         psInsMR.setInt(2, docId);
-                        psInsMR.setString(3, "Lễ tân hủy lịch: " + noteReason);
+                        psInsMR.setString(3, formattedReason);
                         psInsMR.executeUpdate();
                     }
                 }
@@ -710,40 +717,12 @@ public class AppointmentDAO {
 
     /**
      * Tự động quét và cập nhật trạng thái các ca hẹn quá hạn thành 'Canceled':
-     * - Các ca hẹn ở trạng thái Pending (chưa check-in)
-     * - Ngày khám trong quá khứ (Work_Date < ngày hiện tại)
-     * - Hoặc ngày khám là hôm nay nhưng đã quá giờ kết thúc ca (End_Time <= giờ hiện tại)
+     * Đã tắt chức năng tự động hủy lịch để Lễ tân chủ động gọi điện liên hệ bệnh nhân
+     * xác nhận check-in hoặc thao tác hủy lịch thủ công.
      */
     public int autoCancelExpiredAppointments() {
-        int updatedCount = 0;
-        String sql = "UPDATE Appointment " +
-                     "SET Status = 'Canceled' " +
-                     "WHERE Status = 'Pending' " +
-                     "  AND checkin_time IS NULL " +
-                     "  AND Schedule_ID IN (" +
-                     "      SELECT ws.Schedule_ID FROM Work_Schedule ws " +
-                     "      WHERE ws.Work_Date < CAST(GETDATE() AS DATE) " +
-                     "         OR (ws.Work_Date = CAST(GETDATE() AS DATE) AND CAST(ws.End_Time AS TIME) <= CAST(GETDATE() AS TIME))" +
-                     "  )";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            updatedCount = ps.executeUpdate();
-
-            if (updatedCount > 0) {
-                String noteSql = "UPDATE mr " +
-                                 "SET mr.conclusion = N'Hệ thống tự động hủy: Quá giờ hẹn nhưng bệnh nhân không đến check-in' " +
-                                 "FROM Medical_Record mr " +
-                                 "JOIN Appointment a ON mr.Appointment_ID = a.Appointment_ID " +
-                                 "WHERE a.Status = 'Canceled' AND a.checkin_time IS NULL " +
-                                 "  AND (mr.conclusion IS NULL OR mr.conclusion = '')";
-                try (PreparedStatement psNote = conn.prepareStatement(noteSql)) {
-                    psNote.executeUpdate();
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return updatedCount;
+        // Disabled: lễ tân chủ động liên hệ bệnh nhân và thao tác thủ công
+        return 0;
     }
 
     public boolean saveMedicalNotes(int appointmentId, int doctorId, String notes) throws Exception {
@@ -801,7 +780,8 @@ public class AppointmentDAO {
             "doc.Full_Name AS Doctor_Name, doc.Specialty AS Doctor_Specialty, " +
             "rm.Room_Name, " +
             "stf.Full_Name AS Staff_Name, " +
-            "mr.Clinical_Diagnosis AS Medical_Notes " +
+            "mr.Clinical_Diagnosis AS Medical_Notes, " +
+            "mr.conclusion AS Cancel_Reason " +
             "FROM Appointment a " +
             "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
             "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
@@ -901,6 +881,9 @@ public class AppointmentDAO {
         a.setCheckinTime(rs.getString("Checkin_Time_Str"));
         a.setCreatedAt(rs.getString("Created_At_Str"));
         a.setMedicalNotes(rs.getString("Medical_Notes"));
+        try {
+            a.setReason(rs.getString("Cancel_Reason"));
+        } catch (SQLException ignored) {}
         return a;
     }
 
