@@ -256,4 +256,14 @@ public class Appointment {
     public void setHasRefundRequest(boolean hasRefundRequest) {
         this.hasRefundRequest = hasRefundRequest;
     }
+
+    public boolean isPast() {
+        if (appointmentDate == null) return false;
+        Date today = Date.valueOf(java.time.LocalDate.now());
+        return appointmentDate.before(today);
+    }
+
+    public boolean getIsPast() {
+        return isPast();
+    }
 }

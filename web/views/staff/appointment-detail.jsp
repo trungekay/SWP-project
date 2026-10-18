@@ -1,6 +1,7 @@
 <%@page contentType="text/html" pageEncoding="UTF-8" %>
     <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
         <%@taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+            <%@taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
             <!DOCTYPE html>
             <html lang="vi">
 
@@ -126,30 +127,42 @@
                                 </div>
 
                                 <!-- Quick Action -->
+                                <c:set var="currentDateStr"><%= java.time.LocalDate.now().toString() %></c:set>
+                                <c:set var="apptDateStr">${appointment.appointmentDate}</c:set>
+                                <c:set var="isPastAppt" value="${not empty apptDateStr && apptDateStr < currentDateStr}" />
                                 <div class="d-flex align-items-center gap-2">
-                                    <c:if test="${appointment.status == 'Pending'}">
-                                        <button type="button" class="btn btn-teal" data-bs-toggle="modal"
-                                            data-bs-target="#checkinModal">
-                                            <i class="bi bi-box-arrow-in-right"></i> Check-in
-                                        </button>
-                                        <button type="button"
-                                            class="btn btn-outline-danger d-flex align-items-center gap-1"
-                                            data-bs-toggle="modal" data-bs-target="#cancelModal">
-                                            <i class="bi bi-x-circle"></i> Hủy lịch hẹn
-                                        </button>
-                                    </c:if>
-                                    <c:if test="${appointment.status == 'Confirmed'}">
-                                        <a href="${pageContext.request.contextPath}/staff/waiting-list"
-                                            class="btn btn-teal-outline">
-                                            <i class="bi bi-people-fill"></i> Xem trong Hàng đợi
-                                        </a>
-                                    </c:if>
-                                    <c:if test="${appointment.status == 'In_Progress'}">
-                                        <a href="${pageContext.request.contextPath}/staff/waiting-list"
-                                            class="btn btn-teal-outline">
-                                            <i class="bi bi-people-fill"></i> Xem trong Hàng đợi
-                                        </a>
-                                    </c:if>
+                                    <c:choose>
+                                        <c:when test="${isPastAppt}">
+                                            <span class="badge bg-secondary-subtle text-secondary border px-3 py-2 fw-medium" style="font-size: 13px;">
+                                                <i class="bi bi-clock-history me-1"></i>Lịch hẹn đã qua ngày (${appointment.appointmentDate})
+                                            </span>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:if test="${appointment.status == 'Pending'}">
+                                                <button type="button" class="btn btn-teal" data-bs-toggle="modal"
+                                                    data-bs-target="#checkinModal">
+                                                    <i class="bi bi-box-arrow-in-right"></i> Check-in
+                                                </button>
+                                                <button type="button"
+                                                    class="btn btn-outline-danger d-flex align-items-center gap-1"
+                                                    data-bs-toggle="modal" data-bs-target="#cancelModal">
+                                                    <i class="bi bi-x-circle"></i> Hủy lịch hẹn
+                                                </button>
+                                            </c:if>
+                                            <c:if test="${appointment.status == 'Confirmed'}">
+                                                <a href="${pageContext.request.contextPath}/staff/waiting-list"
+                                                    class="btn btn-teal-outline">
+                                                    <i class="bi bi-people-fill"></i> Xem trong Hàng đợi
+                                                </a>
+                                            </c:if>
+                                            <c:if test="${appointment.status == 'In_Progress'}">
+                                                <a href="${pageContext.request.contextPath}/staff/waiting-list"
+                                                    class="btn btn-teal-outline">
+                                                    <i class="bi bi-people-fill"></i> Xem trong Hàng đợi
+                                                </a>
+                                            </c:if>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
                             </div>
                         </div>
@@ -256,6 +269,37 @@
                                             <div class="info-value">${not empty appointment.staffName ?
                                                 appointment.staffName : 'Chưa có'}</div>
                                         </div>
+                                        <div class="col-sm-6">
+                                            <div class="info-label">Dịch vụ đăng ký khám</div>
+                                            <div class="info-value fw-semibold text-teal" style="color: #0d9488;">
+                                                <i class="bi bi-tag-fill me-1"></i>${not empty appointment.serviceName ? appointment.serviceName : 'Khám mắt tổng quát & Soi đáy mắt'}
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="info-label">Phí dịch vụ ban đầu (Tiền cọc)</div>
+                                            <div class="info-value d-flex align-items-center gap-2">
+                                                <span class="fw-bold text-dark fs-6">
+                                                    <fmt:formatNumber value="${appointment.fee > 0 ? appointment.fee : 200000}" type="number" groupingUsed="true" /> ₫
+                                                </span>
+                                                <c:choose>
+                                                    <c:when test="${appointment.invoiceStatus == 'Paid'}">
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2" style="font-size: 11px;">
+                                                            <i class="bi bi-check2-circle me-1"></i>Đã thanh toán (Paid)
+                                                        </span>
+                                                    </c:when>
+                                                    <c:when test="${appointment.invoiceStatus == 'Pending_Deposit'}">
+                                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle py-1 px-2" style="font-size: 11px;">
+                                                            <i class="bi bi-clock me-1"></i>Chờ đặt cọc
+                                                        </span>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <span class="badge bg-light text-secondary border py-1 px-2" style="font-size: 11px;">
+                                                            ${not empty appointment.invoiceStatus ? appointment.invoiceStatus : 'Đã thu cọc'}
+                                                        </span>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -263,6 +307,210 @@
                             <!-- Right Column: Record Medical Notes (Feature for Iter 2) -->
                             <div class="col-lg-5">
                                 <c:choose>
+                                    <c:when test="${isPastAppt}">
+                                        <!-- Khi đã qua ngày: Chỉ hiển thị Ghi chú Y tế dạng Xem (Read-only), không cho phép sửa hoặc thao tác khác -->
+                                        <div class="content-card p-4">
+                                            <div class="detail-section-title">
+                                                <i class="bi bi-journal-medical text-teal" style="color: var(--primary-color);"></i>
+                                                Ghi chú Y tế Ban đầu
+                                            </div>
+                                            <div class="p-2.5 px-3 rounded-3 border mb-3 d-flex align-items-start gap-2" style="background-color: #f8fafc; border-color: #e2e8f0 !important; color: #475569;">
+                                                <i class="bi bi-info-circle-fill text-primary mt-0.5" style="font-size: 15px;"></i>
+                                                <div style="font-size: 13px; line-height: 1.5;">
+                                                    Lịch hẹn đã qua ngày khám (<strong>${appointment.appointmentDate}</strong>). Bạn chỉ có thể xem ghi chú y tế và thông tin hồ sơ, không thể thực hiện thay đổi hoặc tiếp đón.
+                                                </div>
+                                            </div>
+
+                                            <div class="p-3 rounded-3 border mb-0" style="background-color: #f8fafc; border-color: #e2e8f0 !important;">
+                                                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                                                    <label class="info-label fw-bold text-dark mb-0 d-flex align-items-center gap-2" style="font-size: 14px;">
+                                                        <i class="bi bi-file-earmark-medical-fill" style="color: var(--primary-color, #0d9488); font-size: 17px;"></i>
+                                                        <span>Nội dung Ghi chú Y tế</span>
+                                                    </label>
+                                                    <span class="badge bg-white border text-secondary fw-normal px-2.5 py-1" style="font-size: 11.5px;">
+                                                        <i class="bi bi-clock-history text-muted me-1"></i>Hồ sơ lưu trữ
+                                                    </span>
+                                                </div>
+
+                                                <c:set var="rawNotes" value="${fn:trim(appointment.medicalNotes)}" />
+                                                <c:choose>
+                                                    <c:when test="${empty rawNotes}">
+                                                        <div class="text-center py-4 px-3 rounded-3 bg-white border" style="border-style: dashed !important; border-color: #cbd5e1 !important;">
+                                                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
+                                                                style="width: 42px; height: 42px; background-color: #f1f5f9; color: #94a3b8;">
+                                                                <i class="bi bi-journal-x" style="font-size: 20px;"></i>
+                                                            </div>
+                                                            <p class="mb-1 fw-semibold text-secondary" style="font-size: 13.5px;">Chưa có ghi chú y tế</p>
+                                                            <p class="small text-muted mb-0">Ca khám này chưa được ghi nhận triệu chứng ban đầu hoặc dịch vụ chỉ định.</p>
+                                                        </div>
+                                                    </c:when>
+                                                    <c:when test="${fn:contains(rawNotes, '|')}">
+                                                        <c:forEach var="part" items="${fn:split(rawNotes, '|')}">
+                                                            <c:set var="trimmedPart" value="${fn:trim(part)}" />
+                                                            <c:if test="${not empty trimmedPart}">
+                                                                <c:choose>
+                                                                    <c:when test="${fn:contains(trimmedPart, ':')}">
+                                                                        <c:set var="itemVal" value="${fn:trim(fn:substringAfter(trimmedPart, ':'))}" />
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        <c:set var="itemVal" value="${trimmedPart}" />
+                                                                    </c:otherwise>
+                                                                </c:choose>
+
+                                                                <c:choose>
+                                                                    <c:when test="${fn:contains(trimmedPart, 'Dịch vụ') || fn:contains(trimmedPart, 'Bệnh lý')}">
+                                                                        <!-- Dịch vụ / Yêu cầu khám -->
+                                                                        <div class="p-3 rounded-3 mb-2.5 d-flex align-items-start gap-3 bg-white border shadow-sm"
+                                                                            style="border-left: 4px solid #0d9488 !important; border-color: #ccfbf1 #ccfbf1 #ccfbf1 #0d9488;">
+                                                                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                                                                style="width: 36px; height: 36px; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: #ffffff;">
+                                                                                <i class="bi bi-eye-fill" style="font-size: 16px;"></i>
+                                                                            </div>
+                                                                            <div class="flex-grow-1">
+                                                                                <div class="d-flex align-items-center gap-2 mb-1">
+                                                                                    <span class="badge rounded-pill px-2.5 py-1 text-uppercase fw-semibold"
+                                                                                        style="font-size: 11px; letter-spacing: 0.5px; background-color: #ccfbf1; color: #0f766e;">
+                                                                                        <i class="bi bi-check2-circle me-1"></i>Dịch vụ chỉ định / Bệnh lý
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div class="fw-bold text-dark" style="font-size: 14.5px; line-height: 1.5; color: #0f172a !important;">
+                                                                                    <c:out value="${itemVal}" />
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </c:when>
+                                                                    <c:when test="${fn:contains(trimmedPart, 'Lý do') || fn:contains(trimmedPart, 'Triệu chứng')}">
+                                                                        <!-- Lý do khám & Triệu chứng -->
+                                                                        <div class="p-3 rounded-3 mb-2.5 d-flex align-items-start gap-3 bg-white border shadow-sm"
+                                                                            style="border-left: 4px solid #3b82f6 !important; border-color: #e2e8f0 #e2e8f0 #e2e8f0 #3b82f6;">
+                                                                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                                                                style="width: 36px; height: 36px; background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); color: #ffffff;">
+                                                                                <i class="bi bi-chat-square-text-fill" style="font-size: 15px;"></i>
+                                                                            </div>
+                                                                            <div class="flex-grow-1">
+                                                                                <div class="d-flex align-items-center gap-2 mb-1">
+                                                                                    <span class="badge rounded-pill px-2.5 py-1 text-uppercase fw-semibold"
+                                                                                        style="font-size: 11px; letter-spacing: 0.5px; background-color: #e0f2fe; color: #0369a1;">
+                                                                                        <i class="bi bi-activity me-1"></i>Lý do đến khám & Triệu chứng ban đầu
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div class="fw-medium text-dark" style="font-size: 14px; line-height: 1.6; color: #1e293b !important;">
+                                                                                    <c:out value="${itemVal}" />
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        <!-- Ghi chú lâm sàng khác -->
+                                                                        <div class="p-3 rounded-3 mb-2.5 d-flex align-items-start gap-3 bg-white border shadow-sm"
+                                                                            style="border-left: 4px solid #64748b !important;">
+                                                                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                                                                style="width: 36px; height: 36px; background: #f1f5f9; color: #475569;">
+                                                                                <i class="bi bi-journal-text" style="font-size: 16px;"></i>
+                                                                            </div>
+                                                                            <div class="flex-grow-1">
+                                                                                <div class="d-flex align-items-center gap-2 mb-1">
+                                                                                    <span class="badge rounded-pill px-2.5 py-1 text-uppercase fw-semibold bg-light text-secondary border"
+                                                                                        style="font-size: 11px; letter-spacing: 0.5px;">
+                                                                                        <i class="bi bi-pencil-square me-1"></i>Ghi chú lâm sàng
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div class="text-dark" style="font-size: 14px; line-height: 1.6; white-space: pre-wrap;"><c:out value="${itemVal}" /></div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </c:otherwise>
+                                                                </c:choose>
+                                                            </c:if>
+                                                        </c:forEach>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <!-- Khi không có dấu phân cách | (dạng văn bản thông thường) -->
+                                                        <c:choose>
+                                                            <c:when test="${fn:contains(rawNotes, 'Dịch vụ:') || fn:startsWith(rawNotes, 'Dịch vụ')}">
+                                                                <c:choose>
+                                                                    <c:when test="${fn:contains(rawNotes, ':')}">
+                                                                        <c:set var="itemVal" value="${fn:trim(fn:substringAfter(rawNotes, ':'))}" />
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        <c:set var="itemVal" value="${rawNotes}" />
+                                                                    </c:otherwise>
+                                                                </c:choose>
+                                                                <div class="p-3 rounded-3 mb-2.5 d-flex align-items-start gap-3 bg-white border shadow-sm"
+                                                                    style="border-left: 4px solid #0d9488 !important; border-color: #ccfbf1 #ccfbf1 #ccfbf1 #0d9488;">
+                                                                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                                                        style="width: 36px; height: 36px; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: #ffffff;">
+                                                                        <i class="bi bi-eye-fill" style="font-size: 16px;"></i>
+                                                                    </div>
+                                                                    <div class="flex-grow-1">
+                                                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                                                            <span class="badge rounded-pill px-2.5 py-1 text-uppercase fw-semibold"
+                                                                                style="font-size: 11px; letter-spacing: 0.5px; background-color: #ccfbf1; color: #0f766e;">
+                                                                                <i class="bi bi-check2-circle me-1"></i>Dịch vụ chỉ định / Bệnh lý
+                                                                            </span>
+                                                                        </div>
+                                                                        <div class="fw-bold text-dark" style="font-size: 14.5px; line-height: 1.5; color: #0f172a !important;">
+                                                                            <c:out value="${itemVal}" />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </c:when>
+                                                            <c:when test="${fn:contains(rawNotes, 'Lý do:') || fn:startsWith(rawNotes, 'Lý do')}">
+                                                                <c:choose>
+                                                                    <c:when test="${fn:contains(rawNotes, ':')}">
+                                                                        <c:set var="itemVal" value="${fn:trim(fn:substringAfter(rawNotes, ':'))}" />
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        <c:set var="itemVal" value="${rawNotes}" />
+                                                                    </c:otherwise>
+                                                                </c:choose>
+                                                                <div class="p-3 rounded-3 mb-2.5 d-flex align-items-start gap-3 bg-white border shadow-sm"
+                                                                    style="border-left: 4px solid #3b82f6 !important; border-color: #e2e8f0 #e2e8f0 #e2e8f0 #3b82f6;">
+                                                                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                                                        style="width: 36px; height: 36px; background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); color: #ffffff;">
+                                                                        <i class="bi bi-chat-square-text-fill" style="font-size: 15px;"></i>
+                                                                    </div>
+                                                                    <div class="flex-grow-1">
+                                                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                                                            <span class="badge rounded-pill px-2.5 py-1 text-uppercase fw-semibold"
+                                                                                style="font-size: 11px; letter-spacing: 0.5px; background-color: #e0f2fe; color: #0369a1;">
+                                                                                <i class="bi bi-activity me-1"></i>Lý do đến khám & Triệu chứng ban đầu
+                                                                            </span>
+                                                                        </div>
+                                                                        <div class="fw-medium text-dark" style="font-size: 14px; line-height: 1.6; color: #1e293b !important;">
+                                                                            <c:out value="${itemVal}" />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                                <!-- Đoạn ghi chú chung -->
+                                                                <div class="p-3 rounded-3 bg-white border shadow-sm"
+                                                                    style="border-left: 4px solid #0d9488 !important;">
+                                                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                                                        <span class="badge rounded-pill px-2.5 py-1 text-uppercase fw-semibold bg-light text-secondary border"
+                                                                            style="font-size: 11px; letter-spacing: 0.5px;">
+                                                                            <i class="bi bi-journal-medical me-1"></i>Triệu chứng / Ghi chú lâm sàng
+                                                                        </span>
+                                                                    </div>
+                                                                    <div class="text-dark" style="font-size: 14px; line-height: 1.7; white-space: pre-wrap;"><c:out value="${rawNotes}" /></div>
+                                                                </div>
+                                                            </c:otherwise>
+                                                        </c:choose>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </div>
+                                        </div>
+
+                                        <!-- Hướng dẫn lưu trữ -->
+                                        <div class="p-3 rounded-3 bg-light border mt-3">
+                                            <div class="d-flex align-items-center gap-2 mb-2 text-dark fw-semibold small">
+                                                <i class="bi bi-shield-check text-success"></i> Thông tin lưu trữ hồ sơ
+                                            </div>
+                                            <p class="small text-muted mb-0" style="line-height: 1.6;">
+                                                Hồ sơ lịch hẹn đã qua ngày được lưu trữ để phục vụ việc tra cứu lịch sử khám bệnh. Mọi thao tác tiếp đón hoặc hủy lịch chỉ áp dụng cho các ca khám trong ngày hôm nay hoặc sắp tới.
+                                            </p>
+                                        </div>
+                                    </c:when>
                                     <c:when test="${appointment.status == 'Canceled'}">
                                         <!-- Khi đã hủy / vắng mặt: Hiển thị Thẻ thông tin Hủy & Ghi chú cũ dạng Read-only -->
                                         <div class="content-card p-4">
@@ -292,12 +540,48 @@
 
                                             <c:if test="${not empty appointment.medicalNotes}">
                                                 <div class="mb-0">
-                                                    <label class="info-label fw-semibold text-dark mb-1">
-                                                        <i class="bi bi-journal-medical me-1"></i>Ghi chú y tế / Triệu chứng ban đầu:
+                                                    <label class="info-label fw-bold text-dark mb-2 d-flex align-items-center gap-1.5" style="font-size: 13.5px;">
+                                                        <i class="bi bi-file-earmark-medical-fill" style="color: var(--primary-color, #0d9488);"></i>
+                                                        <span>Ghi chú Y tế ban đầu:</span>
                                                     </label>
-                                                    <div class="p-2.5 rounded-2 bg-light border small text-secondary" style="line-height: 1.6;">
-                                                        ${appointment.medicalNotes}
-                                                    </div>
+                                                    <c:set var="rawNotesCancel" value="${fn:trim(appointment.medicalNotes)}" />
+                                                    <c:choose>
+                                                        <c:when test="${fn:contains(rawNotesCancel, '|')}">
+                                                            <c:forEach var="part" items="${fn:split(rawNotesCancel, '|')}">
+                                                                <c:set var="trimmedPart" value="${fn:trim(part)}" />
+                                                                <c:if test="${not empty trimmedPart}">
+                                                                    <c:choose>
+                                                                        <c:when test="${fn:contains(trimmedPart, ':')}">
+                                                                            <c:set var="itemVal" value="${fn:trim(fn:substringAfter(trimmedPart, ':'))}" />
+                                                                        </c:when>
+                                                                        <c:otherwise>
+                                                                            <c:set var="itemVal" value="${trimmedPart}" />
+                                                                        </c:otherwise>
+                                                                    </c:choose>
+                                                                    <div class="p-2.5 px-3 rounded-2 bg-white border mb-2 d-flex align-items-start gap-2.5 shadow-sm"
+                                                                        style="border-left: 3.5px solid #0d9488 !important;">
+                                                                        <i class="bi bi-tag-fill mt-1 text-teal" style="font-size: 13px; color: #0d9488;"></i>
+                                                                        <div class="flex-grow-1">
+                                                                            <div class="small fw-semibold text-secondary text-uppercase" style="font-size: 10.5px; letter-spacing: 0.3px;">
+                                                                                <c:choose>
+                                                                                    <c:when test="${fn:contains(trimmedPart, 'Dịch vụ') || fn:contains(trimmedPart, 'Bệnh lý')}">Dịch vụ yêu cầu</c:when>
+                                                                                    <c:when test="${fn:contains(trimmedPart, 'Lý do') || fn:contains(trimmedPart, 'Triệu chứng')}">Lý do đến khám</c:when>
+                                                                                    <c:otherwise>Ghi chú</c:otherwise>
+                                                                                </c:choose>
+                                                                            </div>
+                                                                            <div class="fw-semibold text-dark mt-0.5" style="font-size: 13.5px; line-height: 1.5;">
+                                                                                <c:out value="${itemVal}" />
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </c:if>
+                                                            </c:forEach>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <div class="p-2.5 px-3 rounded-2 bg-white border text-dark shadow-sm"
+                                                                style="font-size: 13.5px; line-height: 1.6; border-left: 3.5px solid #0d9488 !important; white-space: pre-wrap;"><c:out value="${rawNotesCancel}" /></div>
+                                                        </c:otherwise>
+                                                    </c:choose>
                                                 </div>
                                             </c:if>
                                         </div>
@@ -360,9 +644,9 @@
                                                     <label for="medicalNotesInput" class="info-label fw-semibold text-dark">
                                                         Nội dung Ghi chú Y tế (Medical Notes):
                                                     </label>
-                                                    <textarea id="medicalNotesInput" name="medicalNotes" rows="6"
+                                                    <textarea id="medicalNotesInput" name="medicalNotes" rows="5"
                                                         class="notes-textarea"
-                                                        placeholder="Nhập triệu chứng của bệnh nhân, lý do khám, tiền sử dị ứng hoặc ghi chú cho bác sĩ...">${appointment.medicalNotes}</textarea>
+                                                        placeholder="Nhập triệu chứng của bệnh nhân, lý do khám, tiền sử dị ứng hoặc ghi chú cho bác sĩ...">${fn:trim(appointment.medicalNotes)}</textarea>
                                                 </div>
 
                                                 <div class="d-flex align-items-center justify-content-between pt-2">

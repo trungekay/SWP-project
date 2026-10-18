@@ -26,7 +26,7 @@
         margin: 0;
     }
     .sidebar-submenu.show {
-        display: block;
+        display: block !important;
     }
     .sidebar-submenu li a {
         padding: 8px 16px !important;
@@ -93,15 +93,7 @@
                     </ul>
                 </li>
 
-                <!-- 3. Quản lý Bệnh nhân (Không cần sổ xuống vì chỉ có 1 nội dung) -->
-                <li>
-                    <a href="${pageContext.request.contextPath}/staff/patients" class="${param.activeNav == 'staff-patients' || param.activeNav == 'patients' ? 'active' : ''}">
-                        <i class="bi bi-people"></i>
-                        <span>Danh sách bệnh nhân</span>
-                    </a>
-                </li>
-
-                <!-- 4. Quản lý yêu cầu hoàn tiền (Không cần sổ xuống vì chỉ có 1 nội dung) -->
+                <!-- 3. Quản lý yêu cầu hoàn tiền (Không cần sổ xuống vì chỉ có 1 nội dung) -->
                 <li>
                     <a href="${pageContext.request.contextPath}/staff/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}">
                         <i class="bi bi-cash-coin"></i>
@@ -164,20 +156,35 @@
 </aside>
 
 <script>
-    function toggleSubmenu(menuId, el) {
+    window.toggleSubmenu = function(menuId, el) {
         var menu = document.getElementById(menuId);
+        if (!menu && el) {
+            var parent = el.closest('.sidebar-dropdown') || el.parentElement;
+            if (parent) {
+                menu = parent.querySelector('.sidebar-submenu');
+            }
+        }
         if (menu) {
-            menu.classList.toggle('show');
-            var icon = el.querySelector('.bi-chevron-down, .bi-chevron-up');
-            if (icon) {
-                if (menu.classList.contains('show')) {
-                    icon.classList.remove('bi-chevron-down');
-                    icon.classList.add('bi-chevron-up');
-                } else {
-                    icon.classList.remove('bi-chevron-up');
-                    icon.classList.add('bi-chevron-down');
+            var isShown = menu.classList.contains('show') || menu.style.display === 'block';
+            if (isShown) {
+                menu.classList.remove('show');
+                menu.style.display = 'none';
+            } else {
+                menu.classList.add('show');
+                menu.style.display = 'block';
+            }
+            if (el) {
+                var icon = el.querySelector('.bi-chevron-down, .bi-chevron-up');
+                if (icon) {
+                    if (menu.classList.contains('show') || menu.style.display === 'block') {
+                        icon.classList.remove('bi-chevron-down');
+                        icon.classList.add('bi-chevron-up');
+                    } else {
+                        icon.classList.remove('bi-chevron-up');
+                        icon.classList.add('bi-chevron-down');
+                    }
                 }
             }
         }
-    }
+    };
 </script>

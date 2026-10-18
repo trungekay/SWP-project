@@ -69,6 +69,11 @@
                             <div class="page-title">
                                 <h2 class="mb-0">Danh Sách Chờ</h2>
                             </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <a href="${pageContext.request.contextPath}/staff/appointments" class="btn btn-teal-outline">
+                                    <i class="bi bi-calendar4-event me-1"></i> Quản lý lịch hẹn
+                                </a>
+                            </div>
                         </div>
 
                         <!-- KPI Queue Summary Cards (Bấm để lọc theo trạng thái) -->
@@ -219,7 +224,10 @@
                                     <tbody>
                                         <c:choose>
                                             <c:when test="${not empty waitingList}">
+                                                <c:set var="currentDateStr"><%= java.time.LocalDate.now().toString() %></c:set>
                                                 <c:forEach var="appt" items="${waitingList}">
+                                                    <c:set var="apptDateStr">${appt.appointmentDate}</c:set>
+                                                    <c:set var="isPastAppt" value="${not empty apptDateStr && apptDateStr < currentDateStr}" />
                                                     <tr class="${appt.status == 'In_Progress' ? 'row-examining' : ''}">
                                                         <!-- STT / Queue Number -->
                                                         <td>
@@ -308,84 +316,87 @@
                                                             </c:choose>
                                                         </td>
 
-                                                        <!-- Thao Tác (Icon Buttons đồng bộ với danh sách lịch hẹn) -->
+                                                        <!-- Thao Tác (Khi đã qua ngày: chỉ cho phép xem thông tin hồ sơ chi tiết) -->
                                                         <td class="text-center text-nowrap">
                                                             <div class="action-btns justify-content-center">
-                                                                <!-- 1. Xem chi tiết (Xanh pastel - icon bút chì giống Quản lý người dùng) -->
+                                                                <!-- 1. Xem chi tiết / Hồ sơ bệnh nhân (Luôn hiển thị) -->
                                                                 <a href="${pageContext.request.contextPath}/staff/appointment-detail?id=${appt.id}"
                                                                     class="action-btn"
-                                                                    title="Xem chi tiết & Ghi chú y tế" data-bs-toggle="tooltip">
+                                                                    title="Xem hồ sơ / Chi tiết ca khám & Ghi chú y tế" data-bs-toggle="tooltip">
                                                                     <i class="bi bi-pencil"></i>
                                                                 </a>
 
-                                                                <c:choose>
-                                                                    <c:when test="${appt.status == 'Confirmed'}">
-                                                                        <!-- 2. Gọi vào khám -->
-                                                                        <c:choose>
-                                                                            <c:when test="${busyDoctorIds != null && busyDoctorIds.contains(appt.doctorId)}">
-                                                                                <button type="button" class="action-btn"
-                                                                                    disabled
-                                                                                    title="Bác sĩ hiện đang khám cho ca trước. Vui lòng đợi hoàn tất ca hiện tại."
-                                                                                    data-bs-toggle="tooltip">
-                                                                                    <i class="bi bi-hourglass-split"></i>
-                                                                                </button>
-                                                                            </c:when>
-                                                                            <c:otherwise>
-                                                                                <button type="button"
-                                                                                    class="action-btn checkin btn-trigger-start"
-                                                                                    title="Gọi bệnh nhân vào phòng khám" data-bs-toggle="tooltip"
-                                                                                    data-id="${appt.id}"
-                                                                                    data-name="${appt.patientName}">
-                                                                                    <i class="bi bi-box-arrow-in-right"></i>
-                                                                                </button>
-                                                                            </c:otherwise>
-                                                                        </c:choose>
+                                                                <!-- Các thao tác khám: Chỉ hiển thị khi ca khám CHƯA qua ngày -->
+                                                                <c:if test="${!isPastAppt}">
+                                                                    <c:choose>
+                                                                        <c:when test="${appt.status == 'Confirmed'}">
+                                                                            <!-- 2. Gọi vào khám -->
+                                                                            <c:choose>
+                                                                                <c:when test="${busyDoctorIds != null && busyDoctorIds.contains(appt.doctorId)}">
+                                                                                    <button type="button" class="action-btn"
+                                                                                        disabled
+                                                                                        title="Bác sĩ hiện đang khám cho ca trước. Vui lòng đợi hoàn tất ca hiện tại."
+                                                                                        data-bs-toggle="tooltip">
+                                                                                        <i class="bi bi-hourglass-split"></i>
+                                                                                    </button>
+                                                                                </c:when>
+                                                                                <c:otherwise>
+                                                                                    <button type="button"
+                                                                                        class="action-btn checkin btn-trigger-start"
+                                                                                        title="Gọi bệnh nhân vào phòng khám" data-bs-toggle="tooltip"
+                                                                                        data-id="${appt.id}"
+                                                                                        data-name="${appt.patientName}">
+                                                                                        <i class="bi bi-box-arrow-in-right"></i>
+                                                                                    </button>
+                                                                                </c:otherwise>
+                                                                            </c:choose>
 
-                                                                        <!-- 3. Bỏ qua lượt (Vàng pastel - Xếp xuống cuối hàng đợi) -->
-                                                                        <button type="button"
-                                                                            class="action-btn warning btn-trigger-skip"
-                                                                            title="Bỏ qua lượt: Chuyển bệnh nhân xuống cuối hàng đợi hôm nay nếu tạm vắng mặt" data-bs-toggle="tooltip"
-                                                                            data-id="${appt.id}"
-                                                                            data-name="${appt.patientName}">
-                                                                            <i class="bi bi-arrow-down-circle"></i>
-                                                                        </button>
+                                                                            <!-- 3. Bỏ qua lượt (Vàng pastel - Xếp xuống cuối hàng đợi) -->
+                                                                            <button type="button"
+                                                                                class="action-btn warning btn-trigger-skip"
+                                                                                title="Bỏ qua lượt: Chuyển bệnh nhân xuống cuối hàng đợi hôm nay nếu tạm vắng mặt" data-bs-toggle="tooltip"
+                                                                                data-id="${appt.id}"
+                                                                                data-name="${appt.patientName}">
+                                                                                <i class="bi bi-arrow-down-circle"></i>
+                                                                            </button>
 
-                                                                        <!-- 4. Báo vắng mặt / Hủy ca (Đỏ pastel - icon thùng rác giống Quản lý người dùng) -->
-                                                                        <button type="button"
-                                                                            class="action-btn delete btn-trigger-absent"
-                                                                            title="Báo vắng mặt: Gọi tên nhiều lần không có mặt / Tự ý bỏ về" data-bs-toggle="tooltip"
-                                                                            data-id="${appt.id}"
-                                                                            data-name="${appt.patientName}">
-                                                                            <i class="bi bi-trash"></i>
-                                                                        </button>
-                                                                    </c:when>
+                                                                            <!-- 4. Báo vắng mặt / Hủy ca (Đỏ pastel - icon thùng rác giống Quản lý người dùng) -->
+                                                                            <button type="button"
+                                                                                class="action-btn delete btn-trigger-absent"
+                                                                                title="Báo vắng mặt: Gọi tên nhiều lần không có mặt / Tự ý bỏ về" data-bs-toggle="tooltip"
+                                                                                data-id="${appt.id}"
+                                                                                data-name="${appt.patientName}">
+                                                                                <i class="bi bi-trash"></i>
+                                                                            </button>
+                                                                        </c:when>
 
-                                                                    <c:when test="${appt.status == 'In_Progress'}">
-                                                                        <!-- Hoàn tất khám -->
-                                                                        <button type="button"
-                                                                            class="action-btn checkin btn-trigger-complete"
-                                                                            title="Đánh dấu bệnh nhân đã khám xong" data-bs-toggle="tooltip"
-                                                                            data-id="${appt.id}"
-                                                                            data-name="${appt.patientName}">
-                                                                            <i class="bi bi-check2-circle"></i>
-                                                                        </button>
+                                                                        <c:when test="${appt.status == 'In_Progress'}">
+                                                                            <!-- Hoàn tất khám -->
+                                                                            <button type="button"
+                                                                                class="action-btn checkin btn-trigger-complete"
+                                                                                title="Đánh dấu bệnh nhân đã khám xong" data-bs-toggle="tooltip"
+                                                                                data-id="${appt.id}"
+                                                                                data-name="${appt.patientName}">
+                                                                                <i class="bi bi-check2-circle"></i>
+                                                                            </button>
 
-                                                                        <!-- Báo vắng mặt / Hủy ca giữa chừng (Đỏ pastel - icon thùng rác) -->
-                                                                        <button type="button"
-                                                                            class="action-btn delete btn-trigger-absent"
-                                                                            title="Báo vắng mặt / Hủy ca giữa chừng" data-bs-toggle="tooltip"
-                                                                            data-id="${appt.id}"
-                                                                            data-name="${appt.patientName}">
-                                                                            <i class="bi bi-trash"></i>
-                                                                        </button>
-                                                                    </c:when>
+                                                                            <!-- Báo vắng mặt / Hủy ca giữa chừng (Đỏ pastel - icon thùng rác) -->
+                                                                            <button type="button"
+                                                                                class="action-btn delete btn-trigger-absent"
+                                                                                title="Báo vắng mặt / Hủy ca giữa chừng" data-bs-toggle="tooltip"
+                                                                                data-id="${appt.id}"
+                                                                                data-name="${appt.patientName}">
+                                                                                <i class="bi bi-trash"></i>
+                                                                            </button>
+                                                                        </c:when>
 
-                                                                    <c:when test="${appt.status == 'Completed'}">
-                                                                        <!-- Đã khám xong: chỉ xem chi tiết bằng nút bút chì ở trên -->
-                                                                    </c:when>
-                                                                    <c:otherwise>
-                                                                    </c:otherwise>
-                                                                </c:choose>
+                                                                        <c:when test="${appt.status == 'Completed'}">
+                                                                            <!-- Đã khám xong: chỉ xem chi tiết bằng nút bút chì ở trên -->
+                                                                        </c:when>
+                                                                        <c:otherwise>
+                                                                        </c:otherwise>
+                                                                    </c:choose>
+                                                                </c:if>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -416,8 +427,10 @@
                                                                     <p class="mb-1 fw-semibold text-dark">Hiện tại hàng đợi đang trống</p>
                                                                     <p class="small text-muted">Chưa có bệnh nhân nào được check-in trong ngày hôm nay.</p>
                                                                     <a href="${pageContext.request.contextPath}/staff/appointments"
-                                                                        class="btn btn-teal btn-sm mt-2">
-                                                                        <i class="bi bi-search"></i> Kiểm tra Danh sách Lịch hẹn
+                                                                        class="btn btn-teal btn-sm mt-3 px-3.5 py-2 text-nowrap d-inline-flex align-items-center gap-2 shadow-sm"
+                                                                        style="width: auto; text-decoration: none;">
+                                                                        <i class="bi bi-search"></i>
+                                                                        <span>Kiểm tra Danh sách Lịch hẹn</span>
                                                                     </a>
                                                                 </c:otherwise>
                                                             </c:choose>
