@@ -91,9 +91,14 @@
                                     <label class="doctor-form-field doctor-form-span"><span>Tên thuốc <em>*</em></span>
                                         <select name="medicines[${row.index}].medicineName" data-name="medicineName" required>
                                             <option value="" ${empty medicine.medicineName ? 'selected' : ''}>Chọn thuốc trong danh mục</option>
+                                            <c:set var="catalogMatch" value="false" />
                                             <c:forEach var="catalogMedicine" items="${medicineCatalog}">
+                                                <c:if test="${medicine.medicineName eq catalogMedicine.name}"><c:set var="catalogMatch" value="true" /></c:if>
                                                 <option value="<c:out value='${catalogMedicine.name}' />" ${medicine.medicineName eq catalogMedicine.name ? 'selected' : ''}><c:out value="${catalogMedicine.name}" /></option>
                                             </c:forEach>
+                                            <c:if test="${not empty medicine.medicineName and not catalogMatch}">
+                                                <option value="" selected disabled>Đã lưu: <c:out value="${medicine.medicineName}" /> (chọn thuốc trong danh mục)</option>
+                                            </c:if>
                                         </select>
                                     </label>
                                     <label class="doctor-form-field"><span>Hàm lượng / dạng dùng</span><input name="medicines[${row.index}].strength" data-name="strength" type="text" maxlength="100" value="<c:out value='${medicine.strength}' />"></label>
