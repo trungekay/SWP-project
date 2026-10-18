@@ -41,15 +41,25 @@ public class BookAppointmentServlet extends HttpServlet {
         if ("checkPayment".equalsIgnoreCase(action)) {
             response.setContentType("application/json;charset=UTF-8");
             String apptIdStr = request.getParameter("appointmentId");
+            String orderCodeStr = request.getParameter("orderCode");
             if (apptIdStr != null && !apptIdStr.isEmpty()) {
                 try {
                     int apptId = Integer.parseInt(apptIdStr);
                     Appointment appt = appointmentDAO.getAppointmentDetailById(apptId);
                     boolean isPaid = (appt != null && ("Confirmed".equalsIgnoreCase(appt.getStatus()) || "Paid".equalsIgnoreCase(appt.getInvoiceStatus())));
 
-                    // Nếu DB chưa ghi nhận Paid, thử kiểm tra trực tiếp sang cổng PayOS
+                    // Nếu DB chưa ghi nhận Paid, kiểm tra trực tiếp sang cổng PayOS
                     if (!isPaid) {
-                        String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(apptId);
+                        long orderCode = 0;
+                        if (orderCodeStr != null && !orderCodeStr.isEmpty()) {
+                            try { orderCode = Long.parseLong(orderCodeStr); } catch (Exception ignored) {}
+                        }
+                        if (orderCode <= 0) {
+                            Long sessionOrder = (Long) request.getSession().getAttribute("payos_order_" + apptId);
+                            orderCode = (sessionOrder != null) ? sessionOrder : apptId;
+                        }
+
+                        String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(orderCode);
                         if ("PAID".equalsIgnoreCase(payosStatus)) {
                             appointmentDAO.confirmPayment(apptId);
                             isPaid = true;
@@ -94,16 +104,18 @@ public class BookAppointmentServlet extends HttpServlet {
                     if (pendingAppt != null) {
                         long fee = pendingAppt.getFee() > 0 ? pendingAppt.getFee() : 200000;
                         String phoneSafe = pendingAppt.getPhone() != null ? pendingAppt.getPhone() : "";
-                        String paymentDesc = "VC" + apptId + " " + phoneSafe;
-                        String encodedDesc = URLEncoder.encode(paymentDesc, StandardCharsets.UTF_8);
-                        String qrUrl = "https://img.vietqr.io/image/MB-0335889999-compact2.png?amount=" + fee + "&addInfo=" + encodedDesc + "&accountName=PHONG%20KHAM%20MAT%20VISIONCARE";
+                        String payosDesc = "VC" + apptId;
+
+                        Long sessionOrder = (Long) request.getSession().getAttribute("payos_order_" + apptId);
+                        long orderCode = (sessionOrder != null) ? sessionOrder : (((long) apptId * 1000000L) + (System.currentTimeMillis() / 1000L % 1000000L));
+                        request.getSession().setAttribute("payos_order_" + apptId, orderCode);
 
                         String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
                         String cancelUrl = baseUrl + "/book-appointment";
                         String returnUrl = baseUrl + "/book-appointment?step=success&id=" + apptId;
-                        String payosDesc = "VC" + apptId;
-                        com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(apptId, (int) fee, payosDesc, cancelUrl, returnUrl);
+                        com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(orderCode, (int) fee, payosDesc, cancelUrl, returnUrl);
 
+                        String qrUrl = null;
                         String payosCheckoutUrl = null;
                         if (payosRes != null && payosRes.success) {
                             payosCheckoutUrl = payosRes.checkoutUrl;
@@ -116,16 +128,21 @@ public class BookAppointmentServlet extends HttpServlet {
                             request.setAttribute("isPayOSEnabled", false);
                         }
 
+                        if (qrUrl == null || qrUrl.isEmpty()) {
+                            qrUrl = "https://img.vietqr.io/image/MB-0877757889-compact2.png?amount=" + fee + "&addInfo=" + URLEncoder.encode(payosDesc + " " + phoneSafe, StandardCharsets.UTF_8) + "&accountName=NGUYEN%20DINH%20TRUNG";
+                        }
+
                         request.setAttribute("step", "payment");
                         request.setAttribute("appointment", pendingAppt);
                         request.setAttribute("appointmentId", apptId);
+                        request.setAttribute("orderCode", orderCode);
                         request.setAttribute("qrUrl", qrUrl);
                         request.setAttribute("payosCheckoutUrl", payosCheckoutUrl);
                         request.setAttribute("fee", fee);
-                        request.setAttribute("paymentDesc", paymentDesc);
+                        request.setAttribute("paymentDesc", payosDesc);
                         request.setAttribute("bankName", "Ngân hàng Quân Đội (MB Bank)");
-                        request.setAttribute("accountNumber", "0335889999");
-                        request.setAttribute("accountHolder", "PHONG KHAM MAT VISIONCARE");
+                        request.setAttribute("accountNumber", "0877757889");
+                        request.setAttribute("accountHolder", "NGUYEN DINH TRUNG");
                         request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);
                         return;
                     }
@@ -303,43 +320,52 @@ public class BookAppointmentServlet extends HttpServlet {
                 }
                 int appointmentId = Integer.parseInt(apptIdStr);
 
-                // KIỂM TRA THỰC TẾ QUA CỔNG PAYOS (KHÔNG DÙNG MOCK UP NỮA)
-                String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(appointmentId);
+                long orderCode = 0;
+                String orderCodeStr = request.getParameter("orderCode");
+                if (orderCodeStr != null && !orderCodeStr.isEmpty()) {
+                    try { orderCode = Long.parseLong(orderCodeStr); } catch (Exception ignored) {}
+                }
+                if (orderCode <= 0) {
+                    Long sessionOrder = (Long) request.getSession().getAttribute("payos_order_" + appointmentId);
+                    orderCode = (sessionOrder != null) ? sessionOrder : appointmentId;
+                }
+
+                // KIỂM TRA THỰC TẾ QUA CỔNG PAYOS (KHÔNG DÙNG MOCKUP, BẮT BUỘC ĐÃ THANH TOÁN TIỀN THẬT)
+                String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(orderCode);
                 boolean isPaid = "PAID".equalsIgnoreCase(payosStatus);
 
-                // Nếu PayOS chưa ghi nhận tiền về tài khoản
+                // Nếu chưa thanh toán hoặc PayOS chưa nhận được tiền: CHẶN VÀ BÁO LỖI
                 if (!isPaid) {
                     Appointment pendingAppt = appointmentDAO.getAppointmentDetailById(appointmentId);
                     long fee = pendingAppt != null && pendingAppt.getFee() > 0 ? pendingAppt.getFee() : 200000;
                     String feeFmt = String.format("%,d ₫", fee);
-                    request.setAttribute("error", "Hệ thống kiểm tra qua cổng PayOS chưa nhận được khoản thanh toán " + feeFmt + " cho lịch hẹn #" + appointmentId + ". Vui lòng quét mã QR chuyển khoản trên ứng dụng ngân hàng rồi thử lại!");
-                    request.setAttribute("step", "payment");
-                    request.setAttribute("appointment", pendingAppt);
-                    request.setAttribute("appointmentId", appointmentId);
-                    request.setAttribute("fee", fee);
+                    request.setAttribute("error", "Hệ thống chưa nhận được khoản thanh toán " + feeFmt + " cho lịch hẹn #VC" + appointmentId + ". Vui lòng mở ứng dụng ngân hàng quét mã QR chuyển khoản rồi thử lại!");
 
-                    // Tải lại QR PayOS & VietQR
                     String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
                     String cancelUrl = baseUrl + "/book-appointment";
                     String returnUrl = baseUrl + "/book-appointment?step=success&id=" + appointmentId;
                     String payosDesc = "VC" + appointmentId;
-                    com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(appointmentId, (int) fee, payosDesc, cancelUrl, returnUrl);
+                    com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(orderCode, (int) fee, payosDesc, cancelUrl, returnUrl);
 
-                    String qrUrl;
-                    if (payosRes != null && payosRes.success) {
+                    String qrUrl = null;
+                    if (payosRes != null && payosRes.success && payosRes.qrCode != null && !payosRes.qrCode.isEmpty()) {
                         request.setAttribute("payosCheckoutUrl", payosRes.checkoutUrl);
                         request.setAttribute("isPayOSEnabled", true);
                         qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + URLEncoder.encode(payosRes.qrCode, StandardCharsets.UTF_8);
                     } else {
-                        String phoneSafe = pendingAppt != null && pendingAppt.getPhone() != null ? pendingAppt.getPhone() : "";
-                        String paymentDesc = "VC" + appointmentId + " " + phoneSafe;
-                        qrUrl = "https://img.vietqr.io/image/MB-0335889999-compact2.png?amount=" + fee + "&addInfo=" + URLEncoder.encode(paymentDesc, StandardCharsets.UTF_8) + "&accountName=PHONG%20KHAM%20MAT%20VISIONCARE";
+                        qrUrl = "https://img.vietqr.io/image/MB-0877757889-compact2.png?amount=" + fee + "&addInfo=" + URLEncoder.encode(payosDesc, StandardCharsets.UTF_8) + "&accountName=NGUYEN%20DINH%20TRUNG";
                     }
+
+                    request.setAttribute("step", "payment");
+                    request.setAttribute("appointment", pendingAppt);
+                    request.setAttribute("appointmentId", appointmentId);
+                    request.setAttribute("orderCode", orderCode);
                     request.setAttribute("qrUrl", qrUrl);
-                    request.setAttribute("paymentDesc", "VC" + appointmentId + (pendingAppt != null && pendingAppt.getPhone() != null ? " " + pendingAppt.getPhone() : ""));
+                    request.setAttribute("fee", fee);
+                    request.setAttribute("paymentDesc", payosDesc);
                     request.setAttribute("bankName", "Ngân hàng Quân Đội (MB Bank)");
-                    request.setAttribute("accountNumber", "0335889999");
-                    request.setAttribute("accountHolder", "PHONG KHAM MAT VISIONCARE");
+                    request.setAttribute("accountNumber", "0877757889");
+                    request.setAttribute("accountHolder", "NGUYEN DINH TRUNG");
                     request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);
                     return;
                 }
@@ -527,19 +553,19 @@ public class BookAppointmentServlet extends HttpServlet {
                 return;
             }
 
-            // TẠO MÃ QR THANH TOÁN ĐỘNG (Dynamic VietQR Code)
+            // TẠO ORDER CODE ĐỘC NHẤT VÀ TÍCH HỢP CỔNG PAYOS THẬT (MB BANK NGUYEN DINH TRUNG)
             String phoneSafe = appointment.getPhone() != null ? appointment.getPhone() : "";
-            String paymentDesc = "VC" + newId + " " + phoneSafe;
-            String encodedDesc = URLEncoder.encode(paymentDesc, StandardCharsets.UTF_8);
-            String qrUrl = "https://img.vietqr.io/image/MB-0335889999-compact2.png?amount=" + fee + "&addInfo=" + encodedDesc + "&accountName=PHONG%20KHAM%20MAT%20VISIONCARE";
+            String payosDesc = "VC" + newId;
 
-            // TÍCH HỢP CỔNG PAYOS ĐỒNG THỜI
+            long orderCode = ((long) newId * 1000000L) + (System.currentTimeMillis() / 1000L % 1000000L);
+            request.getSession().setAttribute("payos_order_" + newId, orderCode);
+
             String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
             String cancelUrl = baseUrl + "/book-appointment";
             String returnUrl = baseUrl + "/book-appointment?step=success&id=" + newId;
-            String payosDesc = "VC" + newId;
-            com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(newId, (int) fee, payosDesc, cancelUrl, returnUrl);
+            com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(orderCode, (int) fee, payosDesc, cancelUrl, returnUrl);
 
+            String qrUrl = null;
             String payosCheckoutUrl = null;
             if (payosRes != null && payosRes.success) {
                 payosCheckoutUrl = payosRes.checkoutUrl;
@@ -552,6 +578,10 @@ public class BookAppointmentServlet extends HttpServlet {
                 request.setAttribute("isPayOSEnabled", false);
             }
 
+            if (qrUrl == null || qrUrl.isEmpty()) {
+                qrUrl = "https://img.vietqr.io/image/MB-0877757889-compact2.png?amount=" + fee + "&addInfo=" + URLEncoder.encode(payosDesc + " " + phoneSafe, StandardCharsets.UTF_8) + "&accountName=NGUYEN%20DINH%20TRUNG";
+            }
+
             Appointment fullAppt = appointmentDAO.getAppointmentDetailById(newId);
             if (fullAppt != null) {
                 fullAppt.setEmail(appointment.getEmail());
@@ -560,13 +590,14 @@ public class BookAppointmentServlet extends HttpServlet {
             request.setAttribute("step", "payment");
             request.setAttribute("appointment", fullAppt != null ? fullAppt : appointment);
             request.setAttribute("appointmentId", newId);
+            request.setAttribute("orderCode", orderCode);
             request.setAttribute("qrUrl", qrUrl);
             request.setAttribute("payosCheckoutUrl", payosCheckoutUrl);
             request.setAttribute("fee", fee);
-            request.setAttribute("paymentDesc", paymentDesc);
+            request.setAttribute("paymentDesc", payosDesc);
             request.setAttribute("bankName", "Ngân hàng Quân Đội (MB Bank)");
-            request.setAttribute("accountNumber", "0335889999");
-            request.setAttribute("accountHolder", "PHONG KHAM MAT VISIONCARE");
+            request.setAttribute("accountNumber", "0877757889");
+            request.setAttribute("accountHolder", "NGUYEN DINH TRUNG");
 
             request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);
 
