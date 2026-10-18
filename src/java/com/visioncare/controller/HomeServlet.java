@@ -2,6 +2,7 @@ package com.visioncare.controller;
 import com.visioncare.dao.DoctorDAO;
 import com.visioncare.dao.CatalogDAO;
 import com.visioncare.model.Doctor;
+import com.visioncare.model.CatalogService;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -32,8 +33,16 @@ public class HomeServlet extends HttpServlet {
         try {
             List<Doctor> doctors = doctorDAO.getAll();
             request.setAttribute("doctors", doctors);
-            request.setAttribute("catalogServices", catalogDAO.listServices());
+            List<CatalogService> catalogServices = catalogDAO.listServices();
+            request.setAttribute("catalogServices", catalogServices);
+            if (catalogServices != null) {
+                for (CatalogService s : catalogServices) {
+                    if ("LS-03".equalsIgnoreCase(s.getCode())) request.setAttribute("lasikPreopId", s.getId());
+                    if ("TT-05".equalsIgnoreCase(s.getCode())) request.setAttribute("phacoPreopId", s.getId());
+                }
+            }
             com.visioncare.dao.ClinicGalleryDAO galleryDAO = new com.visioncare.dao.ClinicGalleryDAO();
+
             request.setAttribute("galleryItems", galleryDAO.getAll());
 
             request.getRequestDispatcher("/views/home/index.jsp").forward(request, response);
