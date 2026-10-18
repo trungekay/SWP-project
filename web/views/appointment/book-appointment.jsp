@@ -413,10 +413,26 @@
                                                 style="max-width: 260px; min-height: 260px;">
                                             </div>
 
-                                            <div class="mt-3">
-                                              <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
-                                                <i class="bi bi-clock me-1"></i>Hạn thanh toán: 15 phút
-                                              </span>
+                                            <%-- ĐỒNG HỒ ĐẾM NGƯỢC THỜI HẠN THANH TOÁN (COUNTDOWN TIMER) --%>
+                                            <div class="mt-3 p-3 rounded-4 border bg-white shadow-sm text-start" id="paymentCountdownCard">
+                                              <div class="d-flex align-items-center justify-content-between mb-2">
+                                                <span class="text-muted small fw-semibold">
+                                                  <i class="bi bi-stopwatch text-danger me-1"></i>Thời gian giữ chỗ:
+                                                </span>
+                                                <span class="fs-5 fw-bold text-danger font-monospace" id="paymentCountdownTimer">15:00</span>
+                                              </div>
+                                              <div class="progress" style="height: 6px; border-radius: 6px; background-color: #f1f5f9;">
+                                                <div id="countdownProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-danger"
+                                                  role="progressbar" style="width: 100%; transition: width 1s linear;"></div>
+                                              </div>
+                                              <div class="d-flex justify-content-between align-items-center mt-2">
+                                                <small class="text-muted" style="font-size: 11px;">
+                                                  <i class="bi bi-shield-lock me-1 text-teal" style="color: #0d9488;"></i>Đang giữ chỗ lịch hẹn
+                                                </small>
+                                                <small class="text-danger fw-semibold" style="font-size: 11px;" id="countdownStatusText">
+                                                  Còn hiệu lực
+                                                </small>
+                                              </div>
                                             </div>
                                           </div>
                                         </div>
@@ -440,6 +456,14 @@
                                               <div class="col-6 text-muted">Thời gian hẹn:</div>
                                               <div class="col-6 fw-bold text-danger text-end">${appointment.timeSlot} —
                                                 ${appointment.appointmentDate}</div>
+
+                                              <div class="col-6 text-muted">Thời hạn thanh toán:</div>
+                                              <div class="col-6 fw-bold text-end">
+                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle font-monospace px-2 py-1" id="ticketCountdownBadge">
+                                                  <i class="bi bi-stopwatch me-1"></i>15:00
+                                                </span>
+                                              </div>
+
 
                                               <div class="col-12 border-top my-2"></div>
 
@@ -486,28 +510,43 @@
                                             </div>
                                           </div>
 
-                                          <form method="post"
-                                            action="${pageContext.request.contextPath}/book-appointment">
-                                            <input type="hidden" name="action" value="confirmPayment">
-                                            <input type="hidden" name="appointmentId" value="${appointment.id}">
-                                            <input type="hidden" name="orderCode" value="${orderCode}">
-                                            <input type="hidden" name="email" value="${appointment.email}">
+                                          <div id="paymentActionArea">
+                                            <form method="post"
+                                              action="${pageContext.request.contextPath}/book-appointment">
+                                              <input type="hidden" name="action" value="confirmPayment">
+                                              <input type="hidden" name="appointmentId" value="${appointment.id}">
+                                              <input type="hidden" name="orderCode" value="${orderCode}">
+                                              <input type="hidden" name="email" value="${appointment.email}">
 
-                                            <div class="d-grid gap-2">
-                                              <div class="alert alert-info py-2 px-3 small rounded-3 mb-2 d-flex align-items-center">
-                                                <div class="spinner-grow spinner-grow-sm text-info me-2" role="status"></div>
-                                                <span>Hệ thống tự động kiểm tra biến động số dư. Trang sẽ <b>tự động chuyển sang Thành công</b> ngay khi hoàn tất chuyển khoản!</span>
+                                              <div class="d-grid gap-2">
+                                                <div class="alert alert-info py-2 px-3 small rounded-3 mb-2 d-flex align-items-center">
+                                                  <div class="spinner-grow spinner-grow-sm text-info me-2" role="status"></div>
+                                                  <span>Hệ thống tự động kiểm tra biến động số dư. Trang sẽ <b>tự động chuyển sang Thành công</b> ngay khi hoàn tất chuyển khoản!</span>
+                                                </div>
+                                                <button type="submit"
+                                                  class="btn btn-success btn-lg py-3 rounded-3 shadow-sm fw-bold">
+                                                  <i class="bi bi-shield-check me-2"></i>Tôi đã chuyển khoản (Kiểm tra thanh toán)
+                                                </button>
+                                                <a href="${pageContext.request.contextPath}/book-appointment"
+                                                  class="btn btn-link text-muted text-center mt-2">
+                                                  <i class="bi bi-arrow-left me-1"></i>Hủy và chọn lại lịch khác
+                                                </a>
                                               </div>
-                                              <button type="submit"
-                                                class="btn btn-success btn-lg py-3 rounded-3 shadow-sm fw-bold">
-                                                <i class="bi bi-shield-check me-2"></i>Tôi đã chuyển khoản (Kiểm tra thanh toán)
-                                              </button>
-                                              <a href="${pageContext.request.contextPath}/book-appointment"
-                                                class="btn btn-link text-muted text-center mt-2">
-                                                <i class="bi bi-arrow-left me-1"></i>Hủy và chọn lại lịch khác
-                                              </a>
+                                            </form>
+                                          </div>
+
+                                          <div id="paymentExpiredArea" class="d-none text-center">
+                                            <div class="alert alert-danger rounded-4 p-4 shadow-sm mb-3">
+                                              <i class="bi bi-exclamation-octagon-fill text-danger fs-1 d-block mb-2"></i>
+                                              <h5 class="fw-bold text-danger mb-1">Mã QR đã hết hạn thanh toán (Quá 15 phút)</h5>
+                                              <p class="text-muted small mb-0">
+                                                Khung giờ này đã tạm hết thời gian giữ chỗ ưu tiên. Quý khách vui lòng tạo lại lịch hẹn mới để hoàn tất đặt chỗ.
+                                              </p>
                                             </div>
-                                          </form>
+                                            <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-primary btn-lg py-3 rounded-pill shadow-sm fw-bold w-100" style="background:#0d9488; border-color:#0d9488;">
+                                              <i class="bi bi-arrow-repeat me-2"></i>Đặt lại lịch hẹn mới
+                                            </a>
+                                          </div>
                                         </div>
                                       </div>
                                     </c:if>
@@ -596,6 +635,7 @@
                                                                 data-bgroup="${bGroup}"
                                                                 data-name="${svc.name}" data-price="${svc.price}"
                                                                 onchange="filterDoctorsByService(this)"
+                                                                onclick="filterDoctorsByService(this)"
                                                                 ${(selectedServiceId==svc.id or (empty selectedServiceId
                                                                 and status.first)) ? 'checked' : '' }>
                                                               <div
@@ -629,10 +669,16 @@
                                                                       </span>
                                                                     </div>
                                                                   </c:if>
-                                                                  <p class="text-muted small mb-0 text-truncate-2"
-                                                                    style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12px; min-height: 34px;">
-                                                                    ${svc.summary != null ? svc.summary : 'Dịch vụ khám nhãn khoa chất lượng cao với trang thiết bị chuẩn quốc tế.'}
-                                                                  </p>
+                                                                  <div class="service-desc-box mb-1">
+                                                                    <p class="text-secondary small mb-0 lh-base" style="font-size: 12px;">
+                                                                      ${svc.summary != null ? svc.summary : 'Dịch vụ khám nhãn khoa chất lượng cao với trang thiết bị chuẩn quốc tế.'}
+                                                                    </p>
+                                                                    <c:if test="${not empty svc.description and svc.description != svc.summary}">
+                                                                      <p class="text-muted small mb-0 mt-1 lh-sm" style="font-size: 11.5px; opacity: 0.9;">
+                                                                        <i class="bi bi-info-circle text-teal me-1" style="color: #0d9488;"></i>${svc.description}
+                                                                      </p>
+                                                                    </c:if>
+                                                                  </div>
                                                                 </div>
                                                                 <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
                                                                   <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted p-0"
@@ -1296,7 +1342,6 @@
 
               let matchedCount = 0;
               let firstMatchedValue = '';
-              let currentMatches = false;
               const currentVal = doctorSelect.value;
 
               Array.from(doctorSelect.options).forEach(opt => {
@@ -1338,33 +1383,39 @@
                   opt.text = (bgroup === 'thuthuat' ? '★ [Bác sĩ khám lâm sàng chỉ định] ' : '★ [Đúng chuyên khoa] ') + baseText;
                   matchedCount++;
                   if (!firstMatchedValue) firstMatchedValue = opt.value;
-                  if (opt.value === currentVal) currentMatches = true;
                 } else {
                   opt.text = baseText;
                 }
               });
 
-              // Nếu bác sĩ hiện tại chưa được chọn hoặc không trùng chuyên khoa (hoặc đang chọn thủ thuật mà bác sĩ hiện tại không phải tổng quát), tự động gợi ý bác sĩ chuyên khoa phù hợp
-              if ((!currentMatches || (bgroup === 'thuthuat' && !currentMatches)) && firstMatchedValue) {
+              // Khi ấn vào dịch vụ: luôn tự động chỉ định và chọn ngay bác sĩ chuyên khoa phù hợp nhất
+              if (!firstMatchedValue) {
+                const defaultDoc = Array.from(doctorSelect.options).find(opt => opt.value && (opt.dataset.dept === 'general' || (opt.dataset.specialty || '').toLowerCase().includes('tổng quát')));
+                if (defaultDoc) firstMatchedValue = defaultDoc.value;
+                else if (doctorSelect.options.length > 1) firstMatchedValue = doctorSelect.options[1].value;
+              }
+              if (firstMatchedValue) {
                 doctorSelect.value = firstMatchedValue;
               }
+
+              const selectedDocOpt = doctorSelect.selectedOptions[0];
+              const assignedDocName = selectedDocOpt ? (selectedDocOpt.dataset.name || selectedDocOpt.text) : '';
 
               if (filterTag) filterTag.classList.remove('d-none');
               if (filterNotice) {
                 if (bgroup === 'thuthuat') {
                   filterNotice.innerHTML = '<i class="bi bi-shield-check text-primary me-1"></i>' +
-                    'Thủ thuật cần khám lâm sàng trước: Đã tự động chỉ định <b>Bác sĩ khám mắt tổng quát</b> tiếp nhận cho gói: <b class="text-dark">' + serviceName + '</b>.';
+                    'Thủ thuật cần khám lâm sàng trước: Đã tự động chỉ định <b>Bác sĩ khám mắt tổng quát (' + assignedDocName + ')</b> tiếp nhận cho gói: <b class="text-dark">' + serviceName + '</b>.';
                 } else {
                   filterNotice.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>' +
-                    'Gợi ý <b>' + matchedCount + ' bác sĩ</b> chuyên khoa phù hợp cho: <b class="text-dark">' + serviceName + '</b>. (Bạn vẫn có thể tự do chọn bất kỳ bác sĩ nào khác bên dưới)';
+                    'Đã tự động chỉ định bác sĩ chuyên khoa: <b class="text-teal" style="color:#0d9488;">' + assignedDocName + '</b> cho dịch vụ: <b class="text-dark">' + serviceName + '</b>. (Bạn vẫn có thể tự do chọn bác sĩ khác trong danh sách bên dưới)';
                 }
                 filterNotice.classList.remove('d-none');
               }
 
               updateDoctorPreview();
 
-              // Cập nhật Banner cảnh báo quy trình y khoa cho dịch vụ đang chọn
-              const bgroup = radioElement.dataset.bgroup || '';
+              // Cập nhật Banner cảnh báo quy trình y khoa cho dịch vụ đang chọn (tái sử dụng bgroup, không khai báo lại const)
               const protocolBox = document.getElementById('serviceProtocolAlertBox');
               if (protocolBox) {
                 if (bgroup === 'thuthuat') {
@@ -1506,10 +1557,28 @@
               const docRoom = selectedOpt.dataset.room || 'Phòng khám chuyên khoa';
               const docAvatar = selectedOpt.dataset.avatar || '${pageContext.request.contextPath}/assets/img/doctors/doctors-1.jpg';
 
-              document.getElementById('docPreviewName').textContent = docName;
-              document.getElementById('docPreviewSpecialty').textContent = 'Chuyên khoa: ' + docSpecialty;
-              document.getElementById('docPreviewRoom').textContent = 'Vị trí: ' + docRoom;
-              document.getElementById('docPreviewAvatar').src = docAvatar;
+              const nameEl = document.getElementById('docPreviewName');
+              if (nameEl) nameEl.textContent = docName;
+              const specEl = document.getElementById('docPreviewSpecialty');
+              if (specEl) specEl.textContent = 'Chuyên khoa: ' + docSpecialty;
+              const roomEl = document.getElementById('docPreviewRoom');
+              if (roomEl) roomEl.textContent = 'Vị trí: ' + docRoom;
+              const avatarEl = document.getElementById('docPreviewAvatar');
+              if (avatarEl) avatarEl.src = docAvatar;
+
+              const badgeEl = document.getElementById('docMatchBadge');
+              if (badgeEl) {
+                const checkedRadio = document.querySelector('input.service-radio:checked');
+                const bgroup = checkedRadio ? (checkedRadio.dataset.bgroup || '').toLowerCase().trim() : '';
+                if (bgroup === 'thuthuat') {
+                  badgeEl.className = 'badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill small';
+                  badgeEl.innerHTML = '<i class="bi bi-shield-check text-warning me-1"></i>Bác sĩ khám lâm sàng chỉ định';
+                } else {
+                  badgeEl.className = 'badge rounded-pill small';
+                  badgeEl.style.cssText = 'background: #ccfbf1; color: #0f766e; border: 1px solid #99f6e4;';
+                  badgeEl.innerHTML = '<i class="bi bi-star-fill text-warning me-1"></i>Bác sĩ chỉ định theo chuyên khoa';
+                }
+              }
 
               previewCard.classList.remove('d-none');
             }
@@ -1719,6 +1788,19 @@
               const docSelect = document.getElementById('doctorSelect');
               const checkedSvc = document.querySelector('input[name="serviceId"]:checked');
 
+              // Gắn sự kiện click trực tiếp vào từng service-card
+              document.querySelectorAll('.service-card').forEach(function (card) {
+                card.addEventListener('click', function (e) {
+                  if (e.target.closest('[data-bs-toggle="modal"]')) return;
+                  const label = card.closest('label');
+                  const radio = label ? label.querySelector('input.service-radio') : null;
+                  if (radio) {
+                    radio.checked = true;
+                    filterDoctorsByService(radio);
+                  }
+                });
+              });
+
               // Nếu có selectedDoctorId từ trang trước (ví dụ: nhấn nút "Đặt lịch" ở card bác sĩ trên HomePage)
               const initialDocId = '${selectedDoctorId}';
               if (initialDocId && docSelect) {
@@ -1730,14 +1812,79 @@
                 updateDoctorPreview();
               }
 
-              // Tự động kiểm tra trạng thái thanh toán PayOS (Auto Polling)
+              // Tự động kiểm tra trạng thái thanh toán PayOS (Auto Polling) & Đồng hồ đếm ngược (Countdown Timer)
               <c:if test="${step == 'payment'}">
                 const currentApptId = '${appointmentId != null ? appointmentId : appointment.id}';
                 let pollAttempts = 0;
+                let checkInterval = null;
+
+                // Khởi tạo thời hạn thanh toán 15 phút (900s) lưu trong sessionStorage để không bị reset khi F5
+                const storageKey = 'vc_pay_expire_' + currentApptId;
+                let expireTimestamp = sessionStorage.getItem(storageKey);
+                const now = Date.now();
+                if (!expireTimestamp || isNaN(expireTimestamp) || parseInt(expireTimestamp) < now) {
+                  expireTimestamp = now + (15 * 60 * 1000); // 15 phút
+                  sessionStorage.setItem(storageKey, expireTimestamp);
+                } else {
+                  expireTimestamp = parseInt(expireTimestamp);
+                }
+
+                function updatePaymentCountdown() {
+                  const remainingMs = expireTimestamp - Date.now();
+                  const remainingSec = Math.max(0, Math.floor(remainingMs / 1000));
+                  const m = Math.floor(remainingSec / 60);
+                  const s = remainingSec % 60;
+                  const formatted = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+
+                  const timerEl = document.getElementById('paymentCountdownTimer');
+                  const ticketEl = document.getElementById('ticketCountdownBadge');
+                  const barEl = document.getElementById('countdownProgressBar');
+                  const statusEl = document.getElementById('countdownStatusText');
+
+                  if (timerEl) timerEl.textContent = formatted;
+                  if (ticketEl) ticketEl.innerHTML = '<i class="bi bi-stopwatch me-1"></i>' + formatted;
+
+                  const percent = Math.min(100, Math.max(0, (remainingSec / 900) * 100));
+                  if (barEl) barEl.style.width = percent + '%';
+
+                  // Đổi màu trực quan theo thời gian còn lại
+                  if (remainingSec <= 120) { // Dưới 2 phút: Đỏ cảnh báo khẩn
+                    if (barEl) { barEl.className = 'progress-bar progress-bar-striped progress-bar-animated bg-danger'; }
+                    if (timerEl) { timerEl.className = 'fs-5 fw-bold text-danger font-monospace'; }
+                    if (statusEl) { statusEl.textContent = 'Sắp hết hạn!'; statusEl.className = 'text-danger fw-bold'; }
+                  } else if (remainingSec <= 300) { // Dưới 5 phút: Cam chú ý
+                    if (barEl) { barEl.className = 'progress-bar progress-bar-striped progress-bar-animated bg-warning'; }
+                    if (timerEl) { timerEl.className = 'fs-5 fw-bold text-warning font-monospace'; }
+                    if (statusEl) { statusEl.textContent = 'Hạn còn dưới 5 phút'; statusEl.className = 'text-warning fw-semibold'; }
+                  } else { // Bình thường: Xanh giữ chỗ an toàn
+                    if (barEl) { barEl.className = 'progress-bar progress-bar-striped progress-bar-animated'; barEl.style.backgroundColor = '#0d9488'; }
+                    if (timerEl) { timerEl.className = 'fs-5 fw-bold font-monospace'; timerEl.style.color = '#0d9488'; }
+                    if (statusEl) { statusEl.textContent = 'Đang có hiệu lực'; statusEl.className = 'text-muted fw-semibold'; }
+                  }
+
+                  if (remainingSec <= 0) {
+                    clearInterval(countdownInterval);
+                    if (checkInterval) clearInterval(checkInterval);
+                    sessionStorage.removeItem(storageKey);
+
+                    if (timerEl) timerEl.textContent = '00:00 (Hết hạn)';
+                    if (statusEl) { statusEl.textContent = 'Đã hết hạn'; statusEl.className = 'text-danger fw-bold'; }
+                    if (barEl) { barEl.style.width = '0%'; }
+
+                    const actionArea = document.getElementById('paymentActionArea');
+                    const expiredArea = document.getElementById('paymentExpiredArea');
+                    if (actionArea) actionArea.classList.add('d-none');
+                    if (expiredArea) expiredArea.classList.remove('d-none');
+                  }
+                }
+
+                updatePaymentCountdown();
+                const countdownInterval = setInterval(updatePaymentCountdown, 1000);
+
                 if (currentApptId) {
-                  const checkInterval = setInterval(function () {
+                  checkInterval = setInterval(function () {
                     pollAttempts++;
-                    if (pollAttempts > 180) { // Quá 15 phút thì dừng polling
+                    if (pollAttempts > 360) { // Tối đa 15 phút (mỗi 2.5s)
                       clearInterval(checkInterval);
                       return;
                     }
@@ -1746,6 +1893,8 @@
                       .then(data => {
                         if (data && data.isPaid) {
                           clearInterval(checkInterval);
+                          clearInterval(countdownInterval);
+                          sessionStorage.removeItem(storageKey);
                           // Tự động chuyển thẳng sang màn hình thành công!
                           window.location.href = '${pageContext.request.contextPath}/book-appointment?step=success&id=' + currentApptId;
                         }
