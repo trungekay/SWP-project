@@ -608,7 +608,6 @@
                                                                   <div
                                                                     class="d-flex justify-content-between align-items-start mb-2">
                                                                     <div class="d-flex align-items-center gap-1 flex-wrap">
-                                                                      <span class="badge bg-light text-secondary border small">${svc.code != null ? svc.code : 'DV'}</span>
                                                                       <span class="badge rounded-pill small" style="${bBadgeStyle}; font-size: 11px;">
                                                                         ${bGroupLabel}
                                                                       </span>
@@ -1276,7 +1275,11 @@
                   matchedRadio = r;
                 }
               });
-              if (matchedRadio && !matchedRadio.checked) {
+              const selectedRadio = document.querySelector('input.service-radio:checked');
+              const selectedSpecialty = (selectedRadio?.dataset.specialty || '').toLowerCase().trim();
+              const selectedMatchesDoctor = selectedRadio &&
+                (selectedSpecialty === docDept || docSpecialty.includes(selectedSpecialty));
+              if (!selectedMatchesDoctor && matchedRadio && !matchedRadio.checked) {
                 matchedRadio.checked = true;
                 updateFeeDisplay();
 

@@ -111,6 +111,12 @@
                 style="background: var(--vc-primary); border-color: var(--vc-primary);">
                 <i class="bi bi-calendar-plus me-1"></i> Đăng ký lịch
               </a>
+              <c:if test="${sessionScope.user.role == 'doctor'}">
+                <a href="${pageContext.request.contextPath}/doctor/waiting-list"
+                  class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold">
+                  <i class="bi bi-people me-1"></i> Hàng đợi khám bệnh
+                </a>
+              </c:if>
 
             </div>
 

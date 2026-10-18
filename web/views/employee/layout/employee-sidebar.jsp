@@ -1,59 +1,11 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-    .sidebar, .sidebar * {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-    }
-    .sidebar-menu-header {
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        color: #94a3b8;
-        padding: 12px 16px 4px;
-        font-weight: 700;
-    }
-    .sidebar-dropdown > a {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    .sidebar-submenu {
-        display: none;
-        list-style: none;
-        padding: 4px 0 6px 12px;
-        margin: 0;
-    }
-    .sidebar-submenu.show {
-        display: block;
-    }
-    .sidebar-submenu li a {
-        padding: 8px 16px !important;
-        font-size: 13px !important;
-        color: #64748b !important;
-        border-radius: 6px !important;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        text-decoration: none;
-        transition: all 0.2s;
-    }
-    .sidebar-submenu li a:hover,
-    .sidebar-submenu li a.active {
-        color: #008b74 !important;
-        background-color: #f0f7f6 !important;
-        font-weight: 600;
-    }
-</style>
-
-<!-- Unified Employee & Staff Sidebar -->
+<!-- Employee Work Sidebar -->
 <aside class="sidebar">
-    <a href="${pageContext.request.contextPath}/home" class="sidebar-brand">
+    <a href="${pageContext.request.contextPath}/employee/schedule" class="sidebar-brand">
         <span class="logo-mark"><i class="bi bi-eye"></i></span>
         <span class="brand-text">VisionCare</span>
     </a>
-
     <ul class="sidebar-menu">
         <c:choose>
             <%-- ==================== GIAO DIỆN DÀNH CHO STAFF ==================== --%>
@@ -174,24 +126,3 @@
         </c:choose>
     </ul>
 </aside>
-
-<script>
-    if (typeof toggleSubmenu !== 'function') {
-        function toggleSubmenu(menuId, el) {
-            var menu = document.getElementById(menuId);
-            if (menu) {
-                menu.classList.toggle('show');
-                var icon = el.querySelector('.bi-chevron-down, .bi-chevron-up');
-                if (icon) {
-                    if (menu.classList.contains('show')) {
-                        icon.classList.remove('bi-chevron-down');
-                        icon.classList.add('bi-chevron-up');
-                    } else {
-                        icon.classList.remove('bi-chevron-up');
-                        icon.classList.add('bi-chevron-down');
-                    }
-                }
-            }
-        }
-    }
-</script>

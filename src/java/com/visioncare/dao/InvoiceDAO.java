@@ -405,7 +405,7 @@ public class InvoiceDAO {
                          "JOIN Prescription p ON pd.Prescription_ID = p.Prescription_ID " +
                          "JOIN Medical_Record m ON p.Record_ID = m.Record_ID " +
                          "JOIN Master_Invoice i ON m.Appointment_ID = i.Appointment_ID " +
-                         "LEFT JOIN Medical_Supply ms ON (pd.Medicine_Name LIKE '%' + ms.Supply_Name + '%' OR ms.Supply_Name LIKE '%' + pd.Medicine_Name + '%') " +
+                         "LEFT JOIN Medicine ms ON (pd.Medicine_Name LIKE '%' + ms.Supply_Name + '%' OR ms.Supply_Name LIKE '%' + pd.Medicine_Name + '%') " +
                          "WHERE i.Invoice_ID = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sqlMeds)) {

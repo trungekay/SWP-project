@@ -1,6 +1,7 @@
 package com.visioncare.controller;
 
 import com.visioncare.dao.CatalogDAO;
+import com.visioncare.dao.CatalogDAO.ImageData;
 import com.visioncare.model.CatalogService;
 import com.visioncare.model.MedicalSupply;
 import com.visioncare.model.ServiceCategory;
@@ -22,7 +23,8 @@ import java.util.Map;
 import java.util.UUID;
 
 @WebServlet(name = "AdminCatalogServlet", urlPatterns = {
-    "/admin/catalog", "/admin/catalog/service", "/admin/catalog/supply"
+    "/admin/catalog", "/admin/catalog/service", "/admin/catalog/supply",
+    "/admin/catalog/consumable", "/catalog-image"
 })
 @MultipartConfig(maxFileSize = 5 * 1024 * 1024, maxRequestSize = 6 * 1024 * 1024)
 public class AdminCatalogServlet extends HttpServlet {
@@ -31,24 +33,39 @@ public class AdminCatalogServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        if ("/catalog-image".equals(request.getServletPath())) {
+            showImage(request, response);
+            return;
+        }
         if (admin(request, response) == null) return;
         request.getSession().setAttribute("catalogCsrf", csrf(request));
         String path = request.getServletPath();
         try {
+            if ("/admin/catalog".equals(path) && "retail".equals(request.getParameter("tab"))) {
+                response.sendRedirect(request.getContextPath() + "/admin/medicine");
+                return;
+            }
             if ("/admin/catalog".equals(path)) {
                 request.setAttribute("catalogServices", dao.listServices());
-                request.setAttribute("catalogSupplies", dao.listSupplies());
+                request.setAttribute("catalogSupplies", dao.listSupplies("supply"));
+                request.setAttribute("catalogConsumables", dao.listSupplies("consumable"));
                 request.getRequestDispatcher("/views/admin/catalog.jsp").forward(request, response);
             } else {
-                boolean service = path.endsWith("/service");
-                List<?> choices = service ? dao.listServices() : dao.listSupplies();
+                String kind = kind(path);
+                if ("supply".equals(kind) && "consumables".equals(request.getParameter("returnTab"))) {
+                    response.sendRedirect(request.getContextPath() + "/admin/catalog/consumable" +
+                            (request.getQueryString() == null ? "?new=1" : "?" + request.getQueryString()));
+                    return;
+                }
+                boolean service = "service".equals(kind);
+                List<?> choices = service ? dao.listServices() : dao.listSupplies(kind);
                 int id = optionalId(request.getParameter("id"));
                 if (id == 0 && !"1".equals(request.getParameter("new")) && !choices.isEmpty()) {
                     id = service ? ((CatalogService) choices.get(0)).getId()
                             : ((MedicalSupply) choices.get(0)).getId();
                 }
                 Object item = id == 0 ? new HashMap<String, Object>() :
-                        (service ? dao.getService(id) : dao.getSupply(id));
+                        (service ? dao.getService(id) : dao.getSupply(kind, id));
                 if (item == null) { response.sendError(HttpServletResponse.SC_NOT_FOUND); return; }
                 request.setAttribute("choices", choices);
                 if (!service) request.setAttribute("supplyCategories", SupplyCategory.values());
@@ -56,14 +73,15 @@ public class AdminCatalogServlet extends HttpServlet {
                     request.setAttribute("serviceCategories", ServiceCategory.values());
                 }
                 request.setAttribute("item", item);
-                request.setAttribute("kind", service ? "service" : "supply");
+                request.setAttribute("kind", kind);
+                request.setAttribute("catalogReturnTab", returnTab(kind));
                 request.getRequestDispatcher("/views/admin/catalog-edit.jsp").forward(request, response);
             }
         } catch (IllegalArgumentException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         } catch (Exception e) {
             log("Could not load admin catalog", e);
-            request.setAttribute("error", "Không tải được danh mục. Hãy kiểm tra kết nối và cấu trúc bảng Service_Catalog, Medical_Supply trong eye_clinic_db.");
+            request.setAttribute("error", "Không tải được danh mục. Hãy kiểm tra kết nối và cấu trúc bảng Service_Catalog, Medical_Supply, Consumables trong eye_clinic_db.");
             request.getRequestDispatcher("/views/admin/catalog-error.jsp").forward(request, response);
         }
     }
@@ -71,18 +89,23 @@ public class AdminCatalogServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        if ("/catalog-image".equals(request.getServletPath())) {
+            response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            return;
+        }
         User user = admin(request, response);
         if (user == null) return;
         String path = request.getServletPath();
         if ("/admin/catalog".equals(path)) { response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED); return; }
+        String kind = kind(path);
+        boolean service = "service".equals(kind);
         String token = (String) request.getSession().getAttribute("catalogCsrf");
         if (token == null || !token.equals(request.getParameter("csrf"))) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN); return;
         }
-        boolean service = path.endsWith("/service");
         String action = request.getParameter("action");
         if ("delete".equals(action)) {
-            delete(request, response, service);
+            delete(request, response, kind);
             return;
         }
         if (action != null && !"save".equals(action)) {
@@ -109,33 +132,33 @@ public class AdminCatalogServlet extends HttpServlet {
             } else {
                 String name = field(request, "name", 255, true);
                 String category = field(request, "category", 100, true);
-                if (SupplyCategory.fromVietnameseName(category) == null) {
-                    throw new IllegalArgumentException("Phân loại vật tư không hợp lệ.");
-                }
-                savedId = dao.saveSupply(id, name, category, price(request),
+                validateCategory(kind, category);
+                savedId = dao.saveSupply(kind, id, name, category, price(request),
                         upload == null ? null : upload.getBytes(),
                         upload == null ? null : upload.getMimeType());
             }
-            response.sendRedirect(request.getContextPath() + "/admin/catalog?tab=" + (service ? "services" : "supplies")
-                    + (id == 0 ? "&created=1" : "&updated=1") + "&id=" + savedId);
+            response.sendRedirect(request.getContextPath() + listUrl(kind)
+                    + (listUrl(kind).contains("?") ? "&" : "?")
+                    + (id == 0 ? "created=1" : "updated=1") + "&id=" + savedId);
         } catch (IllegalArgumentException e) {
             request.setAttribute("error", e.getMessage() == null ? "Thông tin nhập không hợp lệ." : e.getMessage());
-            showFormWithSubmittedValues(request, response, service);
+            showFormWithSubmittedValues(request, response, kind);
         } catch (Exception e) {
             log("Could not save admin catalog", e);
             request.setAttribute("error", "Không lưu được dữ liệu. Kiểm tra mã trùng hoặc kết nối database.");
-            showFormWithSubmittedValues(request, response, service);
+            showFormWithSubmittedValues(request, response, kind);
         }
     }
 
-    private void showFormWithSubmittedValues(HttpServletRequest request, HttpServletResponse response, boolean service)
+    private void showFormWithSubmittedValues(HttpServletRequest request, HttpServletResponse response, String kind)
             throws ServletException, IOException {
+        boolean service = "service".equals(kind);
         Map<String, Object> item = new HashMap<>();
         for (String key : new String[]{"id", "code", "name", "price", "category", "summary", "description", "image"}) {
             item.put(key, request.getParameter(key));
         }
         try {
-            request.setAttribute("choices", service ? dao.listServices() : dao.listSupplies());
+            request.setAttribute("choices", service ? dao.listServices() : dao.listSupplies(kind));
             if (!service) request.setAttribute("supplyCategories", SupplyCategory.values());
             if (service) {
                 request.setAttribute("serviceCategories", ServiceCategory.values());
@@ -144,7 +167,8 @@ public class AdminCatalogServlet extends HttpServlet {
             log("Could not reload catalog choices", e);
         }
         request.setAttribute("item", item);
-        request.setAttribute("kind", service ? "service" : "supply");
+        request.setAttribute("kind", kind);
+        request.setAttribute("catalogReturnTab", returnTab(kind));
         request.getRequestDispatcher("/views/admin/catalog-edit.jsp").forward(request, response);
     }
 
@@ -188,7 +212,7 @@ public class AdminCatalogServlet extends HttpServlet {
         return value;
     }
 
-    private void delete(HttpServletRequest request, HttpServletResponse response, boolean service)
+    private void delete(HttpServletRequest request, HttpServletResponse response, String kind)
             throws IOException {
         final int id;
         try {
@@ -199,18 +223,81 @@ public class AdminCatalogServlet extends HttpServlet {
             return;
         }
         try {
-            boolean deleted = service ? dao.deleteService(id) : dao.deleteSupply(id);
+            boolean deleted = "service".equals(kind) ? dao.deleteService(id) : dao.deleteSupply(kind, id);
             if (!deleted) {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
                 return;
             }
-            response.sendRedirect(request.getContextPath() + "/admin/catalog?tab="
-                    + (service ? "services" : "supplies") + "&deleted=1");
+            response.sendRedirect(request.getContextPath() + listUrl(kind)
+                    + (listUrl(kind).contains("?") ? "&" : "?") + "deleted=1");
         } catch (Exception e) {
             log("Could not delete catalog item", e);
-            response.sendRedirect(request.getContextPath() + "/admin/catalog?tab="
-                    + (service ? "services" : "supplies") + "&deleteError=1");
+            response.sendRedirect(request.getContextPath() + listUrl(kind)
+                    + (listUrl(kind).contains("?") ? "&" : "?") + "deleteError=1");
         }
+    }
+
+    private void showImage(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        int id;
+        try {
+            id = Integer.parseInt(request.getParameter("id"));
+        } catch (NumberFormatException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        if (id <= 0) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        if ("medicine".equals(request.getParameter("kind"))) {
+            response.sendRedirect(request.getContextPath() + "/medicine-image?id=" + id);
+            return;
+        }
+        try {
+            ImageData image = dao.getImage(request.getParameter("kind"), id);
+            if (image == null) {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
+            response.setHeader("X-Content-Type-Options", "nosniff");
+            response.setHeader("Cache-Control", "no-store");
+            response.setContentType(image.getMimeType());
+            response.setContentLength(image.getBytes().length);
+            response.getOutputStream().write(image.getBytes());
+        } catch (Exception e) {
+            throw new ServletException("Không đọc được ảnh danh mục", e);
+        }
+    }
+
+    private String kind(String path) {
+        switch (path) {
+            case "/admin/catalog/service": return "service";
+            case "/admin/catalog/supply": return "supply";
+            case "/admin/catalog/consumable": return "consumable";
+            default: throw new IllegalArgumentException("Đường dẫn không hợp lệ.");
+        }
+    }
+
+    private String returnTab(String kind) {
+        switch (kind) {
+            case "service": return "services";
+            case "supply": return "supplies";
+            case "consumable": return "consumables";
+            default: throw new IllegalArgumentException("Loại vật tư không hợp lệ.");
+        }
+    }
+
+    private String listUrl(String kind) {
+        return "/admin/catalog?tab=" + returnTab(kind);
+    }
+
+    private void validateCategory(String kind, String category) {
+        SupplyCategory value = SupplyCategory.fromVietnameseName(category);
+        boolean valid = value != null &&
+                ("supply".equals(kind) && value == SupplyCategory.OTHER ||
+                 "consumable".equals(kind) && value == SupplyCategory.MEDICAL_CONSUMABLES);
+        if (!valid) throw new IllegalArgumentException("Phân loại vật tư không hợp lệ.");
     }
 
     private CatalogDAO.ImageData imageUpload(HttpServletRequest request) throws Exception {
