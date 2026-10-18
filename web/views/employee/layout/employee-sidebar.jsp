@@ -126,3 +126,22 @@
         </c:choose>
     </ul>
 </aside>
+
+<script>
+    function toggleSubmenu(menuId, el) {
+        var menu = document.getElementById(menuId);
+        if (menu) {
+            menu.classList.toggle('show');
+            var icon = el.querySelector('.bi-chevron-down, .bi-chevron-up');
+            if (icon) {
+                if (menu.classList.contains('show')) {
+                    icon.classList.remove('bi-chevron-down');
+                    icon.classList.add('bi-chevron-up');
+                } else {
+                    icon.classList.remove('bi-chevron-up');
+                    icon.classList.add('bi-chevron-down');
+                }
+            }
+        }
+    }
+</script>
