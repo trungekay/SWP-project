@@ -134,7 +134,7 @@
                     </li>
                 </c:if>
 
-                <c:if test="${sessionScope.user.role == 'doctor'}">
+                <c:if test="${sessionScope.user.role == 'doctor' || sessionScope.user.roleId == 3}">
                     <li>
                         <a href="javascript:void(0);" class="${param.activeNav == 'examination' ? 'active' : ''}" title="Chức năng đang phát triển" style="opacity: 0.85;">
                             <i class="bi bi-file-earmark-medical"></i>

@@ -17,7 +17,7 @@ public class HistoryDAO {
         List<Map<String, Object>> list = new ArrayList<>();
         String sql = "SELECT m.Record_ID, a.Appointment_ID, a.Status, m.Created_At AS Date, e.Full_Name AS DoctorName, " +
                      "i.Invoice_ID, i.Status AS Invoice_Status, i.Total_Amount, " +
-                     "(SELECT TOP 1 s.Service_Name FROM Procedure_Order po JOIN Service s ON po.Service_ID = s.Service_ID WHERE po.Record_ID = m.Record_ID) AS Dynamic_Service " +
+                     "(SELECT TOP 1 s.Service_Name FROM Procedure_Order po JOIN Service_Catalog s ON po.Service_ID = s.Service_ID WHERE po.Record_ID = m.Record_ID) AS Dynamic_Service " +
                      "FROM Medical_Record m " +
                      "JOIN Appointment a ON m.Appointment_ID = a.Appointment_ID " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
