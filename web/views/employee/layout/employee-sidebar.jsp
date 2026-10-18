@@ -7,41 +7,122 @@
         <span class="brand-text">VisionCare</span>
     </a>
     <ul class="sidebar-menu">
-        <li>
-            <a href="${pageContext.request.contextPath}/employee/schedule" class="${param.activeNav == 'schedule' ? 'active' : ''}">
-                <i class="bi bi-calendar-week"></i>
-                Lịch làm việc của tôi
-            </a>
-        </li>
-        <li>
-            <a href="${pageContext.request.contextPath}/employee/register-schedule" class="${param.activeNav == 'register-schedule' ? 'active' : ''}">
-                <i class="bi bi-calendar-plus"></i>
-                Đăng ký ca làm việc
-            </a>
-        </li>
+        <c:choose>
+            <%-- ==================== GIAO DIỆN DÀNH CHO STAFF ==================== --%>
+            <c:when test="${sessionScope.user.role == 'staff' || sessionScope.user.roleId == 5}">
+                <div class="sidebar-menu-header">Bàn làm việc Nhân viên</div>
 
-        <c:if test="${sessionScope.user.role == 'doctor'}">
-            <li>
-                <a href="${pageContext.request.contextPath}/doctor/waiting-list" class="${param.activeNav == 'doctor-waiting' || param.activeNav == 'examination' ? 'active' : ''}">
-                    <i class="bi bi-people"></i>
-                    Hàng đợi khám bệnh
-                </a>
-            </li>
-            <li>
-                <a href="${pageContext.request.contextPath}/views/profile/manage.jsp" class="${param.activeNav == 'profile' ? 'active' : ''}">
-                    <i class="bi bi-person-circle"></i>
-                    Hồ sơ cá nhân
-                </a>
-            </li>
-        </c:if>
+                <!-- 1. Màn hình đặt lịch -->
+                <li>
+                    <a href="${pageContext.request.contextPath}/employee/schedule" class="${param.activeNav == 'schedule' ? 'active' : ''}">
+                        <i class="bi bi-calendar3"></i>
+                        <span>Đặt lịch hẹn</span>
+                    </a>
+                </li>
 
-        <c:if test="${sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist' || sessionScope.user.roleId == 4 || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2}">
-            <li>
-                <a href="${pageContext.request.contextPath}/specialist/waiting-list" class="${param.activeNav == 'waiting-list' ? 'active' : ''}">
-                    <i class="bi bi-clipboard2-pulse"></i>
-                    Hàng đợi cận lâm sàng
-                </a>
-            </li>
-        </c:if>
+                <!-- 2. Quản lý Lịch hẹn (Sổ xuống) -->
+                <li class="sidebar-dropdown">
+                    <a href="javascript:void(0);" onclick="toggleSubmenu('appt-sub-emp', this);" class="${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'active' : ''}">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-calendar2-check"></i>
+                            <span>Quản lý Lịch hẹn</span>
+                        </div>
+                        <i class="bi ${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'bi-chevron-up' : 'bi-chevron-down'}" style="font-size: 11px;"></i>
+                    </a>
+                    <ul class="sidebar-submenu ${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'show' : ''}" id="appt-sub-emp">
+                        <li>
+                            <a href="${pageContext.request.contextPath}/staff/appointments" class="${param.activeNav == 'appointments' ? 'active' : ''}">
+                                <i class="bi bi-list-task"></i>
+                                <span>Xem danh sách lịch hẹn</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="${pageContext.request.contextPath}/staff/waiting-list" class="${param.activeNav == 'waiting-list' ? 'active' : ''}">
+                                <i class="bi bi-people"></i>
+                                <span>Hàng đợi phòng khám</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- 3. Quản lý Bệnh nhân -->
+                <li>
+                    <a href="${pageContext.request.contextPath}/staff/patients" class="${param.activeNav == 'staff-patients' || param.activeNav == 'patients' ? 'active' : ''}">
+                        <i class="bi bi-people"></i>
+                        <span>Danh sách bệnh nhân</span>
+                    </a>
+                </li>
+
+                <!-- 4. Quản lý yêu cầu hoàn tiền -->
+                <li>
+                    <a href="${pageContext.request.contextPath}/staff/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}">
+                        <i class="bi bi-cash-coin"></i>
+                        <span>Quản lý yêu cầu hoàn tiền</span>
+                    </a>
+                </li>
+            </c:when>
+
+            <%-- ==================== GIAO DIỆN DÀNH CHO BÁC SĨ & CHUYÊN VIÊN ==================== --%>
+            <c:otherwise>
+                <li>
+                    <a href="${pageContext.request.contextPath}/employee/schedule" class="${param.activeNav == 'schedule' ? 'active' : ''}">
+                        <i class="bi bi-calendar-week"></i>
+                        <span>Lịch làm việc của tôi</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="${pageContext.request.contextPath}/employee/register-schedule" class="${param.activeNav == 'register-schedule' ? 'active' : ''}">
+                        <i class="bi bi-calendar-plus"></i>
+                        <span>Đăng ký ca làm việc</span>
+                    </a>
+                </li>
+
+                <c:if test="${sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist' || sessionScope.user.roleId == 4 || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2}">
+                    <li>
+                        <a href="${pageContext.request.contextPath}/specialist/waiting-list" class="${param.activeNav == 'waiting-list' ? 'active' : ''}">
+                            <i class="bi bi-clipboard2-pulse"></i>
+                            <span>Hàng đợi cận lâm sàng</span>
+                        </a>
+                    </li>
+                </c:if>
+
+                <c:if test="${sessionScope.user.role == 'doctor' || sessionScope.user.roleId == 3}">
+                    <li>
+                        <a href="javascript:void(0);" class="${param.activeNav == 'examination' ? 'active' : ''}" title="Chức năng đang phát triển" style="opacity: 0.85;">
+                            <i class="bi bi-file-earmark-medical"></i>
+                            <span>Khám bệnh & Bệnh án</span>
+                        </a>
+                    </li>
+                </c:if>
+
+                <%-- Fallback cho Admin xem trang Tiếp đón / Lễ tân --%>
+                <c:if test="${(sessionScope.user.role == 'admin' || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2) && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list')}">
+                    <div class="sidebar-menu-header mt-3">Tiếp đón & Lễ tân</div>
+                    <li class="sidebar-dropdown">
+                        <a href="javascript:void(0);" onclick="toggleSubmenu('appt-sub-admin', this);" class="active">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-calendar2-check"></i>
+                                <span>Quản lý Lịch hẹn</span>
+                            </div>
+                            <i class="bi bi-chevron-up" style="font-size: 11px;"></i>
+                        </a>
+                        <ul class="sidebar-submenu show" id="appt-sub-admin">
+                            <li>
+                                <a href="${pageContext.request.contextPath}/staff/appointments" class="${param.activeNav == 'appointments' ? 'active' : ''}">
+                                    <i class="bi bi-list-task"></i>
+                                    <span>Xem danh sách lịch hẹn</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="${pageContext.request.contextPath}/staff/waiting-list" class="${param.activeNav == 'waiting-list' ? 'active' : ''}">
+                                    <i class="bi bi-people"></i>
+                                    <span>Hàng đợi phòng khám</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </c:if>
+            </c:otherwise>
+        </c:choose>
     </ul>
 </aside>

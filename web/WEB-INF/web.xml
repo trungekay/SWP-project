@@ -27,5 +27,24 @@
         <error-code>500</error-code>
         <location>/views/error/500.jsp</location>
     </error-page>
+    <!-- Specialist Patient Detail (Screen 35) -->
+    <servlet>
+        <servlet-name>SpecialistPatientDetailServlet</servlet-name>
+        <servlet-class>com.visioncare.controller.SpecialistPatientDetailServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SpecialistPatientDetailServlet</servlet-name>
+        <url-pattern>/specialist/patient-detail</url-pattern>
+    </servlet-mapping>
+
+    <!-- Specialist Procedure Detail (Screen 36) -->
+    <servlet>
+        <servlet-name>SpecialistProcedureDetailServlet</servlet-name>
+        <servlet-class>com.visioncare.controller.SpecialistProcedureDetailServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SpecialistProcedureDetailServlet</servlet-name>
+        <url-pattern>/specialist/procedure-detail</url-pattern>
+    </servlet-mapping>
 
 </web-app>
