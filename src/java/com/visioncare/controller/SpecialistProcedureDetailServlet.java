@@ -18,12 +18,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Controller cho Màn hình Thực hiện Thủ thuật & Nhập kết quả (Screen 36 - Procedure Execution Detail Screen)
- * Phục vụ Kỹ thuật viên (Specialist) thực hiện chuẩn quy trình y khoa:
- * 1. Tiếp nhận ca (Pending -> In_Progress)
- * 2. Đo đạc & Nhập kết quả chuyên khoa Mắt theo 2 mắt OD (Phải) & OS (Trái)
- * 3. Hoàn tất thủ thuật & Trả kết quả về cho Bác sĩ khám chính (In_Progress -> Completed)
- * 4. In phiếu kết quả cận lâm sàng
+ * Controller cho Màn hình Thực hiện Thủ thuật & Lập Biên bản Phẫu thuật (Screen 36)
+ * Dành riêng cho Kỹ thuật viên / Phẫu thuật viên Chuyên khoa (Specialist):
+ * - Nhận các ca thuộc Category: 'Điều trị và thủ thuật'
+ * - Hiển thị Read-only thông tin chẩn đoán lâm sàng & kết quả đo khám từ Bác sĩ
+ * - Lập Biên bản Thủ thuật (Mắt can thiệp, Phương pháp vô cảm, Diễn biến kỹ thuật, Tình trạng sau mổ, Lời dặn hậu phẫu)
+ * - Hoàn tất thủ thuật và trả kết quả về ca khám cho Bác sĩ
  */
 @WebServlet(name = "SpecialistProcedureDetailServlet", urlPatterns = {"/specialist/procedure-detail"})
 public class SpecialistProcedureDetailServlet extends HttpServlet {
@@ -65,51 +65,42 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
                 return;
             }
 
-            // Khi KTV mở màn hình này (từ nút 'Thực hiện' ở Hàng đợi), ca tự động chuyển sang In_Progress nếu đang là Pending
-            if ("Pending".equalsIgnoreCase(order.getStatus())) {
+            // Gán KTV hiện tại nếu ca chưa có người nhận
+            if (order.getSpecialistId() == null && currentUser.getActorId() > 0) {
                 try {
-                    Integer specEmployeeId = (currentUser.getActorId() > 0) ? currentUser.getActorId() : null;
-                    procedureOrderDAO.updateOrderStatus(orderId, specEmployeeId, "In_Progress");
-                    order.setStatus("In_Progress");
-                    if (currentUser.getFullName() != null) {
-                        order.setSpecialistName(currentUser.getFullName());
-                    }
+                    procedureOrderDAO.updateOrderStatus(orderId, currentUser.getActorId(), order.getStatus());
+                    order.setSpecialistId(currentUser.getActorId());
+                    order.setSpecialistName(currentUser.getFullName());
                 } catch (Exception ex) {
-                    System.err.println("Warning: Không thể tự động chuyển trạng thái ca sang In_Progress: " + ex.getMessage());
+                    System.err.println("Warning: Không thể gán KTV: " + ex.getMessage());
                 }
             }
 
-            // Feature 1: View examination report (Lấy phiếu khám & chẩn đoán ban đầu của BS)
+            // Feature 1: Lấy phiếu khám & chẩn đoán ban đầu của Bác sĩ
             MedicalRecord record = procedureOrderDAO.getMedicalRecordById(order.getRecordId());
 
-            // Feature 2: View To-do list (Lấy toàn bộ các thủ thuật cần làm trong cùng ca khám này)
+            // Feature 2: Lấy To-do list các thủ thuật trong cùng ca khám này
             List<ProcedureOrder> todoList = procedureOrderDAO.getTodoListByRecordId(order.getRecordId());
 
-            // Feature 3: Phân rã kết quả đo sang cấu trúc OD/OS để hiển thị lên form
-            Map<String, String> examData = parseExaminationResult(record != null ? record.getExaminationResult() : null);
+            // Feature 3: Phân tích kết quả khám của Bác sĩ và Biên bản thủ thuật của Specialist
+            Map<String, String> protocolData = parseProtocolData(
+                    record != null ? record.getExaminationResult() : null,
+                    record != null ? record.getConclusion() : null,
+                    order
+            );
 
-            // Bỏ initial value ở trường kết luận (conclusion) nếu là ghi chú/chỉ định ban đầu của bác sĩ
-            String initialConclusion = (record != null && record.getConclusion() != null) ? record.getConclusion().trim() : "";
-            if (isDefaultOrDoctorInitialNote(initialConclusion, order)) {
-                initialConclusion = "";
-            }
-            examData.put("conclusion", initialConclusion);
-
-            // Khôi phục dữ liệu tạm nếu vừa submit gặp lỗi validation để tránh bị trắng form
+            // Khôi phục form tạm nếu có lỗi validation từ session
             @SuppressWarnings("unchecked")
-            Map<String, String> tempExamData = (Map<String, String>) session.getAttribute("tempExamData");
-            if (tempExamData != null) {
-                session.removeAttribute("tempExamData");
-                examData.putAll(tempExamData);
-                if (record != null && tempExamData.containsKey("conclusion")) {
-                    record.setConclusion(tempExamData.get("conclusion"));
-                }
+            Map<String, String> tempProtocolData = (Map<String, String>) session.getAttribute("tempProtocolData");
+            if (tempProtocolData != null) {
+                session.removeAttribute("tempProtocolData");
+                protocolData.putAll(tempProtocolData);
             }
 
             request.setAttribute("order", order);
             request.setAttribute("record", record);
             request.setAttribute("todoList", todoList);
-            request.setAttribute("examData", examData);
+            request.setAttribute("protocol", protocolData);
 
             request.getRequestDispatcher("/views/specialist/specialist-procedure-detail.jsp").forward(request, response);
 
@@ -159,97 +150,63 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
             }
 
             // Lấy ID kỹ thuật viên (Employee_ID)
-            Integer specialistEmployeeId = (currentUser.getActorId() > 0) ? currentUser.getActorId() : null;
+            Integer specialistEmployeeId = (currentUser.getActorId() > 0) ? currentUser.getActorId() : order.getSpecialistId();
 
-            // Kiểm tra tính hợp lệ của độ cầu (SPH) và độ loạn (CYL) cho các action cập nhật kết quả
-            if ("saveDraft".equalsIgnoreCase(action) || "complete".equalsIgnoreCase(action) || "updateResults".equalsIgnoreCase(action)) {
-                String odSph = nvl(request.getParameter("od_sph"));
-                String odCyl = nvl(request.getParameter("od_cyl"));
-                String osSph = nvl(request.getParameter("os_sph"));
-                String osCyl = nvl(request.getParameter("os_cyl"));
+            if ("cancel".equalsIgnoreCase(action)) {
+                // Hủy ca thủ thuật
+                procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Cancelled");
+                session.setAttribute("infoMessage", "Đã hủy ca chỉ định #CD-" + orderId + ".");
+                response.sendRedirect(request.getContextPath() + "/specialist/waiting-list");
+                return;
+            }
 
-                if (!isValidDiopter(odSph) || !isValidDiopter(odCyl) || !isValidDiopter(osSph) || !isValidDiopter(osCyl)) {
+            // Kiểm tra tính hợp lệ khi bấm "Hoàn thành thủ thuật"
+            String procedureSteps = nvl(request.getParameter("procedure_steps"));
+            String procedureOutcome = nvl(request.getParameter("procedure_outcome"));
+
+            if ("complete".equalsIgnoreCase(action)) {
+                if (procedureSteps.isEmpty()) {
                     preserveFormInputs(request, session);
-                    session.setAttribute("errorMessage", "Độ cầu (SPH) và độ loạn (CYL) chỉ chấp nhận các giá trị có đuôi .00, .25, .5, .75 (bước nhảy 0.25 D).");
+                    session.setAttribute("errorMessage", "Vui lòng mô tả Quy trình & Diễn biến kỹ thuật trước khi hoàn thành thủ thuật!");
                     response.sendRedirect(request.getContextPath() + "/specialist/procedure-detail?orderId=" + orderId);
                     return;
                 }
-
-                String pdStr = nvl(request.getParameter("pd"));
-                if (!pdStr.isEmpty()) {
-                    try {
-                        int pdVal = Integer.parseInt(pdStr);
-                        if (pdVal < 30 || pdVal > 100) {
-                            preserveFormInputs(request, session);
-                            session.setAttribute("errorMessage", "Khoảng cách đồng tử (PD) phải là số nguyên trong khoảng 30 - 100 mm.");
-                            response.sendRedirect(request.getContextPath() + "/specialist/procedure-detail?orderId=" + orderId);
-                            return;
-                        }
-                    } catch (NumberFormatException e) {
-                        preserveFormInputs(request, session);
-                        session.setAttribute("errorMessage", "Khoảng cách đồng tử (PD) phải là số nguyên (mm).");
-                        response.sendRedirect(request.getContextPath() + "/specialist/procedure-detail?orderId=" + orderId);
-                        return;
-                    }
+                if (procedureOutcome.isEmpty()) {
+                    preserveFormInputs(request, session);
+                    session.setAttribute("errorMessage", "Vui lòng ghi nhận Tình trạng sau thủ thuật trước khi hoàn tất!");
+                    response.sendRedirect(request.getContextPath() + "/specialist/procedure-detail?orderId=" + orderId);
+                    return;
                 }
             }
 
-            // Xử lý các nghiệp vụ theo quy trình
-            if ("start".equalsIgnoreCase(action)) {
-                // Nghiệp vụ 1: Tiếp nhận ca và chuyển sang Đang thực hiện
-                procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "In_Progress");
-                session.setAttribute("successMessage", "Đã tiếp nhận ca #CD-" + orderId + ". Bắt đầu thực hiện thủ thuật!");
-                response.sendRedirect(request.getContextPath() + "/specialist/procedure-detail?orderId=" + orderId);
+            // Đóng gói biên bản thủ thuật
+            String serializedResult = buildSerializedProtocol(request, order, currentUser.getFullName());
+            String conclusion = nvl(request.getParameter("conclusion"));
+            if (conclusion.isEmpty()) {
+                conclusion = "Thủ thuật " + order.getServiceName() + " hoàn tất thuận lợi, an toàn. Chuyển Bác sĩ chính khám lại.";
+            }
 
-            } else if ("saveDraft".equalsIgnoreCase(action)) {
-                // Nghiệp vụ 2: Lưu nháp kết quả trong quá trình đo
-                String serializedExamResult = buildStructuredResult(request);
-                String conclusion = request.getParameter("conclusion");
+            if ("saveDraft".equalsIgnoreCase(action)) {
+                // Lưu nháp: Giữ nguyên trạng thái Pending
+                procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Pending");
+                procedureOrderDAO.updateMedicalRecordExaminationResult(order.getRecordId(), serializedResult);
 
-                procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "In_Progress");
-                procedureOrderDAO.updateMedicalRecordResults(
-                        order.getRecordId(),
-                        serializedExamResult,
-                        conclusion != null ? conclusion.trim() : ""
-                );
-
-                session.setAttribute("successMessage", "Đã lưu nháp kết quả ca #CD-" + orderId + " thành công!");
+                session.setAttribute("successMessage", "Đã lưu nháp biên bản thủ thuật ca #CD-" + orderId + " thành công!");
                 response.sendRedirect(request.getContextPath() + "/specialist/procedure-detail?orderId=" + orderId);
 
             } else if ("complete".equalsIgnoreCase(action)) {
-                // Nghiệp vụ 3: Hoàn thành thủ thuật và Trả kết quả về cho Bác sĩ khám chính
-                String serializedExamResult = buildStructuredResult(request);
-                String conclusion = request.getParameter("conclusion");
-
+                // Hoàn thành thủ thuật: Chuyển sang Completed
                 procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Completed");
-                procedureOrderDAO.updateMedicalRecordResults(
-                        order.getRecordId(),
-                        serializedExamResult,
-                        conclusion != null ? conclusion.trim() : ""
-                );
+                procedureOrderDAO.updateMedicalRecordExaminationResult(order.getRecordId(), serializedResult);
 
                 session.setAttribute("successMessage", "Đã hoàn thành thủ thuật và trả kết quả về cho Bác sĩ thành công cho ca #CD-" + orderId + "!");
                 response.sendRedirect(request.getContextPath() + "/specialist/procedure-detail?orderId=" + orderId);
 
-            } else if ("cancel".equalsIgnoreCase(action)) {
-                // Nghiệp vụ 4: Hủy ca thủ thuật
-                procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Cancelled");
-                session.setAttribute("infoMessage", "Đã hủy ca chỉ định #CD-" + orderId + ".");
-                response.sendRedirect(request.getContextPath() + "/specialist/waiting-list");
-
             } else if ("updateResults".equalsIgnoreCase(action)) {
-                // Nghiệp vụ 5: Cập nhật lại kết quả sau khi đã hoàn tất
-                String serializedExamResult = buildStructuredResult(request);
-                String conclusion = request.getParameter("conclusion");
-                System.out.println(">>> [DEBUG doPost updateResults] recordId=" + order.getRecordId() + ", result length=" + serializedExamResult.length() + ", conclusion=" + conclusion);
+                // Cập nhật lại biên bản khi đã Completed
+                procedureOrderDAO.updateMedicalRecordExaminationResult(order.getRecordId(), serializedResult);
 
-                boolean updated = procedureOrderDAO.updateMedicalRecordResults(
-                        order.getRecordId(),
-                        serializedExamResult,
-                        conclusion != null ? conclusion.trim() : ""
-                );
-                System.out.println(">>> [DEBUG doPost updateResults] updated=" + updated);
-                session.setAttribute("successMessage", "Đã lưu cập nhật kết quả cận lâm sàng thành công!");
+                session.setAttribute("successMessage", "Đã lưu cập nhật biên bản thủ thuật thành công!");
                 response.sendRedirect(request.getContextPath() + "/specialist/procedure-detail?orderId=" + orderId);
 
             } else {
@@ -258,156 +215,207 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
 
         } catch (Exception e) {
             e.printStackTrace();
-            session.setAttribute("errorMessage", "Có lỗi khi cập nhật trạng thái thủ thuật: " + e.getMessage());
+            session.setAttribute("errorMessage", "Có lỗi khi xử lý thủ thuật: " + e.getMessage());
             response.sendRedirect(request.getContextPath() + "/specialist/waiting-list");
         }
     }
 
     /**
-     * Lưu tạm toàn bộ form inputs vào session để không bị mất khi gặp lỗi validation
+     * Tách dữ liệu giữa phần Khám của Bác sĩ và Biên bản của Specialist
      */
-    private void preserveFormInputs(HttpServletRequest request, HttpSession session) {
+    private Map<String, String> parseProtocolData(String examText, String conclusionText, ProcedureOrder order) {
         Map<String, String> map = new HashMap<>();
-        map.put("od_ucva", nvl(request.getParameter("od_ucva")));
-        map.put("od_bcva", nvl(request.getParameter("od_bcva")));
-        map.put("od_sph", nvl(request.getParameter("od_sph")));
-        map.put("od_cyl", nvl(request.getParameter("od_cyl")));
-        map.put("od_axis", nvl(request.getParameter("od_axis")));
-        map.put("od_iop", nvl(request.getParameter("od_iop")));
 
-        map.put("os_ucva", nvl(request.getParameter("os_ucva")));
-        map.put("os_bcva", nvl(request.getParameter("os_bcva")));
-        map.put("os_sph", nvl(request.getParameter("os_sph")));
-        map.put("os_cyl", nvl(request.getParameter("os_cyl")));
-        map.put("os_axis", nvl(request.getParameter("os_axis")));
-        map.put("os_iop", nvl(request.getParameter("os_iop")));
+        // Mặc định
+        String doctorExamFindings = "";
+        String procedureEye = guessTargetEye(order);
+        String procedureSteps = "";
+        String procedureOutcome = "";
+        String postCare = "";
+        String conclusion = "";
 
-        map.put("pd", nvl(request.getParameter("pd")));
-        map.put("detailed_findings", nvl(request.getParameter("detailed_findings")));
-        map.put("conclusion", nvl(request.getParameter("conclusion")));
-        session.setAttribute("tempExamData", map);
-    }
+        if (examText != null && !examText.trim().isEmpty()) {
+            // Kiểm tra xem đã có tag [SPECIALIST_PROTOCOL] chưa
+            int protoStart = examText.indexOf("[SPECIALIST_PROTOCOL]");
+            if (protoStart != -1) {
+                // 1. Tách phần Doctor findings
+                int docStart = examText.indexOf("[DOCTOR_EXAM]");
+                int docEnd = examText.indexOf("[/DOCTOR_EXAM]");
+                if (docStart != -1 && docEnd != -1 && docEnd > docStart) {
+                    doctorExamFindings = examText.substring(docStart + "[DOCTOR_EXAM]".length(), docEnd).trim();
+                } else {
+                    doctorExamFindings = examText.substring(0, protoStart).trim();
+                }
 
-    /**
-     * Ghép dữ liệu từ các trường Mắt Phải (OD) và Mắt Trái (OS) thành chuỗi kết quả có cấu trúc
-     */
-    private String buildStructuredResult(HttpServletRequest request) {
-        String odUcva = nvl(request.getParameter("od_ucva"));
-        String odBcva = nvl(request.getParameter("od_bcva"));
-        String odSph = normalizeDiopter(nvl(request.getParameter("od_sph")));
-        String odCyl = normalizeDiopter(nvl(request.getParameter("od_cyl")));
-        String odAxis = nvl(request.getParameter("od_axis"));
-        String odIop = nvl(request.getParameter("od_iop"));
+                // 2. Tách các tag trong [SPECIALIST_PROTOCOL]
+                String protoBody = examText.substring(protoStart);
+                procedureEye = extractTag(protoBody, "PROC_EYE", procedureEye);
+                procedureSteps = extractBlock(protoBody, "PROC_STEPS");
+                procedureOutcome = extractBlock(protoBody, "PROC_OUTCOME");
+                postCare = extractBlock(protoBody, "POST_CARE");
+                conclusion = extractBlock(protoBody, "PROC_CONCLUSION");
 
-        String osUcva = nvl(request.getParameter("os_ucva"));
-        String osBcva = nvl(request.getParameter("os_bcva"));
-        String osSph = normalizeDiopter(nvl(request.getParameter("os_sph")));
-        String osCyl = normalizeDiopter(nvl(request.getParameter("os_cyl")));
-        String osAxis = nvl(request.getParameter("os_axis"));
-        String osIop = nvl(request.getParameter("os_iop"));
-
-        String pd = nvl(request.getParameter("pd"));
-        String detailed = nvl(request.getParameter("detailed_findings"));
-
-        StringBuilder sb = new StringBuilder();
-        // Tag metadata để parse ngược lại form
-        sb.append(String.format("[OD_UCVA:%s][OD_BCVA:%s][OD_SPH:%s][OD_CYL:%s][OD_AXIS:%s][OD_IOP:%s]\n",
-                odUcva, odBcva, odSph, odCyl, odAxis, odIop));
-        sb.append(String.format("[OS_UCVA:%s][OS_BCVA:%s][OS_SPH:%s][OS_CYL:%s][OS_AXIS:%s][OS_IOP:%s]\n",
-                osUcva, osBcva, osSph, osCyl, osAxis, osIop));
-        sb.append(String.format("[PD:%s]\n\n", pd));
-
-        // Nội dung hiển thị đẹp mắt cho Bác sĩ và Bệnh nhân
-        sb.append("--- THÔNG SỐ ĐO CẬN LÂM SÀNG CHUYÊN KHOA MẮT ---\n");
-        sb.append(String.format("• MẮT PHẢI (OD):\n  - Thị lực: Không kính: %s | Có kính: %s\n  - Khúc xạ: Cầu (SPH): %s D | Loạn (CYL): %s D | Trục (AXIS): %s°\n  - Nhãn áp (IOP): %s mmHg\n\n",
-                formatAcuity(odUcva), formatAcuity(odBcva), valOrDash(odSph), valOrDash(odCyl), valOrDash(odAxis), valOrDash(odIop)));
-
-        sb.append(String.format("• MẮT TRÁI (OS):\n  - Thị lực: Không kính: %s | Có kính: %s\n  - Khúc xạ: Cầu (SPH): %s D | Loạn (CYL): %s D | Trục (AXIS): %s°\n  - Nhãn áp (IOP): %s mmHg\n\n",
-                formatAcuity(osUcva), formatAcuity(osBcva), valOrDash(osSph), valOrDash(osCyl), valOrDash(osAxis), valOrDash(osIop)));
-
-        if (!pd.isEmpty()) {
-            sb.append("• Khoảng cách đồng tử (PD): ").append(pd).append(" mm\n");
-        }
-        if (!detailed.isEmpty()) {
-            sb.append("\n• MÔ TẢ CHI TIẾT & HÌNH THÁI HỌC:\n").append(detailed);
-        }
-
-        return sb.toString();
-    }
-
-    /**
-     * Tách ngược chuỗi kết quả để fill vào các ô input OD/OS
-     */
-    private Map<String, String> parseExaminationResult(String text) {
-        Map<String, String> map = new HashMap<>();
-        if (text == null || text.trim().isEmpty()) {
-            return map;
-        }
-
-        Pattern tagPattern = Pattern.compile("\\[([A-Z0-9_]+):([^\\]]*)\\]");
-        Matcher matcher = tagPattern.matcher(text);
-        while (matcher.find()) {
-            String key = matcher.group(1).toLowerCase();
-            String val = matcher.group(2).trim();
-            // Chuẩn hóa thị lực 0-10 nếu dữ liệu cũ có chứa /10
-            if ((key.equals("od_ucva") || key.equals("od_bcva") || key.equals("os_ucva") || key.equals("os_bcva")) && val.contains("/")) {
-                val = val.split("/")[0].trim();
-            }
-            map.put(key, val);
-        }
-
-        // Tách mô tả chi tiết: hỗ trợ cả dấu xuống dòng \r\n hoặc \n
-        int descIdx = text.indexOf("MÔ TẢ CHI TIẾT & HÌNH THÁI HỌC:");
-        if (descIdx != -1) {
-            String after = text.substring(descIdx + "MÔ TẢ CHI TIẾT & HÌNH THÁI HỌC:".length()).trim();
-            // Lọc bỏ các giá trị mẫu/khởi tạo ban đầu để không hiện lên form của KTV
-            if (!after.equalsIgnoreCase("Mắt phải -2.50D, Mắt trái -3.00D.")
-                    && !after.equalsIgnoreCase("Thị lực không kính: MP 2/10, MT 3/10.")
-                    && !after.equalsIgnoreCase("Không có ghi nhận bất thường.")) {
-                map.put("detailed_findings", after);
             } else {
-                map.put("detailed_findings", "");
+                // Toàn bộ examText là kết quả khám của Bác sĩ (lược bỏ các tag đo đạc cũ nếu có)
+                doctorExamFindings = cleanDoctorExamText(examText);
             }
-        } else {
-            // Khi chưa từng lưu kết quả thủ thuật thì để trống, tuyệt đối không lấy text khám sơ bộ của Bác sĩ làm initial value
-            map.put("detailed_findings", "");
         }
+
+        // Kết luận của KTV hoàn toàn độc lập, chỉ lấy từ PROC_CONCLUSION khi KTV đã tự nhập trước đó.
+        // Tuyệt đối không lấy đề xuất/kê đơn của Bác sĩ (conclusionText) làm giá trị mặc định cho KTV.
+
+        // Phân rã kết quả khám của Bác sĩ thành các trường có cấu trúc đẹp mắt
+        String doctorVa = "";
+        String doctorIop = "";
+        String doctorSlitLamp = "";
+
+        if (!doctorExamFindings.isEmpty()) {
+            String text = doctorExamFindings;
+            int vaIdx = text.indexOf("Thị lực:");
+            int iopIdx = text.indexOf("Nhãn áp:");
+            int examIdx = text.indexOf("Khám thực thể:");
+
+            if (vaIdx != -1 && iopIdx != -1 && iopIdx > vaIdx) {
+                doctorVa = text.substring(vaIdx + "Thị lực:".length(), iopIdx).trim();
+                if (doctorVa.endsWith(".")) doctorVa = doctorVa.substring(0, doctorVa.length() - 1).trim();
+
+                if (examIdx != -1 && examIdx > iopIdx) {
+                    doctorIop = text.substring(iopIdx + "Nhãn áp:".length(), examIdx).trim();
+                    doctorSlitLamp = text.substring(examIdx + "Khám thực thể:".length()).trim();
+                } else {
+                    doctorIop = text.substring(iopIdx + "Nhãn áp:".length()).trim();
+                }
+                if (doctorIop.endsWith(".")) doctorIop = doctorIop.substring(0, doctorIop.length() - 1).trim();
+            } else {
+                doctorSlitLamp = text;
+            }
+        }
+
+        // Chuẩn hóa OD/OS thành Mắt phải / Mắt trái trong kết quả hiển thị
+        doctorVa = replaceEyeTerms(doctorVa);
+        doctorIop = replaceEyeTerms(doctorIop);
+
+        map.put("doctor_exam_findings", doctorExamFindings);
+        map.put("doctor_va", doctorVa);
+        map.put("doctor_iop", doctorIop);
+        map.put("doctor_slit_lamp", doctorSlitLamp);
+        map.put("procedure_eye", procedureEye);
+        map.put("procedure_steps", procedureSteps);
+        map.put("procedure_outcome", procedureOutcome);
+        map.put("post_care", postCare);
+        map.put("conclusion", conclusion);
+        map.put("ktv_conclusion", conclusion);
 
         return map;
     }
 
-    private String formatAcuity(String s) {
-        if (s == null || s.trim().isEmpty()) return "--";
-        String trimmed = s.trim();
-        if (trimmed.matches("^(10|[0-9])$")) {
-            return trimmed + "/10";
+    /**
+     * Đóng gói Biên bản thủ thuật thành chuỗi có cấu trúc lưu vào Medical_Record.examination_result
+     */
+    private String buildSerializedProtocol(HttpServletRequest request, ProcedureOrder order, String specialistName) {
+        String doctorFindings = nvl(request.getParameter("doctor_exam_findings"));
+        String procedureEye = nvl(request.getParameter("procedure_eye"));
+        if (procedureEye.isEmpty()) procedureEye = "OD";
+
+        String procedureSteps = nvl(request.getParameter("procedure_steps"));
+        String procedureOutcome = nvl(request.getParameter("procedure_outcome"));
+        String postCare = nvl(request.getParameter("post_care"));
+        String conclusion = nvl(request.getParameter("conclusion"));
+
+        String eyeLabel = "Mắt Phải";
+        if ("OS".equalsIgnoreCase(procedureEye)) eyeLabel = "Mắt Trái";
+        else if ("OU".equalsIgnoreCase(procedureEye)) eyeLabel = "Cả Hai Mắt";
+
+        StringBuilder sb = new StringBuilder();
+
+        // 1. Phần Kết quả khám ban đầu của Bác sĩ (được bảo tồn nguyên vẹn)
+        sb.append("[DOCTOR_EXAM]\n");
+        sb.append(doctorFindings).append("\n");
+        sb.append("[/DOCTOR_EXAM]\n\n");
+
+        // 2. Phần Biên bản thực hiện thủ thuật của Specialist
+        sb.append("[SPECIALIST_PROTOCOL]\n");
+        sb.append(String.format("[PROC_EYE:%s]\n", procedureEye));
+        sb.append("<PROC_STEPS>\n").append(procedureSteps).append("\n</PROC_STEPS>\n");
+        sb.append("<PROC_OUTCOME>\n").append(procedureOutcome).append("\n</PROC_OUTCOME>\n");
+        sb.append("<POST_CARE>\n").append(postCare).append("\n</POST_CARE>\n");
+        if (!conclusion.isEmpty()) {
+            sb.append("<PROC_CONCLUSION>\n").append(conclusion).append("\n</PROC_CONCLUSION>\n");
         }
-        return trimmed;
-    }
+        sb.append("\n");
 
-    private String nvl(String s) {
-        return (s != null) ? s.trim() : "";
-    }
-
-    private String valOrDash(String s) {
-        return (s != null && !s.trim().isEmpty()) ? s.trim() : "--";
-    }
-
-    private boolean isDefaultOrDoctorInitialNote(String note, ProcedureOrder order) {
-        if (note == null || note.trim().isEmpty()) {
-            return true;
+        // 3. Nội dung văn bản nhân văn, rõ ràng để hiển thị tổng quan cho Bác sĩ & Bệnh án
+        sb.append("--- BIÊN BẢN THỰC HIỆN THỦ THUẬT & PHẪU THUẬT ---\n");
+        sb.append("• Dịch vụ can thiệp: ").append(order.getServiceName()).append("\n");
+        sb.append("• Kỹ thuật viên / Phẫu thuật viên: ").append(specialistName != null ? specialistName : "KTV Chuyên khoa").append("\n");
+        sb.append("• Mắt thực hiện: ").append(eyeLabel).append("\n");
+        sb.append("\n• DIỄN BIẾN & QUY TRÌNH THỦ THUẬT:\n").append(procedureSteps).append("\n");
+        sb.append("\n• TÌNH TRẠNG SAU THỦ THUẬT:\n").append(procedureOutcome).append("\n");
+        if (!postCare.isEmpty()) {
+            sb.append("\n• LỜI DẶN HẬU PHẪU & CHĂM SÓC:\n").append(postCare).append("\n");
         }
+        sb.append("[/SPECIALIST_PROTOCOL]");
+
+        return sb.toString();
+    }
+
+    private void preserveFormInputs(HttpServletRequest request, HttpSession session) {
+        Map<String, String> map = new HashMap<>();
+        map.put("doctor_exam_findings", nvl(request.getParameter("doctor_exam_findings")));
+        map.put("procedure_eye", nvl(request.getParameter("procedure_eye")));
+        map.put("procedure_steps", nvl(request.getParameter("procedure_steps")));
+        map.put("procedure_outcome", nvl(request.getParameter("procedure_outcome")));
+        map.put("post_care", nvl(request.getParameter("post_care")));
+        map.put("conclusion", nvl(request.getParameter("conclusion")));
+        session.setAttribute("tempProtocolData", map);
+    }
+
+    private String guessTargetEye(ProcedureOrder order) {
+        if (order == null) return "OD";
+        String diag = nvl(order.getClinicalDiagnosis()).toLowerCase();
+        String sname = nvl(order.getServiceName()).toLowerCase();
+        if (diag.contains("hai mắt") || diag.contains("(ou)") || sname.contains("hai mắt")) {
+            return "OU";
+        }
+        if (diag.contains("mắt trái") || diag.contains("(os)") || sname.contains("mắt trái") || sname.contains("(os)")) {
+            return "OS";
+        }
+        return "OD";
+    }
+
+    private String extractTag(String text, String tag, String defaultVal) {
+        Pattern p = Pattern.compile("\\[" + tag + ":([^\\]]*)\\]");
+        Matcher m = p.matcher(text);
+        if (m.find()) {
+            return m.group(1).trim();
+        }
+        return defaultVal;
+    }
+
+    private String extractBlock(String text, String blockName) {
+        String open = "<" + blockName + ">";
+        String close = "</" + blockName + ">";
+        int start = text.indexOf(open);
+        int end = text.indexOf(close);
+        if (start != -1 && end != -1 && end > start) {
+            return text.substring(start + open.length(), end).trim();
+        }
+        return "";
+    }
+
+    private String cleanDoctorExamText(String text) {
+        if (text == null) return "";
+        // Lược bỏ các tag đo đạc máy cũ [OD_UCVA:...] nếu có
+        return text.replaceAll("\\[[A-Z0-9_]+:[^\\]]*\\]", "").trim();
+    }
+
+    private boolean isDefaultDoctorOrderNote(String note, ProcedureOrder order) {
+        if (note == null || note.trim().isEmpty()) return true;
         String lower = note.toLowerCase().trim();
-        if (lower.equals("đo khúc xạ máy tự động") || lower.equals("do khuc xa may tu dong")
-                || lower.equals("đo khúc xạ máy và thử thị lực chi tiết trước chỉnh kính")
-                || lower.equals("do khuc xa may va thu thi luc chi tiet truoc chinh kinh")) {
+        if (lower.startsWith("chỉ định") || lower.startsWith("chi dinh") || lower.startsWith("đủ điều kiện phẫu thuật")) {
             return true;
         }
-        if (lower.startsWith("chỉ định") || lower.startsWith("chi dinh")
-                || lower.startsWith("đo nhãn áp & chụp oct") || lower.startsWith("đủ điều kiện phẫu thuật")) {
-            return true;
-        }
-        if (order != null && order.getServiceName() != null && !order.getServiceName().trim().isEmpty()) {
+        if (order != null && order.getServiceName() != null) {
             if (lower.contains(order.getServiceName().toLowerCase().trim())) {
                 return true;
             }
@@ -415,27 +423,21 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
         return false;
     }
 
-    public static String normalizeDiopter(String val) {
-        if (val == null || val.trim().isEmpty()) return "";
-        String s = val.trim().replace(',', '.');
-        if (s.startsWith(".")) s = "0" + s;
-        else if (s.startsWith("+.")) s = "+0." + s.substring(2);
-        else if (s.startsWith("-.")) s = "-0." + s.substring(2);
-
-        if (!s.contains(".")) {
-            s = s + ".00";
-        } else {
-            String[] parts = s.split("\\.");
-            if (parts.length == 2 && parts[1].length() == 1) {
-                s = s + "0";
-            }
-        }
-        return s;
+    private String replaceEyeTerms(String text) {
+        if (text == null) return "";
+        return text.replaceAll("(?i)\\bOD\\b:?", "Mắt phải:")
+                   .replaceAll("(?i)\\bOS\\b:?", "Mắt trái:")
+                   .replaceAll("(?i)\\bOU\\b:?", "Hai mắt:")
+                   .replaceAll("(?i)\\(OD\\)", "(Mắt phải)")
+                   .replaceAll("(?i)\\(OS\\)", "(Mắt trái)")
+                   .replaceAll("(?i)\\(OU\\)", "(Hai mắt)")
+                   .replace("Mắt phải::", "Mắt phải:")
+                   .replace("Mắt trái::", "Mắt trái:")
+                   .replace("Mắt phải: ", "Mắt phải: ")
+                   .replace("Mắt trái: ", "Mắt trái: ");
     }
 
-    private boolean isValidDiopter(String val) {
-        if (val == null || val.trim().isEmpty()) return true;
-        String norm = normalizeDiopter(val);
-        return norm.matches("^[+-]?\\d+\\.(00|25|50|75)$");
+    private String nvl(String s) {
+        return (s != null) ? s.trim() : "";
     }
 }
