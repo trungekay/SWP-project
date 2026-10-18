@@ -417,20 +417,21 @@
                             </div>
 
                             <div class="d-flex justify-content-center gap-2 flex-wrap">
-                              <a href="#departments"
-                                onclick="document.getElementById('department-link-${service.id}').click();"
-                                class="btn btn-outline-secondary rounded-pill px-3 btn-sm">
+                              <button type="button"
+                                class="btn btn-outline-secondary rounded-pill px-3 btn-sm"
+                                data-bs-toggle="modal" data-bs-target="#homeServiceModal${service.id}"
+                                title="Xem thông tin chi tiết và lưu ý quy trình y khoa">
                                 <i class="bi bi-info-circle me-1"></i>Chi tiết
-                              </a>
+                              </button>
                               <c:choose>
                                 <c:when test="${service.code == 'PT-LASIK' or service.code == 'PT-SMILE'}">
-                                  <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${lasikPreopId}"
+                                  <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${lasikPreopId != null ? lasikPreopId : 3}"
                                     class="btn btn-dental rounded-pill px-3 btn-sm shadow-sm" title="Đăng ký khám tiền phẫu để đánh giá điều kiện xóa cận">
                                     <i class="bi bi-calendar-check me-1"></i>Đăng ký khám tiền phẫu
                                   </a>
                                 </c:when>
                                 <c:when test="${service.code == 'PT-PHACO'}">
-                                  <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${phacoPreopId}"
+                                  <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${phacoPreopId != null ? phacoPreopId : 5}"
                                     class="btn btn-dental rounded-pill px-3 btn-sm shadow-sm" title="Đăng ký khám tầm soát đục thủy tinh thể">
                                     <i class="bi bi-calendar-check me-1"></i>Đăng ký tầm soát Phaco
                                   </a>
@@ -449,6 +450,111 @@
                     </div>
                   </c:forEach>
                 </div>
+
+                <%-- MODAL CHI TIẾT DỊCH VỤ & LƯU Ý QUY TRÌNH Y KHOA CHO TỪNG GÓI --%>
+                <c:forEach items="${catalogServices}" var="service">
+                  <div class="modal fade" id="homeServiceModal${service.id}" tabindex="-1" aria-labelledby="homeServiceModalLabel${service.id}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                      <div class="modal-content rounded-4 border-0 shadow">
+                        <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                          <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="badge bg-dark bg-opacity-75 rounded-pill px-2 py-1 small">${service.code != null ? service.code : 'DV'}</span>
+                            <span class="badge rounded-pill px-3 py-1 small fw-semibold" style="color: #0d9488; background: #ccfbf1; border: 1px solid #99f6e4;">
+                              ${service.category}
+                            </span>
+                          </div>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body pt-2 px-4 pb-3">
+                          <h4 class="fw-bold text-dark mt-2 mb-2" id="homeServiceModalLabel${service.id}">${service.name}</h4>
+                          
+                          <div class="d-flex align-items-center justify-content-between p-3 rounded-3 mb-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                            <span class="text-muted small">Chi phí dịch vụ niêm yết:</span>
+                            <span class="fs-4 fw-bold text-teal" style="color: #0d9488;">
+                              <fmt:formatNumber value="${service.price}" pattern="#,##0" /> VNĐ
+                            </span>
+                          </div>
+
+                          <c:if test="${not empty service.summary}">
+                            <p class="text-secondary fw-semibold mb-2">${service.summary}</p>
+                          </c:if>
+
+                          <c:if test="${not empty service.description}">
+                            <p class="text-muted small mb-3">${service.description}</p>
+                          </c:if>
+
+                          <%-- CẢNH BÁO QUY TRÌNH Y KHOA BẮT BUỘC --%>
+                          <c:choose>
+                            <c:when test="${service.surgery}">
+                              <div class="alert alert-warning border border-warning rounded-4 p-3 mb-2 shadow-sm" style="background: #fffbeb;">
+                                <div class="d-flex align-items-start">
+                                  <i class="bi bi-exclamation-triangle-fill fs-3 text-warning me-3 flex-shrink-0 mt-1"></i>
+                                  <div>
+                                    <h6 class="fw-bold text-dark mb-1">⚠️ LƯU Ý QUY TRÌNH BẮT BUỘC: PHẢI KHÁM TIỀN PHẪU TRƯỚC</h6>
+                                    <p class="small text-secondary mb-2">
+                                      Theo quy chuẩn an toàn y khoa, bệnh nhân <strong>bắt buộc phải thực hiện gói Khám tiền phẫu chuyên sâu trước</strong> để Bác sĩ đo đạc các chỉ số sinh học mắt (đo khúc xạ liệt điều tiết, bản đồ giác mạc Pentacam, độ dày giác mạc, soi đáy mắt...) và kết luận mắt có đủ điều kiện phẫu thuật hay không. Sau khi có kết luận chính thức và chỉ định từ Bác sĩ, bệnh viện mới xếp lịch phẫu thuật.
+                                    </p>
+                                    <div class="d-flex align-items-center gap-2 text-success small fw-semibold">
+                                      <i class="bi bi-gift-fill"></i>
+                                      <span>Toàn bộ chi phí khám tiền phẫu sẽ được khấu trừ 100% vào giá gói mổ nếu tiến hành phẫu thuật.</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </c:when>
+                            <c:when test="${service.procedure}">
+                              <div class="alert alert-info border border-info rounded-4 p-3 mb-2 shadow-sm" style="background: #f0fdfa; border-color: #99f6e4 !important;">
+                                <div class="d-flex align-items-start">
+                                  <i class="bi bi-shield-exclamation fs-3 text-teal me-3 flex-shrink-0 mt-1" style="color: #0d9488;"></i>
+                                  <div>
+                                    <h6 class="fw-bold text-dark mb-1">⚠️ LƯU Ý QUY TRÌNH THỦ THUẬT / TIỂU PHẪU: BẮT BUỘC KHÁM TRƯỚC</h6>
+                                    <p class="small text-secondary mb-0">
+                                      Để đảm bảo an toàn y tế và vô trùng tuyệt đối, đối với thủ thuật / tiểu phẫu, bệnh nhân <strong>vẫn bắt buộc phải qua bước Thăm khám lâm sàng trực tiếp với Bác sĩ chuyên khoa trước</strong>. Bác sĩ sẽ dùng đèn sinh hiển vi đánh giá chính xác mức độ tổn thương, giai đoạn ổ viêm và chỉ định thời điểm làm thủ thuật thích hợp, an toàn nhất.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </c:when>
+                            <c:when test="${service.preOp}">
+                              <div class="alert alert-success border border-success rounded-4 p-3 mb-2 shadow-sm" style="background: #f0fdf4;">
+                                <div class="d-flex align-items-start">
+                                  <i class="bi bi-check-circle-fill fs-3 text-success me-3 flex-shrink-0 mt-1"></i>
+                                  <div>
+                                    <h6 class="fw-bold text-success mb-1">ĐIỀU KIỆN TIÊN QUYẾT TRƯỚC PHẪU THUẬT &amp; HOÀN PHÍ 100%</h6>
+                                    <p class="small text-secondary mb-0">
+                                      Đây là gói khám chuyên sâu đánh giá toàn diện điều kiện mắt trước can thiệp phẫu thuật khúc xạ / Phaco. Toàn bộ chi phí của gói khám này được <strong>hoàn trừ 100% vào chi phí ca mổ</strong> nếu quý khách phẫu thuật tại VisionCare.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </c:when>
+                          </c:choose>
+                        </div>
+                        <div class="modal-footer border-top-0 pt-0 px-4 pb-4 d-flex justify-content-between">
+                          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+                          <c:choose>
+                            <c:when test="${service.code == 'PT-LASIK' or service.code == 'PT-SMILE'}">
+                              <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${lasikPreopId != null ? lasikPreopId : 3}" class="btn btn-dental rounded-pill px-4 shadow-sm">
+                                <i class="bi bi-calendar-check me-2"></i>Đăng ký khám tiền phẫu LASIK/SMILE
+                              </a>
+                            </c:when>
+                            <c:when test="${service.code == 'PT-PHACO'}">
+                              <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${phacoPreopId != null ? phacoPreopId : 5}" class="btn btn-dental rounded-pill px-4 shadow-sm">
+                                <i class="bi bi-calendar-check me-2"></i>Đăng ký tầm soát Phaco
+                              </a>
+                            </c:when>
+                            <c:otherwise>
+                              <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${service.id}" class="btn btn-dental rounded-pill px-4 shadow-sm">
+                                <i class="bi bi-calendar-check me-2"></i>Đặt lịch khám dịch vụ này
+                              </a>
+                            </c:otherwise>
+                          </c:choose>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </c:forEach>
+
               </div>
 
               <script>
@@ -531,13 +637,84 @@
                               <p>
                                 <c:out value="${service.description}" />
                               </p>
+
+                              <%-- CẢNH BÁO QUY TRÌNH Y KHOA BẮT BUỘC TRONG TAB CHI TIẾT --%>
+                              <c:choose>
+                                <c:when test="${service.surgery}">
+                                  <div class="alert alert-warning border border-warning rounded-4 p-3 mb-3 shadow-sm" style="background: #fffbeb;">
+                                    <div class="d-flex align-items-start">
+                                      <i class="bi bi-exclamation-triangle-fill fs-3 text-warning me-3 flex-shrink-0 mt-1"></i>
+                                      <div>
+                                        <h6 class="fw-bold text-dark mb-1">⚠️ LƯU Ý QUY TRÌNH PHẪU THUẬT BẮT BUỘC</h6>
+                                        <p class="small text-secondary mb-2">
+                                          Theo quy chuẩn an toàn y khoa, bệnh nhân <strong>bắt buộc phải thực hiện gói Khám tiền phẫu chuyên sâu trước</strong> để Bác sĩ đo đạc các chỉ số sinh học mắt (đo khúc xạ liệt điều tiết, bản đồ giác mạc Pentacam, độ dày giác mạc, soi đáy mắt...) và kết luận mắt có đủ điều kiện phẫu thuật hay không. Sau khi có kết luận chính thức và chỉ định từ Bác sĩ, bệnh viện mới xếp lịch phẫu thuật.
+                                        </p>
+                                        <div class="d-flex align-items-center gap-2 text-success small fw-semibold">
+                                          <i class="bi bi-gift-fill"></i>
+                                          <span>Toàn bộ chi phí khám tiền phẫu sẽ được khấu trừ 100% vào giá gói mổ nếu tiến hành phẫu thuật.</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </c:when>
+                                <c:when test="${service.procedure}">
+                                  <div class="alert alert-info border border-info rounded-4 p-3 mb-3 shadow-sm" style="background: #f0fdfa; border-color: #99f6e4 !important;">
+                                    <div class="d-flex align-items-start">
+                                      <i class="bi bi-shield-exclamation fs-3 text-teal me-3 flex-shrink-0 mt-1" style="color: #0d9488;"></i>
+                                      <div>
+                                        <h6 class="fw-bold text-dark mb-1">⚠️ LƯU Ý QUY TRÌNH THỦ THUẬT / TIỂU PHẪU: BẮT BUỘC KHÁM TRƯỚC</h6>
+                                        <p class="small text-secondary mb-0">
+                                          Để đảm bảo an toàn y tế và vô trùng tuyệt đối, đối với thủ thuật / tiểu phẫu, bệnh nhân <strong>vẫn bắt buộc phải qua bước Thăm khám lâm sàng trực tiếp với Bác sĩ chuyên khoa trước</strong>. Bác sĩ sẽ dùng đèn sinh hiển vi đánh giá chính xác mức độ tổn thương, giai đoạn ổ viêm và chỉ định thời điểm làm thủ thuật thích hợp, an toàn nhất.
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </c:when>
+                                <c:when test="${service.preOp}">
+                                  <div class="alert alert-success border border-success rounded-4 p-3 mb-3 shadow-sm" style="background: #f0fdf4;">
+                                    <div class="d-flex align-items-start">
+                                      <i class="bi bi-check-circle-fill fs-3 text-success me-3 flex-shrink-0 mt-1"></i>
+                                      <div>
+                                        <h6 class="fw-bold text-success mb-1">ĐIỀU KIỆN TIÊN QUYẾT TRƯỚC PHẪU THUẬT &amp; HOÀN PHÍ 100%</h6>
+                                        <p class="small text-secondary mb-0">
+                                          Đây là gói khám chuyên sâu đánh giá toàn diện điều kiện mắt trước can thiệp phẫu thuật khúc xạ / Phaco. Toàn bộ chi phí của gói khám này được <strong>hoàn trừ 100% vào chi phí ca mổ</strong> nếu quý khách phẫu thuật tại VisionCare.
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </c:when>
+                              </c:choose>
+
                               <div class="mt-4">
-                                <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${service.id}"
-                                   class="btn btn-dental rounded-pill px-4 py-2 shadow-sm">
-                                  <i class="bi bi-calendar-check me-2"></i>Đặt lịch khám chuyên khoa này
-                                </a>
+                                <c:choose>
+                                  <c:when test="${service.code == 'PT-LASIK' or service.code == 'PT-SMILE'}">
+                                    <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${lasikPreopId != null ? lasikPreopId : 3}"
+                                       class="btn btn-dental rounded-pill px-4 py-2 shadow-sm">
+                                      <i class="bi bi-calendar-check me-2"></i>Đăng ký khám tiền phẫu LASIK/SMILE
+                                    </a>
+                                  </c:when>
+                                  <c:when test="${service.code == 'PT-PHACO'}">
+                                    <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${phacoPreopId != null ? phacoPreopId : 5}"
+                                       class="btn btn-dental rounded-pill px-4 py-2 shadow-sm">
+                                      <i class="bi bi-calendar-check me-2"></i>Đăng ký tầm soát Phaco
+                                    </a>
+                                  </c:when>
+                                  <c:when test="${service.procedure}">
+                                    <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${service.id}"
+                                       class="btn btn-dental rounded-pill px-4 py-2 shadow-sm">
+                                      <i class="bi bi-calendar-check me-2"></i>Đặt lịch khám chỉ định thủ thuật
+                                    </a>
+                                  </c:when>
+                                  <c:otherwise>
+                                    <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${service.id}"
+                                       class="btn btn-dental rounded-pill px-4 py-2 shadow-sm">
+                                      <i class="bi bi-calendar-check me-2"></i>Đặt lịch khám chuyên khoa này
+                                    </a>
+                                  </c:otherwise>
+                                </c:choose>
                               </div>
                             </div>
+
                             <div class="col-lg-4 text-center order-1 order-lg-2">
                               <c:choose>
                                 <c:when test="${service.uploadedImage}"><img
