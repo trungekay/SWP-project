@@ -131,6 +131,12 @@
                     </a>
                 </li>
                 <li>
+                    <a href="${pageContext.request.contextPath}/admin/medicine" class="${param.activeNav == 'retail' ? 'active' : ''}">
+                        <i class="bi bi-bag-check"></i>
+                        Quản lý Vật tư bán lẻ
+                    </a>
+                </li>
+                <li>
                     <a href="${pageContext.request.contextPath}/admin/billing" class="${param.activeNav == 'billing' ? 'active' : ''}">
                         <i class="bi bi-receipt"></i>
                         Hóa đơn và Thanh toán

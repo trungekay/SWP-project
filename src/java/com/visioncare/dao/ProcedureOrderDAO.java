@@ -74,8 +74,12 @@ public class ProcedureOrderDAO {
         }
 
         if (status != null && !status.trim().isEmpty() && !"all".equalsIgnoreCase(status.trim())) {
-            sql.append("AND po.Status = ? ");
-            params.add(status.trim());
+            if ("Pending".equalsIgnoreCase(status.trim())) {
+                sql.append("AND po.Status IN ('Pending', 'In_Progress') ");
+            } else {
+                sql.append("AND po.Status = ? ");
+                params.add(status.trim());
+            }
         }
 
         if (keyword != null && !keyword.trim().isEmpty()) {
@@ -92,9 +96,10 @@ public class ProcedureOrderDAO {
         }
 
         sql.append("ORDER BY ");
-        sql.append("  CASE WHEN po.Status = 'Pending' THEN 1 ");
-        sql.append("       WHEN po.Status = 'Completed' THEN 2 ");
-        sql.append("       ELSE 3 END, ");
+        sql.append("  CASE WHEN po.Status = 'In_Progress' THEN 1 ");
+        sql.append("       WHEN po.Status = 'Pending' THEN 2 ");
+        sql.append("       WHEN po.Status = 'Completed' THEN 3 ");
+        sql.append("       ELSE 4 END, ");
         sql.append("  po.Order_ID DESC ");
 
         try (Connection conn = DBContext.getConnection();
@@ -118,6 +123,7 @@ public class ProcedureOrderDAO {
         Map<String, Integer> counts = new HashMap<>();
         counts.put("all", 0);
         counts.put("pending", 0);
+        counts.put("inProgress", 0);
         counts.put("completed", 0);
         counts.put("cancelled", 0);
 
@@ -141,7 +147,10 @@ public class ProcedureOrderDAO {
                     int cnt = rs.getInt("Total");
                     total += cnt;
                     if ("Pending".equalsIgnoreCase(st)) {
-                        counts.put("pending", cnt);
+                        counts.put("pending", counts.get("pending") + cnt);
+                    } else if ("In_Progress".equalsIgnoreCase(st)) {
+                        counts.put("inProgress", cnt);
+                        counts.put("pending", counts.get("pending") + cnt); // Also include in pending queue count
                     } else if ("Completed".equalsIgnoreCase(st)) {
                         counts.put("completed", cnt);
                     } else if ("Cancelled".equalsIgnoreCase(st)) {

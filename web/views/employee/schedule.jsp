@@ -1,37 +1,48 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
-<c:set var="isStaffOrAdmin" value="${sessionScope.user.role == 'staff' || sessionScope.user.role == 'admin'}" />
-
-<jsp:include page="/views/common/header.jsp">
-  <jsp:param name="pageTitle" value="Lịch làm việc — VisionCare" />
-  <jsp:param name="pageDescription" value="Xem và quản lý lịch làm việc của Bác sĩ, Chuyên viên và Nhân viên" />
-  <jsp:param name="bodyClass" value="starter-page-page" />
-  <jsp:param name="activeNav" value="schedule" />
-  <jsp:param name="hideHeaderForAdmin" value="${isStaffOrAdmin ? 'true' : 'false'}" />
-</jsp:include>
-
-<link href="${pageContext.request.contextPath}/assets/css/schedule.css" rel="stylesheet">
-<c:if test="${isStaffOrAdmin}">
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lịch làm việc của tôi - VisionCare</title>
+  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <jsp:include page="/views/admin/layout/admin-css.jsp" />
-  <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
+  <!-- Bootstrap 5 CSS & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <!-- Layout & Custom CSS -->
+  <link href="${pageContext.request.contextPath}/assets/css/employee.css" rel="stylesheet">
+  <link href="${pageContext.request.contextPath}/assets/css/schedule.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
     <jsp:param name="activeNav" value="schedule" />
   </jsp:include>
-</c:if>
 
-<c:choose>
-  <c:when test="${isStaffOrAdmin}">
-    <main class="main-wrapper">
-      <jsp:include page="/views/admin/layout/admin-header.jsp" />
-      <div class="page-content p-4">
-        <div class="schedule-container" style="max-width: 100%; padding: 0;">
-  </c:when>
-  <c:otherwise>
-    <main class="main">
+  <!-- Main Wrapper -->
+  <div class="main-wrapper">
+    <!-- Top Header -->
+    <jsp:include page="/views/employee/layout/employee-header.jsp" />
+
+    <!-- Page Content -->
+    <div class="page-content">
+      <div class="page-header">
+        <div class="page-title">
+          <h2>Lịch làm việc của tôi</h2>
+          <p>Xem và theo dõi ca trực hàng tuần của bạn tại phòng khám</p>
+        </div>
+        <div>
+          <a href="${pageContext.request.contextPath}/employee/register-schedule" class="btn btn-primary d-flex align-items-center gap-2" style="background-color: var(--primary-color); border-color: var(--primary-color);">
+            <i class="bi bi-calendar-plus"></i> Đăng ký ca làm việc
+          </a>
+        </div>
+      </div>
+
       <div class="schedule-container">
-  </c:otherwise>
-</c:choose>
 
         <!-- Flash Messages (Sau khi dang ky hoac cap nhat lich) -->
         <c:if test="${not empty sessionScope.successMessage}">
@@ -100,6 +111,12 @@
                 style="background: var(--vc-primary); border-color: var(--vc-primary);">
                 <i class="bi bi-calendar-plus me-1"></i> Đăng ký lịch
               </a>
+              <c:if test="${sessionScope.user.role == 'doctor'}">
+                <a href="${pageContext.request.contextPath}/doctor/waiting-list"
+                  class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold">
+                  <i class="bi bi-people me-1"></i> Hàng đợi khám bệnh
+                </a>
+              </c:if>
 
             </div>
 
@@ -329,18 +346,10 @@
             </div>
           </div>
 
-<c:choose>
-  <c:when test="${isStaffOrAdmin}">
-        </div>
       </div>
-    </main>
-    <jsp:include page="/views/common/footer.jsp">
-      <jsp:param name="hideFooter" value="true" />
-    </jsp:include>
-  </c:when>
-  <c:otherwise>
-      </div>
-    </main>
-    <jsp:include page="/views/common/footer.jsp" />
-  </c:otherwise>
-</c:choose>
+    </div><!-- End page-content -->
+  </div><!-- End main-wrapper -->
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

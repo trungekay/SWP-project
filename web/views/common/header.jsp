@@ -154,6 +154,9 @@
                           <li><a href="${pageContext.request.contextPath}/employee/schedule"><i class="bi bi-calendar-week me-2" style="font-size: 16px;"></i> Lịch làm việc</a></li>
                           <li><a href="${pageContext.request.contextPath}/employee/register-schedule"><i class="bi bi-calendar-plus me-2" style="font-size: 16px;"></i> Đăng ký lịch</a></li>
                         </c:if>
+                        <c:if test="${sessionScope.user.role == 'doctor'}">
+                          <li><a href="${pageContext.request.contextPath}/doctor/waiting-list"><i class="bi bi-people me-2" style="font-size: 16px;"></i> Hàng đợi khám bệnh</a></li>
+                        </c:if>
                         <li><a href="${pageContext.request.contextPath}/views/profile/manage.jsp"><i class="bi bi-person me-2" style="font-size: 16px;"></i> Hồ sơ cá nhân</a></li>
                         <li><a href="${pageContext.request.contextPath}/views/profile/change-password.jsp"><i class="bi bi-key me-2" style="font-size: 16px;"></i> Đổi mật khẩu</a></li>
                         <li><a href="${pageContext.request.contextPath}/logout" class="text-danger"><i class="bi bi-box-arrow-right me-2" style="font-size: 16px;"></i> Đăng xuất</a></li>

@@ -18,7 +18,7 @@
     <jsp:include page="/views/admin/layout/admin-css.jsp" />
     
     <!-- Catalog specific CSS -->
-    <link href="${pageContext.request.contextPath}/assets/css/admin-catalog.css?v=2" rel="stylesheet">
+    <link href="${pageContext.request.contextPath}/assets/css/admin-catalog.css?v=7" rel="stylesheet">
 
   <style>
     .page-content { padding: 30px; }
@@ -29,7 +29,6 @@
     <!-- Sidebar Include -->
     <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
         <jsp:param name="activeNav" value="catalog" />
-        <jsp:param name="activeSub" value="${kind == 'supply' ? 'supplies' : 'services'}" />
     </jsp:include>
 
     <!-- Main Content -->
@@ -42,21 +41,22 @@
 
   <div class="container catalog-edit-layout">
     <aside class="catalog-panel catalog-edit-sidebar">
-      <h2>${kind == 'service' ? 'Dịch vụ phòng khám' : 'Vật tư & Thiết bị'}</h2>
+      <h2>${kind == 'service' ? 'Dịch vụ phòng khám' : (catalogReturnTab == 'consumables' ? 'Vật tư tiêu hao' : 'Thiết bị')}</h2>
       <p>Chọn mục cần sửa hoặc tạo mục mới.</p>
       <a class="catalog-new-link" href="${pageContext.request.contextPath}/admin/catalog/${kind}?new=1"><i class="bi bi-plus-circle"></i> Thêm mới</a>
       <nav aria-label="Danh mục hiện có">
         <c:forEach items="${choices}" var="choice">
-          <a class="catalog-choice ${choice.id == item.id ? 'is-active' : ''}" href="${pageContext.request.contextPath}/admin/catalog/${kind}?id=${choice.id}"><c:out value="${choice.name}" /></a>
+            <a class="catalog-choice ${choice.id == item.id ? 'is-active' : ''}" href="${pageContext.request.contextPath}/admin/catalog/${kind}?id=${choice.id}"><c:out value="${choice.name}" /></a>
         </c:forEach>
       </nav>
     </aside>
     <section class="catalog-panel catalog-edit-panel">
-      <div class="catalog-edit-heading"><div><h1>${empty item.id ? 'Thêm mới' : 'Cập nhật'} ${kind == 'service' ? 'dịch vụ' : 'vật tư'}</h1><p>Nhấn “Lưu thay đổi” để ghi trực tiếp vào database.</p></div><a href="${pageContext.request.contextPath}/admin/catalog?tab=${kind == 'service' ? 'services' : 'supplies'}">← Về danh sách</a></div>
+      <div class="catalog-edit-heading"><div><h1>${empty item.id ? 'Thêm mới' : 'Cập nhật'} ${kind == 'service' ? 'dịch vụ' : (catalogReturnTab == 'consumables' ? 'vật tư tiêu hao' : 'thiết bị')}</h1><p>Nhấn “Lưu thay đổi” để ghi trực tiếp vào database.</p></div><a href="${pageContext.request.contextPath}/admin/catalog?tab=${catalogReturnTab}">← Về danh sách</a></div>
       <c:if test="${not empty error}"><div class="catalog-form-error" role="alert"><c:out value="${error}" /></div></c:if>
       <form class="catalog-edit-form" action="${pageContext.request.contextPath}/admin/catalog/${kind}" method="post" enctype="multipart/form-data">
         <input type="hidden" name="csrf" value="${sessionScope.catalogCsrf}">
         <input type="hidden" name="id" value="${fn:escapeXml(item.id)}">
+        <input type="hidden" name="returnTab" value="${catalogReturnTab}">
         <c:choose>
           <c:when test="${kind == 'service'}">
             <div class="catalog-form-grid">
@@ -76,16 +76,18 @@
             <label>Mô tả chi tiết<textarea name="description" rows="5" maxlength="4000"><c:out value="${item.description}" /></textarea></label>
           </c:when>
           <c:otherwise>
-            <label><span class="catalog-label-title">Tên vật tư / dược phẩm <em>*</em></span><input name="name" maxlength="255" required value="${fn:escapeXml(item.name)}"></label>
+            <label><span class="catalog-label-title">${catalogReturnTab == 'supplies' ? 'Tên thiết bị' : (catalogReturnTab == 'consumables' ? 'Tên vật tư tiêu hao' : 'Tên vật tư / dược phẩm')} <em>*</em></span><input name="name" maxlength="255" required value="${fn:escapeXml(item.name)}"></label>
             <label><span class="catalog-label-title">Phân loại <em>*</em></span>
               <select name="category" required>
                 <option value="" disabled ${empty item.category ? 'selected' : ''}>Chọn phân loại</option>
                 <c:forEach items="${supplyCategories}" var="category">
-                  <option value="${fn:escapeXml(category.vietnameseName)}" ${item.category eq category.vietnameseName ? 'selected' : ''}><c:out value="${category.vietnameseName}" /></option>
+                  <c:if test="${(catalogReturnTab == 'supplies' && category.vietnameseName == 'Khác') || (catalogReturnTab == 'consumables' && category.vietnameseName == 'Vật tư y tế tiêu hao')}">
+                    <option value="${fn:escapeXml(category.vietnameseName)}" ${item.category eq category.vietnameseName ? 'selected' : ''}>${catalogReturnTab == 'supplies' ? 'Thiết bị' : fn:escapeXml(category.vietnameseName)}</option>
+                  </c:if>
                 </c:forEach>
               </select>
             </label>
-            <label><span class="catalog-label-title">Đơn giá (VNĐ) <em>*</em></span><input name="price" type="number" min="0" step="1" required value="${fn:escapeXml(item.price)}"></label>
+            <label><span class="catalog-label-title">${catalogReturnTab == 'supplies' ? 'Giá trị (VNĐ)' : 'Đơn giá (VNĐ)'} <em>*</em></span><input name="price" type="number" min="0" step="1" required value="${fn:escapeXml(item.price)}"></label>
           </c:otherwise>
         </c:choose>
         <div class="catalog-image-field">
@@ -99,11 +101,11 @@
           <c:choose>
             <c:when test="${kind == 'service' && item.uploadedImage}"><div class="catalog-image-current"><span>Ảnh hiện tại</span><img class="catalog-image-preview" src="${pageContext.request.contextPath}/catalog-image?kind=service&amp;id=${item.id}" alt="Ảnh dịch vụ hiện tại"></div></c:when>
             <c:when test="${kind == 'service' && not empty item && not item.uploadedImage}"><div class="catalog-image-current"><span>Ảnh mặc định</span><img class="catalog-image-preview" src="${pageContext.request.contextPath}/assets/img/${item.defaultImagePath}" alt="Ảnh mặc định của dịch vụ"></div></c:when>
-            <c:when test="${kind == 'supply' && item.uploadedImage}"><div class="catalog-image-current"><span>Ảnh hiện tại</span><img class="catalog-image-preview" src="${pageContext.request.contextPath}/catalog-image?kind=supply&amp;id=${item.id}" alt="Ảnh vật tư hiện tại"></div></c:when>
+            <c:when test="${kind != 'service' && item.uploadedImage}"><div class="catalog-image-current"><span>Ảnh hiện tại</span><img class="catalog-image-preview" src="${pageContext.request.contextPath}/catalog-image?kind=${kind}&amp;id=${item.id}" alt="Ảnh vật tư hiện tại"></div></c:when>
           </c:choose>
           <div class="catalog-image-selected" id="catalogSelectedImage" hidden><span>Ảnh vừa chọn</span><img class="catalog-image-preview" alt="Ảnh minh họa vừa chọn"></div>
         </div>
-        <div class="catalog-form-actions"><a class="catalog-detail" href="${pageContext.request.contextPath}/admin/catalog?tab=${kind == 'service' ? 'services' : 'supplies'}">Hủy</a><button class="catalog-primary" type="submit"><i class="bi bi-check-lg"></i> Lưu thay đổi</button></div>
+        <div class="catalog-form-actions"><a class="catalog-detail" href="${pageContext.request.contextPath}/admin/catalog?tab=${catalogReturnTab}">Hủy</a><button class="catalog-primary" type="submit"><i class="bi bi-check-lg"></i> Lưu thay đổi</button></div>
       </form>
     </section>
   </div>
@@ -112,6 +114,6 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="${pageContext.request.contextPath}/assets/js/admin-catalog.js?v=6" defer></script>
+    <script src="${pageContext.request.contextPath}/assets/js/admin-catalog.js?v=9" defer></script>
 </body>
 </html>

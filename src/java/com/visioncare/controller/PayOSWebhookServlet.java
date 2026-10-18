@@ -38,11 +38,12 @@ public class PayOSWebhookServlet extends HttpServlet {
             String orderCodeStr = PayOSUtil.extractJsonField(jsonBody, "orderCode");
 
             if (orderCodeStr != null && !orderCodeStr.isEmpty()) {
-                int appointmentId = Integer.parseInt(orderCodeStr);
+                long orderCode = Long.parseLong(orderCodeStr);
+                int appointmentId = (int) (orderCode > 1000000L ? (orderCode / 1000000L) : orderCode);
 
                 // Cập nhật trạng thái thành Confirmed & Paid
                 appointmentDAO.confirmPayment(appointmentId);
-                System.out.println("[PayOS Webhook] Successfully confirmed payment for Appointment #" + appointmentId);
+                System.out.println("[PayOS Webhook] Successfully confirmed payment for Appointment #" + appointmentId + " (OrderCode: " + orderCode + ")");
 
                 // Gửi email vé khám
                 try {

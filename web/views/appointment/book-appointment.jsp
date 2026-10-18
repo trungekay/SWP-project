@@ -413,10 +413,26 @@
                                                 style="max-width: 260px; min-height: 260px;">
                                             </div>
 
-                                            <div class="mt-3">
-                                              <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
-                                                <i class="bi bi-clock me-1"></i>Hạn thanh toán: 15 phút
-                                              </span>
+                                            <%-- ĐỒNG HỒ ĐẾM NGƯỢC THỜI HẠN THANH TOÁN (COUNTDOWN TIMER) --%>
+                                            <div class="mt-3 p-3 rounded-4 border bg-white shadow-sm text-start" id="paymentCountdownCard">
+                                              <div class="d-flex align-items-center justify-content-between mb-2">
+                                                <span class="text-muted small fw-semibold">
+                                                  <i class="bi bi-stopwatch text-danger me-1"></i>Thời gian giữ chỗ:
+                                                </span>
+                                                <span class="fs-5 fw-bold text-danger font-monospace" id="paymentCountdownTimer">15:00</span>
+                                              </div>
+                                              <div class="progress" style="height: 6px; border-radius: 6px; background-color: #f1f5f9;">
+                                                <div id="countdownProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-danger"
+                                                  role="progressbar" style="width: 100%; transition: width 1s linear;"></div>
+                                              </div>
+                                              <div class="d-flex justify-content-between align-items-center mt-2">
+                                                <small class="text-muted" style="font-size: 11px;">
+                                                  <i class="bi bi-shield-lock me-1 text-teal" style="color: #0d9488;"></i>Đang giữ chỗ lịch hẹn
+                                                </small>
+                                                <small class="text-danger fw-semibold" style="font-size: 11px;" id="countdownStatusText">
+                                                  Còn hiệu lực
+                                                </small>
+                                              </div>
                                             </div>
                                           </div>
                                         </div>
@@ -440,6 +456,14 @@
                                               <div class="col-6 text-muted">Thời gian hẹn:</div>
                                               <div class="col-6 fw-bold text-danger text-end">${appointment.timeSlot} —
                                                 ${appointment.appointmentDate}</div>
+
+                                              <div class="col-6 text-muted">Thời hạn thanh toán:</div>
+                                              <div class="col-6 fw-bold text-end">
+                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle font-monospace px-2 py-1" id="ticketCountdownBadge">
+                                                  <i class="bi bi-stopwatch me-1"></i>15:00
+                                                </span>
+                                              </div>
+
 
                                               <div class="col-12 border-top my-2"></div>
 
@@ -486,33 +510,43 @@
                                             </div>
                                           </div>
 
-                                          <form method="post"
-                                            action="${pageContext.request.contextPath}/book-appointment">
-                                            <input type="hidden" name="action" value="confirmPayment">
-                                            <input type="hidden" name="appointmentId" value="${appointment.id}">
-                                            <input type="hidden" name="email" value="${appointment.email}">
+                                          <div id="paymentActionArea">
+                                            <form method="post"
+                                              action="${pageContext.request.contextPath}/book-appointment">
+                                              <input type="hidden" name="action" value="confirmPayment">
+                                              <input type="hidden" name="appointmentId" value="${appointment.id}">
+                                              <input type="hidden" name="orderCode" value="${orderCode}">
+                                              <input type="hidden" name="email" value="${appointment.email}">
 
-                                            <div class="d-grid gap-2">
-                                              <div class="alert alert-info py-2 px-3 small rounded-3 mb-2 d-flex align-items-center">
-                                                <div class="spinner-grow spinner-grow-sm text-info me-2" role="status"></div>
-                                                <span>Hệ thống tự động kiểm tra biến động số dư qua PayOS. Trang sẽ <b>tự động chuyển sang Thành công</b> ngay khi hoàn tất chuyển khoản!</span>
-                                              </div>
-                                              <c:if test="${not empty payosCheckoutUrl}">
-                                                <a href="${payosCheckoutUrl}" target="_blank"
-                                                  class="btn btn-primary btn-lg py-3 rounded-3 fw-bold text-white shadow-sm mb-2" style="background:#0d9488; border-color:#0d9488;">
-                                                  <i class="bi bi-credit-card-2-front me-2"></i>Mở cổng thanh toán PayOS trực tiếp
+                                              <div class="d-grid gap-2">
+                                                <div class="alert alert-info py-2 px-3 small rounded-3 mb-2 d-flex align-items-center">
+                                                  <div class="spinner-grow spinner-grow-sm text-info me-2" role="status"></div>
+                                                  <span>Hệ thống tự động kiểm tra biến động số dư. Trang sẽ <b>tự động chuyển sang Thành công</b> ngay khi hoàn tất chuyển khoản!</span>
+                                                </div>
+                                                <button type="submit"
+                                                  class="btn btn-success btn-lg py-3 rounded-3 shadow-sm fw-bold">
+                                                  <i class="bi bi-shield-check me-2"></i>Tôi đã chuyển khoản (Kiểm tra thanh toán)
+                                                </button>
+                                                <a href="${pageContext.request.contextPath}/book-appointment"
+                                                  class="btn btn-link text-muted text-center mt-2">
+                                                  <i class="bi bi-arrow-left me-1"></i>Hủy và chọn lại lịch khác
                                                 </a>
-                                              </c:if>
-                                              <button type="submit"
-                                                class="btn btn-success btn-lg py-3 rounded-3 shadow-sm fw-bold">
-                                                <i class="bi bi-shield-check me-2"></i>Tôi đã thanh toán (Xác nhận thủ công)
-                                              </button>
-                                              <a href="${pageContext.request.contextPath}/book-appointment"
-                                                class="btn btn-link text-muted text-center mt-2">
-                                                <i class="bi bi-arrow-left me-1"></i>Hủy và chọn lại lịch khác
-                                              </a>
+                                              </div>
+                                            </form>
+                                          </div>
+
+                                          <div id="paymentExpiredArea" class="d-none text-center">
+                                            <div class="alert alert-danger rounded-4 p-4 shadow-sm mb-3">
+                                              <i class="bi bi-exclamation-octagon-fill text-danger fs-1 d-block mb-2"></i>
+                                              <h5 class="fw-bold text-danger mb-1">Mã QR đã hết hạn thanh toán (Quá 15 phút)</h5>
+                                              <p class="text-muted small mb-0">
+                                                Khung giờ này đã tạm hết thời gian giữ chỗ ưu tiên. Quý khách vui lòng tạo lại lịch hẹn mới để hoàn tất đặt chỗ.
+                                              </p>
                                             </div>
-                                          </form>
+                                            <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-primary btn-lg py-3 rounded-pill shadow-sm fw-bold w-100" style="background:#0d9488; border-color:#0d9488;">
+                                              <i class="bi bi-arrow-repeat me-2"></i>Đặt lại lịch hẹn mới
+                                            </a>
+                                          </div>
                                         </div>
                                       </div>
                                     </c:if>
@@ -596,10 +630,12 @@
                                                             <label class="d-block h-100 mb-0">
                                                               <input type="radio" class="d-none service-radio"
                                                                 name="serviceId" value="${svc.id}"
+                                                                data-code="${svc.code}"
                                                                 data-specialty="${svc.specialty}"
                                                                 data-bgroup="${bGroup}"
                                                                 data-name="${svc.name}" data-price="${svc.price}"
                                                                 onchange="filterDoctorsByService(this)"
+                                                                onclick="filterDoctorsByService(this)"
                                                                 ${(selectedServiceId==svc.id or (empty selectedServiceId
                                                                 and status.first)) ? 'checked' : '' }>
                                                               <div
@@ -608,7 +644,6 @@
                                                                   <div
                                                                     class="d-flex justify-content-between align-items-start mb-2">
                                                                     <div class="d-flex align-items-center gap-1 flex-wrap">
-                                                                      <span class="badge bg-light text-secondary border small">${svc.code != null ? svc.code : 'DV'}</span>
                                                                       <span class="badge rounded-pill small" style="${bBadgeStyle}; font-size: 11px;">
                                                                         ${bGroupLabel}
                                                                       </span>
@@ -620,6 +655,13 @@
                                                                     </span>
                                                                   </div>
                                                                   <h6 class="fw-bold text-dark mb-1">${svc.name}</h6>
+                                                                  <c:if test="${bGroup == 'thuthuat'}">
+                                                                    <div class="mb-1">
+                                                                      <span class="badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill" style="font-size: 10px;">
+                                                                        <i class="bi bi-shield-exclamation text-warning me-1"></i>Bác sĩ khám trước khi làm thủ thuật
+                                                                      </span>
+                                                                    </div>
+                                                                  </c:if>
                                                                   <c:if test="${svc.code == 'LS-03' or svc.code == 'TT-05' or fn:contains(svc.name, 'tiền phẫu') or fn:contains(svc.name, 'tầm soát')}">
                                                                     <div class="mb-1">
                                                                       <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: 10.5px;">
@@ -627,16 +669,119 @@
                                                                       </span>
                                                                     </div>
                                                                   </c:if>
-                                                                  <p class="text-muted small mb-0 text-truncate-2"
-                                                                    style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12px; min-height: 34px;">
-                                                                    ${svc.summary != null ? svc.summary : 'Dịch vụ khám nhãn khoa chất lượng cao với trang thiết bị chuẩn quốc tế.'}
-                                                                  </p>
+                                                                  <div class="service-desc-box mb-1">
+                                                                    <p class="text-secondary small mb-0 lh-base" style="font-size: 12px;">
+                                                                      ${svc.summary != null ? svc.summary : 'Dịch vụ khám nhãn khoa chất lượng cao với trang thiết bị chuẩn quốc tế.'}
+                                                                    </p>
+                                                                    <c:if test="${not empty svc.description and svc.description != svc.summary}">
+                                                                      <p class="text-muted small mb-0 mt-1 lh-sm" style="font-size: 11.5px; opacity: 0.9;">
+                                                                        <i class="bi bi-info-circle text-teal me-1" style="color: #0d9488;"></i>${svc.description}
+                                                                      </p>
+                                                                    </c:if>
+                                                                  </div>
+                                                                </div>
+                                                                <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                                                                  <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted p-0"
+                                                                    style="font-size: 11.5px;"
+                                                                    data-bs-toggle="modal" data-bs-target="#bookingServiceModal${svc.id}"
+                                                                    onclick="event.stopPropagation();">
+                                                                    <i class="bi bi-info-circle me-1 text-primary"></i>Chi tiết quy trình
+                                                                  </button>
+                                                                  <span class="text-teal small fw-semibold" style="font-size: 11px;">
+                                                                    Chọn gói <i class="bi bi-chevron-right"></i>
+                                                                  </span>
                                                                 </div>
                                                               </div>
                                                             </label>
                                                           </div>
                                                         </c:forEach>
                                                       </div>
+
+                                                      <%-- HỘP CẢNH BÁO LƯU Ý QUY TRÌNH Y KHOA NĂNG ĐỘNG --%>
+                                                      <div id="serviceProtocolAlertBox" class="mb-3" style="display: none;"></div>
+
+                                                      <%-- MODALS CHI TIẾT DỊCH VỤ TRONG MÀN HÌNH BOOKING --%>
+                                                      <c:forEach var="svc" items="${services}">
+                                                        <div class="modal fade" id="bookingServiceModal${svc.id}" tabindex="-1" aria-hidden="true">
+                                                          <div class="modal-dialog modal-dialog-centered">
+                                                            <div class="modal-content rounded-4 border-0 shadow">
+                                                              <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                                                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                                  <span class="badge bg-dark bg-opacity-75 rounded-pill px-2 py-1 small">${svc.code != null ? svc.code : 'DV'}</span>
+                                                                  <span class="badge rounded-pill px-3 py-1 small fw-semibold" style="color: #0d9488; background: #ccfbf1; border: 1px solid #99f6e4;">
+                                                                    ${svc.category}
+                                                                  </span>
+                                                                </div>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                              </div>
+                                                              <div class="modal-body pt-2 px-4 pb-3">
+                                                                <h5 class="fw-bold text-dark mt-2 mb-2">${svc.name}</h5>
+                                                                <div class="d-flex align-items-center justify-content-between p-3 rounded-3 mb-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                                                                  <span class="text-muted small">Chi phí dịch vụ:</span>
+                                                                  <span class="fs-5 fw-bold text-teal" style="color: #0d9488;">
+                                                                    <fmt:formatNumber value="${svc.price}" type="number" groupingUsed="true" /> ₫
+                                                                  </span>
+                                                                </div>
+                                                                <c:if test="${not empty svc.summary}">
+                                                                  <p class="text-secondary small fw-semibold mb-2">${svc.summary}</p>
+                                                                </c:if>
+                                                                <c:if test="${not empty svc.description}">
+                                                                  <p class="text-muted small mb-3">${svc.description}</p>
+                                                                </c:if>
+
+                                                                <c:choose>
+                                                                  <c:when test="${svc.surgery}">
+                                                                    <div class="alert alert-warning border border-warning rounded-4 p-3 mb-0 shadow-sm" style="background: #fffbeb;">
+                                                                      <div class="d-flex align-items-start">
+                                                                        <i class="bi bi-exclamation-triangle-fill fs-4 text-warning me-3 flex-shrink-0 mt-1"></i>
+                                                                        <div>
+                                                                          <h6 class="fw-bold text-dark mb-1">⚠️ LƯU Ý BẮT BUỘC: PHẢI KHÁM TIỀN PHẪU TRƯỚC</h6>
+                                                                          <p class="small text-secondary mb-0">
+                                                                            Theo quy chuẩn y khoa, bệnh nhân <strong>bắt buộc phải thực hiện gói Khám tiền phẫu chuyên sâu trước</strong> để Bác sĩ đo đạc các chỉ số giác mạc/đáy mắt và kết luận mắt có đủ điều kiện phẫu thuật hay không. Sau khi có chỉ định chính thức từ Bác sĩ, bệnh viện mới xếp lịch mổ.
+                                                                          </p>
+                                                                        </div>
+                                                                      </div>
+                                                                    </div>
+                                                                  </c:when>
+                                                                  <c:when test="${svc.procedure}">
+                                                                    <div class="alert alert-info border border-info rounded-4 p-3 mb-0 shadow-sm" style="background: #f0fdfa; border-color: #99f6e4 !important;">
+                                                                      <div class="d-flex align-items-start">
+                                                                        <i class="bi bi-shield-exclamation fs-4 text-teal me-3 flex-shrink-0 mt-1" style="color: #0d9488;"></i>
+                                                                        <div>
+                                                                          <h6 class="fw-bold text-dark mb-1">⚠️ LƯU Ý QUY TRÌNH THỦ THUẬT: BẮT BUỘC KHÁM TRƯỚC</h6>
+                                                                          <p class="small text-secondary mb-0">
+                                                                            Đối với thủ thuật / tiểu phẫu (như chích chắp lẹo, bơm thông lệ đạo...), bệnh nhân <strong>vẫn bắt buộc phải qua bước Thăm khám lâm sàng trực tiếp với Bác sĩ chuyên khoa trước</strong> để Bác sĩ dùng đèn sinh hiển vi đánh giá chính xác giai đoạn viêm nhiễm và chỉ định can thiệp an toàn, vô trùng nhất.
+                                                                          </p>
+                                                                        </div>
+                                                                      </div>
+                                                                    </div>
+                                                                  </c:when>
+                                                                  <c:when test="${svc.preOp}">
+                                                                    <div class="alert alert-success border border-success rounded-4 p-3 mb-0 shadow-sm" style="background: #f0fdf4;">
+                                                                      <div class="d-flex align-items-start">
+                                                                        <i class="bi bi-gift-fill fs-4 text-success me-3 flex-shrink-0 mt-1"></i>
+                                                                        <div>
+                                                                          <h6 class="fw-bold text-success mb-1">ĐẶC QUYỀN: HOÀN TRỪ 100% PHÍ KHÁM</h6>
+                                                                          <p class="small text-secondary mb-0">
+                                                                            Toàn bộ chi phí của gói khám tiền phẫu này sẽ được khấu trừ 100% vào chi phí ca mổ nếu quý khách phẫu thuật tại VisionCare.
+                                                                          </p>
+                                                                        </div>
+                                                                      </div>
+                                                                    </div>
+                                                                  </c:when>
+                                                                </c:choose>
+                                                              </div>
+                                                              <div class="modal-footer border-top-0 pt-0 px-4 pb-4 d-flex justify-content-between">
+                                                                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 btn-sm" data-bs-dismiss="modal">Đóng</button>
+                                                                <button type="button" class="btn btn-dental rounded-pill px-4 btn-sm shadow-sm" data-bs-dismiss="modal" onclick="selectServiceFromModal(${svc.id})">
+                                                                  <i class="bi bi-check2-circle me-1"></i>Chọn gói dịch vụ này
+                                                                </button>
+                                                              </div>
+                                                            </div>
+                                                          </div>
+                                                        </div>
+                                                      </c:forEach>
+
 
                                                       <div class="row g-3">
                                                         <div class="col-md-12">
@@ -896,17 +1041,38 @@
                                                                       </div>
                                                                     </div>
 
-                                                                    <c:if test="${not empty loggedUser}">
-                                                                      <div
-                                                                        class="alert alert-light border d-flex align-items-center rounded-3 p-2 px-3 mb-3 small">
-                                                                        <i
-                                                                          class="bi bi-person-check-fill text-success fs-5 me-2"></i>
-                                                                        <span>Đang đăng nhập với tài khoản:
-                                                                          <b>${loggedUser.fullName}</b>
-                                                                          (${loggedUser.email}). Thông tin đã được tự
-                                                                          động điền.</span>
+                                                                    <div class="card bg-light border rounded-3 p-3 mb-3">
+                                                                      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                                                        <div class="d-flex align-items-center">
+                                                                          <i class="bi bi-person-circle fs-4 me-2 text-primary" style="color: #0d9488 !important;"></i>
+                                                                          <div>
+                                                                            <div class="fw-bold text-dark small" id="bookingProfileTitle">
+                                                                              <c:choose>
+                                                                                <c:when test="${not empty loggedUser}">Tài khoản đặt lịch: ${loggedUser.fullName}</c:when>
+                                                                                <c:otherwise>Thông tin người đặt lịch khám</c:otherwise>
+                                                                              </c:choose>
+                                                                            </div>
+                                                                            <div class="text-muted small" id="bookingForNotice">
+                                                                              <c:choose>
+                                                                                <c:when test="${not empty loggedUser}">Hệ thống đã tự động điền thông tin của bạn. Nhấn "Đăng ký cho người khác" nếu bạn đặt lịch cho người thân.</c:when>
+                                                                                <c:otherwise>Vui lòng điền thông tin chính xác của người đi khám.</c:otherwise>
+                                                                              </c:choose>
+                                                                            </div>
+                                                                          </div>
+                                                                        </div>
+                                                                        <div class="d-flex align-items-center gap-2">
+                                                                          <button type="button" class="btn btn-sm btn-outline-primary fw-semibold rounded-pill px-3 shadow-sm" id="btnBookForOther" onclick="setBookingForOther()" style="border-color:#0d9488; color:#0d9488;">
+                                                                            <i class="bi bi-person-plus-fill me-1"></i> Đăng ký cho người khác
+                                                                          </button>
+                                                                          <button type="button" class="btn btn-sm btn-primary fw-semibold rounded-pill px-3 shadow-sm" id="btnBookForSelf" onclick="refillMyInfo()" style="display:none; background:#0d9488; border-color:#0d9488;">
+                                                                            <i class="bi bi-person-check-fill me-1"></i> Đặt cho bản thân
+                                                                          </button>
+                                                                          <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold rounded-pill px-3 shadow-sm" onclick="clearPatientForm()" title="Xóa toàn bộ ô nhập để điền lại từ đầu">
+                                                                            <i class="bi bi-arrow-counterclockwise me-1"></i> Điền lại thông tin
+                                                                          </button>
+                                                                        </div>
                                                                       </div>
-                                                                    </c:if>
+                                                                    </div>
 
                                                                     <div class="row g-3">
                                                                       <div class="col-md-6">
@@ -1166,6 +1332,7 @@
               if (!radioElement) return;
               updateFeeDisplay();
               const specialtyCode = (radioElement.dataset.specialty || '').toLowerCase().trim();
+              const bgroup = (radioElement.dataset.bgroup || '').toLowerCase().trim();
               const serviceName = radioElement.dataset.name || 'Dịch vụ đã chọn';
               const doctorSelect = document.getElementById('doctorSelect');
               if (!doctorSelect) return;
@@ -1175,7 +1342,6 @@
 
               let matchedCount = 0;
               let firstMatchedValue = '';
-              let currentMatches = false;
               const currentVal = doctorSelect.value;
 
               Array.from(doctorSelect.options).forEach(opt => {
@@ -1184,7 +1350,12 @@
                 const docSpecialty = (opt.dataset.specialty || '').toLowerCase().trim();
 
                 let isMatch = false;
-                if (!specialtyCode || specialtyCode === 'all') {
+                if (bgroup === 'thuthuat' || specialtyCode === 'thuthuat') {
+                  // Với Thủ thuật / Tiểu phẫu: Bắt buộc khám lâm sàng ban đầu -> chỉ định Bác sĩ khám mắt tổng quát
+                  if (docDept === 'general' || docSpecialty.includes('tổng quát')) {
+                    isMatch = true;
+                  }
+                } else if (!specialtyCode || specialtyCode === 'all') {
                   isMatch = true;
                 } else if (docDept === specialtyCode || docSpecialty.includes(specialtyCode)) {
                   isMatch = true;
@@ -1209,32 +1380,96 @@
 
                 const baseText = opt.dataset.name + ' — Chuyên khoa: ' + opt.dataset.specialty + (opt.dataset.room ? ' (' + opt.dataset.room + ')' : '');
                 if (isMatch) {
-                  opt.text = '★ [Đúng chuyên khoa] ' + baseText;
+                  opt.text = (bgroup === 'thuthuat' ? '★ [Bác sĩ khám lâm sàng chỉ định] ' : '★ [Đúng chuyên khoa] ') + baseText;
                   matchedCount++;
                   if (!firstMatchedValue) firstMatchedValue = opt.value;
-                  if (opt.value === currentVal) currentMatches = true;
                 } else {
                   opt.text = baseText;
                 }
               });
 
-              // Nếu bác sĩ hiện tại chưa được chọn hoặc không trùng chuyên khoa, tự động gợi ý bác sĩ chuyên khoa phù hợp
-              if (!currentMatches && firstMatchedValue) {
+              // Khi ấn vào dịch vụ: luôn tự động chỉ định và chọn ngay bác sĩ chuyên khoa phù hợp nhất
+              if (!firstMatchedValue) {
+                const defaultDoc = Array.from(doctorSelect.options).find(opt => opt.value && (opt.dataset.dept === 'general' || (opt.dataset.specialty || '').toLowerCase().includes('tổng quát')));
+                if (defaultDoc) firstMatchedValue = defaultDoc.value;
+                else if (doctorSelect.options.length > 1) firstMatchedValue = doctorSelect.options[1].value;
+              }
+              if (firstMatchedValue) {
                 doctorSelect.value = firstMatchedValue;
               }
 
+              const selectedDocOpt = doctorSelect.selectedOptions[0];
+              const assignedDocName = selectedDocOpt ? (selectedDocOpt.dataset.name || selectedDocOpt.text) : '';
+
               if (filterTag) filterTag.classList.remove('d-none');
               if (filterNotice) {
-                filterNotice.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>' +
-                  'Gợi ý <b>' + matchedCount + ' bác sĩ</b> chuyên khoa phù hợp cho: <b class="text-dark">' + serviceName + '</b>. (Bạn vẫn có thể tự do chọn bất kỳ bác sĩ nào khác bên dưới)';
+                if (bgroup === 'thuthuat') {
+                  filterNotice.innerHTML = '<i class="bi bi-shield-check text-primary me-1"></i>' +
+                    'Thủ thuật cần khám lâm sàng trước: Đã tự động chỉ định <b>Bác sĩ khám mắt tổng quát (' + assignedDocName + ')</b> tiếp nhận cho gói: <b class="text-dark">' + serviceName + '</b>.';
+                } else {
+                  filterNotice.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>' +
+                    'Đã tự động chỉ định bác sĩ chuyên khoa: <b class="text-teal" style="color:#0d9488;">' + assignedDocName + '</b> cho dịch vụ: <b class="text-dark">' + serviceName + '</b>. (Bạn vẫn có thể tự do chọn bác sĩ khác trong danh sách bên dưới)';
+                }
                 filterNotice.classList.remove('d-none');
               }
 
               updateDoctorPreview();
+
+              // Cập nhật Banner cảnh báo quy trình y khoa cho dịch vụ đang chọn (tái sử dụng bgroup, không khai báo lại const)
+              const protocolBox = document.getElementById('serviceProtocolAlertBox');
+              if (protocolBox) {
+                if (bgroup === 'thuthuat') {
+                  protocolBox.style.display = 'block';
+                  protocolBox.innerHTML =
+                    '<div class="alert alert-warning border border-warning rounded-4 p-3 shadow-sm" style="background:#fffbeb;">' +
+                      '<div class="d-flex align-items-start">' +
+                        '<i class="bi bi-shield-exclamation fs-3 text-warning me-3 flex-shrink-0 mt-1"></i>' +
+                        '<div>' +
+                          '<h6 class="fw-bold text-dark mb-1">⚠️ LƯU Ý QUY TRÌNH THỦ THUẬT / TIỂU PHẪU: BẮT BUỘC KHÁM TRƯỚC</h6>' +
+                          '<p class="small text-secondary mb-0">' +
+                            'Đối với dịch vụ thủ thuật / tiểu phẫu (như chích chắp lẹo, bơm thông lệ đạo...), bệnh nhân <strong>bắt buộc phải qua bước Thăm khám lâm sàng trực tiếp với Bác sĩ chuyên khoa trước</strong>. Bác sĩ sẽ dùng đèn sinh hiển vi đánh giá chính xác mức độ tổn thương, giai đoạn viêm và chỉ định thời điểm làm thủ thuật an toàn, vô trùng nhất. Vui lòng chọn Bác sĩ tiếp nhận bên dưới để đặt lịch khám.' +
+                          '</p>' +
+                        '</div>' +
+                      '</div>' +
+                    '</div>';
+                } else if (bgroup === 'tienphau_tamsoat') {
+                  protocolBox.style.display = 'block';
+                  protocolBox.innerHTML =
+                    '<div class="alert alert-info border border-teal rounded-4 p-3 shadow-sm" style="background:#f0fdfa; border-color:#99f6e4 !important;">' +
+                      '<div class="d-flex align-items-start">' +
+                        '<i class="bi bi-shield-check fs-3 text-teal me-3 flex-shrink-0 mt-1" style="color:#0d9488;"></i>' +
+                        '<div>' +
+                          '<h6 class="fw-bold text-dark mb-1">🔬 QUY TRÌNH KHÁM TIỀN PHẪU / TẦM SOÁT ĐIỀU KIỆN MỔ:</h6>' +
+                          '<p class="small text-secondary mb-0">' +
+                            'Khám tiền phẫu chuyên sâu là bước điều kiện tiên quyết để xác nhận mắt có đủ tiêu chuẩn phẫu thuật xóa cận / thay thủy tinh thể hay không. Toàn bộ chi phí khám sẽ được <strong>hoàn trừ 100%</strong> vào giá gói phẫu thuật nếu quý khách thực hiện mổ tại VisionCare.' +
+                          '</p>' +
+                        '</div>' +
+                      '</div>' +
+                    '</div>';
+                } else {
+                  protocolBox.style.display = 'none';
+                  protocolBox.innerHTML = '';
+                }
+              }
+
               if (currentWizardStep === 2) {
                 onDoctorOrDateChange();
               }
             }
+
+            function selectServiceFromModal(serviceId) {
+              const radio = document.querySelector('input.service-radio[value="' + serviceId + '"]');
+              if (radio) {
+                radio.checked = true;
+                filterDoctorsByService(radio);
+                // Highlight card
+                const col = radio.closest('.booking-service-col');
+                if (col) {
+                  col.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }
+            }
+
 
             // Phân loại danh mục dịch vụ trong màn hình đặt lịch
             function filterBookingCategory(group, btn) {
@@ -1276,7 +1511,11 @@
                   matchedRadio = r;
                 }
               });
-              if (matchedRadio && !matchedRadio.checked) {
+              const selectedRadio = document.querySelector('input.service-radio:checked');
+              const selectedSpecialty = (selectedRadio?.dataset.specialty || '').toLowerCase().trim();
+              const selectedMatchesDoctor = selectedRadio &&
+                (selectedSpecialty === docDept || docSpecialty.includes(selectedSpecialty));
+              if (!selectedMatchesDoctor && matchedRadio && !matchedRadio.checked) {
                 matchedRadio.checked = true;
                 updateFeeDisplay();
 
@@ -1318,10 +1557,28 @@
               const docRoom = selectedOpt.dataset.room || 'Phòng khám chuyên khoa';
               const docAvatar = selectedOpt.dataset.avatar || '${pageContext.request.contextPath}/assets/img/doctors/doctors-1.jpg';
 
-              document.getElementById('docPreviewName').textContent = docName;
-              document.getElementById('docPreviewSpecialty').textContent = 'Chuyên khoa: ' + docSpecialty;
-              document.getElementById('docPreviewRoom').textContent = 'Vị trí: ' + docRoom;
-              document.getElementById('docPreviewAvatar').src = docAvatar;
+              const nameEl = document.getElementById('docPreviewName');
+              if (nameEl) nameEl.textContent = docName;
+              const specEl = document.getElementById('docPreviewSpecialty');
+              if (specEl) specEl.textContent = 'Chuyên khoa: ' + docSpecialty;
+              const roomEl = document.getElementById('docPreviewRoom');
+              if (roomEl) roomEl.textContent = 'Vị trí: ' + docRoom;
+              const avatarEl = document.getElementById('docPreviewAvatar');
+              if (avatarEl) avatarEl.src = docAvatar;
+
+              const badgeEl = document.getElementById('docMatchBadge');
+              if (badgeEl) {
+                const checkedRadio = document.querySelector('input.service-radio:checked');
+                const bgroup = checkedRadio ? (checkedRadio.dataset.bgroup || '').toLowerCase().trim() : '';
+                if (bgroup === 'thuthuat') {
+                  badgeEl.className = 'badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill small';
+                  badgeEl.innerHTML = '<i class="bi bi-shield-check text-warning me-1"></i>Bác sĩ khám lâm sàng chỉ định';
+                } else {
+                  badgeEl.className = 'badge rounded-pill small';
+                  badgeEl.style.cssText = 'background: #ccfbf1; color: #0f766e; border: 1px solid #99f6e4;';
+                  badgeEl.innerHTML = '<i class="bi bi-star-fill text-warning me-1"></i>Bác sĩ chỉ định theo chuyên khoa';
+                }
+              }
 
               previewCard.classList.remove('d-none');
             }
@@ -1467,11 +1724,82 @@
               }
             }
 
+            // Xử lý chuyển đổi: Đặt cho bản thân / Đăng ký cho người khác / Điền lại thông tin
+            const loggedUserProfile = {
+              name: '<c:out value="${loggedUser.fullName}" default="" />',
+              phone: '<c:out value="${loggedUser.phone}" default="" />',
+              email: '<c:out value="${loggedUser.email}" default="" />',
+              dob: '<c:out value="${loggedUser.dob}" default="" />'
+            };
+
+            function setBookingForOther() {
+              document.getElementById('patientName').value = '';
+              document.getElementById('patientPhone').value = '';
+              document.getElementById('patientDob').value = '';
+              document.getElementById('visitReason').value = '';
+
+              const title = document.getElementById('bookingProfileTitle');
+              if (title) title.innerHTML = '<span class="text-primary"><i class="bi bi-people-fill me-1"></i> Đang đăng ký cho người khác / người thân</span>';
+
+              const notice = document.getElementById('bookingForNotice');
+              if (notice) notice.innerHTML = 'Vui lòng nhập họ tên, số điện thoại và ngày sinh của người trực tiếp đi khám mắt.';
+
+              const btnOther = document.getElementById('btnBookForOther');
+              const btnSelf = document.getElementById('btnBookForSelf');
+              if (btnOther) btnOther.style.display = 'none';
+              if (btnSelf) btnSelf.style.display = 'inline-block';
+
+              document.getElementById('patientName').focus();
+            }
+
+            function refillMyInfo() {
+              document.getElementById('patientName').value = loggedUserProfile.name || '';
+              document.getElementById('patientPhone').value = loggedUserProfile.phone || '';
+              document.getElementById('patientEmail').value = loggedUserProfile.email || '';
+              document.getElementById('patientDob').value = loggedUserProfile.dob || '';
+              document.getElementById('visitReason').value = '';
+
+              const title = document.getElementById('bookingProfileTitle');
+              if (title) title.innerText = 'Tài khoản đặt lịch: ' + (loggedUserProfile.name || '');
+
+              const notice = document.getElementById('bookingForNotice');
+              if (notice) notice.innerText = 'Hệ thống đã tự động điền thông tin của bạn. Nhấn "Đăng ký cho người khác" nếu bạn đặt lịch cho người thân.';
+
+              const btnOther = document.getElementById('btnBookForOther');
+              const btnSelf = document.getElementById('btnBookForSelf');
+              if (btnOther) btnOther.style.display = 'inline-block';
+              if (btnSelf) btnSelf.style.display = 'none';
+            }
+
+            function clearPatientForm() {
+              if (confirm('Bạn có muốn xóa toàn bộ thông tin người khám để nhập lại từ đầu không?')) {
+                document.getElementById('patientName').value = '';
+                document.getElementById('patientPhone').value = '';
+                document.getElementById('patientEmail').value = '';
+                document.getElementById('patientDob').value = '';
+                document.getElementById('visitReason').value = '';
+                document.getElementById('patientName').focus();
+              }
+            }
+
             // Tự động khởi tạo khi tải trang
             document.addEventListener('DOMContentLoaded', function () {
               updateFeeDisplay();
               const docSelect = document.getElementById('doctorSelect');
               const checkedSvc = document.querySelector('input[name="serviceId"]:checked');
+
+              // Gắn sự kiện click trực tiếp vào từng service-card
+              document.querySelectorAll('.service-card').forEach(function (card) {
+                card.addEventListener('click', function (e) {
+                  if (e.target.closest('[data-bs-toggle="modal"]')) return;
+                  const label = card.closest('label');
+                  const radio = label ? label.querySelector('input.service-radio') : null;
+                  if (radio) {
+                    radio.checked = true;
+                    filterDoctorsByService(radio);
+                  }
+                });
+              });
 
               // Nếu có selectedDoctorId từ trang trước (ví dụ: nhấn nút "Đặt lịch" ở card bác sĩ trên HomePage)
               const initialDocId = '${selectedDoctorId}';
@@ -1479,27 +1807,99 @@
                 docSelect.value = initialDocId;
                 onDoctorSelectChange();
               } else if (checkedSvc) {
+                const bg = (checkedSvc.dataset.bgroup || '').toLowerCase().trim();
+                if (bg && bg !== 'all') {
+                  const catBtn = document.querySelector('.booking-cat-btn[data-bgroup="' + bg + '"]');
+                  if (catBtn) filterBookingCategory(bg, catBtn);
+                }
                 filterDoctorsByService(checkedSvc);
               } else {
                 updateDoctorPreview();
               }
 
-              // Tự động kiểm tra trạng thái thanh toán PayOS (Auto Polling)
+              // Tự động kiểm tra trạng thái thanh toán PayOS (Auto Polling) & Đồng hồ đếm ngược (Countdown Timer)
               <c:if test="${step == 'payment'}">
                 const currentApptId = '${appointmentId != null ? appointmentId : appointment.id}';
                 let pollAttempts = 0;
+                let checkInterval = null;
+
+                // Khởi tạo thời hạn thanh toán 15 phút (900s) lưu trong sessionStorage để không bị reset khi F5
+                const storageKey = 'vc_pay_expire_' + currentApptId;
+                let expireTimestamp = sessionStorage.getItem(storageKey);
+                const now = Date.now();
+                if (!expireTimestamp || isNaN(expireTimestamp) || parseInt(expireTimestamp) < now) {
+                  expireTimestamp = now + (15 * 60 * 1000); // 15 phút
+                  sessionStorage.setItem(storageKey, expireTimestamp);
+                } else {
+                  expireTimestamp = parseInt(expireTimestamp);
+                }
+
+                function updatePaymentCountdown() {
+                  const remainingMs = expireTimestamp - Date.now();
+                  const remainingSec = Math.max(0, Math.floor(remainingMs / 1000));
+                  const m = Math.floor(remainingSec / 60);
+                  const s = remainingSec % 60;
+                  const formatted = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+
+                  const timerEl = document.getElementById('paymentCountdownTimer');
+                  const ticketEl = document.getElementById('ticketCountdownBadge');
+                  const barEl = document.getElementById('countdownProgressBar');
+                  const statusEl = document.getElementById('countdownStatusText');
+
+                  if (timerEl) timerEl.textContent = formatted;
+                  if (ticketEl) ticketEl.innerHTML = '<i class="bi bi-stopwatch me-1"></i>' + formatted;
+
+                  const percent = Math.min(100, Math.max(0, (remainingSec / 900) * 100));
+                  if (barEl) barEl.style.width = percent + '%';
+
+                  // Đổi màu trực quan theo thời gian còn lại
+                  if (remainingSec <= 120) { // Dưới 2 phút: Đỏ cảnh báo khẩn
+                    if (barEl) { barEl.className = 'progress-bar progress-bar-striped progress-bar-animated bg-danger'; }
+                    if (timerEl) { timerEl.className = 'fs-5 fw-bold text-danger font-monospace'; }
+                    if (statusEl) { statusEl.textContent = 'Sắp hết hạn!'; statusEl.className = 'text-danger fw-bold'; }
+                  } else if (remainingSec <= 300) { // Dưới 5 phút: Cam chú ý
+                    if (barEl) { barEl.className = 'progress-bar progress-bar-striped progress-bar-animated bg-warning'; }
+                    if (timerEl) { timerEl.className = 'fs-5 fw-bold text-warning font-monospace'; }
+                    if (statusEl) { statusEl.textContent = 'Hạn còn dưới 5 phút'; statusEl.className = 'text-warning fw-semibold'; }
+                  } else { // Bình thường: Xanh giữ chỗ an toàn
+                    if (barEl) { barEl.className = 'progress-bar progress-bar-striped progress-bar-animated'; barEl.style.backgroundColor = '#0d9488'; }
+                    if (timerEl) { timerEl.className = 'fs-5 fw-bold font-monospace'; timerEl.style.color = '#0d9488'; }
+                    if (statusEl) { statusEl.textContent = 'Đang có hiệu lực'; statusEl.className = 'text-muted fw-semibold'; }
+                  }
+
+                  if (remainingSec <= 0) {
+                    clearInterval(countdownInterval);
+                    if (checkInterval) clearInterval(checkInterval);
+                    sessionStorage.removeItem(storageKey);
+
+                    if (timerEl) timerEl.textContent = '00:00 (Hết hạn)';
+                    if (statusEl) { statusEl.textContent = 'Đã hết hạn'; statusEl.className = 'text-danger fw-bold'; }
+                    if (barEl) { barEl.style.width = '0%'; }
+
+                    const actionArea = document.getElementById('paymentActionArea');
+                    const expiredArea = document.getElementById('paymentExpiredArea');
+                    if (actionArea) actionArea.classList.add('d-none');
+                    if (expiredArea) expiredArea.classList.remove('d-none');
+                  }
+                }
+
+                updatePaymentCountdown();
+                const countdownInterval = setInterval(updatePaymentCountdown, 1000);
+
                 if (currentApptId) {
-                  const checkInterval = setInterval(function () {
+                  checkInterval = setInterval(function () {
                     pollAttempts++;
-                    if (pollAttempts > 180) { // Quá 15 phút thì dừng polling
+                    if (pollAttempts > 360) { // Tối đa 15 phút (mỗi 2.5s)
                       clearInterval(checkInterval);
                       return;
                     }
-                    fetch('${pageContext.request.contextPath}/book-appointment?action=checkPayment&appointmentId=' + currentApptId)
+                    fetch('${pageContext.request.contextPath}/book-appointment?action=checkPayment&appointmentId=' + currentApptId + '&orderCode=${orderCode}')
                       .then(res => res.json())
                       .then(data => {
                         if (data && data.isPaid) {
                           clearInterval(checkInterval);
+                          clearInterval(countdownInterval);
+                          sessionStorage.removeItem(storageKey);
                           // Tự động chuyển thẳng sang màn hình thành công!
                           window.location.href = '${pageContext.request.contextPath}/book-appointment?step=success&id=' + currentApptId;
                         }
