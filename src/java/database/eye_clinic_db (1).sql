@@ -1,11 +1,21 @@
--- Run against the existing eye_clinic_db. This file never drops or creates a database.
--- Initial schema and sample data are added only when this database is empty.
-USE eye_clinic_db;
-IF DB_NAME() <> N'eye_clinic_db'
-    THROW 50000, N'Chỉ chạy script trong eye_clinic_db hiện có.', 1;
+-- Fresh database setup: this script drops and recreates eye_clinic_db.
+-- Medicine, Consumables and sample catalog items are included below.
+-- Service_Catalog is the single service table; Procedure_Order.Service_ID references it.
+-- Service_Catalog does not have the obsolete Created_By column.
 
-IF OBJECT_ID(N'dbo.Role', N'U') IS NULL
+USE master;
+GO
+IF EXISTS (SELECT name FROM sys.databases WHERE name = N'eye_clinic_db')
 BEGIN
+    ALTER DATABASE eye_clinic_db SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE eye_clinic_db;
+END
+GO
+CREATE DATABASE eye_clinic_db;
+GO
+USE eye_clinic_db;
+GO
+
 CREATE TABLE Role (
     Role_ID     INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     Role_Name   NVARCHAR(50) NOT NULL UNIQUE
@@ -48,19 +58,33 @@ CREATE TABLE Medical_Supply (
     Image_Mime_Type VARCHAR(50) NULL,
     CONSTRAINT CHK_Medical_Supply_Price CHECK (Price >= 0),
     CONSTRAINT CHK_Medical_Supply_Category CHECK (Category IN (
-        N'Thuốc & Dung dịch', N'Kính & Phụ kiện', N'Vật tư y tế tiêu hao', N'Khác'))
+        N'Khác'))
+);
+
+CREATE TABLE Medicine (
+    Medicine_ID INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    Supply_Name NVARCHAR(255) NOT NULL,
+    Category NVARCHAR(100) NOT NULL,
+    Price DECIMAL(18,0) NOT NULL,
+    Image_Data VARBINARY(MAX) NULL,
+    Image_Mime_Type VARCHAR(50) NULL,
+    CONSTRAINT CHK_Medicine_Price CHECK (Price >= 0),
+    CONSTRAINT CHK_Medicine_Category CHECK (Category IN (
+        N'Thuốc & dung dịch', N'Kính gọng & tròng kính', N'Kính áp tròng',
+        N'Phụ kiện & sản phẩm hỗ trợ', N'Khác'))
 );
 
 CREATE TABLE Consumables (
     Consumable_ID INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     Supply_Name NVARCHAR(255) NOT NULL,
-    Category NVARCHAR(100) NOT NULL,
+    Category NVARCHAR(100) NOT NULL DEFAULT (N'Vật tư y tế tiêu hao'),
     Price DECIMAL(18,0) NOT NULL,
     Image_Data VARBINARY(MAX) NULL,
     Image_Mime_Type VARCHAR(50) NULL,
     CONSTRAINT CHK_Consumables_Price CHECK (Price >= 0),
     CONSTRAINT CHK_Consumables_Category CHECK (Category = N'Vật tư y tế tiêu hao')
 );
+
 CREATE TABLE Room (
     Room_ID     INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     Room_Name   NVARCHAR(100) NOT NULL UNIQUE
@@ -215,6 +239,7 @@ CREATE TABLE Refund_Request (
     FOREIGN KEY (approved_by_employee_id) REFERENCES Employee_Profile(Employee_ID),
     FOREIGN KEY (Patient_ID)              REFERENCES Patient(Patient_ID)
 );
+GO
 
 ALTER TABLE Account ADD CONSTRAINT CHK_Account_Status
     CHECK (Account_Status IN (N'Active', N'Inactive', N'Banned', N'Locked','Deleted'));
@@ -245,6 +270,7 @@ ALTER TABLE Payment_Transaction ADD CONSTRAINT CHK_Transaction_Amount CHECK (Amo
 ALTER TABLE Refund_Request ADD CONSTRAINT CHK_Refund_Amount CHECK (Refund_Amount > 0);
 ALTER TABLE Refund_Request ADD CONSTRAINT CHK_Refund_Status
     CHECK (Status IN (N'Pending', N'Approved', N'Rejected'));
+GO
 
 INSERT INTO Role (Role_Name) VALUES
 (N'System_Admin'), (N'Director'), (N'Doctor'),
@@ -307,53 +333,125 @@ INSERT INTO Employee_Profile (Account_ID, Room_ID, Full_Name, Phone, Specialty, 
 (11, 9,    N'ThS. Lê Văn C',              NULL, N'Medical Specialist tiểu phẫu',   N'BS-33333/EYE', NULL),
 (12, NULL, N'Lễ Tân Phạm Thị Lan',        NULL, N'Thu Ngân & Tiếp Đón',            NULL,            NULL);
 
+DECLARE @today DATE = CAST(SYSUTCDATETIME() AS DATE);
+
+-- Lịch làm việc chuẩn cho tất cả các Bác sĩ (ID 3 đến 8) và Kỹ thuật viên (ID 9 đến 11)
 INSERT INTO Work_Schedule
     (Doctor_Employee_ID, Specialist_Employee_ID, Work_Date, Slot, Start_Time, End_Time, Status)
 VALUES
-(3,    NULL, '2026-04-01', N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 3',  '09:00:00', '09:30:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 4',  '09:30:00', '10:00:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 5',  '10:00:00', '10:30:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 6',  '10:30:00', '11:00:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 7',  '11:00:00', '11:30:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 8',  '13:30:00', '14:00:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 9',  '14:00:00', '14:30:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 10', '14:30:00', '15:00:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 11', '15:00:00', '15:30:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 12', '15:30:00', '16:00:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 13', '16:00:00', '16:30:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 14', '16:30:00', '17:00:00', N'Available'),
-(3,    NULL, '2026-04-01', N'Slot 15', '17:00:00', '17:30:00', N'Available'),
-(NULL, 9,    '2026-04-01', N'Slot 1',  '08:00:00', '08:30:00', N'Available');
+-- Bác sĩ 3: BS. Trần Văn Nam (Nhãn khoa tổng quát) - Schedule_ID: 1 -> 15
+(3, NULL, @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(3, NULL, @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(3, NULL, @today, N'Slot 3',  '09:00:00', '09:30:00', N'Available'),
+(3, NULL, @today, N'Slot 4',  '09:30:00', '10:00:00', N'Available'),
+(3, NULL, @today, N'Slot 5',  '10:00:00', '10:30:00', N'Available'),
+(3, NULL, @today, N'Slot 6',  '10:30:00', '11:00:00', N'Available'),
+(3, NULL, @today, N'Slot 7',  '11:00:00', '11:30:00', N'Available'),
+(3, NULL, @today, N'Slot 8',  '13:30:00', '14:00:00', N'Available'),
+(3, NULL, @today, N'Slot 9',  '14:00:00', '14:30:00', N'Available'),
+(3, NULL, @today, N'Slot 10', '14:30:00', '15:00:00', N'Available'),
+(3, NULL, @today, N'Slot 11', '15:00:00', '15:30:00', N'Available'),
+(3, NULL, @today, N'Slot 12', '15:30:00', '16:00:00', N'Available'),
+(3, NULL, @today, N'Slot 13', '16:00:00', '16:30:00', N'Available'),
+(3, NULL, @today, N'Slot 14', '16:30:00', '17:00:00', N'Available'),
+(3, NULL, @today, N'Slot 15', '17:00:00', '17:30:00', N'Available'),
+
+-- Bác sĩ 4: TS.BS. Nguyễn Xuân Tịnh (Đo Khúc xạ & Kính) - Schedule_ID: 16 -> 25
+(4, NULL, @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(4, NULL, @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(4, NULL, @today, N'Slot 3',  '09:00:00', '09:30:00', N'Available'),
+(4, NULL, @today, N'Slot 4',  '09:30:00', '10:00:00', N'Available'),
+(4, NULL, @today, N'Slot 5',  '10:00:00', '10:30:00', N'Available'),
+(4, NULL, @today, N'Slot 6',  '10:30:00', '11:00:00', N'Available'),
+(4, NULL, @today, N'Slot 7',  '11:00:00', '11:30:00', N'Available'),
+(4, NULL, @today, N'Slot 8',  '13:30:00', '14:00:00', N'Available'),
+(4, NULL, @today, N'Slot 9',  '14:00:00', '14:30:00', N'Available'),
+(4, NULL, @today, N'Slot 10', '14:30:00', '15:00:00', N'Available'),
+
+-- Bác sĩ 5: BS. Lê Hoàng Lan (Phẫu thuật LASIK) - Schedule_ID: 26 -> 35
+(5, NULL, @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(5, NULL, @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(5, NULL, @today, N'Slot 3',  '09:00:00', '09:30:00', N'Available'),
+(5, NULL, @today, N'Slot 4',  '09:30:00', '10:00:00', N'Available'),
+(5, NULL, @today, N'Slot 5',  '10:00:00', '10:30:00', N'Available'),
+(5, NULL, @today, N'Slot 6',  '10:30:00', '11:00:00', N'Available'),
+(5, NULL, @today, N'Slot 7',  '11:00:00', '11:30:00', N'Available'),
+(5, NULL, @today, N'Slot 8',  '13:30:00', '14:00:00', N'Available'),
+(5, NULL, @today, N'Slot 9',  '14:00:00', '14:30:00', N'Available'),
+(5, NULL, @today, N'Slot 10', '14:30:00', '15:00:00', N'Available'),
+
+-- Bác sĩ 6: BS. Phạm Bảo Ngọc (Nhãn khoa trẻ em) - Schedule_ID: 36 -> 45
+(6, NULL, @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(6, NULL, @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(6, NULL, @today, N'Slot 3',  '09:00:00', '09:30:00', N'Available'),
+(6, NULL, @today, N'Slot 4',  '09:30:00', '10:00:00', N'Available'),
+(6, NULL, @today, N'Slot 5',  '10:00:00', '10:30:00', N'Available'),
+(6, NULL, @today, N'Slot 6',  '10:30:00', '11:00:00', N'Available'),
+(6, NULL, @today, N'Slot 7',  '11:00:00', '11:30:00', N'Available'),
+(6, NULL, @today, N'Slot 8',  '13:30:00', '14:00:00', N'Available'),
+(6, NULL, @today, N'Slot 9',  '14:00:00', '14:30:00', N'Available'),
+(6, NULL, @today, N'Slot 10', '14:30:00', '15:00:00', N'Available'),
+
+-- Bác sĩ 7: BS. Trần Quang Huy (Đục thủy tinh thể - Phaco) - Schedule_ID: 46 -> 55
+(7, NULL, @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(7, NULL, @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(7, NULL, @today, N'Slot 3',  '09:00:00', '09:30:00', N'Available'),
+(7, NULL, @today, N'Slot 4',  '09:30:00', '10:00:00', N'Available'),
+(7, NULL, @today, N'Slot 5',  '10:00:00', '10:30:00', N'Available'),
+(7, NULL, @today, N'Slot 6',  '10:30:00', '11:00:00', N'Available'),
+(7, NULL, @today, N'Slot 7',  '11:00:00', '11:30:00', N'Available'),
+(7, NULL, @today, N'Slot 8',  '13:30:00', '14:00:00', N'Available'),
+(7, NULL, @today, N'Slot 9',  '14:00:00', '14:30:00', N'Available'),
+(7, NULL, @today, N'Slot 10', '14:30:00', '15:00:00', N'Available'),
+
+-- Bác sĩ 8: BS. Ngô Tiến Dũng (Glaucoma & Võng mạc) - Schedule_ID: 56 -> 65
+(8, NULL, @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(8, NULL, @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(8, NULL, @today, N'Slot 3',  '09:00:00', '09:30:00', N'Available'),
+(8, NULL, @today, N'Slot 4',  '09:30:00', '10:00:00', N'Available'),
+(8, NULL, @today, N'Slot 5',  '10:00:00', '10:30:00', N'Available'),
+(8, NULL, @today, N'Slot 6',  '10:30:00', '11:00:00', N'Available'),
+(8, NULL, @today, N'Slot 7',  '11:00:00', '11:30:00', N'Available'),
+(8, NULL, @today, N'Slot 8',  '13:30:00', '14:00:00', N'Available'),
+(8, NULL, @today, N'Slot 9',  '14:00:00', '14:30:00', N'Available'),
+(8, NULL, @today, N'Slot 10', '14:30:00', '15:00:00', N'Available'),
+
+-- Kỹ thuật viên / Bác sĩ tiểu phẫu (Specialist 9, 10, 11) - Schedule_ID: 66 -> 71
+(NULL, 9,  @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(NULL, 9,  @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(NULL, 10, @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(NULL, 10, @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available'),
+(NULL, 11, @today, N'Slot 1',  '08:00:00', '08:30:00', N'Available'),
+(NULL, 11, @today, N'Slot 2',  '08:30:00', '09:00:00', N'Available');
 
 INSERT INTO Leave_Cancel_Request
     (Schedule_ID, Requester_Employee_ID, Approved_By_Employee_ID, leave_Date, Reason, request_status, approved_at)
 VALUES
-(3, 3, 2, '2026-04-01', N'Bác sĩ bận họp đột xuất', N'Pending', NULL);
+(3, 3, 2, @today, N'Bác sĩ bận họp đột xuất', N'Pending', NULL);
 
+-- Danh sách cuộc hẹn mẫu khớp 100% Khóa ngoại (Schedule_ID thực tế tương ứng với bác sĩ phụ trách)
 INSERT INTO Appointment (Patient_ID, Schedule_ID, Staff_Employee_ID, Status, created_at, checkin_time) VALUES
-(1, 1, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(2, 2, 12, N'Pending',   SYSUTCDATETIME(), NULL),
-(1, 60, 12, N'Pending', SYSUTCDATETIME(), NULL),
-(3, 846, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(4, 847, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(1, 61, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(5, 111, 12, N'Pending', SYSUTCDATETIME(), NULL),
-(5, 848, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(1, 849, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(8, 86, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(11, 850, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(3, 151, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(4, 204, 12, N'Pending', SYSUTCDATETIME(), NULL),
-(7, 851, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(10, 852, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(7, 127, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(9, 853, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(6, 854, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(6, 855, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(9, 211, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
-(2, 15, 12, N'Canceled', SYSUTCDATETIME(), NULL);
+(1, 1,  12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(2, 2,  12, N'Pending',   SYSUTCDATETIME(), NULL),
+(1, 3,  12, N'Pending',   SYSUTCDATETIME(), NULL),
+(3, 4,  12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(4, 5,  12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(1, 6,  12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(5, 7,  12, N'Pending',   SYSUTCDATETIME(), NULL),
+(5, 16, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(1, 17, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(8, 18, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(11, 26, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(3, 27, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(4, 28, 12, N'Pending',   SYSUTCDATETIME(), NULL),
+(7, 36, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(10, 37, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(7, 38, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(9, 46, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(6, 47, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(6, 56, 12, N'Completed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(9, 57, 12, N'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME()),
+(2, 8,  12, N'Canceled',  SYSUTCDATETIME(), NULL);
 
 INSERT INTO Medical_Record
     (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, examination_result, conclusion, Created_At)
@@ -379,42 +477,98 @@ VALUES
 (20, 8, N'Dịch vụ: Đo nhãn áp và chụp OCT võng mạc | Lý do: Tái khám định kỳ theo dõi nhãn áp sau điều trị', NULL, NULL, SYSUTCDATETIME()),
 (21, 3, N'Dịch vụ: Khám mắt tổng quát | Lý do: Bệnh nhân báo bận công tác đột xuất, xin hủy lịch khám', NULL, NULL, SYSUTCDATETIME());
 
--- Một danh mục dịch vụ dùng chung cho đặt lịch và Procedure_Order.
--- Sample images remain in web/assets/img; Image_Data is used for admin uploads.
+-- Danh mục dịch vụ chuẩn hoá phòng khám nhãn khoa VisionCare
+-- Bao gồm: Dịch vụ khám & tiền phẫu (cho bệnh nhân đặt lịch) và Phẫu thuật/Thủ thuật (cho bác sĩ chỉ định)
 INSERT INTO Service_Catalog
     (Service_Code, Service_Name, Price, Category, Summary, Description)
 VALUES
-('NK-01', N'Khám mắt tổng quát', 250000, N'Khám và tư vấn', N'Khám và chẩn đoán toàn diện các bệnh lý về mắt, phù hợp với mọi lứa tuổi.', N'Bao gồm đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt, đánh giá tình trạng giác mạc và thủy tinh thể.'),
+('NK-01', N'Khám mắt tổng quát & Soi đáy mắt', 200000, N'Khám và tư vấn', N'Khám và chẩn đoán toàn diện các bệnh lý về mắt, đo thị lực, kiểm tra áp lực nhãn cầu và soi đáy mắt.', N'Bao gồm đo thị lực, kiểm tra áp lực nhãn cầu, soi đáy mắt, đánh giá tình trạng giác mạc và thủy tinh thể.'),
 ('KX-02', N'Đo khúc xạ và tư vấn kính', 150000, N'Kiểm tra và chẩn đoán', N'Khám sàng lọc và đo độ khúc xạ với hệ thống đo tự động chuẩn xác.', N'Đo khúc xạ chính xác bằng máy tự động, thử thị lực và tư vấn tròng kính phù hợp.'),
-('LS-03', N'Phẫu thuật LASIK', 18000000, N'Điều trị và thủ thuật', N'Xóa cận không dao, thời gian phục hồi nhanh chóng.', N'Phẫu thuật khúc xạ laser LASIK/SMILE điều trị cận thị, viễn thị và loạn thị với công nghệ hiện đại.'),
+('LS-03', N'Khám tiền phẫu & Tư vấn xóa cận LASIK/SMILE', 500000, N'Khám và tư vấn', N'Khám chuyên sâu 8 bước bản đồ giác mạc, đo độ dày giác mạc, soi đáy mắt và tư vấn phương pháp xóa cận. Hoàn trừ 100% phí khám nếu thực hiện mổ.', N'Gói khám tiền phẫu bắt buộc để đánh giá mắt đủ điều kiện phẫu thuật khúc xạ (Femto-LASIK, ReLEx SMILE). Toàn bộ phí khám 500.000đ sẽ được trừ 100% vào chi phí ca mổ nếu quý khách tiến hành phẫu thuật.'),
 ('PE-04', N'Khám mắt trẻ em và tư vấn nhược thị', 300000, N'Khám và tư vấn', N'Sàng lọc sớm các tật khúc xạ tiến triển, tật lé và suy giảm thị lực ở trẻ nhỏ.', N'Sàng lọc cận thị sớm, điều trị nhược thị và lác mắt trong không gian khám thân thiện.'),
 ('TT-05', N'Phẫu thuật Phaco điều trị đục thủy tinh thể', 12000000, N'Điều trị và thủ thuật', N'Tái tạo tầm nhìn trong sáng bằng phương pháp tán nhuyễn Phaco tiên tiến.', N'Phẫu thuật thay thể thủy tinh nhân tạo điều trị đục thủy tinh thể an toàn, đường mổ siêu nhỏ.'),
-('GL-06', N'Đo nhãn áp và chụp OCT võng mạc', 500000, N'Kiểm tra và chẩn đoán', N'Kiểm soát nhãn áp, bảo tồn thị trường thần kinh mắt và ngăn ngừa biến chứng mù lòa.', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.'),
--- Dịch vụ khám khô mắt độc lập với gói đo khúc xạ KX-02.
-('KM-09', N'Khám và tư vấn khô mắt', 200000, N'Khám và tư vấn', N'Đánh giá nguyên nhân khô mắt và tư vấn chăm sóc phù hợp.', N'Khám bề mặt nhãn cầu, đánh giá phim nước mắt và tư vấn hướng điều trị theo kết quả thăm khám.'),
-('OCT-DM', N'Chụp OCT đáy mắt', 400000, N'Kiểm tra và chẩn đoán', NULL, NULL);
+('GL-06', N'Đo nhãn áp và chụp OCT võng mạc', 500000, N'Kiểm tra và chẩn đoán', N'Kiểm soát nhãn áp, bảo tồn thị trường thần kinh mắt và ngăn ngừa biến chứng mù lòa.', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.');
+
+INSERT INTO Medicine (Supply_Name, Category, Price) VALUES
+(N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Thuốc & dung dịch', 95000),
+(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Thuốc & dung dịch', 88000),
+(N'Thuốc mỡ tra mắt (3,5g)', N'Thuốc & dung dịch', 65000),
+(N'Dung dịch rửa mắt vô trùng (100 ml)', N'Thuốc & dung dịch', 45000),
+(N'Nước mắt nhân tạo không chất bảo quản (hộp 10 ống)', N'Thuốc & dung dịch', 135000),
+(N'Gọng kính nhựa TR90', N'Kính gọng & tròng kính', 320000),
+(N'Gọng kính kim loại', N'Kính gọng & tròng kính', 450000),
+(N'Tròng kính Essilor Crizal Alize 1.60', N'Kính gọng & tròng kính', 1250000),
+(N'Tròng kính lọc ánh sáng xanh 1.56', N'Kính gọng & tròng kính', 650000),
+(N'Kính râm chống tia UV400', N'Kính gọng & tròng kính', 280000),
+(N'Kính áp tròng mềm dùng một ngày (-2.00D)', N'Kính áp tròng', 180000),
+(N'Kính áp tròng mềm dùng một tháng (-2.00D)', N'Kính áp tròng', 250000),
+(N'Kính áp tròng cứng RGP (1 chiếc)', N'Kính áp tròng', 1200000),
+(N'Kính Ortho-K (1 chiếc)', N'Kính áp tròng', 7500000),
+(N'Dung dịch ngâm và vệ sinh kính áp tròng (240ml)', N'Kính áp tròng', 98000),
+(N'Hộp đựng kính cứng', N'Phụ kiện & sản phẩm hỗ trợ', 35000),
+(N'Khăn lau kính microfiber', N'Phụ kiện & sản phẩm hỗ trợ', 20000),
+(N'Dây đeo kính thể thao', N'Phụ kiện & sản phẩm hỗ trợ', 45000),
+(N'Hộp đựng kính áp tròng', N'Phụ kiện & sản phẩm hỗ trợ', 25000),
+(N'Miếng che mắt tập nhược thị', N'Phụ kiện & sản phẩm hỗ trợ', 60000);
+
+INSERT INTO Consumables (Supply_Name, Category, Price) VALUES
+('TT-05', N'Khám tầm soát & Tư vấn phẫu thuật Phaco (Đục thủy tinh thể)', 300000, N'Khám và tư vấn', N'Kiểm tra mức độ đục thể thủy tinh, đo công suất thể thủy tinh nhân tạo và tư vấn phẫu thuật Phaco. Hoàn trừ 100% phí khám nếu thực hiện mổ.', N'Khám sàng lọc và tư vấn phẫu thuật Phaco đặt kính nội nhãn. Toàn bộ phí khám được khấu trừ 100% vào chi phí ca mổ khi thực hiện phẫu thuật.'),
+('GL-06', N'Đo nhãn áp & Tầm soát Glaucoma', 250000, N'Khám và tư vấn', N'Kiểm tra áp lực nhãn cầu, soi góc tiền phòng và tầm soát phát hiện sớm bệnh lý thiên đầu thống (Glaucoma).', N'Tầm soát và can thiệp bệnh Glaucoma, thoái hóa hoàng điểm và tổn thương võng mạc với hệ thống OCT.'),
+('KX-MAY', N'Đo khúc xạ máy', 100000, N'Kiểm tra và chẩn đoán', N'Đo độ khúc xạ bằng máy đo tự động kỹ thuật số.', NULL),
+('OCT-DM', N'Chụp OCT đáy mắt', 400000, N'Kiểm tra và chẩn đoán', N'Chụp cắt lớp quang học võng mạc, gai thị độ phân giải cao.', NULL),
+('KM-CVS', N'Khám & Điều trị Khô mắt (Hội chứng màn hình)', 200000, N'Khám và tư vấn', N'Đo màng phim nước mắt, kiểm tra tuyến Meibomius và điều trị khô rát mỏi mắt do sử dụng máy tính, điện thoại kéo dài.', N'Gói khám và phục hồi mắt chuyên sâu cho nhân viên văn phòng, học sinh sinh viên thường xuyên tiếp xúc màn hình điện tử.'),
+('KM-DM', N'Khám & Tầm soát Đáy mắt - Võng mạc tiểu đường', 300000, N'Khám và tư vấn', N'Chụp màu đáy mắt, soi võng mạc tầm soát biến chứng xuất huyết võng mạc ở người tiểu đường và cao huyết áp.', N'Quy trình chẩn đoán chuyên sâu giúp phát hiện sớm và can thiệp kịp thời các tổn thương võng mạc do đái tháo đường.'),
+('PT-LASIK', N'Phẫu thuật Femto-LASIK hai mắt', 18000000, N'Điều trị và thủ thuật', N'Phẫu thuật khúc xạ không dao Femtosecond Laser chính xác, phục hồi thị lực nhanh 10/10.', N'Phương pháp xóa cận viễn loạn hiện đại, an toàn, không đau, thời gian thực hiện chỉ 15 phút.'),
+('PT-SMILE', N'Phẫu thuật ReLEx SMILE xóa cận', 42000000, N'Điều trị và thủ thuật', N'Công nghệ phẫu thuật khúc xạ không vạt tiên tiến nhất, đường rạch siêu nhỏ 2mm bảo tồn giác mạc tối đa.', N'Kỹ thuật rút lõi mô giác mạc bằng công nghệ VisuMax từ Đức, giảm thiểu tối đa khô mắt sau mổ.'),
+('PT-PHACO', N'Phẫu thuật Phaco đặt thủy tinh thể nhân tạo', 12000000, N'Điều trị và thủ thuật', N'Tán nhuyễn thể thủy tinh đục bằng sóng siêu âm Phaco và đặt thể thủy tinh nhân tạo cao cấp đường mổ 2.2mm.', N'Ca phẫu thuật nhanh chóng 10-15 phút, xuất viện trong ngày, khôi phục thị lực sáng rõ cho người cao tuổi.'),
+('TP-LEO', N'Chích rạch chắp lẹo mi mắt', 250000, N'Điều trị và thủ thuật', N'Tiểu phẫu dẫn lưu ổ viêm chắp lẹo mí mắt an toàn, vô trùng, hạn chế tái phát và đảm bảo thẩm mỹ.', N'Thực hiện thủ thuật tại phòng tiểu phẫu vô khuẩn.'),
+('TP-LEDAO', N'Bơm thông rửa lệ đạo', 300000, N'Điều trị và thủ thuật', N'Thông tắc đường dẫn lệ giải quyết triệt để triệu chứng chảy nước mắt sống và viêm túi lệ mạn tính.', N'Quy trình thông rửa nhẹ nhàng với dụng cụ chuyên dụng.'),
+('TP-YAG', N'Bắn Laser YAG bao sau đục', 1500000, N'Điều trị và thủ thuật', N'Thủ thuật laser ngoại trú làm trong suốt lại bao sau thể thủy tinh sau phẫu thuật Phaco.', N'Không phẫu thuật, chỉ mất 5 phút, thị lực sáng rõ trở lại ngay sau khi bắn laser.');
 
 INSERT INTO Medical_Supply (Supply_Name, Category, Price) VALUES
 (N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Thuốc & Dung dịch', 95000),
 (N'Tròng kính Essilor Crizal Alize 1.60', N'Kính & Phụ kiện', 1250000),
-(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Thuốc & Dung dịch', 88000);
-
-INSERT INTO Consumables (Supply_Name, Category, Price) VALUES
+(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Thuốc & Dung dịch', 88000),
 (N'Que thử màu huỳnh quang Fluorescein Strips', N'Vật tư y tế tiêu hao', 320000);
 
--- Service_ID 7/8 là hai dịch vụ cũ vừa thêm sau sáu dịch vụ hiện có.
+-- Các mục mẫu bổ sung; giá chỉ để minh họa.
+INSERT INTO dbo.Medical_Supply (Supply_Name, Category, Price)
+SELECT v.Supply_Name, N'Khác', v.Price
+FROM (VALUES
+    (N'Bảng thị lực điện tử', 6500000),
+    (N'Đèn khe khám mắt', 78000000),
+    (N'Máy đo nhãn áp không tiếp xúc', 125000000),
+    (N'Máy soi đáy mắt cầm tay', 18000000)
+) AS v(Supply_Name, Price)
+WHERE NOT EXISTS (
+    SELECT 1 FROM dbo.Medical_Supply s WHERE s.Supply_Name = v.Supply_Name
+);
+
+INSERT INTO dbo.Consumables (Supply_Name, Category, Price)
+SELECT v.Supply_Name, N'Vật tư y tế tiêu hao', v.Price
+FROM (VALUES
+    (N'Gạc vô trùng 10 x 10 cm (gói 10 miếng)', 18000),
+    (N'Găng tay khám nitrile (hộp 100 chiếc)', 85000),
+    (N'Bông tăm y tế vô trùng (hộp 100 chiếc)', 32000),
+    (N'Miếng che mắt vô trùng (gói 10 miếng)', 45000)
+) AS v(Supply_Name, Price)
+WHERE NOT EXISTS (
+    SELECT 1 FROM dbo.Consumables c WHERE c.Supply_Name = v.Supply_Name
+);
+
+-- Dùng dịch vụ hiện có: Service_ID 2 = KX-02, Service_ID 6 = GL-06.
 -- Actual_Price giữ giá tại thời điểm lập chỉ định.
 INSERT INTO Procedure_Order (Specialist_Employee_ID, Record_ID, Service_ID, Actual_Price, Status) VALUES
-(9, 1, 7, 100000, N'Completed'),
+(9, 1, 2, 100000, N'Completed'),
 (9, 3, 1, 200000, N'Completed'),
 (9, 4, 1, 200000, N'Completed'),
-(9, 7, 7, 100000, N'Completed'),
-(9, 8, 7, 100000, N'Completed'),
-(9, 10, 8, 400000, N'Completed'),
+(9, 7, 2, 100000, N'Completed'),
+(9, 8, 2, 100000, N'Completed'),
+(9, 10, 6, 400000, N'Completed'),
 (9, 13, 1, 200000, N'Completed'),
 (9, 14, 1, 200000, N'Completed'),
-(9, 16, 8, 400000, N'Completed'),
-(9, 18, 8, 400000, N'Completed');
+(9, 16, 6, 400000, N'Completed'),
+(9, 18, 6, 400000, N'Completed');
 
 INSERT INTO Prescription (Record_ID, Doctor_Notes) VALUES
 (1, N'Nhỏ thuốc đúng giờ, tái khám sau 7 ngày nếu mắt còn đỏ'),
@@ -477,122 +631,4 @@ INSERT INTO Refund_Request
     (Invoice_ID, created_by_employee_id, approved_by_employee_id, Patient_ID, Refund_Amount, Reason, Status)
 VALUES
 (1, 12, 2, 1, 50000, N'Bệnh nhân hủy dịch vụ phát sinh thêm', N'Approved');
-
--- Retail catalog table required by the merged category migration.
-CREATE TABLE dbo.Medicine (
-    Medicine_ID     INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    Supply_Name     NVARCHAR(255) NOT NULL,
-    Category        NVARCHAR(100) NOT NULL,
-    Price           DECIMAL(18,0) NOT NULL,
-    Image_Data      VARBINARY(MAX) NULL,
-    Image_Mime_Type VARCHAR(50) NULL,
-    CONSTRAINT CHK_Medicine_Price CHECK (Price >= 0),
-    CONSTRAINT CHK_Medicine_Category CHECK (Category IN (
-        N'Thuốc & dung dịch', N'Kính gọng & tròng kính', N'Kính áp tròng',
-        N'Phụ kiện & sản phẩm hỗ trợ', N'Khác'))
-);
-
--- Merged from migrate_retail_categories.sql.
-SET XACT_ABORT ON;
-BEGIN TRANSACTION;
-
-IF OBJECT_ID(N'dbo.Medicine_Retail_Backup_20261017', N'U') IS NULL
-    SELECT * INTO dbo.Medicine_Retail_Backup_20261017 FROM dbo.Medicine;
-
-CREATE TABLE #RetailCatalog (
-    Supply_Name NVARCHAR(255) NOT NULL PRIMARY KEY,
-    Category NVARCHAR(100) NOT NULL,
-    Price DECIMAL(18,0) NOT NULL
-);
-
-INSERT INTO #RetailCatalog (Supply_Name, Category, Price) VALUES
-(N'Thuốc nhỏ mắt Systane Ultra (10ml)', N'Thuốc & dung dịch', 95000),
-(N'Nước mắt nhân tạo Sanlein 0.1% (5ml)', N'Thuốc & dung dịch', 88000),
-(N'Thuốc mỡ tra mắt (3,5g)', N'Thuốc & dung dịch', 65000),
-(N'Dung dịch rửa mắt vô trùng (100 ml)', N'Thuốc & dung dịch', 45000),
-(N'Nước mắt nhân tạo không chất bảo quản (hộp 10 ống)', N'Thuốc & dung dịch', 135000),
-(N'Gọng kính nhựa TR90', N'Kính gọng & tròng kính', 320000),
-(N'Gọng kính kim loại', N'Kính gọng & tròng kính', 450000),
-(N'Tròng kính Essilor Crizal Alize 1.60', N'Kính gọng & tròng kính', 1250000),
-(N'Tròng kính lọc ánh sáng xanh 1.56', N'Kính gọng & tròng kính', 650000),
-(N'Kính râm chống tia UV400', N'Kính gọng & tròng kính', 280000),
-(N'Kính áp tròng mềm dùng một ngày (-2.00D)', N'Kính áp tròng', 180000),
-(N'Kính áp tròng mềm dùng một tháng (-2.00D)', N'Kính áp tròng', 250000),
-(N'Kính áp tròng cứng RGP (1 chiếc)', N'Kính áp tròng', 1200000),
-(N'Kính Ortho-K (1 chiếc)', N'Kính áp tròng', 7500000),
-(N'Dung dịch ngâm và vệ sinh kính áp tròng (240ml)', N'Kính áp tròng', 98000),
-(N'Hộp đựng kính cứng', N'Phụ kiện & sản phẩm hỗ trợ', 35000),
-(N'Khăn lau kính microfiber', N'Phụ kiện & sản phẩm hỗ trợ', 20000),
-(N'Dây đeo kính thể thao', N'Phụ kiện & sản phẩm hỗ trợ', 45000),
-(N'Hộp đựng kính áp tròng', N'Phụ kiện & sản phẩm hỗ trợ', 25000),
-(N'Miếng che mắt tập nhược thị', N'Phụ kiện & sản phẩm hỗ trợ', 60000);
-
-ALTER TABLE dbo.Medicine DROP CONSTRAINT CHK_Medicine_Category;
-
--- Keep existing IDs, prices and images for matching products; remove surplus rows.
-DELETE m FROM dbo.Medicine AS m
-WHERE NOT EXISTS (SELECT 1 FROM #RetailCatalog AS c WHERE c.Supply_Name = m.Supply_Name);
-
-;WITH Duplicates AS (
-    SELECT Medicine_ID, ROW_NUMBER() OVER (PARTITION BY Supply_Name ORDER BY Medicine_ID) AS rn
-    FROM dbo.Medicine
-)
-DELETE FROM Duplicates WHERE rn > 1;
-
-UPDATE m SET Category = c.Category
-FROM dbo.Medicine AS m
-JOIN #RetailCatalog AS c ON c.Supply_Name = m.Supply_Name;
-
-INSERT INTO dbo.Medicine (Supply_Name, Category, Price)
-SELECT c.Supply_Name, c.Category, c.Price
-FROM #RetailCatalog AS c
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Medicine AS m WHERE m.Supply_Name = c.Supply_Name);
-
-ALTER TABLE dbo.Medicine WITH CHECK ADD CONSTRAINT CHK_Medicine_Category CHECK (Category IN (
-    N'Thuốc & dung dịch', N'Kính gọng & tròng kính', N'Kính áp tròng',
-    N'Phụ kiện & sản phẩm hỗ trợ', N'Khác'));
-
-IF (SELECT COUNT(*) FROM dbo.Medicine) <> 20
-    THROW 50001, N'Danh mục bán lẻ phải có đúng 20 sản phẩm.', 1;
-
-COMMIT TRANSACTION;
-END;
-
--- Bring an existing catalog up to date without recreating the database.
-SET XACT_ABORT ON;
-BEGIN TRY
-    BEGIN TRANSACTION;
-
-    IF OBJECT_ID(N'dbo.Consumables', N'U') IS NULL
-    BEGIN
-        CREATE TABLE dbo.Consumables (
-            Consumable_ID INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-            Supply_Name NVARCHAR(255) NOT NULL,
-            Category NVARCHAR(100) NOT NULL,
-            Price DECIMAL(18,0) NOT NULL,
-            Image_Data VARBINARY(MAX) NULL,
-            Image_Mime_Type VARCHAR(50) NULL,
-            CONSTRAINT CHK_Consumables_Price CHECK (Price >= 0),
-            CONSTRAINT CHK_Consumables_Category CHECK (Category = N'Vật tư y tế tiêu hao')
-        );
-    END;
-
-    -- Keep existing items and uploaded images when separating consumables from equipment.
-    INSERT INTO dbo.Consumables (Supply_Name, Category, Price, Image_Data, Image_Mime_Type)
-    SELECT source.Supply_Name, source.Category, source.Price, source.Image_Data, source.Image_Mime_Type
-    FROM dbo.Medical_Supply AS source
-    WHERE source.Category = N'Vật tư y tế tiêu hao'
-      AND NOT EXISTS (
-          SELECT 1 FROM dbo.Consumables AS target
-          WHERE target.Supply_Name = source.Supply_Name
-            AND target.Category = source.Category
-      );
-
-    DELETE FROM dbo.Medical_Supply WHERE Category = N'Vật tư y tế tiêu hao';
-
-    COMMIT TRANSACTION;
-END TRY
-BEGIN CATCH
-    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-    THROW;
-END CATCH;
+GO
