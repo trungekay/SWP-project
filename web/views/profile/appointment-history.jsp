@@ -341,8 +341,20 @@
                                   <td class="py-3">#APT-${appt.id}</td>
                                   <td class="py-3">${appt.appointmentDate}<br><small
                                       class="text-muted">${appt.timeSlot}</small></td>
+<<<<<<< Updated upstream
                                   <td class="py-3">BS. ${appt.doctorName}</td>
                                   <td class="py-3">Khám chuyên khoa</td>
+=======
+                                  <td class="py-3">${appt.doctorName}</td>
+                                  <td class="py-3">
+                                    <c:choose>
+                                      <c:when test="${not empty appt.serviceName}">
+                                        <span class="fw-semibold text-dark">${appt.serviceName}</span>
+                                      </c:when>
+                                      <c:otherwise>Khám chuyên khoa</c:otherwise>
+                                    </c:choose>
+                                  </td>
+>>>>>>> Stashed changes
                                   <td class="py-3">
                                     <c:choose>
                                       <c:when test="${appt.status == 'Pending'}">
@@ -361,8 +373,18 @@
                                         <span class="badge-status status-active">Hoàn thành</span>
                                       </c:when>
                                       <c:when test="${appt.status == 'Canceled'}">
+<<<<<<< Updated upstream
                                         <span class="badge-status" style="background: #fee2e2; color: #b91c1c;">Đã
                                           hủy</span>
+=======
+                                        <span class="badge-status" style="background: #fee2e2; color: #b91c1c;"><i
+                                            class="bi bi-x-circle me-1"></i>Đã hủy</span>
+                                        <c:if test="${not empty appt.reason}">
+                                          <div class="small text-muted mt-1 text-truncate" style="font-size: 11px; max-width: 180px;" title="${appt.reason}">
+                                            <i class="bi bi-info-circle me-1"></i><c:out value="${appt.reason}" />
+                                          </div>
+                                        </c:if>
+>>>>>>> Stashed changes
                                       </c:when>
                                       <c:otherwise>
                                         <span class="badge-status text-muted">${appt.status}</span>
@@ -383,6 +405,25 @@
                                           <i class="bi bi-hourglass-split me-1"></i>Chờ nhân viên duyệt
                                         </span>
                                       </c:when>
+<<<<<<< Updated upstream
+=======
+                                      <c:when test="${appt.status == 'Pending'}">
+                                        <div class="d-flex justify-content-center align-items-center gap-2" id="apptActionBox_${appt.id}">
+                                          <a href="${pageContext.request.contextPath}/book-appointment?step=payment&id=${appt.id}"
+                                            class="btn btn-sm btn-primary countdown-pay-btn d-inline-flex align-items-center"
+                                            id="payBtn_${appt.id}"
+                                            data-appt-id="${appt.id}"
+                                            data-remaining="${appt.remainingSeconds}"
+                                            style="background: #0d9488; border-color: #0d9488;">
+                                            <i class="bi bi-qr-code me-1"></i>Thanh toán <span class="badge bg-white text-dark ms-1 font-monospace" id="countdownBadge_${appt.id}">--:--</span>
+                                          </a>
+                                          <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            onclick="openDirectCancelModal('${appt.id}', '${appt.appointmentDate} (${appt.timeSlot})')">
+                                            <i class="bi bi-x me-1"></i>Hủy
+                                          </button>
+                                        </div>
+                                      </c:when>
+>>>>>>> Stashed changes
                                       <c:otherwise>
                                         <span class="text-muted small">-</span>
                                       </c:otherwise>
@@ -447,6 +488,38 @@
           </div>
         </div>
 
+<<<<<<< Updated upstream
+=======
+        <!-- Modal Hủy Lịch Hẹn Chưa Thanh Toán -->
+        <div class="modal fade" id="directCancelModal" tabindex="-1" aria-labelledby="directCancelModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 12px; border: none; padding: 10px;">
+              <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="directCancelModalLabel" style="color: #64748b;"><i
+                    class="bi bi-trash3 me-2"></i>Hủy lịch hẹn chưa thanh toán</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body pt-3 pb-4">
+                <p class="text-muted mb-3">Bạn có chắc chắn muốn hủy lịch khám chưa thanh toán <strong id="directCancelApptLabel"
+                    class="text-dark">#APT-00000</strong>? Khung giờ sẽ được giải phóng cho bệnh nhân khác.</p>
+                <form action="${pageContext.request.contextPath}/appointment/cancel" method="POST">
+                  <input type="hidden" name="appointmentId" id="directCancelAppointmentId" value="">
+                  <div class="mb-3">
+                    <label class="form-label small fw-bold">Lý do hủy lịch <span class="text-danger">*</span></label>
+                    <textarea class="form-control" name="reason" id="directCancelReason" rows="3"
+                      placeholder="Nhập lý do hủy lịch hẹn của bạn..." required></textarea>
+                  </div>
+                  <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Không hủy</button>
+                    <button type="submit" class="btn btn-secondary">Xác nhận hủy</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+>>>>>>> Stashed changes
         <script>
           function openCancelModal(id, timeText) {
             document.getElementById('cancelAppointmentId').value = id;
@@ -454,6 +527,89 @@
             const cancelModal = new bootstrap.Modal(document.getElementById('cancelModal'));
             cancelModal.show();
           }
+<<<<<<< Updated upstream
+=======
+
+          function openDirectCancelModal(id, timeText) {
+            document.getElementById('directCancelAppointmentId').value = id;
+            document.getElementById('directCancelApptLabel').innerText = '#APT-' + id + ' (' + timeText + ')';
+            const reasonEl = document.getElementById('directCancelReason');
+            if (reasonEl) reasonEl.value = '';
+            const directModal = new bootstrap.Modal(document.getElementById('directCancelModal'));
+            directModal.show();
+          }
+
+          // Real-time Countdown Timer & Auto-cancel when expired
+          document.addEventListener('DOMContentLoaded', function() {
+            const payButtons = document.querySelectorAll('.countdown-pay-btn');
+            if (payButtons.length === 0) return;
+
+            payButtons.forEach(function(btn) {
+              const apptId = btn.getAttribute('data-appt-id');
+              const remainingFromServer = parseInt(btn.getAttribute('data-remaining')) || 0;
+              const storageKey = 'vc_pay_expire_' + apptId;
+              const now = Date.now();
+
+              let expireTimestamp = sessionStorage.getItem(storageKey);
+              if (!expireTimestamp || isNaN(expireTimestamp)) {
+                expireTimestamp = now + (remainingFromServer * 1000);
+                sessionStorage.setItem(storageKey, expireTimestamp);
+              } else {
+                expireTimestamp = parseInt(expireTimestamp);
+                const expectedDiff = Math.abs(expireTimestamp - (now + (remainingFromServer * 1000)));
+                if (expectedDiff > 60000) {
+                  expireTimestamp = now + (remainingFromServer * 1000);
+                  sessionStorage.setItem(storageKey, expireTimestamp);
+                }
+              }
+
+              const badge = document.getElementById('countdownBadge_' + apptId);
+
+              function tick() {
+                const remainingMs = expireTimestamp - Date.now();
+                const remainingSec = Math.max(0, Math.floor(remainingMs / 1000));
+                const m = Math.floor(remainingSec / 60);
+                const s = remainingSec % 60;
+                const formatted = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+
+                if (badge) {
+                  badge.textContent = formatted;
+                  if (remainingSec <= 120) {
+                    badge.className = 'badge bg-danger text-white ms-1 font-monospace';
+                  } else if (remainingSec <= 300) {
+                    badge.className = 'badge bg-warning text-dark ms-1 font-monospace';
+                  } else {
+                    badge.className = 'badge bg-white text-dark ms-1 font-monospace';
+                  }
+                }
+
+                if (remainingSec <= 0) {
+                  clearInterval(intervalId);
+                  sessionStorage.removeItem(storageKey);
+                  if (badge) badge.textContent = '00:00 (Hết hạn)';
+                  btn.classList.add('disabled', 'opacity-50');
+                  btn.style.pointerEvents = 'none';
+
+                  // Tự động gọi API hủy lịch do hết giờ
+                  fetch('${pageContext.request.contextPath}/appointment/cancel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'appointmentId=' + encodeURIComponent(apptId) + '&reason=' + encodeURIComponent('Hết hạn thời gian thanh toán (15 phút)')
+                  }).then(function() {
+                    setTimeout(function() {
+                      window.location.reload();
+                    }, 1000);
+                  }).catch(function(err) {
+                    console.error('Auto-cancel failed:', err);
+                  });
+                }
+              }
+
+              tick();
+              const intervalId = setInterval(tick, 1000);
+            });
+          });
+>>>>>>> Stashed changes
         </script>
 
       </main>

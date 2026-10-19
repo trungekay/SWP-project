@@ -361,14 +361,30 @@ public class AppointmentDAO {
     }
 
     public List<Appointment> getByUserId(int userId) throws Exception {
+        autoCancelExpiredPendingAppointments();
         List<Appointment> list = new ArrayList<>();
+<<<<<<< Updated upstream
         String sql = "SELECT a.Appointment_ID, a.Status, p.Full_Name, p.Phone, p.DOB, ws.Start_Time, ws.Doctor_Employee_ID, p.Account_ID, ws.Work_Date, e.Full_Name AS Doctor_Name, i.Invoice_ID " +
+=======
+        String sql = "SELECT a.Appointment_ID, a.Status, a.created_at, " +
+                     "       DATEDIFF(SECOND, a.created_at, SYSUTCDATETIME()) AS Elapsed_Sec, " +
+                     "       p.Full_Name, p.Phone, p.DOB, ws.Start_Time, ws.Doctor_Employee_ID, p.Account_ID, ws.Work_Date, e.Full_Name AS Doctor_Name, " +
+                     "       i.Invoice_ID, i.Deposit_Amount, i.Total_Amount, i.Balance_Due, i.Status AS Invoice_Status, " +
+                     "       mr.Clinical_Diagnosis, mr.conclusion, " +
+                     "       CASE WHEN EXISTS (SELECT 1 FROM Refund_Request r WHERE r.Invoice_ID = i.Invoice_ID AND r.Status IN ('Pending', 'Approved')) THEN 1 ELSE 0 END AS Has_Refund_Request " +
+>>>>>>> Stashed changes
                      "FROM Appointment a " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
                      "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
                      "LEFT JOIN Employee_Profile e ON ws.Doctor_Employee_ID = e.Employee_ID " +
                      "LEFT JOIN Master_Invoice i ON a.Appointment_ID = i.Appointment_ID " +
+<<<<<<< Updated upstream
                      "WHERE p.Account_ID = ? ORDER BY ws.Work_Date DESC, ws.Start_Time";
+=======
+                     "LEFT JOIN Medical_Record mr ON a.Appointment_ID = mr.Appointment_ID " +
+                     "WHERE (p.Account_ID = ? OR p.Patient_ID IN (SELECT Patient_ID FROM Patient WHERE Account_ID = ?)) " +
+                     "ORDER BY a.Appointment_ID DESC, ws.Work_Date DESC, ws.Start_Time DESC";
+>>>>>>> Stashed changes
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
@@ -377,6 +393,47 @@ public class AppointmentDAO {
                     Appointment appt = mapRow(rs);
                     appt.setAppointmentDate(rs.getDate("Work_Date"));
                     appt.setInvoiceId(rs.getInt("Invoice_ID"));
+<<<<<<< Updated upstream
+=======
+                    long totalAmt = rs.getLong("Total_Amount");
+                    long depAmt = rs.getLong("Deposit_Amount");
+                    long balDue = rs.getLong("Balance_Due");
+                    appt.setTotalAmount(totalAmt);
+                    appt.setBalanceDue(balDue);
+                    long finalFee = depAmt > 0 ? depAmt : (totalAmt <= 200000 && totalAmt > 0 ? totalAmt : 200000);
+                    appt.setFee(finalFee);
+                    appt.setInvoiceStatus(rs.getString("Invoice_Status"));
+                    appt.setHasRefundRequest(rs.getInt("Has_Refund_Request") == 1);
+
+                    int elapsedSec = rs.getInt("Elapsed_Sec");
+                    long remainingSec = Math.max(0, 900 - elapsedSec);
+                    appt.setRemainingSeconds(remainingSec);
+                    Timestamp createdTs = rs.getTimestamp("created_at");
+                    if (createdTs != null) {
+                        appt.setCreatedAt(createdTs.toString());
+                    }
+
+                    String conclusion = rs.getString("conclusion");
+                    if ("Canceled".equalsIgnoreCase(appt.getStatus())) {
+                        if (conclusion != null && !conclusion.trim().isEmpty()) {
+                            appt.setReason(conclusion);
+                        }
+                    }
+
+                    String diag = rs.getString("Clinical_Diagnosis");
+                    if (diag != null && !diag.isEmpty()) {
+                        if (appt.getReason() == null || appt.getReason().isEmpty()) {
+                            appt.setReason(diag);
+                        }
+                        if (diag.contains("Dịch vụ/Bệnh lý: ")) {
+                            String svcPart = diag.substring(diag.indexOf("Dịch vụ/Bệnh lý: ") + "Dịch vụ/Bệnh lý: ".length());
+                            if (svcPart.contains(" | ")) {
+                                svcPart = svcPart.substring(0, svcPart.indexOf(" | ")).trim();
+                            }
+                            appt.setServiceName(svcPart);
+                        }
+                    }
+>>>>>>> Stashed changes
                     list.add(appt);
                 }
             }
@@ -477,9 +534,87 @@ public class AppointmentDAO {
                     psFree.setInt(1, appointmentId);
                     psFree.executeUpdate();
                 }
+<<<<<<< Updated upstream
+=======
+
+                // If invoice was pending deposit, mark it as Canceled as well
+                String sqlCancelInv = "UPDATE Master_Invoice SET Status = 'Canceled', Close_At = SYSUTCDATETIME() WHERE Appointment_ID = ? AND Status IN ('Pending_Deposit', 'Unpaid')";
+                try (PreparedStatement psInv = conn.prepareStatement(sqlCancelInv)) {
+                    psInv.setInt(1, appointmentId);
+                    psInv.executeUpdate();
+                }
+
+                // Ghi nhận lý do hủy vào Medical_Record để hiển thị cho bệnh nhân và bác sĩ
+                String finalReason = (reason != null && !reason.trim().isEmpty()) ? reason.trim() : "Bệnh nhân hủy lịch chưa thanh toán";
+                String checkMr = "SELECT Record_ID FROM Medical_Record WHERE Appointment_ID = ?";
+                boolean mrExists = false;
+                try (PreparedStatement psCheck = conn.prepareStatement(checkMr)) {
+                    psCheck.setInt(1, appointmentId);
+                    try (ResultSet rs = psCheck.executeQuery()) {
+                        mrExists = rs.next();
+                    }
+                }
+                if (mrExists) {
+                    String upMr = "UPDATE Medical_Record SET conclusion = ? WHERE Appointment_ID = ?";
+                    try (PreparedStatement psUp = conn.prepareStatement(upMr)) {
+                        psUp.setString(1, finalReason);
+                        psUp.setInt(2, appointmentId);
+                        psUp.executeUpdate();
+                    }
+                } else {
+                    int docId = 0;
+                    String sqlDoc = "SELECT ws.Doctor_Employee_ID FROM Appointment a JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID WHERE a.Appointment_ID = ?";
+                    try (PreparedStatement psDoc = conn.prepareStatement(sqlDoc)) {
+                        psDoc.setInt(1, appointmentId);
+                        try (ResultSet rsDoc = psDoc.executeQuery()) {
+                            if (rsDoc.next()) docId = rsDoc.getInt(1);
+                        }
+                    }
+                    if (docId > 0) {
+                        String insMr = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, conclusion, Created_At) VALUES (?, ?, ?, SYSUTCDATETIME())";
+                        try (PreparedStatement psIns = conn.prepareStatement(insMr)) {
+                            psIns.setInt(1, appointmentId);
+                            psIns.setInt(2, docId);
+                            psIns.setString(3, finalReason);
+                            psIns.executeUpdate();
+                        }
+                    }
+                }
+
+>>>>>>> Stashed changes
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Tự động quét và hủy các lịch hẹn Pending quá hạn 15 phút chưa thanh toán
+     */
+    public int autoCancelExpiredPendingAppointments() {
+        int count = 0;
+        String findExpired = "SELECT a.Appointment_ID " +
+                             "FROM Appointment a " +
+                             "LEFT JOIN Master_Invoice mi ON a.Appointment_ID = mi.Appointment_ID " +
+                             "WHERE a.Status = 'Pending' " +
+                             "  AND (mi.Status IS NULL OR mi.Status IN ('Pending_Deposit', 'Unpaid')) " +
+                             "  AND DATEDIFF(SECOND, a.created_at, SYSUTCDATETIME()) >= 900";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement psFind = conn.prepareStatement(findExpired);
+             ResultSet rs = psFind.executeQuery()) {
+            List<Integer> apptIds = new ArrayList<>();
+            while (rs.next()) {
+                apptIds.add(rs.getInt("Appointment_ID"));
+            }
+            for (int apptId : apptIds) {
+                try {
+                    cancelAppointment(apptId, "Hệ thống: Hết hạn thời gian thanh toán giữ chỗ (15 phút)");
+                    count++;
+                } catch (Exception ignored) {}
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return count;
     }
 }

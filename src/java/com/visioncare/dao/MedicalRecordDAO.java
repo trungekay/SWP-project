@@ -104,9 +104,21 @@ public class MedicalRecordDAO {
 
                     // Doctor details
                     String rawDoc = rs.getString("Doctor_Name");
-                    String docName = rawDoc != null && !rawDoc.trim().isEmpty() ? rawDoc.trim() : "BS. Trần Văn Nam";
-                    if (!docName.startsWith("BS.") && !docName.startsWith("BS ") && !docName.startsWith("Bác sĩ ")) {
+                    String docName = rawDoc != null && !rawDoc.trim().isEmpty() ? rawDoc.trim() : "Trần Văn Nam";
+                    while (docName.matches("^(?i)(BS\\.?|Bác sĩ|BS:)\\s*(BS\\.?|Bác sĩ)\\s*.*")) {
+                        docName = docName.replaceFirst("^(?i)(BS\\.?|Bác sĩ|BS:)\\s*", "").trim();
+                    }
+                    if (docName.matches("^(?i)BS\\.\\s*BS\\..*")) {
+                        docName = docName.substring(3).trim();
+                    }
+                    if (!docName.startsWith("BS.") && !docName.startsWith("BS ") && !docName.startsWith("Bác sĩ ")
+                            && !docName.startsWith("TS.") && !docName.startsWith("ThS.") && !docName.startsWith("PGS.")
+                            && !docName.startsWith("BSCK")) {
                         docName = "BS. " + docName;
+                    } else if (docName.startsWith("BS ")) {
+                        docName = "BS. " + docName.substring(3).trim();
+                    } else if (docName.startsWith("Bác sĩ ")) {
+                        docName = "BS. " + docName.substring(7).trim();
                     }
                     record.put("doctorName", docName);
                     record.put("doctorSpecialty", rs.getString("Doctor_Specialty") != null ? rs.getString("Doctor_Specialty") : "Chuyên khoa Mắt (Nhãn khoa)");

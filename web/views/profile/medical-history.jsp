@@ -276,7 +276,7 @@
                                   <td>${record.date}</td>
                                   <td>
                                     <div class="user-details">
-                                      <p class="name">BS. ${record.doctorName}</p>
+                                      <p class="name">${record.doctorName}</p>
                                     </div>
                                   </td>
                                   <td>${record.serviceName}</td>

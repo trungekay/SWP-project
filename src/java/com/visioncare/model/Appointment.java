@@ -66,7 +66,26 @@ public class Appointment {
     }
 
     public String getDoctorName() {
-        return doctorName;
+        if (doctorName == null || doctorName.trim().isEmpty()) {
+            return "Chưa phân công";
+        }
+        String s = doctorName.trim();
+        while (s.matches("^(?i)(BS\\.?|Bác sĩ|BS:)\\s*(BS\\.?|Bác sĩ)\\s*.*")) {
+            s = s.replaceFirst("^(?i)(BS\\.?|Bác sĩ|BS:)\\s*", "").trim();
+        }
+        if (s.matches("^(?i)BS\\.\\s*BS\\..*")) {
+            s = s.substring(3).trim();
+        }
+        if (!s.startsWith("BS.") && !s.startsWith("BS ") && !s.startsWith("Bác sĩ ") 
+                && !s.startsWith("TS.") && !s.startsWith("ThS.") && !s.startsWith("PGS.") 
+                && !s.startsWith("BSCK")) {
+            s = "BS. " + s;
+        } else if (s.startsWith("BS ")) {
+            s = "BS. " + s.substring(3).trim();
+        } else if (s.startsWith("Bác sĩ ")) {
+            s = "BS. " + s.substring(7).trim();
+        }
+        return s;
     }
 
     public void setDoctorName(String doctorName) {
@@ -165,4 +184,97 @@ public class Appointment {
     public void setInvoiceId(int invoiceId) {
         this.invoiceId = invoiceId;
     }
+<<<<<<< Updated upstream
+=======
+
+    public int getPatientId() {
+        return patientId;
+    }
+    public void setPatientId(int patientId) {
+        this.patientId = patientId;
+    }
+    public String getAddress() {
+        return address;
+    }
+    public void setAddress(String address) {
+        this.address = address;
+    }
+    public int getStaffEmployeeId() {
+        return staffEmployeeId;
+    }
+    public void setStaffEmployeeId(int staffEmployeeId) {
+        this.staffEmployeeId = staffEmployeeId;
+    }
+    public String getStaffName() {
+        return staffName;
+    }
+    public void setStaffName(String staffName) {
+        this.staffName = staffName;
+    }
+    public String getCheckinTime() {
+        return checkinTime;
+    }
+    public void setCheckinTime(String checkinTime) {
+        this.checkinTime = checkinTime;
+    }
+    public String getRoomName() {
+        return roomName;
+    }
+    public void setRoomName(String roomName) {
+        this.roomName = roomName;
+    }
+    public String getMedicalNotes() {
+        return medicalNotes;
+    }
+    public void setMedicalNotes(String medicalNotes) {
+        this.medicalNotes = medicalNotes;
+    }
+    public String getCreatedAt() {
+        return createdAt;
+    }
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
+    }
+    public String getEndTime() {
+        return endTime;
+    }
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
+    }
+    public int getQueueNumber() {
+        return queueNumber;
+    }
+    public void setQueueNumber(int queueNumber) {
+        this.queueNumber = queueNumber;
+    }
+
+    public long getTotalAmount() {
+        return totalAmount;
+    }
+    public void setTotalAmount(long totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
+    public long getBalanceDue() {
+        return balanceDue;
+    }
+    public void setBalanceDue(long balanceDue) {
+        this.balanceDue = balanceDue;
+    }
+
+    public boolean isHasRefundRequest() {
+        return hasRefundRequest;
+    }
+    public void setHasRefundRequest(boolean hasRefundRequest) {
+        this.hasRefundRequest = hasRefundRequest;
+    }
+
+    private long remainingSeconds;
+    public long getRemainingSeconds() {
+        return remainingSeconds;
+    }
+    public void setRemainingSeconds(long remainingSeconds) {
+        this.remainingSeconds = remainingSeconds;
+    }
+>>>>>>> Stashed changes
 }

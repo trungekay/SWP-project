@@ -425,7 +425,7 @@
                                                 <div class="text-muted small"><i class="bi bi-telephone me-1"></i>${inv.patientPhone}</div>
                                             </td>
                                             <td>
-                                                <div class="text-dark small">BS. ${inv.doctorName}</div>
+                                                <div class="text-dark small">${inv.doctorName}</div>
                                             </td>
                                             <td>
                                                 <span class="small text-muted">${inv.createDate}</span>
