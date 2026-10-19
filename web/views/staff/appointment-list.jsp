@@ -1,5 +1,6 @@
 <%@page contentType="text/html" pageEncoding="UTF-8" %>
     <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+        <%@taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
         <%@taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
             <!DOCTYPE html>
             <html lang="vi">
@@ -71,7 +72,12 @@
                                 <h2 class="mb-0">Danh sách Lịch Hẹn</h2>
                             </div>
                             <div class="d-flex align-items-center gap-2">
-                                <a href="${pageContext.request.contextPath}/staff/waiting-list" class="btn btn-teal">
+                                <button type="button" class="btn btn-teal shadow-sm d-flex align-items-center gap-2"
+                                    data-bs-toggle="modal" data-bs-target="#walkinModal">
+                                    <i class="bi bi-person-plus-fill"></i>
+                                    <span>Tiếp đón khách vãng lai</span>
+                                </button>
+                                <a href="${pageContext.request.contextPath}/staff/waiting-list" class="btn btn-teal-outline">
                                     <i class="bi bi-people-fill"></i> Xem Hàng đợi phòng khám
                                 </a>
                             </div>
@@ -82,7 +88,7 @@
                             <!-- 1. Tổng lịch hẹn -->
                             <div class="col-sm-6 col-xl-3 d-flex">
                                 <a href="${pageContext.request.contextPath}/staff/appointments?date=${selectedDate}&status=all&doctorId=${selectedDoctorId}&keyword=${param.keyword}"
-                                    class="metric-card w-100 text-decoration-none ${selectedStatus == 'all' ? 'border border-2 border-primary shadow-sm bg-light' : ''}">
+                                    class="metric-card w-100 text-decoration-none ${selectedStatus == 'all' || empty selectedStatus ? 'border border-2 border-primary shadow-sm bg-light' : ''}">
                                     <div class="metric-icon-box metric-icon-teal">
                                         <i class="bi bi-calendar4-event"></i>
                                     </div>
@@ -150,8 +156,7 @@
                                     <!-- 1. Thanh tìm kiếm nhanh (Tên, SĐT, Mã hẹn) -->
                                     <div class="search-filter-input flex-grow-1" style="max-width: 520px;">
                                         <i class="bi bi-search"></i>
-                                        <input type="text" name="keyword" value="${param.keyword}"
-                                            placeholder="Nhập SĐT, tên hoặc mã hẹn (#APPT-3)..." class="w-100"
+                                        <input type="text" name="keyword" value="${param.keyword}" class="w-100"
                                             style="height: 40px; font-size: 14px; border-radius: 8px;">
                                     </div>
 
@@ -173,7 +178,7 @@
                                                 title="Chọn ngày hẹn">
                                         </div>
 
-                                        <!-- Nút Tra cứu -->
+                                        <!-- Nút Tra cứu & Nút Tải lại -->
                                         <div class="d-flex align-items-center gap-2">
                                             <button type="submit"
                                                 class="btn btn-teal px-3.5 text-nowrap d-flex align-items-center justify-content-center gap-1.5 shadow-sm"
@@ -181,6 +186,13 @@
                                                 <i class="bi bi-search"></i>
                                                 <span>Tra cứu</span>
                                             </button>
+                                            <a href="${pageContext.request.contextPath}/staff/appointments?status=all"
+                                                class="btn btn-outline-secondary px-3 text-nowrap d-flex align-items-center justify-content-center gap-1.5 shadow-sm"
+                                                style="height: 40px; font-weight: 500; border-radius: 8px;"
+                                                title="Tải lại danh sách (Tất cả lịch hẹn)">
+                                                <i class="bi bi-arrow-clockwise"></i>
+                                                <span>Tải lại</span>
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
@@ -190,7 +202,7 @@
                             <div class="px-3 pt-3 pb-2 bg-light border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
                                 <div class="d-flex align-items-center gap-2 flex-wrap">
                                     <a href="${pageContext.request.contextPath}/staff/appointments?date=${selectedDate}&status=all&doctorId=${selectedDoctorId}&keyword=${param.keyword}"
-                                        class="btn btn-sm ${selectedStatus == 'all' ? 'btn-dark fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
+                                        class="btn btn-sm ${selectedStatus == 'all' || empty selectedStatus ? 'btn-dark fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
                                         <i class="bi bi-calendar4-event me-1"></i> Tất cả (${totalCount})
                                     </a>
                                     <a href="${pageContext.request.contextPath}/staff/appointments?date=${selectedDate}&status=Pending&doctorId=${selectedDoctorId}&keyword=${param.keyword}"
@@ -260,7 +272,14 @@
                                                             <div class="fw-semibold text-dark" style="font-size: 13px;">
                                                                 <i class="bi bi-clock text-teal me-1"
                                                                     style="color: var(--primary-color);"></i>
-                                                                ${appt.timeSlot}
+                                                                <c:choose>
+                                                                    <c:when test="${not empty appt.timeSlot && not empty appt.endTime}">
+                                                                        ${appt.timeSlot} - ${appt.endTime}
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        ${appt.timeSlot}
+                                                                    </c:otherwise>
+                                                                </c:choose>
                                                             </div>
                                                             <div class="text-muted small mt-0.5" style="font-size: 12px;">
                                                                 <i class="bi bi-calendar3 me-1"></i>${appt.appointmentDate}
@@ -294,9 +313,18 @@
                                                             </c:choose>
                                                         </td>
 
+                                                        <c:set var="currentDateStr"><%= java.time.LocalDate.now().toString() %></c:set>
+                                                        <c:set var="apptDateStr">${appt.appointmentDate}</c:set>
+                                                        <c:set var="isPastAppt" value="${not empty apptDateStr && apptDateStr < currentDateStr}" />
+
                                                         <!-- Trạng Thái (Thống nhất tiếng Việt & màu sắc) -->
                                                         <td class="text-center text-nowrap">
                                                             <c:choose>
+                                                                <c:when test="${appt.status == 'Pending' && isPastAppt}">
+                                                                    <span class="badge-status badge-canceled" title="Đã qua ngày khám - Bệnh nhân không đến tiếp đón">
+                                                                        Đã qua ngày
+                                                                    </span>
+                                                                </c:when>
                                                                 <c:when test="${appt.status == 'Pending'}">
                                                                     <span class="badge-status badge-pending" title="Chờ tiếp đón tại quầy lễ tân">
                                                                         Chờ tiếp đón
@@ -331,55 +359,55 @@
                                                             </c:choose>
                                                         </td>
 
-                                                        <!-- Thao Tác (Đồng bộ kiểu Quản lý người dùng) -->
+                                                        <!-- Thao Tác (Khi đã qua ngày: chỉ cho phép xem chi tiết & ghi chú y tế) -->
                                                         <td class="text-center text-nowrap">
                                                             <div class="action-btns justify-content-center">
-                                                                <!-- 1. Xem chi tiết (Xanh pastel - icon bút chì giống Quản lý người dùng) -->
+                                                                <!-- 1. Xem chi tiết & Ghi chú y tế: Luôn hiển thị cho tất cả các ca khám -->
                                                                 <a href="${pageContext.request.contextPath}/staff/appointment-detail?id=${appt.id}"
                                                                     class="action-btn"
                                                                     title="Xem chi tiết & Ghi chú y tế" data-bs-toggle="tooltip">
                                                                     <i class="bi bi-pencil"></i>
                                                                 </a>
 
-                                                                <!-- Chỉ hiển thị Check-in và Hủy đối với ca đang Chờ tiếp đón -->
-                                                                <c:if test="${appt.status == 'Pending' || (empty appt.checkinTime && appt.status != 'Canceled' && appt.status != 'Completed')}">
+                                                                <!-- Các thao tác tiếp đón & hủy: Chỉ hiển thị khi ca khám CHƯA qua ngày -->
+                                                                <c:if test="${!isPastAppt}">
                                                                     <!-- 2. Check-in tiếp đón -->
-                                                                    <button type="button"
-                                                                        class="action-btn checkin btn-trigger-checkin"
-                                                                        title="Check-in tiếp đón" data-bs-toggle="tooltip"
-                                                                        data-id="${appt.id}"
-                                                                        data-name="${appt.patientName}"
-                                                                        data-phone="${appt.phone}"
-                                                                        data-doctor="${appt.doctorName}"
-                                                                        data-room="${appt.roomName}"
-                                                                        data-doctor-id="${appt.doctorId > 0 ? appt.doctorId : 0}"
-                                                                        data-time="${appt.timeSlot}">
-                                                                        <i class="bi bi-box-arrow-in-right"></i>
-                                                                    </button>
+                                                                    <c:if test="${appt.status == 'Pending' || (empty appt.checkinTime && appt.status != 'Canceled' && appt.status != 'Completed')}">
+                                                                        <button type="button"
+                                                                            class="action-btn checkin btn-trigger-checkin"
+                                                                            title="Check-in tiếp đón" data-bs-toggle="tooltip"
+                                                                            data-id="${appt.id}"
+                                                                            data-name="${appt.patientName}"
+                                                                            data-phone="${appt.phone}"
+                                                                            data-doctor="${appt.doctorName}"
+                                                                            data-room="${appt.roomName}"
+                                                                            data-doctor-id="${appt.doctorId > 0 ? appt.doctorId : 0}"
+                                                                            data-time="${appt.timeSlot}">
+                                                                            <i class="bi bi-box-arrow-in-right"></i>
+                                                                        </button>
 
-                                                                    <!-- 3. Hủy lịch hẹn (Đỏ pastel - icon thùng rác giống Quản lý người dùng) -->
-                                                                    <button type="button"
-                                                                        class="action-btn delete btn-trigger-cancel"
-                                                                        title="Hủy lịch hẹn" data-bs-toggle="tooltip"
-                                                                        data-id="${appt.id}"
-                                                                        data-name="${appt.patientName}"
-                                                                        data-doctor="${appt.doctorName}"
-                                                                        data-time="${appt.timeSlot}"
-                                                                        data-date="${appt.appointmentDate}">
-                                                                        <i class="bi bi-trash"></i>
-                                                                    </button>
+                                                                        <!-- 3. Hủy lịch hẹn -->
+                                                                        <button type="button"
+                                                                            class="action-btn delete btn-trigger-cancel"
+                                                                            title="Hủy lịch hẹn" data-bs-toggle="tooltip"
+                                                                            data-id="${appt.id}"
+                                                                            data-name="${appt.patientName}"
+                                                                            data-doctor="${appt.doctorName}"
+                                                                            data-time="${appt.timeSlot}"
+                                                                            data-date="${appt.appointmentDate}">
+                                                                            <i class="bi bi-trash"></i>
+                                                                        </button>
+                                                                    </c:if>
+
+                                                                    <!-- 4. Ca Đã tiếp đón / Đang khám hôm nay: Nút sang Hàng đợi phòng khám -->
+                                                                    <c:if test="${appt.status == 'Confirmed' || appt.status == 'In_Progress'}">
+                                                                        <a href="${pageContext.request.contextPath}/staff/waiting-list"
+                                                                            class="action-btn warning"
+                                                                            title="Xem trong Hàng đợi phòng khám" data-bs-toggle="tooltip">
+                                                                            <i class="bi bi-people-fill"></i>
+                                                                        </a>
+                                                                    </c:if>
                                                                 </c:if>
-
-                                                                <!-- Ca Đã tiếp đón / Đang khám: Nút Vàng pastel dẫn sang Hàng đợi phòng khám -->
-                                                                <c:if test="${appt.status == 'Confirmed' || appt.status == 'In_Progress'}">
-                                                                    <a href="${pageContext.request.contextPath}/staff/waiting-list"
-                                                                        class="action-btn warning"
-                                                                        title="Xem trong Hàng đợi phòng khám" data-bs-toggle="tooltip">
-                                                                        <i class="bi bi-people-fill"></i>
-                                                                    </a>
-                                                                </c:if>
-
-
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -522,10 +550,899 @@
                     </div>
                 </div>
 
+                <!-- Modal Tiếp Đón Khách Vãng Lai (Walk-in Patient Check-in) -->
+                <div class="modal fade" id="walkinModal" tabindex="-1" aria-labelledby="walkinModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered" style="max-width: 620px;">
+                        <div class="modal-content shadow-lg border-0" style="border-radius: 16px; overflow: hidden;">
+                            <div class="modal-header border-bottom px-4 py-3 bg-light">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(0, 139, 116, 0.12); color: var(--primary-color); display: flex; align-items: center; justify-content: center; font-size: 19px;">
+                                        <i class="bi bi-person-plus-fill"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="modal-title fw-bold text-dark mb-0" id="walkinModalLabel" style="font-size: 17px;">Tiếp đón Khách vãng lai</h5>
+                                        <small class="text-secondary" style="font-size: 12.5px;">Tạo hồ sơ và chuyển thẳng vào hàng đợi khám hôm nay</small>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+
+                            <form action="${pageContext.request.contextPath}/staff/appointments" method="post" id="walkinForm" class="m-0">
+                                <input type="hidden" name="action" value="walkin">
+                                <input type="hidden" name="returnUrl" value="${pageContext.request.contextPath}/staff/waiting-list">
+
+                                <div class="modal-body p-4 text-start">
+                                    <!-- Banner hướng dẫn -->
+                                    <div class="p-2.5 px-3 mb-3 rounded-3 d-flex align-items-start gap-2.5" style="background-color: #f0fdfa; border: 1px solid #ccfbf1;">
+                                        <i class="bi bi-info-circle-fill text-teal mt-0.5" style="font-size: 15px;"></i>
+                                        <div style="font-size: 13px; color: #0f766e; line-height: 1.45;">
+                                            Bệnh nhân đến trực tiếp quầy tiếp đón chưa đặt trước sẽ được tạo lịch, tự động check-in và cấp số thứ tự vào phòng khám ngay.
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-3">
+                                        <!-- Họ và tên -->
+                                        <div class="col-md-7">
+                                            <label class="form-label small fw-semibold text-dark mb-1">
+                                                Họ và tên bệnh nhân <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" name="patientName" id="walkinPatientName" required
+                                                class="form-control form-control-sm shadow-none"
+                                                placeholder="Ví dụ: Nguyễn Văn An"
+                                                style="border-radius: 8px; font-size: 13.5px; padding: 7px 12px;">
+                                        </div>
+
+                                        <!-- Số điện thoại -->
+                                        <div class="col-md-5">
+                                            <label class="form-label small fw-semibold text-dark mb-1">
+                                                Số điện thoại <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="tel" name="phone" id="walkinPhone" required pattern="0[0-9]{9}"
+                                                class="form-control form-control-sm shadow-none"
+                                                placeholder="0901234567 (10 số)"
+                                                style="border-radius: 8px; font-size: 13.5px; padding: 7px 12px;"
+                                                oninput="checkWalkinPhone(this.value)"
+                                                onchange="checkWalkinPhone(this.value)"
+                                                onblur="checkWalkinPhone(this.value)">
+                                            <div id="phoneCheckFeedback" class="mt-1" style="min-height: 18px;"></div>
+                                        </div>
+
+                                        <!-- Dịch vụ khám ban đầu -->
+                                        <div class="col-md-7">
+                                            <label class="form-label small fw-semibold text-dark mb-1">
+                                                Dịch vụ khám ban đầu <span class="text-danger">*</span>
+                                            </label>
+                                            <select name="serviceId" id="walkinServiceId" required class="form-select form-select-sm shadow-none"
+                                                style="border-radius: 8px; font-size: 13px; padding: 7px 12px;"
+                                                onchange="onWalkinServiceChange(this)">
+                                                <option value="">-- Chọn gói dịch vụ khám mắt --</option>
+                                                <c:forEach items="${services}" var="svc">
+                                                    <option value="${svc.id}" 
+                                                            data-price="${svc.price}" 
+                                                            data-specialty="${svc.specialty}" 
+                                                            data-name="${svc.name}"
+                                                            data-code="${svc.code}"
+                                                            ${svc.id == 1 ? 'selected' : ''}>
+                                                        ${not empty svc.code ? svc.code : 'DV'} - ${svc.name} (<fmt:formatNumber value="${svc.price}" type="number" groupingUsed="true" /> ₫)
+                                                    </option>
+                                                </c:forEach>
+                                            </select>
+                                        </div>
+
+                                        <!-- Ngày sinh -->
+                                        <div class="col-md-5">
+                                            <label class="form-label small fw-semibold text-dark mb-1">
+                                                Ngày sinh
+                                            </label>
+                                            <div class="input-group input-group-sm position-relative">
+                                                <input type="text" name="dob" id="walkinDob"
+                                                    class="form-control form-control-sm shadow-none"
+                                                    placeholder="dd/mm/yyyy" maxlength="10"
+                                                    style="border-radius: 8px 0 0 8px; font-size: 13.5px; padding: 7px 12px;"
+                                                    oninput="formatDobInput(this)">
+                                                <button type="button" class="btn btn-outline-secondary px-2.5" id="btnPickWalkinDob"
+                                                    style="border-radius: 0 8px 8px 0; border-color: #cbd5e1; background: #f8fafc;"
+                                                    title="Mở lịch chọn ngày sinh"
+                                                    onclick="triggerNativeDobPicker()">
+                                                    <i class="bi bi-calendar-event text-secondary"></i>
+                                                </button>
+                                                <input type="date" id="nativeDobPicker" tabindex="-1"
+                                                    style="position: absolute; right: 0; bottom: 0; opacity: 0; pointer-events: none; width: 0; height: 0;"
+                                                    onchange="onNativeDobChange(this.value)">
+                                            </div>
+                                        </div>
+
+                                        <!-- Bác sĩ phụ trách -->
+                                        <div class="col-md-7">
+                                            <label class="form-label small fw-semibold text-dark mb-1">
+                                                Bác sĩ khám <span class="text-danger">*</span>
+                                            </label>
+                                            <select name="doctorId" id="walkinDoctorId" required class="form-select form-select-sm shadow-none"
+                                                style="border-radius: 8px; font-size: 13px; padding: 7px 12px;"
+                                                onchange="onWalkinDoctorChange(this.value)">
+                                                <option value="">-- Chọn bác sĩ khám --</option>
+                                                <c:forEach items="${doctors}" var="doc">
+                                                    <option value="${doc.id}" 
+                                                            data-dept="${doc.departmentKey}" 
+                                                            data-specialty="${doc.specialty}"
+                                                            data-name="${doc.name}">
+                                                        ${doc.name} - ${not empty doc.specialty ? doc.specialty : 'Chuyên khoa Mắt'}
+                                                    </option>
+                                                </c:forEach>
+                                            </select>
+                                        </div>
+
+                                        <!-- Khung giờ khám hôm nay -->
+                                        <div class="col-md-5">
+                                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                                <label class="form-label small fw-semibold text-dark mb-0">
+                                                    Khung giờ khám <span class="text-danger">*</span>
+                                                </label>
+                                                <span id="slotAvailabilityHint" class="text-muted small" style="font-size: 11px;"></span>
+                                            </div>
+                                            <select name="timeSlot" id="walkinTimeSlot" class="form-select form-select-sm shadow-none"
+                                                style="border-radius: 8px; font-size: 13px; padding: 7px 12px;">
+                                                <option value="08:00" data-orig="08:00 - 08:30 (Sáng)">08:00 - 08:30 (Sáng)</option>
+                                                <option value="08:30" data-orig="08:30 - 09:00 (Sáng)">08:30 - 09:00 (Sáng)</option>
+                                                <option value="09:00" data-orig="09:00 - 09:30 (Sáng)">09:00 - 09:30 (Sáng)</option>
+                                                <option value="09:30" data-orig="09:30 - 10:00 (Sáng)">09:30 - 10:00 (Sáng)</option>
+                                                <option value="10:00" data-orig="10:00 - 10:30 (Sáng)">10:00 - 10:30 (Sáng)</option>
+                                                <option value="10:30" data-orig="10:30 - 11:00 (Sáng)">10:30 - 11:00 (Sáng)</option>
+                                                <option value="11:00" data-orig="11:00 - 11:30 (Sáng)">11:00 - 11:30 (Sáng)</option>
+                                                <option value="13:30" data-orig="13:30 - 14:00 (Chiều)">13:30 - 14:00 (Chiều)</option>
+                                                <option value="14:00" data-orig="14:00 - 14:30 (Chiều)">14:00 - 14:30 (Chiều)</option>
+                                                <option value="14:30" data-orig="14:30 - 15:00 (Chiều)">14:30 - 15:00 (Chiều)</option>
+                                                <option value="15:00" data-orig="15:00 - 15:30 (Chiều)">15:00 - 15:30 (Chiều)</option>
+                                                <option value="15:30" data-orig="15:30 - 16:00 (Chiều)">15:30 - 16:00 (Chiều)</option>
+                                                <option value="16:00" data-orig="16:00 - 16:30 (Chiều)">16:00 - 16:30 (Chiều)</option>
+                                                <option value="16:30" data-orig="16:30 - 17:00 (Chiều)">16:30 - 17:00 (Chiều)</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- Thẻ Phí khám ban đầu & Phương thức thanh toán (Gọn gàng & Phù hợp) -->
+                                        <div class="col-12">
+                                            <div class="py-2 px-3 rounded-3 border" style="background: #f8fafc; border-color: #cbd5e1;">
+                                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1.5">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                                            style="width: 30px; height: 30px; background: #e0f2fe; color: #0284c7;">
+                                                            <i class="bi bi-wallet2 fs-6"></i>
+                                                        </div>
+                                                        <div>
+                                                            <span class="text-secondary small d-block" style="font-size: 11px; line-height: 1.1;">
+                                                                Phí khám ban đầu:
+                                                            </span>
+                                                            <span class="fw-bold fs-6 text-dark" id="walkinFeeDisplay" style="line-height: 1.2;">200.000 ₫</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Chọn hình thức thanh toán -->
+                                                    <div class="btn-group p-0.5 rounded-3 bg-white border" role="group">
+                                                        <input type="radio" class="btn-check" name="paymentMethod" id="payMethodCash" value="Cash_At_Counter" checked onchange="toggleWalkinPayMode('Cash_At_Counter')">
+                                                        <label class="btn btn-sm btn-outline-success border-0 px-2.5 py-1 fw-semibold" for="payMethodCash" style="font-size: 12px; border-radius: 6px;">
+                                                            <i class="bi bi-cash me-1"></i>Tiền mặt tại quầy
+                                                        </label>
+
+                                                        <input type="radio" class="btn-check" name="paymentMethod" id="payMethodQR" value="VietQR_Banking" onchange="toggleWalkinPayMode('VietQR_Banking')">
+                                                        <label class="btn btn-sm btn-outline-primary border-0 px-2.5 py-1 fw-semibold" for="payMethodQR" style="font-size: 12px; border-radius: 6px;">
+                                                            <i class="bi bi-qr-code-scan me-1"></i>Chuyển khoản VietQR
+                                                        </label>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Ghi chú động theo hình thức đã chọn -->
+                                                <div id="walkinPayCashNotice" class="d-flex align-items-center justify-content-between small text-success pt-1 border-top" style="font-size: 11px;">
+                                                    <span><i class="bi bi-check2-circle me-1"></i>Thu tiền mặt trực tiếp tại quầy lễ tân (Hóa đơn Paid tự động)</span>
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle py-0.5">Vào thẳng hàng đợi</span>
+                                                </div>
+                                                <div id="walkinPayQRNotice" class="d-none align-items-center justify-content-between small text-primary pt-1 border-top" style="font-size: 11px;">
+                                                    <span><i class="bi bi-qr-code me-1"></i>Bệnh nhân quét mã VietQR MB Bank theo đúng giá dịch vụ đã chọn</span>
+                                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-0.5">Cần thanh toán QR</span>
+                                                </div>
+                                            </div>
+                                            <span id="walkinSvcTag" class="d-none"></span>
+                                        </div>
+
+                                        <!-- Lý do khám / Triệu chứng ban đầu -->
+                                        <div class="col-12">
+                                            <label class="form-label small fw-semibold text-dark mb-1">
+                                                Triệu chứng / Lý do khám <span class="text-muted fw-normal">(Ghi chú ban đầu)</span>
+                                            </label>
+                                            <textarea name="reason" id="walkinReasonText" rows="2"
+                                                class="form-control form-control-sm shadow-none mb-1.5"
+                                                placeholder="Ví dụ: Đau cộm mắt phải 2 ngày nay, nhìn mờ dần..."
+                                                style="border-radius: 8px; font-size: 13px;"></textarea>
+
+                                            <!-- Gợi ý triệu chứng nhanh -->
+                                            <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                <span class="text-secondary small" style="font-size: 12px;">Gợi ý nhanh:</span>
+                                                <button type="button" class="btn btn-sm btn-light border py-0 px-2 rounded-pill text-secondary" style="font-size: 11.5px;" onclick="addWalkinTag('Khám mắt tổng quát')">+ Khám tổng quát</button>
+                                                <button type="button" class="btn btn-sm btn-light border py-0 px-2 rounded-pill text-secondary" style="font-size: 11.5px;" onclick="addWalkinTag('Đau mắt đỏ / Cộm xốn')">+ Đau mắt đỏ</button>
+                                                <button type="button" class="btn btn-sm btn-light border py-0 px-2 rounded-pill text-secondary" style="font-size: 11.5px;" onclick="addWalkinTag('Dị vật vào mắt')">+ Dị vật mắt</button>
+                                                <button type="button" class="btn btn-sm btn-light border py-0 px-2 rounded-pill text-secondary" style="font-size: 11.5px;" onclick="addWalkinTag('Nhìn mờ đột ngột')">+ Nhìn mờ</button>
+                                                <button type="button" class="btn btn-sm btn-light border py-0 px-2 rounded-pill text-secondary" style="font-size: 11.5px;" onclick="addWalkinTag('Đo khúc xạ / Cận loạn')">+ Đo khúc xạ</button>
+                                            </div>
+                                        </div>
+
+
+                                    </div>
+
+                                    <!-- Modal Actions -->
+                                    <div class="d-flex align-items-center justify-content-end gap-2 mt-4 pt-3 border-top">
+                                        <button type="button" class="btn btn-modal-cancel" data-bs-dismiss="modal">Đóng</button>
+                                        <button type="submit" id="walkinSubmitBtn" class="btn btn-teal px-3.5 shadow-sm">
+                                            <i class="bi bi-check2-circle me-1"></i> Xác nhận & Đưa vào hàng đợi
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Quét Mã VietQR Cho Khách Vãng Lai (Đồng bộ với Đặt lịch Bệnh nhân) -->
+                <div class="modal fade" id="walkinQrModal" tabindex="-1" aria-labelledby="walkinQrModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                    <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
+                        <div class="modal-content shadow-lg border-0" style="border-radius: 16px; overflow: hidden;">
+                            <div class="modal-header border-bottom px-4 py-3 bg-light">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(13, 148, 136, 0.12); color: #0d9488; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                                        <i class="bi bi-qr-code-scan"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="modal-title fw-bold text-dark mb-0" id="walkinQrModalLabel" style="font-size: 16px;">Quét mã VietQR thanh toán</h5>
+                                        <small class="text-secondary" style="font-size: 12px;" id="qrPatientSubtitle">Bệnh nhân: Khách vãng lai</small>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close shadow-none" onclick="cancelWalkinQR()"></button>
+                            </div>
+
+                            <div class="modal-body p-4 text-center">
+                                <!-- Banner trạng thái thanh toán tự động -->
+                                <div class="alert alert-info py-2 px-3 small rounded-3 mb-3 d-flex align-items-center justify-content-center gap-2" id="qrStatusAlert" style="font-size: 12px;">
+                                    <span class="spinner-grow spinner-grow-sm text-primary" role="status" id="qrSpinner"></span>
+                                    <span id="qrStatusText">Đang chờ bệnh nhân quét mã và chuyển khoản...</span>
+                                </div>
+
+                                <!-- Khung ảnh VietQR động -->
+                                <div class="position-relative d-inline-block p-2 bg-white rounded-3 border shadow-sm mb-3">
+                                    <img id="walkinQrImg" src="" alt="VietQR VisionCare" class="img-fluid rounded" style="max-width: 240px; min-height: 240px;">
+                                    <div id="qrPaidOverlay" class="position-absolute top-0 start-0 w-100 h-100 d-none flex-column align-items-center justify-content-center rounded" style="background: rgba(240, 253, 244, 0.95); z-index: 10;">
+                                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mb-2" style="width: 52px; height: 52px; font-size: 26px;">
+                                            <i class="bi bi-check-lg"></i>
+                                        </div>
+                                        <h6 class="fw-bold text-success mb-1">Thanh toán thành công!</h6>
+                                        <small class="text-secondary">Đang chuyển bệnh nhân vào hàng đợi...</small>
+                                    </div>
+                                </div>
+
+                                <!-- Bảng thông tin thanh toán chuyển khoản -->
+                                <div class="bg-light p-3 rounded-3 text-start small border mb-3" style="font-size: 12.5px;">
+                                    <div class="d-flex justify-content-between py-1 border-bottom">
+                                        <span class="text-muted">Số tiền thanh toán:</span>
+                                        <span class="fw-bold fs-6 text-success" id="qrFeeAmount">200.000 ₫</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1 border-bottom">
+                                        <span class="text-muted">Ngân hàng thụ hưởng:</span>
+                                        <span class="fw-semibold text-dark" id="qrBankName">MB Bank (Quân Đội)</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1 border-bottom">
+                                        <span class="text-muted">Số tài khoản:</span>
+                                        <span class="fw-bold text-dark font-monospace" id="qrAccountNumber">0877757889</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1 border-bottom">
+                                        <span class="text-muted">Chủ tài khoản:</span>
+                                        <span class="fw-semibold text-dark" id="qrAccountHolder">NGUYEN DINH TRUNG</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center py-1">
+                                        <span class="text-muted">Nội dung chuyển khoản:</span>
+                                        <span class="fw-bold text-danger font-monospace px-1.5 py-0.5 bg-white border rounded" id="qrTransferDesc">VC...</span>
+                                    </div>
+                                </div>
+
+                                <p class="text-muted small mb-0" style="font-size: 11.5px;">
+                                    <i class="bi bi-shield-check text-success me-1"></i>Hệ thống tự động đồng bộ qua PayOS &amp; VietQR NAPAS 247.
+                                </p>
+                            </div>
+
+                            <div class="modal-footer px-4 py-3 bg-light border-top d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="cancelWalkinQR()">
+                                    <i class="bi bi-arrow-left me-1"></i>Hủy / Quay lại
+                                </button>
+                                <button type="button" class="btn btn-success btn-sm px-3 fw-semibold shadow-sm" id="btnManualConfirmQR" onclick="manualConfirmWalkinQR()">
+                                    <i class="bi bi-check2-circle me-1"></i>Lễ tân xác nhận đã nhận tiền
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Bootstrap 5 JS -->
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
                 <script>
+                    function formatDobInput(input) {
+                        var v = (input.value || '').replace(/[^0-9]/g, '');
+                        if (v.length > 8) v = v.substring(0, 8);
+                        var formatted = '';
+                        if (v.length > 0) {
+                            formatted = v.substring(0, Math.min(2, v.length));
+                        }
+                        if (v.length >= 3) {
+                            formatted += '/' + v.substring(2, Math.min(4, v.length));
+                        }
+                        if (v.length >= 5) {
+                            formatted += '/' + v.substring(4, 8);
+                        }
+                        input.value = formatted;
+
+                        if (v.length === 8) {
+                            var d = v.substring(0, 2);
+                            var m = v.substring(2, 4);
+                            var y = v.substring(4, 8);
+                            var nativePicker = document.getElementById('nativeDobPicker');
+                            if (nativePicker) {
+                                nativePicker.value = y + '-' + m + '-' + d;
+                            }
+                        }
+                    }
+
+                    function triggerNativeDobPicker() {
+                        var nativePicker = document.getElementById('nativeDobPicker');
+                        if (nativePicker) {
+                            if (typeof nativePicker.showPicker === 'function') {
+                                nativePicker.showPicker();
+                            } else {
+                                nativePicker.focus();
+                                nativePicker.click();
+                            }
+                        }
+                    }
+
+                    function onNativeDobChange(val) {
+                        if (!val) return;
+                        var parts = val.split('-');
+                        if (parts.length === 3) {
+                            var dobInput = document.getElementById('walkinDob');
+                            if (dobInput) {
+                                dobInput.value = parts[2] + '/' + parts[1] + '/' + parts[0];
+                                dobInput.classList.add('is-valid');
+                            }
+                        }
+                    }
+
+                    var phoneTimer = null;
+                    function checkWalkinPhone(phone) {
+                        clearTimeout(phoneTimer);
+                        var feedback = document.getElementById('phoneCheckFeedback');
+                        var submitBtn = document.getElementById('walkinSubmitBtn');
+                        var nameInput = document.getElementById('walkinPatientName');
+                        var dobInput = document.getElementById('walkinDob');
+                        if (!feedback) return;
+
+                        var cleanPhone = (phone || '').replace(/[^0-9]/g, '');
+                        if (cleanPhone.length < 10) {
+                            feedback.innerHTML = '';
+                            if (submitBtn) submitBtn.disabled = false;
+                            if (nameInput) nameInput.classList.remove('is-valid');
+                            if (dobInput) dobInput.classList.remove('is-valid');
+                            return;
+                        }
+
+                        feedback.innerHTML = '<span class="text-muted" style="font-size: 12px;"><i class="spinner-border spinner-border-sm me-1" style="width: 11px; height: 11px;"></i>Đang kiểm tra hồ sơ...</span>';
+
+                        phoneTimer = setTimeout(function() {
+                            fetch('${pageContext.request.contextPath}/staff/appointments?ajax=checkPhone&phone=' + encodeURIComponent(cleanPhone))
+                                .then(function(res) {
+                                    if (!res.ok) throw new Error("HTTP " + res.status);
+                                    return res.text();
+                                })
+                                .then(function(text) {
+                                    var data;
+                                    try {
+                                        data = JSON.parse(text);
+                                    } catch (e) {
+                                        console.warn("Máy chủ trả về HTML thay vì JSON. Cần Clean & Build / restart Tomcat trên NetBeans.", text);
+                                        feedback.innerHTML = '<span class="text-warning small" style="font-size: 11.5px;"><i class="bi bi-exclamation-triangle me-1"></i>Chưa nhận servlet mới (Vui lòng Clean & Build lại dự án trên NetBeans)</span>';
+                                        return;
+                                    }
+
+                                    if (data.found) {
+                                        if (nameInput) {
+                                            nameInput.value = data.name || '';
+                                            nameInput.classList.add('is-valid');
+                                        }
+                                        if (dobInput) {
+                                            if (data.dob && data.dob.indexOf('-') !== -1) {
+                                                var p = data.dob.split('-');
+                                                if (p.length === 3) {
+                                                    dobInput.value = p[2] + '/' + p[1] + '/' + p[0];
+                                                    var nativePicker = document.getElementById('nativeDobPicker');
+                                                    if (nativePicker) nativePicker.value = data.dob;
+                                                } else {
+                                                    dobInput.value = data.dob;
+                                                }
+                                            } else {
+                                                dobInput.value = data.dob || '';
+                                            }
+                                            if (dobInput.value) {
+                                                dobInput.classList.add('is-valid');
+                                            } else {
+                                                dobInput.classList.remove('is-valid');
+                                            }
+                                        }
+
+                                        if (data.hasApptToday) {
+                                            var statusLabel = data.apptStatus === 'Pending' ? 'Chờ tiếp đón' : (data.apptStatus === 'Confirmed' ? 'Chờ khám' : data.apptStatus);
+                                            var isPending = data.apptStatus === 'Pending';
+                                            feedback.innerHTML = '<div class="alert alert-warning py-1 px-2 mb-0 mt-1 d-flex align-items-center justify-content-between" style="font-size: 11.5px; border-radius: 6px;">' +
+                                                '<div><i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>' +
+                                                'Đã có hẹn <strong>#APPT-' + data.apptId + '</strong> (' + (data.apptTime || '') + ' - ' + (data.doctorName || '') + ' - ' + statusLabel + ')</div>' +
+                                                (isPending ? '<button type="button" class="btn btn-warning py-0 px-2 fw-semibold ms-2 text-nowrap" style="font-size: 11px;" onclick="quickCheckinFromWalkin(' + data.apptId + ', \'' + (data.name || '').replace(/'/g, "\\'") + '\')">Check-in ngay</button>' : '') +
+                                                '</div>';
+                                            if (submitBtn) submitBtn.disabled = true;
+                                        } else {
+                                            feedback.innerHTML = '<span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2" style="font-size: 11.5px;"><i class="bi bi-person-check-fill me-1"></i>Đã tìm thấy: <strong>' + (data.name || '') + '</strong> (Đã tự động điền)</span>';
+                                            if (submitBtn) submitBtn.disabled = false;
+                                        }
+                                    } else {
+                                        if (nameInput) nameInput.classList.remove('is-valid');
+                                        if (dobInput) dobInput.classList.remove('is-valid');
+                                        feedback.innerHTML = '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-1 px-2" style="font-size: 11.5px;"><i class="bi bi-person-plus me-1"></i>SĐT mới (Khách hàng lần đầu)</span>';
+                                        if (submitBtn) submitBtn.disabled = false;
+                                    }
+                                })
+                                .catch(function(err) {
+                                    console.error("Lỗi khi kiểm tra SĐT:", err);
+                                    feedback.innerHTML = '';
+                                    if (submitBtn) submitBtn.disabled = false;
+                                });
+                        }, 250);
+                    }
+
+                    function quickCheckinFromWalkin(apptId, name) {
+                        var walkinModalEl = document.getElementById('walkinModal');
+                        if (walkinModalEl) {
+                            var modal = bootstrap.Modal.getInstance(walkinModalEl);
+                            if (modal) modal.hide();
+                        }
+                        setTimeout(function() {
+                            openCheckinModal(apptId, name);
+                        }, 400);
+                    }
+
+                    function onWalkinServiceChange(selectElem) {
+                        if (!selectElem) return;
+                        var opt = selectElem.options[selectElem.selectedIndex];
+                        if (!opt) return;
+
+                        var price = parseFloat(opt.getAttribute('data-price') || 0);
+                        var name = opt.getAttribute('data-name') || '';
+                        var specialty = (opt.getAttribute('data-specialty') || '').toLowerCase().trim();
+
+                        // 1. Cập nhật số tiền và tên dịch vụ trên thẻ Thu cọc / Phí khám
+                        var feeDisplay = document.getElementById('walkinFeeDisplay');
+                        if (feeDisplay) {
+                            feeDisplay.textContent = price > 0 ? (price.toLocaleString('vi-VN') + ' ₫') : '200.000 ₫';
+                        }
+                        var btnFee = document.getElementById('btnFeeDisplay');
+                        if (btnFee) {
+                            btnFee.textContent = price > 0 ? (price.toLocaleString('vi-VN') + ' ₫') : '200.000 ₫';
+                        }
+                        var tag = document.getElementById('walkinSvcTag');
+                        if (tag) {
+                            tag.textContent = name || 'Khám chuyên khoa';
+                        }
+
+                        // 2. Tự động gợi ý Bác sĩ đúng chuyên khoa nếu bác sĩ hiện tại chưa phù hợp
+                        if (specialty) {
+                            var docSel = document.getElementById('walkinDoctorId');
+                            if (docSel) {
+                                var curOpt = docSel.options[docSel.selectedIndex];
+                                var curDept = curOpt ? (curOpt.getAttribute('data-dept') || '').toLowerCase().trim() : '';
+                                var curSpec = curOpt ? (curOpt.getAttribute('data-specialty') || '').toLowerCase().trim() : '';
+
+                                var matchCurrent = (curDept === specialty || curSpec.includes(specialty) ||
+                                    (specialty === 'refraction' && (curDept === 'refraction' || curSpec.includes('khúc xạ'))) ||
+                                    (specialty === 'lasik' && (curDept === 'lasik' || curSpec.includes('lasik'))) ||
+                                    (specialty === 'children' && (curDept === 'children' || curSpec.includes('trẻ em'))) ||
+                                    (specialty === 'cataract' && (curDept === 'cataract' || curSpec.includes('thủy tinh thể') || curSpec.includes('phaco'))) ||
+                                    (specialty === 'retina' && (curDept === 'retina' || curSpec.includes('glaucoma') || curSpec.includes('võng mạc'))));
+
+                                if (!matchCurrent) {
+                                    for (var i = 1; i < docSel.options.length; i++) {
+                                        var dOpt = docSel.options[i];
+                                        var dept = (dOpt.getAttribute('data-dept') || '').toLowerCase().trim();
+                                        var spec = (dOpt.getAttribute('data-specialty') || '').toLowerCase().trim();
+                                        if (dept === specialty || spec.includes(specialty) ||
+                                            (specialty === 'refraction' && (dept === 'refraction' || spec.includes('khúc xạ'))) ||
+                                            (specialty === 'lasik' && (dept === 'lasik' || spec.includes('lasik'))) ||
+                                            (specialty === 'children' && (dept === 'children' || spec.includes('trẻ em'))) ||
+                                            (specialty === 'cataract' && (dept === 'cataract' || spec.includes('thủy tinh thể') || spec.includes('phaco'))) ||
+                                            (specialty === 'retina' && (dept === 'retina' || spec.includes('glaucoma') || spec.includes('võng mạc')))) {
+                                            docSel.selectedIndex = i;
+                                            onWalkinDoctorChange(dOpt.value, true);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    function onWalkinDoctorChange(doctorId, skipServiceSync) {
+                        // Tự động đồng bộ sang dịch vụ tương ứng với Bác sĩ nếu chưa đồng bộ
+                        if (!skipServiceSync && doctorId) {
+                            var docSel = document.getElementById('walkinDoctorId');
+                            var curOpt = docSel ? docSel.options[docSel.selectedIndex] : null;
+                            if (curOpt) {
+                                var docDept = (curOpt.getAttribute('data-dept') || '').toLowerCase().trim();
+                                var docSpec = (curOpt.getAttribute('data-specialty') || '').toLowerCase().trim();
+                                var svcSel = document.getElementById('walkinServiceId');
+                                if (svcSel) {
+                                    for (var j = 1; j < svcSel.options.length; j++) {
+                                        var sOpt = svcSel.options[j];
+                                        var sSpec = (sOpt.getAttribute('data-specialty') || '').toLowerCase().trim();
+                                        if (sSpec === docDept || docSpec.includes(sSpec) ||
+                                            (docDept === 'refraction' && sSpec === 'refraction') ||
+                                            (docDept === 'lasik' && sSpec === 'lasik') ||
+                                            (docDept === 'children' && sSpec === 'children') ||
+                                            (docDept === 'cataract' && sSpec === 'cataract') ||
+                                            (docDept === 'retina' && sSpec === 'retina')) {
+                                            svcSel.selectedIndex = j;
+                                            // Cập nhật giá dịch vụ tương ứng
+                                            var price = parseFloat(sOpt.getAttribute('data-price') || 0);
+                                            var name = sOpt.getAttribute('data-name') || '';
+                                            var feeDisplay = document.getElementById('walkinFeeDisplay');
+                                            if (feeDisplay) feeDisplay.textContent = price > 0 ? (price.toLocaleString('vi-VN') + ' ₫') : '200.000 ₫';
+                                            var btnFee = document.getElementById('btnFeeDisplay');
+                                            if (btnFee) btnFee.textContent = price > 0 ? (price.toLocaleString('vi-VN') + ' ₫') : '200.000 ₫';
+                                            var tag = document.getElementById('walkinSvcTag');
+                                            if (tag) tag.textContent = name;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        var sel = document.getElementById('walkinTimeSlot');
+                        var hint = document.getElementById('slotAvailabilityHint');
+                        if (!sel) return;
+
+                        if (!doctorId) {
+                            if (hint) hint.textContent = '';
+                            for (var i = 0; i < sel.options.length; i++) {
+                                var opt = sel.options[i];
+                                var orig = opt.getAttribute('data-orig') || opt.value;
+                                opt.textContent = orig;
+                                opt.disabled = false;
+                                opt.style.color = '';
+                            }
+                            return;
+                        }
+
+                        if (hint) hint.innerHTML = '<i class="spinner-border spinner-border-sm me-1" style="width: 10px; height: 10px;"></i>Đang tải ca bận...';
+
+                        fetch('${pageContext.request.contextPath}/staff/appointments?ajax=checkDoctorSlots&doctorId=' + encodeURIComponent(doctorId))
+                            .then(function(res) { return res.json(); })
+                            .then(function(data) {
+                                var booked = data.bookedSlots || [];
+                                var bookedCount = 0;
+                                var firstAvailableIdx = -1;
+
+                                for (var i = 0; i < sel.options.length; i++) {
+                                    var opt = sel.options[i];
+                                    var orig = opt.getAttribute('data-orig') || opt.value;
+                                    var val = opt.value;
+                                    var isOccupied = booked.indexOf(val) !== -1;
+
+                                    if (isOccupied) {
+                                        opt.disabled = true;
+                                        opt.textContent = orig + ' - [ĐÃ KÍN]';
+                                        opt.style.color = '#94a3b8';
+                                        bookedCount++;
+                                    } else {
+                                        opt.disabled = false;
+                                        opt.textContent = orig;
+                                        opt.style.color = '';
+                                        if (firstAvailableIdx === -1) {
+                                            firstAvailableIdx = i;
+                                        }
+                                    }
+                                }
+
+                                if (hint) {
+                                    var total = sel.options.length;
+                                    var free = total - bookedCount;
+                                    hint.innerHTML = '<span class="text-success fw-semibold" style="font-size: 11.5px;">' + free + '/' + total + ' ca còn trống</span>';
+                                }
+
+                                if (sel.selectedIndex >= 0 && sel.options[sel.selectedIndex].disabled && firstAvailableIdx !== -1) {
+                                    sel.selectedIndex = firstAvailableIdx;
+                                }
+                            })
+                            .catch(function(err) {
+                                if (hint) hint.textContent = '';
+                            });
+                    }
+
+                    function addWalkinTag(tag) {
+                        var ta = document.getElementById('walkinReasonText');
+                        if (!ta) return;
+                        if (ta.value.trim() === '') {
+                            ta.value = tag;
+                        } else if (!ta.value.includes(tag)) {
+                            ta.value = ta.value + ', ' + tag;
+                        }
+                        ta.focus();
+                    }
+
+                    function autoSelectWalkinTime() {
+                        var sel = document.getElementById('walkinTimeSlot');
+                        if (!sel) return;
+                        var now = new Date();
+                        var h = now.getHours();
+                        var m = now.getMinutes();
+                        var target = (m >= 30) ? (String(h).padStart(2, '0') + ':30') : (String(h).padStart(2, '0') + ':00');
+                        for (var i = 0; i < sel.options.length; i++) {
+                            if (sel.options[i].value === target) {
+                                sel.selectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+
+                    var walkinModalElem = document.getElementById('walkinModal');
+                    if (walkinModalElem) {
+                        walkinModalElem.addEventListener('show.bs.modal', function () {
+                            autoSelectWalkinTime();
+                            var svcSelect = document.getElementById('walkinServiceId');
+                            if (svcSelect) {
+                                onWalkinServiceChange(svcSelect);
+                            }
+                            var docSelect = document.getElementById('walkinDoctorId');
+                            if (docSelect) {
+                                if (docSelect.selectedIndex <= 0 && docSelect.options.length > 1) {
+                                    docSelect.selectedIndex = 1;
+                                }
+                                onWalkinDoctorChange(docSelect.value, true);
+                            }
+                        });
+                    }
+
+                    function toggleWalkinPayMode(mode) {
+                        var cashNotice = document.getElementById('walkinPayCashNotice');
+                        var qrNotice = document.getElementById('walkinPayQRNotice');
+                        var submitBtn = document.getElementById('walkinSubmitBtn');
+                        var feeDisplay = document.getElementById('walkinFeeDisplay');
+                        var currentFeeText = feeDisplay ? feeDisplay.textContent : '200.000 ₫';
+
+                        if (mode === 'VietQR_Banking') {
+                            if (cashNotice) { cashNotice.classList.remove('d-flex'); cashNotice.classList.add('d-none'); }
+                            if (qrNotice) { qrNotice.classList.remove('d-none'); qrNotice.classList.add('d-flex'); }
+                            if (submitBtn) {
+                                submitBtn.className = 'btn btn-primary px-3.5 shadow-sm';
+                                submitBtn.style.background = '#0284c7';
+                                submitBtn.style.borderColor = '#0284c7';
+                                submitBtn.innerHTML = '<i class="bi bi-qr-code-scan me-1"></i> Quét mã VietQR (<span id="btnFeeDisplay">' + currentFeeText + '</span>)';
+                            }
+                        } else {
+                            if (qrNotice) { qrNotice.classList.remove('d-flex'); qrNotice.classList.add('d-none'); }
+                            if (cashNotice) { cashNotice.classList.remove('d-none'); cashNotice.classList.add('d-flex'); }
+                            if (submitBtn) {
+                                submitBtn.className = 'btn btn-teal px-3.5 shadow-sm';
+                                submitBtn.style.background = '';
+                                submitBtn.style.borderColor = '';
+                                submitBtn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Xác nhận & Đưa vào hàng đợi';
+                            }
+                        }
+                    }
+
+                    var walkinPollTimer = null;
+                    var currentWalkinApptId = null;
+
+                    function initiateWalkinQR() {
+                        var form = document.getElementById('walkinForm');
+                        if (!form) return;
+                        if (form.checkValidity && !form.checkValidity()) {
+                            form.reportValidity();
+                            return;
+                        }
+
+                        var submitBtn = document.getElementById('walkinSubmitBtn');
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang tạo mã VietQR...';
+                        }
+
+                        var formData = new FormData(form);
+                        formData.append('ajax', '1');
+
+                        fetch('${pageContext.request.contextPath}/staff/appointments', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: new URLSearchParams(formData)
+                        })
+                        .then(function(res) {
+                            return res.text().then(function(text) {
+                                try {
+                                    return JSON.parse(text);
+                                } catch (e) {
+                                    console.error("Phản hồi không phải JSON:", text);
+                                    throw new Error("Máy chủ phản hồi HTML thay vì JSON (Code: " + res.status + ")");
+                                }
+                            });
+                        })
+                        .then(function(data) {
+                            if (submitBtn) {
+                                submitBtn.disabled = false;
+                                toggleWalkinPayMode('VietQR_Banking');
+                            }
+
+                            if (data.success) {
+                                var walkinModalEl = document.getElementById('walkinModal');
+                                if (walkinModalEl) {
+                                    var modal = bootstrap.Modal.getInstance(walkinModalEl);
+                                    if (modal) modal.hide();
+                                }
+
+                                currentWalkinApptId = data.appointmentId;
+                                var pSub = document.getElementById('qrPatientSubtitle');
+                                if (pSub) pSub.textContent = 'Bệnh nhân: ' + data.patientName + ' (' + data.phone + ')';
+                                var qrImg = document.getElementById('walkinQrImg');
+                                if (qrImg) qrImg.src = data.qrUrl;
+                                var feeEl = document.getElementById('qrFeeAmount');
+                                if (feeEl) feeEl.textContent = data.formattedFee;
+                                var bankEl = document.getElementById('qrBankName');
+                                if (bankEl) bankEl.textContent = data.bankName;
+                                var accEl = document.getElementById('qrAccountNumber');
+                                if (accEl) accEl.textContent = data.accountNumber;
+                                var holderEl = document.getElementById('qrAccountHolder');
+                                if (holderEl) holderEl.textContent = data.accountHolder;
+                                var descEl = document.getElementById('qrTransferDesc');
+                                if (descEl) descEl.textContent = data.paymentDesc;
+
+                                var statusAlert = document.getElementById('qrStatusAlert');
+                                if (statusAlert) statusAlert.className = 'alert alert-info py-2 px-3 small rounded-3 mb-3 d-flex align-items-center justify-content-center gap-2';
+                                var statusText = document.getElementById('qrStatusText');
+                                if (statusText) statusText.textContent = 'Đang chờ bệnh nhân quét mã và chuyển khoản...';
+                                var overlay = document.getElementById('qrPaidOverlay');
+                                if (overlay) {
+                                    overlay.classList.add('d-none');
+                                    overlay.classList.remove('d-flex');
+                                }
+                                var btnConfirm = document.getElementById('btnManualConfirmQR');
+                                if (btnConfirm) {
+                                    btnConfirm.disabled = false;
+                                    btnConfirm.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Lễ tân xác nhận đã nhận tiền';
+                                }
+
+                                var qrModalEl = document.getElementById('walkinQrModal');
+                                if (qrModalEl) {
+                                    var qrModal = bootstrap.Modal.getInstance(qrModalEl) || new bootstrap.Modal(qrModalEl);
+                                    qrModal.show();
+                                }
+
+                                startWalkinQrPolling(data.appointmentId);
+                            } else {
+                                alert(data.message || 'Không thể tạo mã VietQR lúc này. Vui lòng thử lại!');
+                            }
+                        })
+                        .catch(function(err) {
+                            if (submitBtn) {
+                                submitBtn.disabled = false;
+                                toggleWalkinPayMode('VietQR_Banking');
+                            }
+                            alert('Lỗi tạo mã QR: ' + err.message);
+                        });
+                    }
+
+                    function startWalkinQrPolling(apptId) {
+                        clearInterval(walkinPollTimer);
+                        var attempts = 0;
+                        walkinPollTimer = setInterval(function() {
+                            attempts++;
+                            if (attempts > 180) {
+                                clearInterval(walkinPollTimer);
+                                var statusText = document.getElementById('qrStatusText');
+                                if (statusText) statusText.textContent = 'Hết thời gian chờ thanh toán (15 phút). Vui lòng thử lại.';
+                                return;
+                            }
+
+                            fetch('${pageContext.request.contextPath}/staff/appointments?ajax=checkPayment&appointmentId=' + apptId)
+                                .then(function(res) { return res.json(); })
+                                .then(function(data) {
+                                    if (data && data.isPaid) {
+                                        clearInterval(walkinPollTimer);
+                                        onWalkinPaymentSuccess();
+                                    }
+                                })
+                                .catch(function(err) {
+                                    console.log('Polling walkin payment...', err);
+                                });
+                        }, 2500);
+                    }
+
+                    function onWalkinPaymentSuccess() {
+                        var overlay = document.getElementById('qrPaidOverlay');
+                        if (overlay) {
+                            overlay.classList.remove('d-none');
+                            overlay.classList.add('d-flex');
+                        }
+                        var alertEl = document.getElementById('qrStatusAlert');
+                        if (alertEl) {
+                            alertEl.className = 'alert alert-success py-2 px-3 small rounded-3 mb-3 d-flex align-items-center justify-content-center gap-2';
+                        }
+                        var statusText = document.getElementById('qrStatusText');
+                        if (statusText) {
+                            statusText.textContent = 'Đã nhận thanh toán VietQR thành công!';
+                        }
+                        var btnConfirm = document.getElementById('btnManualConfirmQR');
+                        if (btnConfirm) btnConfirm.disabled = true;
+
+                        setTimeout(function() {
+                            window.location.href = '${pageContext.request.contextPath}/staff/waiting-list';
+                        }, 1500);
+                    }
+
+                    function manualConfirmWalkinQR() {
+                        if (!currentWalkinApptId) return;
+                        var btn = document.getElementById('btnManualConfirmQR');
+                        if (btn) {
+                            btn.disabled = true;
+                            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang xác nhận...';
+                        }
+
+                        fetch('${pageContext.request.contextPath}/staff/appointments', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: 'action=confirmWalkinPayment&appointmentId=' + currentWalkinApptId
+                        })
+                        .then(function(res) { return res.json(); })
+                        .then(function(data) {
+                            if (data && data.success) {
+                                clearInterval(walkinPollTimer);
+                                onWalkinPaymentSuccess();
+                            } else {
+                                alert('Không thể xác nhận thanh toán lúc này.');
+                                if (btn) {
+                                    btn.disabled = false;
+                                    btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Lễ tân xác nhận đã nhận tiền';
+                                }
+                            }
+                        })
+                        .catch(function(err) {
+                            alert('Lỗi khi gửi yêu cầu xác nhận: ' + err);
+                            if (btn) {
+                                btn.disabled = false;
+                                btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Lễ tân xác nhận đã nhận tiền';
+                            }
+                        });
+                    }
+
+                    function cancelWalkinQR() {
+                        clearInterval(walkinPollTimer);
+                        var qrModalEl = document.getElementById('walkinQrModal');
+                        if (qrModalEl) {
+                            var modal = bootstrap.Modal.getInstance(qrModalEl);
+                            if (modal) modal.hide();
+                        }
+                    }
+
+                    var walkinFormEl = document.getElementById('walkinForm');
+                    if (walkinFormEl) {
+                        walkinFormEl.addEventListener('submit', function(e) {
+                            var selectedMethod = document.querySelector('input[name="paymentMethod"]:checked');
+                            if (selectedMethod && selectedMethod.value === 'VietQR_Banking') {
+                                e.preventDefault();
+                                initiateWalkinQR();
+                            }
+                        });
+                    }
+
                     function openCheckinModal(id, patientName, phone, doctorName, roomName, doctorId, timeSlot) {
                         var idInput = document.getElementById('modalAppointmentId');
                         if (idInput) idInput.value = id;
@@ -602,7 +1519,6 @@
                             }
                         }
                     });
-
 
                     // Live clock
                     function updateClock() {

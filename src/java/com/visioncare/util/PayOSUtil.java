@@ -138,6 +138,33 @@ public class PayOSUtil {
                 result.qrCode = extractJsonField(respBody, "qrCode");
                 result.paymentLinkId = extractJsonField(respBody, "paymentLinkId");
                 result.status = extractJsonField(respBody, "status");
+            } else if ("231".equals(code)) {
+                // Đơn hàng đã tồn tại trên PayOS: Truy vấn lại thông tin đơn hàng hiện tại
+                try {
+                    HttpRequest getReq = HttpRequest.newBuilder()
+                            .uri(URI.create(ENDPOINT + "/v2/payment-requests/" + orderCode))
+                            .header("x-client-id", CLIENT_ID)
+                            .header("x-api-key", API_KEY)
+                            .timeout(Duration.ofSeconds(6))
+                            .GET()
+                            .build();
+                    HttpResponse<String> getRes = client.send(getReq, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                    String getBody = getRes.body();
+                    String getCode = extractJsonField(getBody, "code");
+                    if ("00".equals(getCode)) {
+                        result.success = true;
+                        result.paymentLinkId = extractJsonField(getBody, "id");
+                        result.status = extractJsonField(getBody, "status");
+                        result.checkoutUrl = "https://pay.payos.vn/web/" + result.paymentLinkId;
+                        result.qrCode = extractJsonField(getBody, "qrCode");
+                    } else {
+                        result.success = false;
+                        result.errorMsg = extractJsonField(respBody, "desc");
+                    }
+                } catch (Exception ex) {
+                    result.success = false;
+                    result.errorMsg = extractJsonField(respBody, "desc");
+                }
             } else {
                 result.success = false;
                 String desc = extractJsonField(respBody, "desc");

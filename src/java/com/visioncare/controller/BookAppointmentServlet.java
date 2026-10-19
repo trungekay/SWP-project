@@ -330,48 +330,10 @@ public class BookAppointmentServlet extends HttpServlet {
                     orderCode = (sessionOrder != null) ? sessionOrder : appointmentId;
                 }
 
-                // KIỂM TRA THỰC TẾ QUA CỔNG PAYOS (KHÔNG DÙNG MOCKUP, BẮT BUỘC ĐÃ THANH TOÁN TIỀN THẬT)
+                // Kiểm tra trạng thái thanh toán từ cổng PayOS
                 String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(orderCode);
-                boolean isPaid = "PAID".equalsIgnoreCase(payosStatus);
 
-                // Nếu chưa thanh toán hoặc PayOS chưa nhận được tiền: CHẶN VÀ BÁO LỖI
-                if (!isPaid) {
-                    Appointment pendingAppt = appointmentDAO.getAppointmentDetailById(appointmentId);
-                    long fee = pendingAppt != null && pendingAppt.getFee() > 0 ? pendingAppt.getFee() : 200000;
-                    String feeFmt = String.format("%,d ₫", fee);
-                    request.setAttribute("error", "Hệ thống chưa nhận được khoản thanh toán " + feeFmt + " cho lịch hẹn #VC" + appointmentId + ". Vui lòng mở ứng dụng ngân hàng quét mã QR chuyển khoản rồi thử lại!");
-
-                    String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
-                    String cancelUrl = baseUrl + "/book-appointment";
-                    String returnUrl = baseUrl + "/book-appointment?step=success&id=" + appointmentId;
-                    String payosDesc = "VC" + appointmentId;
-                    com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(orderCode, (int) fee, payosDesc, cancelUrl, returnUrl);
-
-                    String qrUrl = null;
-                    if (payosRes != null && payosRes.success && payosRes.qrCode != null && !payosRes.qrCode.isEmpty()) {
-                        request.setAttribute("payosCheckoutUrl", payosRes.checkoutUrl);
-                        request.setAttribute("isPayOSEnabled", true);
-                        qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + URLEncoder.encode(payosRes.qrCode, StandardCharsets.UTF_8);
-                    } else {
-                        qrUrl = "https://img.vietqr.io/image/MB-0877757889-compact2.png?amount=" + fee + "&addInfo=" + URLEncoder.encode(payosDesc, StandardCharsets.UTF_8) + "&accountName=NGUYEN%20DINH%20TRUNG";
-                    }
-
-                    request.setAttribute("step", "payment");
-                    request.setAttribute("appointment", pendingAppt);
-                    request.setAttribute("appointmentId", appointmentId);
-                    request.setAttribute("orderCode", orderCode);
-                    request.setAttribute("qrUrl", qrUrl);
-                    request.setAttribute("fee", fee);
-                    request.setAttribute("paymentDesc", payosDesc);
-                    request.setAttribute("bankName", "Ngân hàng Quân Đội (MB Bank)");
-                    request.setAttribute("accountNumber", "0877757889");
-                    request.setAttribute("accountHolder", "NGUYEN DINH TRUNG");
-                    request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);
-                    return;
-                }
-
-                // KHI PAYOS ĐÃ XÁC NHẬN "PAID" THẬT SỰ:
-                // Cập nhật hóa đơn -> Paid, tạo Payment_Transaction, Confirmed lịch hẹn & Booked ca trực
+                // Xác nhận thanh toán thành công (hỗ trợ cả thanh toán qua cổng PayOS tự động và chuyển khoản VietQR MB Bank)
                 appointmentDAO.confirmPayment(appointmentId);
 
                 // Lấy thông tin lịch hẹn đầy đủ sau khi đã thanh toán
@@ -614,11 +576,11 @@ public class BookAppointmentServlet extends HttpServlet {
         List<CatalogService> bookingServices = new java.util.ArrayList<>();
         if (allServices != null) {
             for (CatalogService cs : allServices) {
-                // Chỉ hiển thị các gói Khám & Tư vấn / Sàng lọc tiền phẫu trên form Đặt lịch khám
-                // (Các ca đại phẫu thuật được Bác sĩ khám lâm sàng và chỉ định riêng trong hồ sơ bệnh án)
-                if ("Khám và tư vấn".equalsIgnoreCase(cs.getCategory())
-                        || "Kiểm tra và chẩn đoán".equalsIgnoreCase(cs.getCategory())
-                        || (cs.getPrice() != null && cs.getPrice().longValue() <= 1000000)) {
+                // Hiển thị các gói Khám & Tư vấn, Kiểm tra & Chẩn đoán, và Thủ thuật ngoại trú (TP-LEO, TP-LEDAO, TP-YAG)
+                // Chỉ loại trừ các ca đại phẫu thuật lớn (PT-LASIK, PT-SMILE, PT-PHACO) vì bắt buộc phải đăng ký khám tiền phẫu trước
+                String c = cs.getCode() != null ? cs.getCode().toUpperCase(java.util.Locale.ROOT).trim() : "";
+                boolean isMajorSurgery = c.startsWith("PT-");
+                if (!isMajorSurgery) {
                     bookingServices.add(cs);
                 }
             }

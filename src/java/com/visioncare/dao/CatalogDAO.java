@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CatalogDAO {
-    private static final String SERVICE_COLUMNS = "sc.Service_ID, sc.Service_Code, sc.Service_Name, sc.Price, sc.Category, sc.Summary, sc.Description, CASE WHEN sc.Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
+    private static final String SERVICE_COLUMNS = "sc.Service_ID, sc.Service_Code, sc.Service_Name, sc.Price, sc.Category, sc.Summary, sc.Description, sc.Image_Path, CASE WHEN sc.Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
 
     public List<CatalogService> listServices() throws Exception {
         List<CatalogService> items = new ArrayList<>();
@@ -170,6 +170,7 @@ public class CatalogDAO {
                 result.getString("Service_Name"), result.getBigDecimal("Price"),
                 result.getString("Category"),
                 result.getString("Summary"), result.getString("Description"),
+                result.getString("Image_Path"),
                 result.getBoolean("Has_Image"));
     }
 

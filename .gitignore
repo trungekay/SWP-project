@@ -10,3 +10,14 @@ target/
 /dist/
 .vscode/
 out/
+cookies.txt
+*.bak
+setup_database.bat
+setup_database.ps1
+HUONG_DAN_PULL_VA_CHAY_DU_AN.md
+
+# Local guides & test documentation
+BOOKING_INTEGRATION_REVIEW.md
+HUONG_DAN_DEMO_VA_REVIEW_CODE_BOOKING.md
+TEST_CASES_ITERATION_1_2.csv
+TEST_CASES_ITERATION_1_2.md
