@@ -60,9 +60,11 @@ public class DoctorPatientDetailServlet extends HttpServlet {
                     || !"Completed".equals(record.getAppointmentStatus()));
             request.setAttribute("appointment", appointment);
             request.setAttribute("history", history);
-            if ("In_Progress".equals(appointment.getStatus())) {
+            if ("In_Progress".equals(appointment.getStatus()) || "Completed".equals(appointment.getStatus())) {
                 request.setAttribute("examinationUrl",
                         request.getContextPath() + "/doctor/examination?id=" + appointmentId);
+            }
+            if ("In_Progress".equals(appointment.getStatus())) {
                 request.setAttribute("prescriptionUrl",
                         request.getContextPath() + "/doctor/prescription?id=" + appointmentId);
             }

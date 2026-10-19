@@ -184,6 +184,15 @@
             </div>
           </div>
 
+          <c:if test="${not empty order.referralNotes}">
+            <div class="col-12">
+              <div class="alert alert-info mb-0" role="note" style="white-space: pre-wrap; overflow-wrap: anywhere;">
+                <strong><i class="bi bi-journal-medical me-1"></i> Ghi chú chỉ định phẫu thuật:</strong>
+                <c:out value="${order.referralNotes}" />
+              </div>
+            </div>
+          </c:if>
+
           <!-- 3. Địa điểm thực hiện & Trạng thái -->
           <div class="col-lg-3 col-md-5 ps-lg-2">
             <div class="d-flex flex-column gap-2">

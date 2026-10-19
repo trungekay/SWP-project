@@ -233,9 +233,18 @@
                             </div>
                         </div>
                         <div class="doctor-detail-status-wrap">
-                            <span class="doctor-detail-status completed">
-                                <i class="bi bi-check-circle-fill" aria-hidden="true"></i> Hoàn thành khám
-                            </span>
+                            <c:choose>
+                                <c:when test="${record.appointmentStatus eq 'Completed'}">
+                                    <span class="doctor-detail-status completed">
+                                        <i class="bi bi-check-circle-fill" aria-hidden="true"></i> Hoàn thành khám
+                                    </span>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="doctor-detail-status in-progress">
+                                        <i class="bi bi-clock-history" aria-hidden="true"></i> <c:out value="${record.appointmentStatus}" default="Đang khám" />
+                                    </span>
+                                </c:otherwise>
+                            </c:choose>
                         </div>
                         <div class="doctor-detail-hero-facts">
                             <span>
@@ -354,10 +363,53 @@
                         <div class="doctor-detail-card-heading">
                             <span class="doctor-detail-card-icon violet"><i class="bi bi-journal-medical" aria-hidden="true"></i></span>
                             <div>
-                                <h2 id="clinical-heading">Kết quả khám & Chẩn đoán lâm sàng</h2>
+                                <h2 id="clinical-heading">Kết quả khám &amp; Chẩn đoán lâm sàng</h2>
                                 <p>Ghi nhận chuyên môn từ Bác sĩ nhãn khoa</p>
                             </div>
                         </div>
+
+                        <!-- Triệu chứng chính (nếu có) -->
+                        <c:if test="${not empty record.chiefComplaint}">
+                            <div class="clinical-box">
+                                <div class="clinical-box-label"><i class="bi bi-chat-left-dots text-teal fs-6"></i> Triệu chứng chính</div>
+                                <div class="clinical-box-content" style="white-space: pre-wrap;"><c:out value="${record.chiefComplaint}" /></div>
+                            </div>
+                        </c:if>
+
+                        <!-- Tiền sử mắt và bệnh sử liên quan (nếu có) -->
+                        <c:if test="${not empty record.medicalHistory}">
+                            <div class="clinical-box">
+                                <div class="clinical-box-label"><i class="bi bi-clock-history text-teal fs-6"></i> Tiền sử mắt &amp; Bệnh sử liên quan</div>
+                                <div class="clinical-box-content" style="white-space: pre-wrap;"><c:out value="${record.medicalHistory}" /></div>
+                            </div>
+                        </c:if>
+
+                        <!-- Thị lực và nhãn áp (nếu có) -->
+                        <c:if test="${not empty record.odUncorrected or not empty record.osUncorrected or not empty record.odIop or not empty record.osIop}">
+                            <div class="clinical-box">
+                                <div class="clinical-box-label"><i class="bi bi-eye text-teal fs-6"></i> Thị lực và nhãn áp</div>
+                                <div class="clinical-box-content">
+                                    <div><strong>OD (Mắt phải):</strong> không kính <c:out value="${record.odUncorrected}" default="—" />, có kính <c:out value="${record.odCorrected}" default="—" />, nhãn áp <c:out value="${record.odIop}" default="—" /> mmHg</div>
+                                    <div><strong>OS (Mắt trái):</strong> không kính <c:out value="${record.osUncorrected}" default="—" />, có kính <c:out value="${record.osCorrected}" default="—" />, nhãn áp <c:out value="${record.osIop}" default="—" /> mmHg</div>
+                                </div>
+                            </div>
+                        </c:if>
+
+                        <!-- Bán phần trước (nếu có) -->
+                        <c:if test="${not empty record.anteriorFindings}">
+                            <div class="clinical-box">
+                                <div class="clinical-box-label"><i class="bi bi-search text-teal fs-6"></i> Bán phần trước</div>
+                                <div class="clinical-box-content" style="white-space: pre-wrap;"><c:out value="${record.anteriorFindings}" /></div>
+                            </div>
+                        </c:if>
+
+                        <!-- Đáy mắt / Bán phần sau (nếu có) -->
+                        <c:if test="${not empty record.posteriorFindings}">
+                            <div class="clinical-box">
+                                <div class="clinical-box-label"><i class="bi bi-circle-half text-teal fs-6"></i> Đáy mắt / Bán phần sau</div>
+                                <div class="clinical-box-content" style="white-space: pre-wrap;"><c:out value="${record.posteriorFindings}" /></div>
+                            </div>
+                        </c:if>
 
                         <!-- Chẩn đoán của Bác sĩ -->
                         <div class="clinical-box" style="border-left: 4px solid #008b74; background: #f0fdfa;">
@@ -365,27 +417,27 @@
                                 <i class="bi bi-activity text-teal fs-6"></i> Chẩn đoán của Bác sĩ
                             </div>
                             <div class="clinical-box-content fw-bold text-dark fs-6">
-                                <c:out value="${record.clinicalDiagnosis}" />
+                                <c:out value="${record.clinicalDiagnosis}" default="Chưa cập nhật" />
                             </div>
                         </div>
 
                         <!-- Kết quả kiểm tra mắt & đo thị lực -->
                         <div class="clinical-box">
                             <div class="clinical-box-label">
-                                <i class="bi bi-eye text-teal fs-6"></i> Kết quả kiểm tra mắt & đo thị lực
+                                <i class="bi bi-eye text-teal fs-6"></i> Kết quả kiểm tra mắt &amp; Đo thị lực
                             </div>
                             <div class="clinical-box-content">
-                                <c:out value="${record.examinationResult}" />
+                                <c:out value="${record.examinationResult}" default="Chưa cập nhật" />
                             </div>
                         </div>
 
                         <!-- Kết luận chuyên môn & Hướng xử trí -->
                         <div class="clinical-box mb-0">
                             <div class="clinical-box-label">
-                                <i class="bi bi-clipboard-check text-teal fs-6"></i> Kết luận chuyên môn & Hướng xử trí
+                                <i class="bi bi-clipboard-check text-teal fs-6"></i> Kết luận chuyên môn &amp; Hướng xử trí
                             </div>
                             <div class="clinical-box-content">
-                                <c:out value="${record.conclusion}" />
+                                <c:out value="${record.conclusion}" default="Chưa cập nhật" />
                             </div>
                         </div>
                     </section>
@@ -398,7 +450,7 @@
                             <div class="doctor-detail-card-heading">
                                 <span class="doctor-detail-card-icon teal"><i class="bi bi-clipboard2-pulse" aria-hidden="true"></i></span>
                                 <div>
-                                    <h2 id="procedure-heading">Chỉ định Dịch vụ / Cận lâm sàng & Thủ thuật</h2>
+                                    <h2 id="procedure-heading">Chỉ định Dịch vụ / Cận lâm sàng &amp; Thủ thuật</h2>
                                     <p>Danh mục kỹ thuật đo mắt, chẩn đoán hình ảnh đã thực hiện</p>
                                 </div>
                             </div>
@@ -419,7 +471,10 @@
                                             <tr>
                                                 <td class="text-center text-muted fw-bold">${proc.stt}</td>
                                                 <td>
-                                                    <div class="fw-bold text-dark">${proc.serviceName}</div>
+                                                    <div class="fw-bold text-dark"><c:out value="${proc.serviceName}" /></div>
+                                                    <c:if test="${not empty proc.referralNotes}">
+                                                        <div class="small text-muted fw-normal mt-1" style="white-space:pre-wrap"><c:out value="${proc.referralNotes}" /></div>
+                                                    </c:if>
                                                 </td>
                                                 <td>
                                                     <i class="bi bi-person me-1 text-muted"></i>
@@ -467,7 +522,7 @@
                                                 <th class="text-center" style="width: 8%;">STT</th>
                                                 <th style="width: 35%;">Tên thuốc / Quy cách</th>
                                                 <th class="text-center" style="width: 12%;">Số lượng</th>
-                                                <th>Liều dùng & Hướng dẫn sử dụng</th>
+                                                <th>Liều dùng &amp; Hướng dẫn sử dụng</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -496,7 +551,7 @@
                         <!-- Lời dặn Bác sĩ & Hướng dẫn tái khám -->
                         <div class="clinical-box mb-0 mt-3" style="background-color: #f0fdfa; border: 1px solid #ccfbf1;">
                             <div class="clinical-box-label">
-                                <i class="bi bi-chat-heart text-teal fs-6"></i> Lời dặn của Bác sĩ & Hướng dẫn tái khám
+                                <i class="bi bi-chat-heart text-teal fs-6"></i> Lời dặn của Bác sĩ &amp; Hướng dẫn tái khám
                             </div>
                             <div class="clinical-box-content">
                                 <c:out value="${record.doctorNotes}" default="Giữ vệ sinh mắt, tránh dụi mắt và tái khám đúng lịch hẹn nếu có bất thường." />
@@ -519,7 +574,7 @@
                                 <div class="fw-bold text-dark fs-6"><c:out value="${record.patientName}" /></div>
                             </div>
                             <div class="col-6 text-center">
-                                <div class="fw-bold text-dark">Bác sĩ khám & điều trị</div>
+                                <div class="fw-bold text-dark">Bác sĩ khám &amp; điều trị</div>
                                 <div class="text-muted small" style="font-size: 11.5px;">(Ký và ghi rõ họ tên)</div>
                                 <div style="height: 70px;"></div>
                                 <div class="fw-bold text-dark fs-6"><c:out value="${record.doctorName}" /></div>

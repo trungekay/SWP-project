@@ -1,10 +1,12 @@
 package com.visioncare.dao;
 
+import com.visioncare.util.ExaminationWindow;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 
 /** Status transition for a doctor's own checked-in appointment. */
 public class DoctorQueueDAO {
@@ -24,26 +26,31 @@ public class DoctorQueueDAO {
         }
     }
 
-    public boolean startExamination(int appointmentId, int doctorEmployeeId, Date clinicDate) throws Exception {
+    public boolean startExamination(int appointmentId, int doctorEmployeeId, LocalDateTime clinicNow) throws Exception {
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
             conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             try {
                 Date workDate;
-                String assignedSql = "SELECT ws.Work_Date FROM Appointment a WITH (UPDLOCK, HOLDLOCK) "
+                String assignedSql = "SELECT ws.Work_Date, ws.Start_Time FROM Appointment a WITH (UPDLOCK, HOLDLOCK) "
                         + "JOIN Work_Schedule ws WITH (UPDLOCK, HOLDLOCK) ON a.Schedule_ID = ws.Schedule_ID "
-                        + "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? "
+                        + "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ? "
                         + "AND a.Status = 'Confirmed' AND a.checkin_time IS NOT NULL";
                 try (PreparedStatement ps = conn.prepareStatement(assignedSql)) {
                     ps.setInt(1, appointmentId);
                     ps.setInt(2, doctorEmployeeId);
-                    ps.setDate(3, clinicDate);
                     try (ResultSet rs = ps.executeQuery()) {
                         if (!rs.next()) {
                             conn.rollback();
                             return false;
                         }
                         workDate = rs.getDate("Work_Date");
+                        if (workDate == null || rs.getTime("Start_Time") == null
+                                || !"open".equals(ExaminationWindow.state(workDate.toLocalDate(),
+                                        rs.getTime("Start_Time").toLocalTime(), clinicNow))) {
+                            conn.rollback();
+                            return false;
+                        }
                     }
                 }
 

@@ -11,8 +11,8 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css">
     <jsp:include page="/views/admin/layout/admin-css.jsp" />
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css">
-    <script defer src="${pageContext.request.contextPath}/assets/js/doctor-forms.js"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=8">
+    <script defer charset="UTF-8" src="${pageContext.request.contextPath}/assets/js/doctor-forms.js?v=7"></script>
 </head>
 <body>
 <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
@@ -88,23 +88,25 @@
                                 <legend>Thuốc <span data-medicine-number><c:out value="${row.count}" /></span></legend>
                                 <button type="button" class="doctor-form-remove" data-remove-medicine aria-label="Xóa thuốc"><i class="bi bi-trash3" aria-hidden="true"></i> Xóa</button>
                                 <div class="doctor-form-fields">
-                                    <label class="doctor-form-field doctor-form-span"><span>Tên thuốc <em>*</em></span>
-                                        <select name="medicines[${row.index}].medicineName" data-name="medicineName" required>
-                                            <option value="" ${empty medicine.medicineName ? 'selected' : ''}>Chọn thuốc trong danh mục</option>
-                                            <c:set var="catalogMatch" value="false" />
-                                            <c:forEach var="catalogMedicine" items="${medicineCatalog}">
-                                                <c:if test="${medicine.medicineName eq catalogMedicine.name}"><c:set var="catalogMatch" value="true" /></c:if>
-                                                <option value="<c:out value='${catalogMedicine.name}' />" ${medicine.medicineName eq catalogMedicine.name ? 'selected' : ''}><c:out value="${catalogMedicine.name}" /></option>
-                                            </c:forEach>
-                                            <c:if test="${not empty medicine.medicineName and not catalogMatch}">
-                                                <option value="" selected disabled>Đã lưu: <c:out value="${medicine.medicineName}" /> (chọn thuốc trong danh mục)</option>
-                                            </c:if>
-                                        </select>
-                                    </label>
-                                    <label class="doctor-form-field"><span>Hàm lượng / dạng dùng</span><input name="medicines[${row.index}].strength" data-name="strength" type="text" maxlength="100" value="<c:out value='${medicine.strength}' />"></label>
-                                    <label class="doctor-form-field"><span>Liều dùng <em>*</em></span><input name="medicines[${row.index}].dosage" data-name="dosage" type="text" maxlength="100" required value="<c:out value='${medicine.dosage}' />"></label>
-                                    <label class="doctor-form-field"><span>Tần suất <em>*</em></span><input name="medicines[${row.index}].frequency" data-name="frequency" type="text" maxlength="100" required value="<c:out value='${medicine.frequency}' />"></label>
-                                    <label class="doctor-form-field"><span>Thời gian dùng</span><input name="medicines[${row.index}].duration" data-name="duration" type="text" maxlength="100" value="<c:out value='${medicine.duration}' />"></label>
+                                    <div class="doctor-form-field doctor-form-span doctor-form-medicine-name"><label for="medicine-name-${row.index}">Tên thuốc <em>*</em></label>
+                                        <div class="doctor-form-combobox" data-medicine-combobox>
+                                            <input id="medicine-name-${row.index}" name="medicines[${row.index}].medicineName" data-name="medicineName" type="text" maxlength="255" required autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" placeholder="Chọn thuốc trong danh mục hoặc nhập tên thuốc mới" value="<c:out value='${medicine.medicineName}' />">
+                                            <div class="doctor-form-suggestions" data-medicine-suggestions role="listbox" hidden></div>
+                                        </div>
+                                        <small class="doctor-form-hint">Có thể nhập thuốc chưa có trong danh mục.</small>
+                                    </div>
+                                    <label class="doctor-form-field doctor-form-span"><span>Dạng dùng</span><input name="medicines[${row.index}].strength" data-name="strength" type="text" maxlength="100" placeholder="VD: Dung dịch nhỏ mắt" value="<c:out value='${medicine.strength}' />"></label>
+                                    <div class="doctor-form-dose-field doctor-form-span">
+                                        <span>Liều dùng theo buổi <em>*</em></span>
+                                        <div class="doctor-form-dose-grid">
+                                            <div class="doctor-form-dose-row" data-dose-row><label><input name="medicines[${row.index}].morning" data-name="morning" data-dose-toggle type="checkbox" value="true" ${medicine.morning eq 'true' ? 'checked' : ''}><span>Sáng</span></label><input name="medicines[${row.index}].morningDose" data-name="morningDose" data-dose-input type="text" maxlength="100" aria-label="Liều dùng buổi sáng" placeholder="VD: 1 viên" value="<c:out value='${medicine.morningDose}' />"></div>
+                                            <div class="doctor-form-dose-row" data-dose-row><label><input name="medicines[${row.index}].afternoon" data-name="afternoon" data-dose-toggle type="checkbox" value="true" ${medicine.afternoon eq 'true' ? 'checked' : ''}><span>Chiều</span></label><input name="medicines[${row.index}].afternoonDose" data-name="afternoonDose" data-dose-input type="text" maxlength="100" aria-label="Liều dùng buổi chiều" placeholder="VD: 1 viên" value="<c:out value='${medicine.afternoonDose}' />"></div>
+                                            <div class="doctor-form-dose-row" data-dose-row><label><input name="medicines[${row.index}].evening" data-name="evening" data-dose-toggle type="checkbox" value="true" ${medicine.evening eq 'true' ? 'checked' : ''}><span>Tối</span></label><input name="medicines[${row.index}].eveningDose" data-name="eveningDose" data-dose-input type="text" maxlength="100" aria-label="Liều dùng buổi tối" placeholder="VD: 1 viên" value="<c:out value='${medicine.eveningDose}' />"></div>
+                                        </div>
+                                        <c:if test="${not empty medicine.legacySchedule}"><small class="doctor-form-legacy-dose">Hướng dẫn đơn cũ: <c:out value="${medicine.legacySchedule}" />. Hãy chọn lại buổi dùng và liều tương ứng khi lưu đơn.</small></c:if>
+                                    </div>
+                                    <label class="doctor-form-field doctor-form-span"><span>Thời gian dùng</span><input name="medicines[${row.index}].duration" data-name="duration" type="text" maxlength="100" value="<c:out value='${medicine.duration}' />"></label>
+                                    <div class="doctor-form-quantity-unit doctor-form-span">
                                     <label class="doctor-form-field"><span>Số lượng <em>*</em></span><input name="medicines[${row.index}].quantity" data-name="quantity" type="number" min="1" max="999" step="1" required value="<c:out value='${medicine.quantity}' />"></label>
                                     <label class="doctor-form-field"><span>Đơn vị</span><select name="medicines[${row.index}].unit" data-name="unit">
                                         <option value="chai" ${medicine.unit eq 'chai' or empty medicine.unit ? 'selected' : ''}>Chai</option>
@@ -114,11 +116,13 @@
                                         <option value="lọ" ${medicine.unit eq 'lọ' ? 'selected' : ''}>Lọ</option>
                                         <option value="khác" ${medicine.unit eq 'khác' ? 'selected' : ''}>Khác</option>
                                     </select></label>
+                                    </div>
                                     <label class="doctor-form-field doctor-form-span"><span>Hướng dẫn thêm</span><input name="medicines[${row.index}].instructions" data-name="instructions" type="text" maxlength="255" value="<c:out value='${medicine.instructions}' />"></label>
                                 </div>
                             </fieldset>
                         </c:forEach>
                     </div>
+                    <datalist id="doctor-medicine-catalog"><c:forEach var="catalogMedicine" items="${medicineCatalog}"><option value="<c:out value='${catalogMedicine.name}' />"></option></c:forEach></datalist>
                     <button type="button" class="doctor-form-add" data-add-medicine><i class="bi bi-plus-circle" aria-hidden="true"></i> Thêm thuốc</button>
                 </section>
 
@@ -156,7 +160,6 @@
 
                 <div class="doctor-form-actions">
                     <a class="doctor-form-button secondary" href="${pageContext.request.contextPath}/doctor/examination?id=${appointment.id}">Về phiếu khám</a>
-                    <button class="doctor-form-button secondary" type="button" data-preview-button><i class="bi bi-eye" aria-hidden="true"></i> Xem trước</button>
                     <button class="doctor-form-button primary" type="submit"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Lưu đơn</button>
                 </div>
             </form>
@@ -167,7 +170,6 @@
                     <ol class="doctor-form-steps">
                         <li><span>1</span><div><strong>Khám lâm sàng</strong><small>Nhập kết quả và kết luận</small></div></li>
                         <li class="current"><span>2</span><div><strong>Kê đơn</strong><small>Thuốc và kính nếu cần</small></div></li>
-                        <li><span>3</span><div><strong>Hoàn tất ca khám</strong><small>Cập nhật trạng thái hàng đợi</small></div></li>
                     </ol>
                     <a class="doctor-form-aside-link" href="${pageContext.request.contextPath}/doctor/waiting-list">Về hàng đợi <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
                 </div>
@@ -181,30 +183,21 @@
         <legend>Thuốc <span data-medicine-number></span></legend>
         <button type="button" class="doctor-form-remove" data-remove-medicine aria-label="Xóa thuốc"><i class="bi bi-trash3" aria-hidden="true"></i> Xóa</button>
         <div class="doctor-form-fields">
-            <label class="doctor-form-field doctor-form-span"><span>Tên thuốc <em>*</em></span><select data-name="medicineName" required>
-                <option value="">Chọn thuốc trong danh mục</option>
-                <c:forEach var="catalogMedicine" items="${medicineCatalog}">
-                    <option value="<c:out value='${catalogMedicine.name}' />"><c:out value="${catalogMedicine.name}" /></option>
-                </c:forEach>
-            </select></label>
-            <label class="doctor-form-field"><span>Hàm lượng / dạng dùng</span><input data-name="strength" type="text" maxlength="100" placeholder="VD: 0,5% · Dung dịch nhỏ mắt"></label>
-            <label class="doctor-form-field"><span>Liều dùng <em>*</em></span><input data-name="dosage" type="text" maxlength="100" placeholder="VD: 1 giọt mỗi mắt" required></label>
-            <label class="doctor-form-field"><span>Tần suất <em>*</em></span><input data-name="frequency" type="text" maxlength="100" placeholder="VD: 3 lần/ngày" required></label>
-            <label class="doctor-form-field"><span>Thời gian dùng</span><input data-name="duration" type="text" maxlength="100" placeholder="VD: 7 ngày"></label>
-            <label class="doctor-form-field"><span>Số lượng <em>*</em></span><input data-name="quantity" type="number" min="1" max="999" step="1" placeholder="VD: 1" required></label>
-            <label class="doctor-form-field"><span>Đơn vị</span><select data-name="unit"><option value="chai">Chai</option><option value="hộp">Hộp</option><option value="viên">Viên</option><option value="tuýp">Tuýp</option><option value="lọ">Lọ</option><option value="khác">Khác</option></select></label>
+            <div class="doctor-form-field doctor-form-span doctor-form-medicine-name"><label>Tên thuốc <em>*</em></label><div class="doctor-form-combobox" data-medicine-combobox><input data-name="medicineName" type="text" maxlength="255" required autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" placeholder="Chọn thuốc trong danh mục hoặc nhập tên thuốc mới"><div class="doctor-form-suggestions" data-medicine-suggestions role="listbox" hidden></div></div><small class="doctor-form-hint">Có thể nhập thuốc chưa có trong danh mục.</small></div>
+            <label class="doctor-form-field doctor-form-span"><span>Dạng dùng</span><input data-name="strength" type="text" maxlength="100" placeholder="VD: Dung dịch nhỏ mắt"></label>
+            <div class="doctor-form-dose-field doctor-form-span">
+                <span>Liều dùng theo buổi <em>*</em></span>
+                <div class="doctor-form-dose-grid">
+                    <div class="doctor-form-dose-row" data-dose-row><label><input data-name="morning" data-dose-toggle type="checkbox" value="true"><span>Sáng</span></label><input data-name="morningDose" data-dose-input type="text" maxlength="100" aria-label="Liều dùng buổi sáng" placeholder="VD: 1 viên"></div>
+                    <div class="doctor-form-dose-row" data-dose-row><label><input data-name="afternoon" data-dose-toggle type="checkbox" value="true"><span>Chiều</span></label><input data-name="afternoonDose" data-dose-input type="text" maxlength="100" aria-label="Liều dùng buổi chiều" placeholder="VD: 1 viên"></div>
+                    <div class="doctor-form-dose-row" data-dose-row><label><input data-name="evening" data-dose-toggle type="checkbox" value="true"><span>Tối</span></label><input data-name="eveningDose" data-dose-input type="text" maxlength="100" aria-label="Liều dùng buổi tối" placeholder="VD: 1 viên"></div>
+                </div>
+            </div>
+            <label class="doctor-form-field doctor-form-span"><span>Thời gian dùng</span><input data-name="duration" type="text" maxlength="100" placeholder="VD: 7 ngày"></label>
+            <div class="doctor-form-quantity-unit doctor-form-span"><label class="doctor-form-field"><span>Số lượng <em>*</em></span><input data-name="quantity" type="number" min="1" max="999" step="1" placeholder="VD: 1" required></label><label class="doctor-form-field"><span>Đơn vị</span><select data-name="unit"><option value="chai">Chai</option><option value="hộp">Hộp</option><option value="viên">Viên</option><option value="tuýp">Tuýp</option><option value="lọ">Lọ</option><option value="khác">Khác</option></select></label></div>
             <label class="doctor-form-field doctor-form-span"><span>Hướng dẫn thêm</span><input data-name="instructions" type="text" maxlength="255" placeholder="VD: Nhỏ cách các thuốc khác ít nhất 5 phút"></label>
         </div>
     </fieldset>
 </template>
-<div class="doctor-form-modal" data-preview-modal hidden>
-    <div class="doctor-form-modal-backdrop" data-close-preview></div>
-    <section class="doctor-form-modal-panel" role="dialog" aria-modal="true" aria-labelledby="preview-title">
-        <button type="button" class="doctor-form-modal-close" data-close-preview aria-label="Đóng xem trước"><i class="bi bi-x-lg"></i></button>
-        <span class="doctor-form-eyebrow">XEM TRƯỚC · CHƯA LƯU</span>
-        <h2 id="preview-title">Phiếu kê đơn</h2>
-        <div data-preview-content></div>
-    </section>
-</div>
 </body>
 </html>

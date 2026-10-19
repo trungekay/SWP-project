@@ -217,6 +217,9 @@
 .doctor-detail-fields dt { margin-bottom: 5px; color: #84939e; font-size: 11px; font-weight: 650; }
 .doctor-detail-fields dd { margin: 0; color: #263d49; font-size: 13px; font-weight: 650; line-height: 1.5; overflow-wrap: anywhere; }
 .doctor-detail-muted { color: #a2adb5; font-weight: 500; }
+.doctor-detail-staff-notes .doctor-detail-card-heading { margin-bottom: 14px; }
+.doctor-detail-staff-notes-content { margin: 0; padding-top: 16px; border-top: 1px solid #eef2f4; color: #263d49; font-size: 13px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.doctor-detail-staff-notes > .doctor-detail-muted { margin: 0; padding-top: 16px; border-top: 1px solid #eef2f4; font-size: 13px; }
 
 .doctor-detail-history { padding-bottom: 8px; }
 .doctor-detail-history-heading { margin-bottom: 13px; }
@@ -231,6 +234,8 @@
 .doctor-detail-record-id { color: #a2aeb7; font-size: 11px; font-weight: 700; }
 .doctor-detail-timeline-item h3 { margin: 7px 0; color: #223a45; font-size: 14px; font-weight: 750; line-height: 1.5; overflow-wrap: anywhere; }
 .doctor-detail-history-doctor { display: flex; align-items: center; gap: 7px; margin: 0; color: #788b96; font-size: 12px; }
+.doctor-detail-history-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 11px; padding: 7px 11px; border: 1px solid #b8ddd3; border-radius: 8px; color: #007d68; text-decoration: none; font-size: 12px; font-weight: 750; }
+.doctor-detail-history-link:hover { background: #eef9f5; color: #006c5a; }
 .doctor-detail-history-more { margin-top: 13px; }
 .doctor-detail-history-more summary { display: inline-flex; align-items: center; gap: 7px; color: #008b74; cursor: pointer; font-size: 12px; font-weight: 750; list-style: none; }
 .doctor-detail-history-more summary::-webkit-details-marker { display: none; }

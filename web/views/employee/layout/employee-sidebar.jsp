@@ -89,7 +89,7 @@
 
                 <c:if test="${fn:toLowerCase(sessionScope.user.role) == 'doctor' || sessionScope.user.roleId == 3}">
                     <li>
-                        <a href="javascript:void(0);" class="${param.activeNav == 'examination' ? 'active' : ''}" title="Chức năng đang phát triển" style="opacity: 0.85;">
+                        <a href="${pageContext.request.contextPath}/doctor/waiting-list" class="${param.activeNav == 'examination' || param.activeNav == 'doctor-waiting' ? 'active' : ''}">
                             <i class="bi bi-file-earmark-medical"></i>
                             <span>Khám bệnh & Bệnh án</span>
                         </a>
