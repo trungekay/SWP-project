@@ -1,5 +1,6 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <!-- Employee Work Sidebar -->
 <aside class="sidebar">
     <a href="${pageContext.request.contextPath}/employee/schedule" class="sidebar-brand">
@@ -8,8 +9,8 @@
     </a>
     <ul class="sidebar-menu">
         <c:choose>
-            <%-- ==================== GIAO DIỆN DÀNH CHO STAFF ==================== --%>
-            <c:when test="${sessionScope.user.role == 'staff' || sessionScope.user.roleId == 5}">
+            <%-- ==================== GIAO DIỆN DÀNH CHO STAFF / LỄ TÂN ==================== --%>
+            <c:when test="${empty sessionScope.user || fn:toLowerCase(sessionScope.user.role) == 'staff' || sessionScope.user.roleId == 5 || (fn:toLowerCase(sessionScope.user.role) != 'doctor' && fn:toLowerCase(sessionScope.user.role) != 'medical_specialist' && fn:toLowerCase(sessionScope.user.role) != 'specialist' && sessionScope.user.roleId != 3 && sessionScope.user.roleId != 4 && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'refunds'))}">
                 <div class="sidebar-menu-header">Bàn làm việc Nhân viên</div>
 
                 <!-- 1. Màn hình đặt lịch -->
@@ -45,15 +46,7 @@
                     </ul>
                 </li>
 
-                <!-- 3. Quản lý Bệnh nhân -->
-                <li>
-                    <a href="${pageContext.request.contextPath}/staff/patients" class="${param.activeNav == 'staff-patients' || param.activeNav == 'patients' ? 'active' : ''}">
-                        <i class="bi bi-people"></i>
-                        <span>Danh sách bệnh nhân</span>
-                    </a>
-                </li>
-
-                <!-- 4. Quản lý yêu cầu hoàn tiền -->
+                <!-- 3. Quản lý yêu cầu hoàn tiền -->
                 <li>
                     <a href="${pageContext.request.contextPath}/staff/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}">
                         <i class="bi bi-cash-coin"></i>
@@ -77,16 +70,16 @@
                     </a>
                 </li>
 
-                <c:if test="${sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist' || sessionScope.user.roleId == 4 || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2}">
+                <c:if test="${fn:toLowerCase(sessionScope.user.role) == 'medical_specialist' || fn:toLowerCase(sessionScope.user.role) == 'specialist' || sessionScope.user.roleId == 4 || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2}">
                     <li>
-                        <a href="${pageContext.request.contextPath}/specialist/waiting-list" class="${param.activeNav == 'waiting-list' ? 'active' : ''}">
+                        <a href="${pageContext.request.contextPath}/specialist/waiting-list" class="${param.activeNav == 'waiting-list' || param.activeNav == 'specialist-waiting-list' ? 'active' : ''}">
                             <i class="bi bi-clipboard2-pulse"></i>
                             <span>Hàng đợi cận lâm sàng</span>
                         </a>
                     </li>
                 </c:if>
 
-                <c:if test="${sessionScope.user.role == 'doctor' || sessionScope.user.roleId == 3}">
+                <c:if test="${fn:toLowerCase(sessionScope.user.role) == 'doctor' || sessionScope.user.roleId == 3}">
                     <li>
                         <a href="javascript:void(0);" class="${param.activeNav == 'examination' ? 'active' : ''}" title="Chức năng đang phát triển" style="opacity: 0.85;">
                             <i class="bi bi-file-earmark-medical"></i>
@@ -96,8 +89,14 @@
                 </c:if>
 
                 <%-- Fallback cho Admin xem trang Tiếp đón / Lễ tân --%>
-                <c:if test="${(sessionScope.user.role == 'admin' || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2) && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list')}">
+                <c:if test="${(fn:toLowerCase(sessionScope.user.role) == 'admin' || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2) && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'refunds')}">
                     <div class="sidebar-menu-header mt-3">Tiếp đón & Lễ tân</div>
+                    <li>
+                        <a href="${pageContext.request.contextPath}/employee/schedule" class="${param.activeNav == 'schedule' ? 'active' : ''}">
+                            <i class="bi bi-calendar3"></i>
+                            <span>Đặt lịch hẹn</span>
+                        </a>
+                    </li>
                     <li class="sidebar-dropdown">
                         <a href="javascript:void(0);" onclick="toggleSubmenu('appt-sub-admin', this);" class="active">
                             <div class="d-flex align-items-center gap-2">
@@ -121,8 +120,47 @@
                             </li>
                         </ul>
                     </li>
+                    <li>
+                        <a href="${pageContext.request.contextPath}/staff/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}">
+                            <i class="bi bi-cash-coin"></i>
+                            <span>Quản lý yêu cầu hoàn tiền</span>
+                        </a>
+                    </li>
                 </c:if>
             </c:otherwise>
         </c:choose>
     </ul>
 </aside>
+<script>
+    window.toggleSubmenu = function(menuId, el) {
+        var menu = document.getElementById(menuId);
+        if (!menu && el) {
+            var parent = el.closest('.sidebar-dropdown') || el.parentElement;
+            if (parent) {
+                menu = parent.querySelector('.sidebar-submenu');
+            }
+        }
+        if (menu) {
+            var isShown = menu.classList.contains('show') || menu.style.display === 'block';
+            if (isShown) {
+                menu.classList.remove('show');
+                menu.style.display = 'none';
+            } else {
+                menu.classList.add('show');
+                menu.style.display = 'block';
+            }
+            if (el) {
+                var icon = el.querySelector('.bi-chevron-down, .bi-chevron-up');
+                if (icon) {
+                    if (menu.classList.contains('show') || menu.style.display === 'block') {
+                        icon.classList.remove('bi-chevron-down');
+                        icon.classList.add('bi-chevron-up');
+                    } else {
+                        icon.classList.remove('bi-chevron-up');
+                        icon.classList.add('bi-chevron-down');
+                    }
+                }
+            }
+        }
+    };
+</script>

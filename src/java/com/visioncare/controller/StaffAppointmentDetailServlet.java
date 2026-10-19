@@ -37,6 +37,7 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
             }
 
             request.setAttribute("appointment", appointment);
+            request.setAttribute("todayStr", java.time.LocalDate.now().toString());
             request.getRequestDispatcher("/views/staff/appointment-detail.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
@@ -60,6 +61,13 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
 
         try {
             int apptId = Integer.parseInt(idParam.trim());
+
+            Appointment targetAppt = appointmentDAO.getAppointmentById(apptId);
+            if (targetAppt != null && targetAppt.isPast()) {
+                session.setAttribute("errorMessage", "Lịch hẹn (#APPT-" + apptId + ") đã qua ngày khám (" + targetAppt.getAppointmentDate() + "). Hệ thống chỉ cho phép xem thông tin và ghi chú y tế, không thể thực hiện thao tác khác!");
+                response.sendRedirect(request.getContextPath() + "/staff/appointment-detail?id=" + apptId);
+                return;
+            }
 
             if ("saveNotes".equalsIgnoreCase(action)) {
                 String notes = request.getParameter("medicalNotes");
@@ -92,17 +100,17 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
             } else if ("startExam".equalsIgnoreCase(action) || "inProgress".equalsIgnoreCase(action)) {
                 java.sql.Date todayDate = java.sql.Date.valueOf(java.time.LocalDate.now());
                 java.util.List<Appointment> currentQueue = appointmentDAO.getWaitingList(todayDate, null, null, null);
-                Appointment targetAppt = currentQueue.stream().filter(a -> a.getId() == apptId).findFirst().orElse(null);
-                if (targetAppt != null) {
+                Appointment queueAppt = currentQueue.stream().filter(a -> a.getId() == apptId).findFirst().orElse(null);
+                if (queueAppt != null) {
                     Appointment busyAppt = currentQueue.stream()
                             .filter(a -> "In_Progress".equalsIgnoreCase(a.getStatus())
                                     && a.getId() != apptId
-                                    && ((targetAppt.getDoctorId() > 0 && a.getDoctorId() == targetAppt.getDoctorId())
-                                        || (targetAppt.getRoomName() != null && !targetAppt.getRoomName().isEmpty() && targetAppt.getRoomName().equalsIgnoreCase(a.getRoomName()))))
+                                    && ((queueAppt.getDoctorId() > 0 && a.getDoctorId() == queueAppt.getDoctorId())
+                                        || (queueAppt.getRoomName() != null && !queueAppt.getRoomName().isEmpty() && queueAppt.getRoomName().equalsIgnoreCase(a.getRoomName()))))
                             .findFirst().orElse(null);
                     if (busyAppt != null) {
                         session.setAttribute("errorMessage", "Không thể gọi vào phòng: "
-                                + (targetAppt.getDoctorName() != null ? targetAppt.getDoctorName() : "Bác sĩ")
+                                + (queueAppt.getDoctorName() != null ? queueAppt.getDoctorName() : "Bác sĩ")
                                 + " hiện đang khám cho bệnh nhân " + busyAppt.getPatientName() + " (#APPT-" + busyAppt.getId() + ")! Mỗi ca 30 phút chỉ có 1 bệnh nhân trong phòng, vui lòng hoàn tất ca hiện tại trước.");
                         response.sendRedirect(request.getContextPath() + "/staff/appointment-detail?id=" + apptId);
                         return;
@@ -137,11 +145,15 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
                     session.setAttribute("errorMessage", "Không thể ghi nhận vắng mặt cho ca khám #" + apptId);
                 }
             } else if ("skip".equalsIgnoreCase(action)) {
-                boolean success = appointmentDAO.skipQueue(apptId);
-                if (success) {
-                    session.setAttribute("successMessage", "Đã bỏ qua lượt cho bệnh nhân (#APPT-" + apptId + ") và chuyển xuống cuối hàng đợi.");
-                } else {
-                    session.setAttribute("errorMessage", "Không thể chuyển lượt cho ca khám #" + apptId);
+                try {
+                    String resultMsg = appointmentDAO.skipQueue(apptId);
+                    if (resultMsg != null && !resultMsg.isEmpty()) {
+                        session.setAttribute("successMessage", resultMsg);
+                    } else {
+                        session.setAttribute("errorMessage", "Không thể chuyển lượt cho ca khám #" + apptId);
+                    }
+                } catch (Exception e) {
+                    session.setAttribute("errorMessage", "Không thể bỏ qua lượt: " + e.getMessage());
                 }
             } else if ("cancel".equalsIgnoreCase(action)) {
                 String reasonSelect = request.getParameter("cancelReasonSelect");
