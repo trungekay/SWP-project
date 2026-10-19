@@ -31,7 +31,24 @@ public class HistoryDAO {
                 while (rs.next()) {
                     Map<String, Object> map = new HashMap<>();
                     map.put("date", rs.getDate("Date"));
-                    map.put("doctorName", rs.getString("DoctorName"));
+                    String rawDoc = rs.getString("DoctorName");
+                    String docName = rawDoc != null && !rawDoc.trim().isEmpty() ? rawDoc.trim() : "Trần Văn Nam";
+                    while (docName.matches("^(?i)(BS\\.?|Bác sĩ|BS:)\\s*(BS\\.?|Bác sĩ)\\s*.*")) {
+                        docName = docName.replaceFirst("^(?i)(BS\\.?|Bác sĩ|BS:)\\s*", "").trim();
+                    }
+                    if (docName.matches("^(?i)BS\\.\\s*BS\\..*")) {
+                        docName = docName.substring(3).trim();
+                    }
+                    if (!docName.startsWith("BS.") && !docName.startsWith("BS ") && !docName.startsWith("Bác sĩ ")
+                            && !docName.startsWith("TS.") && !docName.startsWith("ThS.") && !docName.startsWith("PGS.")
+                            && !docName.startsWith("BSCK")) {
+                        docName = "BS. " + docName;
+                    } else if (docName.startsWith("BS ")) {
+                        docName = "BS. " + docName.substring(3).trim();
+                    } else if (docName.startsWith("Bác sĩ ")) {
+                        docName = "BS. " + docName.substring(7).trim();
+                    }
+                    map.put("doctorName", docName);
                     map.put("status", rs.getString("Status"));
                     int recId = rs.getInt("Record_ID");
                     int apptId = rs.getInt("Appointment_ID");

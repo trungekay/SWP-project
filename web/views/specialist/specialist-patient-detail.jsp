@@ -156,7 +156,7 @@
             </span>
             <span class="text-muted small mx-1">|</span>
             <span class="text-secondary small">
-              <i class="bi bi-person-badge text-muted me-1"></i>BS: <strong><c:out value="${currentOrder.doctorName}" /></strong>
+              <i class="bi bi-person-badge text-muted me-1"></i><strong><c:out value="${currentOrder.doctorName}" /></strong>
               <c:if test="${not empty currentOrder.clinicalDiagnosis}">
                 <span class="text-muted ms-1">(<c:out value="${currentOrder.clinicalDiagnosis}" />)</span>
               </c:if>

@@ -558,9 +558,23 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <div class="modal-body pt-3 pb-4">
-                <p class="text-muted mb-4 small">Vui lòng chọn hóa đơn và cung cấp lý do để chúng tôi tiến hành xác minh
+                <p class="text-muted mb-3 small">Vui lòng chọn hóa đơn và cung cấp lý do để chúng tôi tiến hành xác minh
                   và hoàn tiền cho bạn.</p>
-                <form action="${pageContext.request.contextPath}/refund/request" method="POST">
+
+                <c:set var="eligibleCount" value="0" />
+                <c:forEach var="pi" items="${paidInvoices}">
+                  <c:if test="${pi.isEligible}">
+                    <c:set var="eligibleCount" value="${eligibleCount + 1}" />
+                  </c:if>
+                </c:forEach>
+
+                <c:if test="${eligibleCount == 0}">
+                  <div id="noEligibleAlert" class="alert alert-warning py-2 px-3 small mb-3">
+                    <i class="bi bi-info-circle me-1"></i>Hiện không có hóa đơn nào đủ điều kiện yêu cầu hoàn tiền (hóa đơn chưa thanh toán hoặc đã gửi yêu cầu trước đó).
+                  </div>
+                </c:if>
+
+                <form action="${pageContext.request.contextPath}/refund/request" method="POST" id="refundRequestForm">
 
                   <div class="mb-3">
                     <label class="form-label small fw-bold">Chọn hóa đơn đã thanh toán <span
@@ -569,15 +583,19 @@
                       onchange="updateMaxRefundAmount()" required>
                       <option value="" disabled selected>-- Chọn hóa đơn --</option>
                       <c:choose>
-                        <c:when test="${not empty paidInvoices}">
+                        <c:when test="${eligibleCount > 0}">
                           <c:forEach var="pi" items="${paidInvoices}">
-                            <option value="${pi.id}" data-amount="${pi.amount}">
-                              ${pi.formattedId} - Hoàn tất: ${pi.date} (${pi.amountFmt})
-                            </option>
+                            <c:if test="${pi.isEligible}">
+                              <option value="${pi.id}" 
+                                      data-amount="${pi.depositAmount != null ? pi.depositAmount : pi.amount}"
+                                      data-amount-fmt="${pi.amountFmt}">
+                                ${pi.formattedId} - ${pi.date} - ${pi.amountFmt}
+                              </option>
+                            </c:if>
                           </c:forEach>
                         </c:when>
                         <c:otherwise>
-                          <option value="1" data-amount="300000">#INV-00001 - Khám mắt tổng quát (300,000 đ)</option>
+                          <option value="" disabled>Không có hóa đơn hợp lệ</option>
                         </c:otherwise>
                       </c:choose>
                     </select>
@@ -586,8 +604,10 @@
                   <div class="mb-3">
                     <label class="form-label small fw-bold">Số tiền yêu cầu hoàn (VNĐ) <span
                         class="text-danger">*</span></label>
-                    <input type="number" class="form-control" name="amount" id="refundAmountInput"
-                      placeholder="VD: 300000" required>
+                    <input type="text" class="form-control bg-light" id="refundAmountDisplay"
+                      placeholder="Tự động cập nhật theo hóa đơn" readonly
+                      style="cursor: not-allowed; font-weight: 600; color: #0d9488;">
+                    <input type="hidden" name="amount" id="refundAmountInput" required>
                   </div>
 
                   <div class="mb-3">
@@ -598,7 +618,7 @@
 
                   <div class="d-flex justify-content-end gap-2 mt-4">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
-                    <button type="submit" class="btn text-white" style="background-color: #0d9488;">Gửi yêu cầu</button>
+                    <button type="submit" class="btn text-white" style="background-color: #0d9488;" ${eligibleCount == 0 ? 'disabled' : ''}>Gửi yêu cầu</button>
                   </div>
                 </form>
               </div>
@@ -701,10 +721,17 @@
             const sel = document.getElementById('refundInvoiceSelect');
             const opt = sel.options[sel.selectedIndex];
             if (opt && opt.dataset.amount) {
-              const maxAmt = opt.dataset.amount;
-              const input = document.getElementById('refundAmountInput');
-              input.value = maxAmt;
-              input.max = maxAmt;
+              const rawAmt = opt.dataset.amount;
+              const fmtAmt = opt.dataset.amountFmt || (new Intl.NumberFormat('vi-VN').format(rawAmt) + ' đ');
+              const displayInput = document.getElementById('refundAmountDisplay');
+              const hiddenInput = document.getElementById('refundAmountInput');
+              if (displayInput) displayInput.value = fmtAmt;
+              if (hiddenInput) hiddenInput.value = rawAmt;
+            } else {
+              const displayInput = document.getElementById('refundAmountDisplay');
+              const hiddenInput = document.getElementById('refundAmountInput');
+              if (displayInput) displayInput.value = '';
+              if (hiddenInput) hiddenInput.value = '';
             }
           }
 

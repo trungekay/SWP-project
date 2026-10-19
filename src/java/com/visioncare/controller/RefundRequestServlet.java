@@ -46,16 +46,20 @@ public class RefundRequestServlet extends HttpServlet {
                     if (ok) {
                         session.setAttribute("successMessage", "Yêu cầu hoàn tiền và hủy lịch hẹn #APT-" + apptId + " đã được gửi tới nhân viên. Trạng thái lịch chuyển sang 'Chờ duyệt'!");
                     } else {
-                        session.setAttribute("errorMessage", "Không thể gửi yêu cầu hoàn tiền cho lịch hẹn #" + apptId + ".");
+                        session.setAttribute("errorMessage", "Lịch hẹn #APT-" + apptId + " đã có yêu cầu hoàn tiền đang được xử lý hoặc không hợp lệ. Không thể gửi yêu cầu trùng lặp!");
                     }
                 } else if (invoiceIdParam != null && !invoiceIdParam.trim().isEmpty()) {
                     int invoiceId = Integer.parseInt(invoiceIdParam.replaceAll("[^0-9]", ""));
-                    ok = invoiceDAO.createRefundRequest(invoiceId, currentUser.getId(), amount, reason);
-                    if (ok) {
-                        appointmentDAO.requestCancelByInvoice(invoiceId, currentUser.getId(), reason);
-                        session.setAttribute("successMessage", "Yêu cầu hoàn tiền cho hóa đơn #" + invoiceId + " đã được gửi thành công tới nhân viên. Trạng thái lịch liên quan đã chuyển sang 'Chờ duyệt'!");
+                    if (invoiceDAO.hasActiveRefundRequest(invoiceId)) {
+                        session.setAttribute("errorMessage", "Hóa đơn #INV-" + String.format("%05d", invoiceId) + " đã có yêu cầu hoàn tiền đang được xử lý hoặc đã duyệt thành công. Vui lòng không gửi yêu cầu trùng lặp!");
                     } else {
-                        session.setAttribute("errorMessage", "Không thể gửi yêu cầu hoàn tiền. Vui lòng kiểm tra lại thông tin hóa đơn.");
+                        ok = invoiceDAO.createRefundRequest(invoiceId, currentUser.getId(), amount, reason);
+                        if (ok) {
+                            appointmentDAO.requestCancelByInvoice(invoiceId, currentUser.getId(), reason);
+                            session.setAttribute("successMessage", "Yêu cầu hoàn tiền cho hóa đơn #INV-" + String.format("%05d", invoiceId) + " đã được gửi thành công tới nhân viên. Trạng thái lịch liên quan đã chuyển sang 'Chờ duyệt'!");
+                        } else {
+                            session.setAttribute("errorMessage", "Không thể gửi yêu cầu hoàn tiền. Vui lòng kiểm tra lại thông tin hóa đơn.");
+                        }
                     }
                 }
             } catch (Exception e) {

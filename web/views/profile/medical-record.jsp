@@ -1,7 +1,9 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
-<%-- Include Header --%>
+<%-- Include Common Header --%>
 <jsp:include page="/views/common/header.jsp">
     <jsp:param name="pageTitle" value="Hồ sơ khám bệnh" />
     <jsp:param name="pageDescription" value="Chi tiết hồ sơ bệnh án ngoại trú VisionCare Clinic" />
@@ -9,115 +11,149 @@
     <jsp:param name="activeNav" value="" />
 </jsp:include>
 
+<!-- Link to Doctor & Specialist Unified Detail Stylesheet -->
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-patient-detail.css">
+
 <style>
-    .medical-card {
-        background: #ffffff;
-        border-radius: 14px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-        padding: 35px;
-        margin-top: 15px;
-        margin-bottom: 40px;
-        border: 1px solid #e2e8f0;
+    /* Patient Profile Medical Detail Scoped Adaptations */
+    .patient-medical-detail-page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 10px 15px 50px;
     }
     .text-teal {
-        color: #0d9488 !important;
+        color: #008b74 !important;
     }
     .bg-teal {
-        background-color: #0d9488 !important;
+        background-color: #008b74 !important;
     }
-    .section-title-sm {
-        font-size: 13px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #0d9488;
-        margin-bottom: 12px;
+    .border-teal-subtle {
+        border-color: #cbece4 !important;
+    }
+    .btn-teal {
+        background: #008b74;
+        color: #fff;
+        border: 1px solid transparent;
+        transition: all .2s ease;
+    }
+    .btn-teal:hover {
+        background: #00705d;
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 139, 116, .2);
+    }
+    .btn-outline-teal {
+        background: #fff;
+        color: #008b74;
+        border: 1px solid #cbece4;
+        transition: all .2s ease;
+    }
+    .btn-outline-teal:hover {
+        background: #effbf7;
+        color: #00705d;
+        border-color: #008b74;
+    }
+    
+    /* Document Container & Printable Card */
+    .patient-doc-container {
+        background: transparent;
+    }
+    
+    /* Result Boxes inside Clinical Detail */
+    .clinical-box {
+        background: #f8fcfa;
+        border: 1px solid #e2f0eb;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 14px;
+        transition: border-color .2s;
+    }
+    .clinical-box:hover {
+        border-color: #b9e3d7;
+    }
+    .clinical-box-label {
         display: flex;
         align-items: center;
         gap: 8px;
+        color: #008b74;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 7px;
     }
-    .info-box {
-        background-color: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        padding: 18px;
-        height: 100%;
+    .clinical-box-content {
+        color: #172b3a;
+        font-size: 14px;
+        line-height: 1.6;
     }
-    .custom-record-table {
+    
+    /* Procedure & Prescription Tables */
+    .patient-detail-table {
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
+        border: 1px solid #e2eaf0;
+        border-radius: 12px;
         overflow: hidden;
+        margin-bottom: 0;
     }
-    .custom-record-table th {
+    .patient-detail-table th {
         background-color: #f8fafc;
         color: #475569;
-        font-size: 13px;
-        font-weight: 600;
-        padding: 12px 16px;
-        border-bottom: 1px solid #e2e8f0;
+        font-size: 12.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        padding: 13px 18px;
+        border-bottom: 1px solid #e2eaf0;
     }
-    .custom-record-table td {
-        padding: 12px 16px;
-        font-size: 14px;
+    .patient-detail-table td {
+        padding: 14px 18px;
+        font-size: 13.5px;
         color: #1e293b;
         border-bottom: 1px solid #f1f5f9;
         vertical-align: middle;
     }
-    .custom-record-table tr:last-child td {
+    .patient-detail-table tr:last-child td {
         border-bottom: none;
     }
-    .custom-record-table tbody tr:hover {
-        background-color: #fafbfc;
-    }
-    .badge-soft-success {
-        background-color: #dcfce7;
-        color: #166534;
-        font-size: 12px;
-        font-weight: 500;
-        padding: 4px 10px;
-        border-radius: 20px;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-    }
-    .badge-soft-info {
-        background-color: #e0f2fe;
-        color: #0369a1;
-        font-size: 12px;
-        font-weight: 500;
-        padding: 4px 10px;
-        border-radius: 20px;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
+    .patient-detail-table tbody tr:hover {
+        background-color: #f8fcfa;
     }
 
+    /* Print View Styles */
     @media print {
         body * {
             visibility: hidden;
         }
-        #printableRecord, #printableRecord * {
+        #printableArea, #printableArea * {
             visibility: visible;
         }
-        #printableRecord {
+        #printableArea {
             position: absolute;
             left: 0;
             top: 0;
             width: 100%;
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             background: #ffffff;
-            box-shadow: none !important;
-            border: none !important;
-            border-radius: 0 !important;
         }
-        .header, .footer, .breadcrumbs, .page-title, .btn, .action-bar-top {
+        .header, .footer, .breadcrumbs, .page-title, .action-bar-top {
             display: none !important;
         }
-        .print-break-inside {
+        .doctor-detail-hero {
+            box-shadow: none !important;
+            border: 1px solid #ccc !important;
+            break-inside: avoid;
+        }
+        .doctor-detail-card {
+            box-shadow: none !important;
+            border: 1px solid #ccc !important;
+            break-inside: avoid;
+            margin-bottom: 16px;
+        }
+        .print-signature-section {
             break-inside: avoid;
         }
     }
@@ -125,13 +161,14 @@
 
 <main class="main bg-light pb-5">
 
+    <!-- Page Title & Breadcrumbs -->
     <div class="page-title">
         <div class="heading">
             <div class="container">
                 <div class="row d-flex justify-content-center text-center">
                     <div class="col-lg-8">
                         <h1>Chi tiết hồ sơ khám</h1>
-                        <p class="mb-0">Hồ sơ bệnh án và kết quả khám mắt ngoại trú VisionCare Clinic</p>
+                        <p class="mb-0">Hồ sơ bệnh án ngoại trú và kết quả điều trị tại VisionCare Clinic</p>
                     </div>
                 </div>
             </div>
@@ -141,282 +178,370 @@
                 <ol>
                     <li><a href="${pageContext.request.contextPath}/home">Trang chủ</a></li>
                     <li><a href="${pageContext.request.contextPath}/views/profile/medical-history.jsp">Lịch sử khám bệnh</a></li>
-                    <li class="current">Hồ sơ khám</li>
+                    <li class="current">Hồ sơ ${record.formattedId}</li>
                 </ol>
             </div>
         </nav>
     </div>
 
-    <section class="section pt-4">
+    <section class="section pt-3">
         <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-lg-9">
+            <div class="patient-medical-detail-page">
 
-                    <!-- Action Bar Top -->
-                    <div class="d-flex justify-content-end mb-3 gap-2 action-bar-top">
-                        <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
-                            <i class="bi bi-printer me-2"></i>In phiếu khám & đơn thuốc
-                        </button>
-                        <button type="button" class="btn text-white bg-teal" onclick="if(window.history.length > 1){window.history.back();}else{location.href='${pageContext.request.contextPath}/views/profile/medical-history.jsp';}">
-                            <i class="bi bi-arrow-left me-2"></i>Quay lại
+                <!-- Top Action Bar -->
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4 action-bar-top">
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="${pageContext.request.contextPath}/views/profile/medical-history.jsp" class="btn btn-sm btn-outline-teal rounded-pill px-3 py-1.5 shadow-sm fw-semibold">
+                            <i class="bi bi-arrow-left me-1"></i>Về Lịch sử khám
+                        </a>
+                        <span class="text-muted small">|</span>
+                        <span class="badge bg-white text-secondary border px-2.5 py-1 rounded-pill" style="font-size: 12px;">
+                            Mã hồ sơ: <strong class="text-teal">${record.formattedId}</strong>
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-teal rounded-pill px-3 py-1.5 shadow-sm fw-semibold" onclick="window.print()">
+                            <i class="bi bi-printer me-1.5"></i>In phiếu khám & đơn thuốc
                         </button>
                     </div>
+                </div>
 
-                    <!-- Printable Medical Record Document -->
-                    <div class="medical-card" id="printableRecord">
+                <!-- Printable Document Area -->
+                <div id="printableArea" class="patient-doc-container">
 
-                        <!-- Document Header -->
-                        <div class="d-flex justify-content-between align-items-center flex-wrap pb-3 mb-4 border-bottom">
-                            <div>
-                                <h4 class="fw-bold mb-1" style="color: #0d9488;">
-                                    <i class="bi bi-eye me-2"></i>VisionCare Clinic
-                                </h4>
-                                <p class="text-muted small mb-0">Phòng khám chuyên khoa Mắt kỹ thuật cao</p>
-                                <p class="text-muted small mb-0">Địa chỉ: 456 Lê Thị Riêng, Quận 10, TP.HCM | Hotline: 1800 599 988</p>
+                    <!-- ======================================================== -->
+                    <!-- 1. HERO BANNER BỆNH NHÂN (Chuẩn Format Doctor & Specialist) -->
+                    <!-- ======================================================== -->
+                    <section class="doctor-detail-hero" aria-labelledby="patient-name">
+                        <div class="doctor-detail-hero-main">
+                            <div class="doctor-detail-avatar" aria-hidden="true">
+                                <c:choose>
+                                    <c:when test="${not empty record.patientName}">
+                                        <c:out value="${fn:substring(record.patientName, 0, 1)}" />
+                                    </c:when>
+                                    <c:otherwise>BN</c:otherwise>
+                                </c:choose>
                             </div>
-                            <div class="text-end mt-2 mt-md-0">
-                                <h5 class="fw-bold mb-1 text-dark">PHIẾU KẾT QUẢ KHÁM BỆNH</h5>
-                                <div class="fw-semibold text-dark fs-6">
-                                    Mã hồ sơ: <span class="text-teal">${record.formattedId}</span>
-                                </div>
-                                <div class="small text-muted">
-                                    <i class="bi bi-clock me-1"></i>Ngày khám: ${record.createdDate}
-                                </div>
-                                <div class="mt-2">
-                                    <span class="badge-soft-success">
-                                        <i class="bi bi-check-circle-fill"></i> Hoàn thành khám
-                                    </span>
+                            <div class="doctor-detail-hero-copy">
+                                <div class="doctor-detail-hero-label">HỒ SƠ BỆNH ÁN NGOẠI TRÚ</div>
+                                <h2 id="patient-name"><c:out value="${record.patientName}" default="Chưa có tên" /></h2>
+                                <div class="doctor-detail-hero-identifiers">
+                                    <span>Mã BN: <strong><c:out value="${record.formattedPatientId}" /></strong></span>
+                                    <span>Mã lịch hẹn: <strong><c:out value="${record.formattedApptId}" /></strong></span>
+                                    <span>Mã hồ sơ: <strong class="text-teal"><c:out value="${record.formattedId}" /></strong></span>
                                 </div>
                             </div>
                         </div>
+                        <div class="doctor-detail-status-wrap">
+                            <span class="doctor-detail-status completed">
+                                <i class="bi bi-check-circle-fill" aria-hidden="true"></i> Hoàn thành khám
+                            </span>
+                        </div>
+                        <div class="doctor-detail-hero-facts">
+                            <span>
+                                <i class="bi bi-calendar3" aria-hidden="true"></i>
+                                <strong>Ngày khám:</strong> <c:out value="${record.createdDate}" default="N/A" />
+                            </span>
+                            <span>
+                                <i class="bi bi-person-badge" aria-hidden="true"></i>
+                                <strong>Bác sĩ:</strong> <c:out value="${record.doctorName}" />
+                            </span>
+                            <span>
+                                <i class="bi bi-geo-alt" aria-hidden="true"></i>
+                                <strong>Phòng khám:</strong> <c:out value="${record.roomName}" />
+                            </span>
+                            <span>
+                                <i class="bi bi-receipt" aria-hidden="true"></i>
+                                <strong>Hóa đơn:</strong>
+                                <c:choose>
+                                    <c:when test="${not empty record.invoiceId}">
+                                        <a href="${pageContext.request.contextPath}/profile/invoice-detail?id=${record.invoiceId}" class="text-teal text-decoration-none fw-bold">
+                                            <c:out value="${record.formattedInvoiceId}" /> (<c:out value="${record.invoiceAmountFmt}" />)
+                                        </a>
+                                    </c:when>
+                                    <c:otherwise>Chưa lập hóa đơn</c:otherwise>
+                                </c:choose>
+                            </span>
+                        </div>
+                    </section>
 
-                        <!-- Info Cards (Patient & Doctor) -->
-                        <div class="row g-3 mb-4">
-                            <!-- Cột 1: Thông tin Bệnh nhân -->
-                            <div class="col-md-6">
-                                <div class="info-box">
-                                    <div class="section-title-sm">
-                                        <i class="bi bi-person-badge"></i> Thông tin bệnh nhân
-                                    </div>
-                                    <div class="mb-2">
-                                        <span class="text-muted small">Họ và tên:</span>
-                                        <div class="fw-bold text-dark fs-6">${record.patientName}</div>
-                                    </div>
-                                    <div class="row g-2 mb-2">
-                                        <div class="col-6">
-                                            <span class="text-muted small">Mã bệnh nhân:</span>
-                                            <div class="fw-semibold text-dark">${record.formattedPatientId}</div>
-                                        </div>
-                                        <div class="col-6">
-                                            <span class="text-muted small">Ngày sinh:</span>
-                                            <div class="fw-semibold text-dark">${record.patientDob}</div>
-                                        </div>
-                                    </div>
-                                    <div class="mb-1 small">
-                                        <span class="text-muted"><i class="bi bi-telephone me-1"></i>SĐT:</span>
-                                        <strong class="text-dark">${record.patientPhone}</strong>
-                                    </div>
-                                    <div class="small text-muted">
-                                        <i class="bi bi-geo-alt me-1"></i>Địa chỉ: ${record.patientAddress}
-                                    </div>
+                    <!-- ======================================================== -->
+                    <!-- 2. GRID 2 CỘT: THÔNG TIN BỆNH NHÂN & BÁC SĨ PHỤ TRÁCH    -->
+                    <!-- ======================================================== -->
+                    <div class="doctor-detail-grid">
+                        <!-- Card Cột 1: Thông tin bệnh nhân -->
+                        <section class="doctor-detail-card" aria-labelledby="patient-info-heading">
+                            <div class="doctor-detail-card-heading">
+                                <span class="doctor-detail-card-icon teal"><i class="bi bi-person-vcard" aria-hidden="true"></i></span>
+                                <div>
+                                    <h2 id="patient-info-heading">Thông tin bệnh nhân</h2>
+                                    <p>Thông tin hành chính và liên hệ</p>
                                 </div>
                             </div>
+                            <dl class="doctor-detail-fields">
+                                <div>
+                                    <dt>Họ và tên</dt>
+                                    <dd><c:out value="${record.patientName}" default="Chưa cập nhật" /></dd>
+                                </div>
+                                <div>
+                                    <dt>Ngày sinh</dt>
+                                    <dd><c:out value="${record.patientDob}" default="Chưa cập nhật" /></dd>
+                                </div>
+                                <div>
+                                    <dt>Số điện thoại</dt>
+                                    <dd><c:out value="${record.patientPhone}" default="Chưa cập nhật" /></dd>
+                                </div>
+                                <div>
+                                    <dt>Mã bệnh nhân</dt>
+                                    <dd><span class="badge bg-light text-dark border"><c:out value="${record.formattedPatientId}" /></span></dd>
+                                </div>
+                                <div class="doctor-detail-field-wide">
+                                    <dt>Địa chỉ liên hệ</dt>
+                                    <dd><c:out value="${record.patientAddress}" default="Chưa cập nhật" /></dd>
+                                </div>
+                            </dl>
+                        </section>
 
-                            <!-- Cột 2: Thông tin Bác sĩ & Buổi khám -->
-                            <div class="col-md-6">
-                                <div class="info-box">
-                                    <div class="section-title-sm">
-                                        <i class="bi bi-hospital"></i> Bác sĩ & Buổi khám
-                                    </div>
-                                    <div class="mb-2">
-                                        <span class="text-muted small">Bác sĩ phụ trách:</span>
-                                        <div class="fw-bold text-dark fs-6">${record.doctorName}</div>
-                                        <small class="text-teal">${record.doctorSpecialty}</small>
-                                    </div>
-                                    <div class="row g-2 mb-2">
-                                        <div class="col-6">
-                                            <span class="text-muted small">Phòng khám:</span>
-                                            <div class="fw-semibold text-dark">${record.roomName}</div>
-                                        </div>
-                                        <div class="col-6">
-                                            <span class="text-muted small">Mã lịch hẹn:</span>
-                                            <div class="fw-semibold text-dark">${record.formattedApptId}</div>
-                                        </div>
-                                    </div>
-                                    <div class="small mb-1">
-                                        <span class="text-muted">Hóa đơn liên quan:</span>
+                        <!-- Card Cột 2: Bác sĩ & Ca khám -->
+                        <section class="doctor-detail-card" aria-labelledby="doctor-info-heading">
+                            <div class="doctor-detail-card-heading">
+                                <span class="doctor-detail-card-icon blue"><i class="bi bi-hospital" aria-hidden="true"></i></span>
+                                <div>
+                                    <h2 id="doctor-info-heading">Bác sĩ phụ trách & Ca khám</h2>
+                                    <p>Thông tin chuyên môn và cơ sở tiếp nhận</p>
+                                </div>
+                            </div>
+                            <dl class="doctor-detail-fields">
+                                <div>
+                                    <dt>Bác sĩ điều trị</dt>
+                                    <dd class="text-dark fw-bold"><c:out value="${record.doctorName}" /></dd>
+                                </div>
+                                <div>
+                                    <dt>Chuyên khoa</dt>
+                                    <dd class="text-teal"><c:out value="${record.doctorSpecialty}" /></dd>
+                                </div>
+                                <div>
+                                    <dt>Phòng khám</dt>
+                                    <dd><c:out value="${record.roomName}" /></dd>
+                                </div>
+                                <div>
+                                    <dt>Mã lịch hẹn</dt>
+                                    <dd><span class="badge bg-light text-dark border"><c:out value="${record.formattedApptId}" /></span></dd>
+                                </div>
+                                <div class="doctor-detail-field-wide">
+                                    <dt>Hóa đơn viện phí</dt>
+                                    <dd>
                                         <c:choose>
                                             <c:when test="${not empty record.invoiceId}">
                                                 <a href="${pageContext.request.contextPath}/profile/invoice-detail?id=${record.invoiceId}" class="text-teal text-decoration-none fw-semibold">
-                                                    ${record.formattedInvoiceId} (${record.invoiceAmountFmt})
+                                                    <i class="bi bi-receipt me-1"></i><c:out value="${record.formattedInvoiceId}" /> - Tổng tiền: <strong class="text-danger"><c:out value="${record.invoiceAmountFmt}" /></strong>
                                                 </a>
                                             </c:when>
                                             <c:otherwise>
                                                 <span class="text-muted">Chưa phát sinh hóa đơn</span>
                                             </c:otherwise>
                                         </c:choose>
-                                    </div>
+                                    </dd>
                                 </div>
+                            </dl>
+                        </section>
+                    </div>
+
+                    <!-- ======================================================== -->
+                    <!-- 3. KẾT QUẢ KHÁM LÂM SÀNG & CHẨN ĐOÁN (Chuyên môn)        -->
+                    <!-- ======================================================== -->
+                    <section class="doctor-detail-card mb-4" aria-labelledby="clinical-heading">
+                        <div class="doctor-detail-card-heading">
+                            <span class="doctor-detail-card-icon violet"><i class="bi bi-journal-medical" aria-hidden="true"></i></span>
+                            <div>
+                                <h2 id="clinical-heading">Kết quả khám & Chẩn đoán lâm sàng</h2>
+                                <p>Ghi nhận chuyên môn từ Bác sĩ nhãn khoa</p>
                             </div>
                         </div>
 
-                        <!-- Section 1: Kết quả khám lâm sàng & Chẩn đoán -->
-                        <div class="mb-4">
-                            <div class="section-title-sm">
-                                <i class="bi bi-journal-check"></i> Kết quả khám & Chẩn đoán lâm sàng
+                        <!-- Chẩn đoán của Bác sĩ -->
+                        <div class="clinical-box" style="border-left: 4px solid #008b74; background: #f0fdfa;">
+                            <div class="clinical-box-label">
+                                <i class="bi bi-activity text-teal fs-6"></i> Chẩn đoán của Bác sĩ
                             </div>
-                            <div class="p-3 bg-light rounded-3 border">
-                                <div class="mb-3">
-                                    <span class="text-muted small fw-medium">Chẩn đoán của Bác sĩ:</span>
-                                    <div class="fw-bold text-dark fs-6 mt-1 p-2 rounded bg-white border border-light-subtle">
-                                        <i class="bi bi-activity text-teal me-2"></i>${record.clinicalDiagnosis}
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <span class="text-muted small fw-medium">Kết quả kiểm tra mắt & thị lực:</span>
-                                    <div class="text-dark small mt-1 p-2 rounded bg-white border border-light-subtle" style="line-height: 1.6;">
-                                        ${record.examinationResult}
-                                    </div>
-                                </div>
-                                <div class="mb-0">
-                                    <span class="text-muted small fw-medium">Kết luận chuyên môn & Hướng xử trí:</span>
-                                    <div class="text-dark small mt-1 p-2 rounded bg-white border border-light-subtle" style="line-height: 1.6;">
-                                        ${record.conclusion}
-                                    </div>
-                                </div>
+                            <div class="clinical-box-content fw-bold text-dark fs-6">
+                                <c:out value="${record.clinicalDiagnosis}" />
                             </div>
                         </div>
 
-                        <!-- Section 2: Thủ thuật & Dịch vụ cận lâm sàng -->
-                        <c:if test="${not empty record.procedures}">
-                            <div class="mb-4">
-                                <div class="section-title-sm">
-                                    <i class="bi bi-gear-wide-connected"></i> Chỉ định dịch vụ / Cận lâm sàng
+                        <!-- Kết quả kiểm tra mắt & đo thị lực -->
+                        <div class="clinical-box">
+                            <div class="clinical-box-label">
+                                <i class="bi bi-eye text-teal fs-6"></i> Kết quả kiểm tra mắt & đo thị lực
+                            </div>
+                            <div class="clinical-box-content">
+                                <c:out value="${record.examinationResult}" />
+                            </div>
+                        </div>
+
+                        <!-- Kết luận chuyên môn & Hướng xử trí -->
+                        <div class="clinical-box mb-0">
+                            <div class="clinical-box-label">
+                                <i class="bi bi-clipboard-check text-teal fs-6"></i> Kết luận chuyên môn & Hướng xử trí
+                            </div>
+                            <div class="clinical-box-content">
+                                <c:out value="${record.conclusion}" />
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ======================================================== -->
+                    <!-- 4. CHỈ ĐỊNH CẬN LÂM SÀNG & THỦ THUẬT (Format Specialist) -->
+                    <!-- ======================================================== -->
+                    <c:if test="${not empty record.procedures}">
+                        <section class="doctor-detail-card mb-4" aria-labelledby="procedure-heading">
+                            <div class="doctor-detail-card-heading">
+                                <span class="doctor-detail-card-icon teal"><i class="bi bi-clipboard2-pulse" aria-hidden="true"></i></span>
+                                <div>
+                                    <h2 id="procedure-heading">Chỉ định Dịch vụ / Cận lâm sàng & Thủ thuật</h2>
+                                    <p>Danh mục kỹ thuật đo mắt, chẩn đoán hình ảnh đã thực hiện</p>
                                 </div>
-                                <div class="table-responsive">
-                                    <table class="custom-record-table">
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="patient-detail-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center" style="width: 8%;">STT</th>
+                                            <th>Tên kỹ thuật / Dịch vụ</th>
+                                            <th>Bác sĩ / KTV thực hiện</th>
+                                            <th class="text-end" style="width: 20%;">Chi phí</th>
+                                            <th class="text-center" style="width: 18%;">Trạng thái</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <c:forEach var="proc" items="${record.procedures}">
+                                            <tr>
+                                                <td class="text-center text-muted fw-bold">${proc.stt}</td>
+                                                <td>
+                                                    <div class="fw-bold text-dark">${proc.serviceName}</div>
+                                                </td>
+                                                <td>
+                                                    <i class="bi bi-person me-1 text-muted"></i>
+                                                    <span class="text-secondary">${proc.specialistName}</span>
+                                                </td>
+                                                <td class="text-end fw-semibold text-teal">${proc.priceFmt}</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill fw-semibold" style="font-size: 11.5px;">
+                                                        <i class="bi bi-check-circle-fill me-1"></i>${proc.status == 'Completed' ? 'Đã thực hiện' : proc.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </c:forEach>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </c:if>
+
+                    <!-- ======================================================== -->
+                    <!-- 5. ĐƠN THUỐC ĐIỀU TRỊ & LỜI DẶN BÁC SĨ (Prescription)    -->
+                    <!-- ======================================================== -->
+                    <section class="doctor-detail-card mb-4" aria-labelledby="prescription-heading">
+                        <div class="doctor-detail-card-heading d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="doctor-detail-card-icon blue"><i class="bi bi-capsule" aria-hidden="true"></i></span>
+                                <div>
+                                    <h2 id="prescription-heading">Đơn thuốc điều trị</h2>
+                                    <p>Toa thuốc uống và thuốc nhỏ mắt theo phác đồ điều trị</p>
+                                </div>
+                            </div>
+                            <c:if test="${not empty record.prescriptionId && record.prescriptionId != 'N/A'}">
+                                <span class="badge bg-light text-secondary border px-3 py-1.5 rounded-pill fw-semibold" style="font-size: 12px;">
+                                    Mã đơn thuốc: <strong class="text-dark">${record.prescriptionId}</strong>
+                                </span>
+                            </c:if>
+                        </div>
+
+                        <c:choose>
+                            <c:when test="${not empty record.medicines}">
+                                <div class="table-responsive mb-3">
+                                    <table class="patient-detail-table">
                                         <thead>
                                             <tr>
                                                 <th class="text-center" style="width: 8%;">STT</th>
-                                                <th>Tên dịch vụ cận lâm sàng</th>
-                                                <th>Bác sĩ / KTV thực hiện</th>
-                                                <th class="text-end" style="width: 20%;">Chi phí</th>
-                                                <th class="text-center" style="width: 18%;">Trạng thái</th>
+                                                <th style="width: 35%;">Tên thuốc / Quy cách</th>
+                                                <th class="text-center" style="width: 12%;">Số lượng</th>
+                                                <th>Liều dùng & Hướng dẫn sử dụng</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <c:forEach var="proc" items="${record.procedures}">
+                                            <c:forEach var="med" items="${record.medicines}">
                                                 <tr>
-                                                    <td class="text-center">${proc.stt}</td>
-                                                    <td class="fw-semibold text-dark">${proc.serviceName}</td>
-                                                    <td><i class="bi bi-person me-1 text-muted"></i>${proc.specialistName}</td>
-                                                    <td class="text-end text-muted">${proc.priceFmt}</td>
-                                                    <td class="text-center">
-                                                        <span class="badge-soft-success">
-                                                            <i class="bi bi-check2"></i> ${proc.status == 'Completed' ? 'Đã thực hiện' : proc.status}
-                                                        </span>
+                                                    <td class="text-center text-muted fw-bold">${med.stt}</td>
+                                                    <td>
+                                                        <div class="fw-bold text-dark">${med.medicineName}</div>
                                                     </td>
+                                                    <td class="text-center fw-bold text-teal">${med.quantity}</td>
+                                                    <td class="text-dark">${med.dosageInstruction}</td>
                                                 </tr>
                                             </c:forEach>
                                         </tbody>
                                     </table>
                                 </div>
+                            </c:when>
+                            <c:otherwise>
+                                <div class="p-4 bg-light rounded-3 text-muted text-center small mb-3 border">
+                                    <i class="bi bi-capsule text-secondary fs-4 d-block mb-1"></i>
+                                    Bác sĩ không kê đơn thuốc uống hoặc thuốc nhỏ mắt trong buổi khám này.
+                                </div>
+                            </c:otherwise>
+                        </c:choose>
+
+                        <!-- Lời dặn Bác sĩ & Hướng dẫn tái khám -->
+                        <div class="clinical-box mb-0 mt-3" style="background-color: #f0fdfa; border: 1px solid #ccfbf1;">
+                            <div class="clinical-box-label">
+                                <i class="bi bi-chat-heart text-teal fs-6"></i> Lời dặn của Bác sĩ & Hướng dẫn tái khám
                             </div>
-                        </c:if>
-
-                        <!-- Section 3: Đơn thuốc điều trị -->
-                        <div class="mb-4 print-break-inside">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="section-title-sm mb-0">
-                                    <i class="bi bi-capsule"></i> Đơn thuốc điều trị
-                                </div>
-                                <c:if test="${record.prescriptionId != 'N/A'}">
-                                    <span class="small text-muted">Mã đơn: <strong>${record.prescriptionId}</strong></span>
-                                </c:if>
-                            </div>
-
-                            <c:choose>
-                                <c:when test="${not empty record.medicines}">
-                                    <div class="table-responsive mb-3">
-                                        <table class="custom-record-table">
-                                            <thead>
-                                                <tr>
-                                                    <th class="text-center" style="width: 8%;">STT</th>
-                                                    <th style="width: 35%;">Tên thuốc / Quy cách</th>
-                                                    <th class="text-center" style="width: 12%;">Số lượng</th>
-                                                    <th>Liều dùng & Hướng dẫn sử dụng</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <c:forEach var="med" items="${record.medicines}">
-                                                    <tr>
-                                                        <td class="text-center">${med.stt}</td>
-                                                        <td>
-                                                            <div class="fw-bold text-dark">${med.medicineName}</div>
-                                                        </td>
-                                                        <td class="text-center fw-semibold">${med.quantity}</td>
-                                                        <td class="text-dark small">${med.dosageInstruction}</td>
-                                                    </tr>
-                                                </c:forEach>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </c:when>
-                                <c:otherwise>
-                                    <div class="p-3 bg-light rounded-3 text-muted text-center small mb-3 border">
-                                        Bác sĩ không kê đơn thuốc uống/nhỏ trong buổi khám này.
-                                    </div>
-                                </c:otherwise>
-                            </c:choose>
-
-                            <!-- Lời dặn Bác sĩ -->
-                            <div class="p-3 rounded-3" style="background-color: #f0fdfa; border: 1px solid #ccfbf1;">
-                                <div class="d-flex align-items-center text-teal fw-bold mb-1">
-                                    <i class="bi bi-chat-heart me-2"></i>Lời dặn của Bác sĩ & Hướng dẫn tái khám:
-                                </div>
-                                <div class="text-dark small" style="line-height: 1.6;">
-                                    ${record.doctorNotes}
-                                </div>
+                            <div class="clinical-box-content">
+                                <c:out value="${record.doctorNotes}" default="Giữ vệ sinh mắt, tránh dụi mắt và tái khám đúng lịch hẹn nếu có bất thường." />
                             </div>
                         </div>
+                    </section>
 
-                        <!-- Chữ ký xác nhận (Bác sĩ & Bệnh nhân) -->
-                        <div class="pt-4 mt-3 print-break-inside border-top">
-                            <div class="text-end text-muted small fst-italic mb-3 pe-md-4">
-                                TP. Hồ Chí Minh, ngày khám ${record.createdDate}
+                    <!-- ======================================================== -->
+                    <!-- 6. CHỮ KÝ XÁC NHẬN & CAM KẾT (Printable Document Footer) -->
+                    <!-- ======================================================== -->
+                    <div class="doctor-detail-card print-signature-section">
+                        <div class="text-end text-muted small fst-italic mb-3 pe-md-4">
+                            TP. Hồ Chí Minh, ngày khám <c:out value="${record.createdDate}" />
+                        </div>
+                        <div class="row g-4 justify-content-between mb-4">
+                            <div class="col-6 text-center">
+                                <div class="fw-bold text-dark">Bệnh nhân / Người nhà</div>
+                                <div class="text-muted small" style="font-size: 11.5px;">(Ký và ghi rõ họ tên)</div>
+                                <div style="height: 70px;"></div>
+                                <div class="fw-bold text-dark fs-6"><c:out value="${record.patientName}" /></div>
                             </div>
-                            <div class="row g-4 justify-content-between">
-                                <div class="col-6 text-center">
-                                    <div class="fw-semibold text-dark">Bệnh nhân</div>
-                                    <div class="text-muted" style="font-size: 12px;">(Ký và ghi rõ họ tên)</div>
-                                    <div style="height: 75px;"></div>
-                                    <div class="fw-bold text-dark">${record.patientName}</div>
-                                </div>
-                                <div class="col-6 text-center">
-                                    <div class="fw-semibold text-dark">Bác sĩ điều trị</div>
-                                    <div class="text-muted" style="font-size: 12px;">(Ký và ghi rõ họ tên)</div>
-                                    <div style="height: 75px;"></div>
-                                    <div class="fw-bold text-dark">${record.doctorName}</div>
-                                </div>
+                            <div class="col-6 text-center">
+                                <div class="fw-bold text-dark">Bác sĩ khám & điều trị</div>
+                                <div class="text-muted small" style="font-size: 11.5px;">(Ký và ghi rõ họ tên)</div>
+                                <div style="height: 70px;"></div>
+                                <div class="fw-bold text-dark fs-6"><c:out value="${record.doctorName}" /></div>
                             </div>
                         </div>
-
-                        <!-- Lưu ý cuối phiếu -->
-                        <div class="text-center mt-4 pt-2 border-top">
-                            <p class="fw-semibold mb-1 text-muted small">Cảm ơn quý khách đã tin tưởng thăm khám tại VisionCare Clinic!</p>
-                            <p class="text-muted small mb-0" style="font-size: 0.8rem;">
-                                Vui lòng mang theo phiếu kết quả khám này khi đến tái khám hoặc kiểm tra mắt định kỳ.
+                        <div class="text-center pt-3 border-top">
+                            <p class="fw-semibold mb-1 text-teal small">
+                                <i class="bi bi-shield-check me-1"></i>Cảm ơn quý khách đã tin tưởng và đồng hành cùng VisionCare Clinic!
+                            </p>
+                            <p class="text-muted small mb-0" style="font-size: 11.5px;">
+                                Vui lòng bảo quản và mang theo phiếu khám này khi đến tái khám hoặc kiểm tra mắt định kỳ. Hotline hỗ trợ 24/7: 1800 599 988.
                             </p>
                         </div>
-
                     </div>
 
                 </div>
+
             </div>
         </div>
     </section>
 
 </main>
 
-<%-- Include Footer --%>
+<%-- Include Common Footer --%>
 <jsp:include page="/views/common/footer.jsp" />

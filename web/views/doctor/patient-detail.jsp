@@ -201,7 +201,7 @@
                                                 <span class="doctor-detail-record-id">#MR-<c:out value="${record.recordId}" /></span>
                                             </div>
                                             <h3><c:out value="${record.clinicalDiagnosis}" default="Chưa có chẩn đoán" /></h3>
-                                            <p class="doctor-detail-history-doctor"><i class="bi bi-person-badge" aria-hidden="true"></i> BS. <c:out value="${record.doctorName}" default="Chưa cập nhật" /></p>
+                                            <p class="doctor-detail-history-doctor"><i class="bi bi-person-badge" aria-hidden="true"></i> <c:out value="${record.doctorName}" default="Chưa cập nhật" /></p>
                                             <c:if test="${not empty record.examinationResult or not empty record.conclusion}">
                                                 <details class="doctor-detail-history-more">
                                                     <summary>Xem kết quả khám <i class="bi bi-chevron-down" aria-hidden="true"></i></summary>

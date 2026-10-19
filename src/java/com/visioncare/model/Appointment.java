@@ -77,7 +77,26 @@ public class Appointment {
     }
 
     public String getDoctorName() {
-        return doctorName;
+        if (doctorName == null || doctorName.trim().isEmpty()) {
+            return "Chưa phân công";
+        }
+        String s = doctorName.trim();
+        while (s.matches("^(?i)(BS\\.?|Bác sĩ|BS:)\\s*(BS\\.?|Bác sĩ)\\s*.*")) {
+            s = s.replaceFirst("^(?i)(BS\\.?|Bác sĩ|BS:)\\s*", "").trim();
+        }
+        if (s.matches("^(?i)BS\\.\\s*BS\\..*")) {
+            s = s.substring(3).trim();
+        }
+        if (!s.startsWith("BS.") && !s.startsWith("BS ") && !s.startsWith("Bác sĩ ") 
+                && !s.startsWith("TS.") && !s.startsWith("ThS.") && !s.startsWith("PGS.") 
+                && !s.startsWith("BSCK")) {
+            s = "BS. " + s;
+        } else if (s.startsWith("BS ")) {
+            s = "BS. " + s.substring(3).trim();
+        } else if (s.startsWith("Bác sĩ ")) {
+            s = "BS. " + s.substring(7).trim();
+        }
+        return s;
     }
 
     public void setDoctorName(String doctorName) {
@@ -265,5 +284,13 @@ public class Appointment {
 
     public boolean getIsPast() {
         return isPast();
+    }
+
+    private long remainingSeconds;
+    public long getRemainingSeconds() {
+        return remainingSeconds;
+    }
+    public void setRemainingSeconds(long remainingSeconds) {
+        this.remainingSeconds = remainingSeconds;
     }
 }

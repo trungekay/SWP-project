@@ -567,10 +567,13 @@ public class InvoiceDAO {
      */
     public List<Map<String, Object>> getPaidInvoicesForPatient(int accountId) {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT i.Invoice_ID, i.Total_Amount, i.Close_At " +
+        String sql = "SELECT i.Invoice_ID, i.Total_Amount, i.Deposit_Amount, i.Close_At, i.Create_At, a.Appointment_ID, " +
+                     "       r.Refund_ID, r.Status AS Refund_Status, " +
+                     "       CASE WHEN r.Refund_ID IS NOT NULL THEN 1 ELSE 0 END AS Has_Refund " +
                      "FROM Master_Invoice i " +
                      "JOIN Appointment a ON i.Appointment_ID = a.Appointment_ID " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
+                     "LEFT JOIN Refund_Request r ON i.Invoice_ID = r.Invoice_ID AND r.Status IN ('Pending', 'Approved', 'Success') " +
                      "WHERE p.Account_ID = ? AND i.Status = 'Paid' " +
                      "ORDER BY i.Invoice_ID DESC";
         try (Connection conn = DBContext.getConnection();
@@ -581,12 +584,26 @@ public class InvoiceDAO {
                     Map<String, Object> map = new HashMap<>();
                     int id = rs.getInt("Invoice_ID");
                     long amt = rs.getLong("Total_Amount");
+                    long depAmt = rs.getLong("Deposit_Amount");
+                    int apptId = rs.getInt("Appointment_ID");
+                    boolean hasRefund = rs.getInt("Has_Refund") == 1;
+                    String refStatus = rs.getString("Refund_Status");
+                    int refId = rs.getInt("Refund_ID");
+
                     map.put("id", id);
                     map.put("formattedId", String.format("#INV-%05d", id));
                     map.put("amount", amt);
+                    map.put("depositAmount", depAmt > 0 ? depAmt : amt);
                     map.put("amountFmt", formatVND(amt));
                     Timestamp t = rs.getTimestamp("Close_At");
+                    if (t == null) t = rs.getTimestamp("Create_At");
                     map.put("date", t != null ? dateOnlyFormat.format(t) : "");
+                    map.put("appointmentId", apptId);
+                    map.put("formattedApptId", "#APT-" + apptId);
+                    map.put("hasRefund", hasRefund);
+                    map.put("isEligible", !hasRefund);
+                    map.put("refundStatus", refStatus != null ? refStatus : "");
+                    map.put("refundId", refId);
                     list.add(map);
                 }
             }
@@ -597,9 +614,34 @@ public class InvoiceDAO {
     }
 
     /**
+     * Check if invoice has an active refund request (Pending, Approved, Success)
+     */
+    public boolean hasActiveRefundRequest(int invoiceId) {
+        String sql = "SELECT COUNT(*) FROM Refund_Request WHERE Invoice_ID = ? AND Status IN ('Pending', 'Approved', 'Success')";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, invoiceId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
      * Create patient refund request
      */
     public boolean createRefundRequest(int invoiceId, int accountId, long amount, String reason) {
+        // Chặn tạo trùng yêu cầu hoàn tiền nếu hóa đơn đã có yêu cầu đang xử lý hoặc thành công
+        if (hasActiveRefundRequest(invoiceId)) {
+            System.err.println("Prevent duplicate refund request for invoice #" + invoiceId);
+            return false;
+        }
+
         String findPatient = "SELECT Patient_ID FROM Patient WHERE Account_ID = ?";
         String findStaff = "SELECT TOP 1 Employee_ID FROM Employee_Profile";
         String insertSql = "INSERT INTO Refund_Request (Invoice_ID, created_by_employee_id, Patient_ID, Refund_Amount, Reason, Status, Created_At, Update_At) " +
@@ -608,8 +650,8 @@ public class InvoiceDAO {
             int patientId = 0;
             try (PreparedStatement psP = conn.prepareStatement(findPatient)) {
                 psP.setInt(1, accountId);
-                try (ResultSet rs = psP.executeQuery()) {
-                    if (rs.next()) patientId = rs.getInt(1);
+                try (ResultSet rsP = psP.executeQuery()) {
+                    if (rsP.next()) patientId = rsP.getInt(1);
                 }
             }
             if (patientId == 0) return false;
@@ -657,6 +699,11 @@ public class InvoiceDAO {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+
+        if (invoiceId > 0 && hasActiveRefundRequest(invoiceId)) {
+            System.err.println("Prevent duplicate refund request for appointment #" + appointmentId + " (Invoice #" + invoiceId + ")");
+            return false;
         }
 
         if (invoiceId <= 0) {
