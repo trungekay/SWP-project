@@ -311,9 +311,35 @@ public class StaffAppointmentListServlet extends HttpServlet {
             if (apptIdStr != null && !apptIdStr.trim().isEmpty()) {
                 try {
                     int apptId = Integer.parseInt(apptIdStr.trim());
-                    User currentUser = (User) session.getAttribute("user");
-                    int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
-                    success = appointmentDAO.confirmAndCheckinWalkin(apptId, staffEmployeeId);
+
+                    // Kiểm tra trạng thái thanh toán trên PayOS trước khi xác nhận thủ công
+                    long orderCode2 = 0;
+                    if (orderCodeStr2 != null && !orderCodeStr2.trim().isEmpty()) {
+                        try { orderCode2 = Long.parseLong(orderCodeStr2.trim()); } catch (NumberFormatException ignored2) {}
+                    }
+
+                    if (orderCode2 > 0) {
+                        String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(orderCode2);
+                        if ("PAID".equalsIgnoreCase(payosStatus)) {
+                            // PayOS đã nhận được tiền -> xác nhận hợp lệ
+                            User currentUser = (User) session.getAttribute("user");
+                            int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
+                            success = appointmentDAO.confirmAndCheckinWalkin(apptId, staffEmployeeId);
+                        } else {
+                            // Chưa nhận được tiền từ ngân hàng
+                            errorMsg = "Chưa nhận được tiền từ ngân hàng (PayOS: " + payosStatus + "). Vui lòng đợi bệnh nhân quét mã và hoàn tất chuyển khoản!";
+                        }
+                    } else {
+                        // Không có orderCode -> kiểm tra từ DB (trường hợp dự phòng)
+                        Appointment apptCheck = appointmentDAO.getAppointmentDetailById(apptId);
+                        if (apptCheck != null && "Paid".equalsIgnoreCase(apptCheck.getInvoiceStatus())) {
+                            User currentUser = (User) session.getAttribute("user");
+                            int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
+                            success = appointmentDAO.confirmAndCheckinWalkin(apptId, staffEmployeeId);
+                        } else {
+                            errorMsg = "Không thể xác minh trạng thái thanh toán. Vui lòng đợi hệ thống tự động xác nhận sau khi bệnh nhân chuyển khoản!";
+                        }
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                     errorMsg = "Lỗi khi xác nhận: " + e.getMessage();
