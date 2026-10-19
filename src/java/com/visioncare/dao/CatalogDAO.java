@@ -6,17 +6,29 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CatalogDAO {
-    private static final String SERVICE_COLUMNS = "sc.Service_ID, sc.Service_Code, sc.Service_Name, sc.Price, sc.Category, sc.Summary, sc.Description, sc.Image_Path, CASE WHEN sc.Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
+    private static final String SERVICE_COLUMNS_START = "sc.Service_ID, sc.Service_Code, sc.Service_Name, sc.Price, sc.Category, sc.Summary, sc.Description, ";
+    private static final String SERVICE_COLUMNS_END = ", CASE WHEN sc.Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
+
+    private String serviceColumns(Connection connection) throws SQLException {
+        // Older databases do not have Image_Path. Keep the result shape the same
+        // so CatalogService can fall back to its image for the service code.
+        try (ResultSet columns = connection.getMetaData().getColumns(
+                connection.getCatalog(), "dbo", "Service_Catalog", "Image_Path")) {
+            String imagePath = columns.next() ? "sc.Image_Path" : "CAST(NULL AS varchar(255))";
+            return SERVICE_COLUMNS_START + imagePath + " AS Image_Path" + SERVICE_COLUMNS_END;
+        }
+    }
 
     public List<CatalogService> listServices() throws Exception {
         List<CatalogService> items = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT " + SERVICE_COLUMNS + " FROM Service_Catalog sc ORDER BY CASE WHEN sc.Service_Code IS NULL THEN 1 ELSE 0 END, sc.Service_ID");
+             PreparedStatement statement = connection.prepareStatement("SELECT " + serviceColumns(connection) + " FROM Service_Catalog sc ORDER BY CASE WHEN sc.Service_Code IS NULL THEN 1 ELSE 0 END, sc.Service_ID");
              ResultSet result = statement.executeQuery()) {
             while (result.next()) items.add(service(result));
         }
@@ -25,11 +37,10 @@ public class CatalogDAO {
 
     public List<CatalogService> listSurgeryServices() throws Exception {
         List<CatalogService> items = new ArrayList<>();
-        String sql = "SELECT " + SERVICE_COLUMNS + " FROM Service_Catalog sc "
-                + "WHERE sc.Service_Code IN ('LS-03', 'TT-05') OR sc.Service_Code LIKE 'PT-%' "
-                + "ORDER BY sc.Service_Code";
         try (Connection connection = DBContext.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);
+             PreparedStatement statement = connection.prepareStatement("SELECT " + serviceColumns(connection) + " FROM Service_Catalog sc "
+                     + "WHERE sc.Service_Code IN ('LS-03', 'TT-05') OR sc.Service_Code LIKE 'PT-%' "
+                     + "ORDER BY sc.Service_Code");
              ResultSet result = statement.executeQuery()) {
             while (result.next()) items.add(service(result));
         }
@@ -38,7 +49,7 @@ public class CatalogDAO {
 
     public CatalogService getService(int id) throws Exception {
         try (Connection connection = DBContext.getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT " + SERVICE_COLUMNS + " FROM Service_Catalog sc WHERE sc.Service_ID = ?")) {
+             PreparedStatement statement = connection.prepareStatement("SELECT " + serviceColumns(connection) + " FROM Service_Catalog sc WHERE sc.Service_ID = ?")) {
             statement.setInt(1, id);
             try (ResultSet result = statement.executeQuery()) {
                 return result.next() ? service(result) : null;
