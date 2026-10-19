@@ -1491,7 +1491,7 @@
               });
             }
 
-            // Khi người dùng chọn bác sĩ trong dropdown
+            // Khi người dùng chọn bác sĩ trong dropdown: Giữ nguyên bệnh/dịch vụ đã chọn, không tự ý nhảy sang dịch vụ khác
             function onDoctorSelectChange() {
               const doctorSelect = document.getElementById('doctorSelect');
               if (!doctorSelect || !doctorSelect.value) {
@@ -1500,38 +1500,47 @@
               }
 
               const selectedOpt = doctorSelect.selectedOptions[0];
+              const docName = selectedOpt.dataset.name || selectedOpt.text;
               const docDept = (selectedOpt.dataset.dept || '').toLowerCase().trim();
               const docSpecialty = (selectedOpt.dataset.specialty || '').toLowerCase().trim();
 
-              // Tự động tìm dịch vụ tương ứng với bác sĩ này để check radio
-              let matchedRadio = null;
-              document.querySelectorAll('input.service-radio').forEach(r => {
-                const svcDept = (r.dataset.specialty || '').toLowerCase().trim();
-                if (svcDept === docDept || docSpecialty.includes(svcDept)) {
-                  matchedRadio = r;
-                }
-              });
               const selectedRadio = document.querySelector('input.service-radio:checked');
+              const svcName = selectedRadio ? (selectedRadio.dataset.name || 'Dịch vụ đã chọn') : 'Dịch vụ đã chọn';
               const selectedSpecialty = (selectedRadio?.dataset.specialty || '').toLowerCase().trim();
-              const selectedMatchesDoctor = selectedRadio &&
-                (selectedSpecialty === docDept || docSpecialty.includes(selectedSpecialty));
-              if (!selectedMatchesDoctor && matchedRadio && !matchedRadio.checked) {
-                matchedRadio.checked = true;
-                updateFeeDisplay();
+              const bgroup = (selectedRadio?.dataset.bgroup || '').toLowerCase().trim();
 
-                // Đảm bảo thẻ dịch vụ được hiển thị nếu đang bị ẩn bởi bộ lọc nhóm
-                const parentCol = matchedRadio.closest('.booking-service-col');
-                if (parentCol && parentCol.style.display === 'none') {
-                  const allBtn = document.querySelector('.booking-cat-btn[data-bgroup="all"]');
-                  filterBookingCategory('all', allBtn);
-                }
+              // Kiểm tra xem bác sĩ này có đúng chuyên khoa với dịch vụ đang chọn không
+              let isMatch = false;
+              if (bgroup === 'thuthuat' || selectedSpecialty === 'thuthuat') {
+                if (docDept === 'general' || docSpecialty.includes('tổng quát')) isMatch = true;
+              } else if (!selectedSpecialty || selectedSpecialty === 'all') {
+                isMatch = true;
+              } else if (docDept === selectedSpecialty || docSpecialty.includes(selectedSpecialty)) {
+                isMatch = true;
+              } else if (selectedSpecialty === 'general' && (docDept === 'general' || docSpecialty.includes('tổng quát'))) {
+                isMatch = true;
+              } else if (selectedSpecialty === 'refraction' && (docDept === 'refraction' || docSpecialty.includes('khúc xạ') || docSpecialty.includes('kính'))) {
+                isMatch = true;
+              } else if (selectedSpecialty === 'lasik' && (docDept === 'lasik' || docSpecialty.includes('lasik') || docSpecialty.includes('phẫu thuật'))) {
+                isMatch = true;
+              } else if (selectedSpecialty === 'children' && (docDept === 'children' || docSpecialty.includes('trẻ em') || docSpecialty.includes('nhược thị'))) {
+                isMatch = true;
+              } else if (selectedSpecialty === 'cataract' && (docDept === 'cataract' || docSpecialty.includes('thủy tinh thể') || docSpecialty.includes('phaco'))) {
+                isMatch = true;
+              } else if (selectedSpecialty === 'retina' && (docDept === 'retina' || docSpecialty.includes('võng mạc') || docSpecialty.includes('glaucoma'))) {
+                isMatch = true;
+              }
 
-                const filterNotice = document.getElementById('doctorFilterNotice');
-                if (filterNotice) {
-                  filterNotice.innerHTML = '<i class="bi bi-info-circle-fill text-teal me-1" style="color:#0d9488;"></i>' +
-                    'Đã chọn bác sĩ: <b class="text-dark">' + (selectedOpt.dataset.name || selectedOpt.text) + '</b>. Dịch vụ tương ứng đã được tự động chọn.';
-                  filterNotice.classList.remove('d-none');
+              const filterNotice = document.getElementById('doctorFilterNotice');
+              if (filterNotice) {
+                if (isMatch) {
+                  filterNotice.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>' +
+                    'Bác sĩ <b>' + docName + '</b> đúng chuyên khoa tiếp nhận cho gói: <b class="text-dark">' + svcName + '</b>.';
+                } else {
+                  filterNotice.innerHTML = '<i class="bi bi-person-check-fill text-primary me-1"></i>' +
+                    'Đã chọn bác sĩ: <b>' + docName + '</b> tiếp nhận theo yêu cầu cho gói: <b class="text-dark">' + svcName + '</b>.';
                 }
+                filterNotice.classList.remove('d-none');
               }
 
               updateDoctorPreview();
@@ -1570,13 +1579,43 @@
               if (badgeEl) {
                 const checkedRadio = document.querySelector('input.service-radio:checked');
                 const bgroup = checkedRadio ? (checkedRadio.dataset.bgroup || '').toLowerCase().trim() : '';
-                if (bgroup === 'thuthuat') {
-                  badgeEl.className = 'badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill small';
-                  badgeEl.innerHTML = '<i class="bi bi-shield-check text-warning me-1"></i>Bác sĩ khám lâm sàng chỉ định';
+                const svcSpec = checkedRadio ? (checkedRadio.dataset.specialty || '').toLowerCase().trim() : '';
+                const docDept = (selectedOpt.dataset.dept || '').toLowerCase().trim();
+                const docSpecLower = docSpecialty.toLowerCase().trim();
+
+                let isMatch = false;
+                if (bgroup === 'thuthuat' || svcSpec === 'thuthuat') {
+                  if (docDept === 'general' || docSpecLower.includes('tổng quát')) isMatch = true;
+                } else if (!svcSpec || svcSpec === 'all' || docDept === svcSpec || docSpecLower.includes(svcSpec)) {
+                  isMatch = true;
+                } else if (svcSpec === 'general' && (docDept === 'general' || docSpecLower.includes('tổng quát'))) {
+                  isMatch = true;
+                } else if (svcSpec === 'refraction' && (docDept === 'refraction' || docSpecLower.includes('khúc xạ') || docSpecLower.includes('kính'))) {
+                  isMatch = true;
+                } else if (svcSpec === 'lasik' && (docDept === 'lasik' || docSpecLower.includes('lasik') || docSpecLower.includes('phẫu thuật'))) {
+                  isMatch = true;
+                } else if (svcSpec === 'children' && (docDept === 'children' || docSpecLower.includes('trẻ em') || docSpecLower.includes('nhược thị'))) {
+                  isMatch = true;
+                } else if (svcSpec === 'cataract' && (docDept === 'cataract' || docSpecLower.includes('thủy tinh thể') || docSpecLower.includes('phaco'))) {
+                  isMatch = true;
+                } else if (svcSpec === 'retina' && (docDept === 'retina' || docSpecLower.includes('võng mạc') || docSpecLower.includes('glaucoma'))) {
+                  isMatch = true;
+                }
+
+                if (isMatch) {
+                  if (bgroup === 'thuthuat') {
+                    badgeEl.className = 'badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill small';
+                    badgeEl.style.cssText = '';
+                    badgeEl.innerHTML = '<i class="bi bi-shield-check text-warning me-1"></i>Bác sĩ khám lâm sàng chỉ định';
+                  } else {
+                    badgeEl.className = 'badge rounded-pill small';
+                    badgeEl.style.cssText = 'background: #ccfbf1; color: #0f766e; border: 1px solid #99f6e4;';
+                    badgeEl.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>Bác sĩ đúng chuyên khoa';
+                  }
                 } else {
                   badgeEl.className = 'badge rounded-pill small';
-                  badgeEl.style.cssText = 'background: #ccfbf1; color: #0f766e; border: 1px solid #99f6e4;';
-                  badgeEl.innerHTML = '<i class="bi bi-star-fill text-warning me-1"></i>Bác sĩ chỉ định theo chuyên khoa';
+                  badgeEl.style.cssText = 'background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;';
+                  badgeEl.innerHTML = '<i class="bi bi-person-check-fill text-primary me-1"></i>Bác sĩ tiếp nhận theo yêu cầu';
                 }
               }
 
