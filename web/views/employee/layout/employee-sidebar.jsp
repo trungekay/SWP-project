@@ -46,7 +46,15 @@
                     </ul>
                 </li>
 
-                <!-- 3. Quản lý yêu cầu hoàn tiền -->
+                <!-- 3. Quản lý Bệnh nhân -->
+                <li>
+                    <a href="${pageContext.request.contextPath}/staff/patients" class="${param.activeNav == 'staff-patients' || param.activeNav == 'patients' ? 'active' : ''}">
+                        <i class="bi bi-people"></i>
+                        <span>Danh sách bệnh nhân</span>
+                    </a>
+                </li>
+
+                <!-- 4. Quản lý yêu cầu hoàn tiền -->
                 <li>
                     <a href="${pageContext.request.contextPath}/staff/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}">
                         <i class="bi bi-cash-coin"></i>
@@ -131,6 +139,7 @@
         </c:choose>
     </ul>
 </aside>
+
 <script>
     window.toggleSubmenu = function(menuId, el) {
         var menu = document.getElementById(menuId);
