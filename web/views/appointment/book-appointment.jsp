@@ -400,6 +400,18 @@
                                 <%-- MÀN HÌNH 2: XÁC THỰC THANH TOÁN QR (PAYMENT SCREEN) --%>
                                   <%--========================================================--%>
                                     <c:if test="${step == 'payment'}">
+                                      <c:if test="${not empty error}">
+                                        <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert">
+                                          <div class="d-flex align-items-center">
+                                            <i class="bi bi-exclamation-octagon-fill fs-4 me-3 text-danger"></i>
+                                            <div>
+                                              <strong class="d-block">Chưa thể xác nhận thanh toán</strong>
+                                              <span>${error}</span>
+                                            </div>
+                                          </div>
+                                          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                        </div>
+                                      </c:if>
                                       <div class="row align-items-center g-4">
                                         <div class="col-md-5 text-center">
                                           <div class="qr-box">

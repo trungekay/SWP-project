@@ -102,6 +102,12 @@ public class BookAppointmentServlet extends HttpServlet {
                     int apptId = Integer.parseInt(apptIdParam);
                     Appointment pendingAppt = appointmentDAO.getAppointmentDetailById(apptId);
                     if (pendingAppt != null) {
+                        String paymentError = (String) request.getSession().getAttribute("paymentError");
+                        if (paymentError != null) {
+                            request.setAttribute("error", paymentError);
+                            request.getSession().removeAttribute("paymentError");
+                        }
+
                         long fee = pendingAppt.getFee() > 0 ? pendingAppt.getFee() : 200000;
                         String phoneSafe = pendingAppt.getPhone() != null ? pendingAppt.getPhone() : "";
                         String payosDesc = "VC" + apptId;
@@ -333,7 +339,14 @@ public class BookAppointmentServlet extends HttpServlet {
                 // Kiểm tra trạng thái thanh toán từ cổng PayOS
                 String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(orderCode);
 
-                // Xác nhận thanh toán thành công (hỗ trợ cả thanh toán qua cổng PayOS tự động và chuyển khoản VietQR MB Bank)
+                // Nếu chưa thanh toán thành công trên cổng ngân hàng/PayOS, không cho xác nhận
+                if (!"PAID".equalsIgnoreCase(payosStatus)) {
+                    session.setAttribute("paymentError", "Hệ thống chưa ghi nhận được thanh toán từ ngân hàng (Trạng thái đơn: Chưa thanh toán). Quý khách vui lòng quét mã QR chuyển khoản và chờ hệ thống xử lý trong ít giây!");
+                    response.sendRedirect(request.getContextPath() + "/book-appointment?step=payment&id=" + appointmentId);
+                    return;
+                }
+
+                // Xác nhận thanh toán thành công
                 appointmentDAO.confirmPayment(appointmentId);
 
                 // Lấy thông tin lịch hẹn đầy đủ sau khi đã thanh toán
