@@ -1208,7 +1208,7 @@ public class AppointmentDAO {
                 params.add(status.trim());
             }
         } else {
-            sql.append(" AND a.Status IN ('Confirmed', 'In_Progress')");
+            sql.append(" AND a.Status IN ('Confirmed', 'In_Progress', 'Completed')");
         }
 
         if (doctorId != null && doctorId > 0) {

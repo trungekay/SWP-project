@@ -41,6 +41,14 @@ public class DatabaseInitializerListener implements ServletContextListener {
                 System.out.println("[VisionCare] Service_Catalog is up-to-date with " + serviceCount + " services.");
             }
 
+            // 2. Tự động kiểm tra và bổ sung cột doctor_completed_at vào bảng Appointment nếu chưa có
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("IF COL_LENGTH('Appointment', 'doctor_completed_at') IS NULL "
+                           + "ALTER TABLE Appointment ADD doctor_completed_at datetime2(7) NULL");
+            } catch (Exception e) {
+                System.err.println("[VisionCare] Note on doctor_completed_at check: " + e.getMessage());
+            }
+
             System.out.println("[VisionCare] Database check completed successfully!");
             System.out.println("==================================================================");
 

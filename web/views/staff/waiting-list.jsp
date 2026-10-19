@@ -424,19 +424,18 @@
                                                                         </c:when>
 
                                                                         <c:when test="${appt.status == 'In_Progress'}">
-                                                                            <!-- Hoàn tất khám -->
+                                                                            <!-- Đang trong phòng khám: Chỉ Bác sĩ mới có quyền hoàn thành ca khám -->
                                                                             <button type="button"
-                                                                                class="action-btn checkin btn-trigger-complete"
-                                                                                title="Đánh dấu bệnh nhân đã khám xong" data-bs-toggle="tooltip"
-                                                                                data-id="${appt.id}"
-                                                                                data-name="${appt.patientName}">
-                                                                                <i class="bi bi-check2-circle"></i>
+                                                                                class="action-btn disabled"
+                                                                                style="cursor: not-allowed; background-color: #f1f5f9; color: #64748b; border: 1px dashed #cbd5e1;"
+                                                                                title="Bác sĩ đang thực hiện ca khám trong phòng. Chỉ Bác sĩ mới có quyền hoàn tất ca khám này!" data-bs-toggle="tooltip">
+                                                                                <i class="bi bi-hourglass-split"></i>
                                                                             </button>
 
                                                                             <!-- Báo vắng mặt / Hủy ca giữa chừng (Đỏ pastel - icon thùng rác) -->
                                                                             <button type="button"
                                                                                 class="action-btn delete btn-trigger-absent"
-                                                                                title="Báo vắng mặt / Hủy ca giữa chừng" data-bs-toggle="tooltip"
+                                                                                title="Báo vắng mặt / Bệnh nhân tự ý bỏ về giữa chừng" data-bs-toggle="tooltip"
                                                                                 data-id="${appt.id}"
                                                                                 data-name="${appt.patientName}">
                                                                                 <i class="bi bi-trash"></i>
@@ -444,7 +443,14 @@
                                                                         </c:when>
 
                                                                         <c:when test="${appt.status == 'Completed'}">
-                                                                            <!-- Đã khám xong: chỉ xem chi tiết bằng nút bút chì ở trên -->
+                                                                            <!-- Đã khám xong: Bàn giao đơn thuốc & Hoàn tất thủ tục -->
+                                                                            <button type="button"
+                                                                                class="action-btn checkin btn-trigger-post-exam"
+                                                                                title="Tiếp nhận sau khám: Xem kết quả, đơn thuốc & Bàn giao cho bệnh nhân" data-bs-toggle="tooltip"
+                                                                                data-id="${appt.id}"
+                                                                                data-name="${appt.patientName}">
+                                                                                <i class="bi bi-clipboard2-check"></i>
+                                                                            </button>
                                                                         </c:when>
                                                                         <c:otherwise>
                                                                         </c:otherwise>
@@ -540,38 +546,6 @@
                     </div>
                 </div>
 
-                <!-- Modal Xác nhận Hoàn tất khám (Thiết kế đồng bộ chuẩn theo hình ảnh) -->
-                <div class="modal fade" id="completeModal" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="modal-icon-success">
-                                    <i class="bi bi-check2-circle"></i>
-                                </div>
-                                <h3 class="modal-title-custom">Xác nhận hoàn tất khám?</h3>
-                                <p class="modal-text">
-                                    Bệnh nhân <strong id="completeModalPatientName" class="text-dark">---</strong> sẽ
-                                    được xác nhận hoàn thành ca khám và rời khỏi hàng đợi.
-                                </p>
-                                <form action="${pageContext.request.contextPath}/staff/waiting-list" method="post"
-                                    id="completeForm" class="m-0">
-                                    <input type="hidden" name="action" value="updateStatus">
-                                    <input type="hidden" name="appointmentId" id="completeModalAppointmentId">
-                                    <input type="hidden" name="status" value="Completed">
-                                    <div class="modal-actions">
-                                        <button type="button" class="btn btn-modal-cancel"
-                                            data-bs-dismiss="modal">Hủy</button>
-                                        <button type="submit" class="btn btn-modal-success">Hoàn tất khám</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Modal Báo Vắng Mặt / Hủy ca khỏi hàng đợi -->
                 <div class="modal fade" id="absentModal" tabindex="-1" aria-hidden="true">
@@ -651,6 +625,143 @@
                     </div>
                 </div>
 
+                <!-- Modal Tiếp nhận Bệnh nhân Sau Khám & Bàn giao Đơn thuốc -->
+                <div class="modal fade" id="postExamModal" tabindex="-1" aria-labelledby="postExamModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 720px;">
+                        <div class="modal-content shadow border-0" style="border-radius: 16px; overflow: hidden;">
+                            <div class="modal-header border-bottom px-4 py-3 bg-light">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(13, 148, 136, 0.12); color: #0d9488; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                        <i class="bi bi-clipboard2-check"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="modal-title fw-bold text-dark mb-0" id="postExamModalLabel" style="font-size: 16.5px;">Tiếp nhận sau khám & Bàn giao đơn thuốc</h5>
+                                        <small class="text-secondary" style="font-size: 12px;" id="postExamSubtitle">Bệnh nhân: --- | BS: ---</small>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+
+                            <div class="modal-body p-4" id="postExamModalBody">
+                                <!-- Loading State -->
+                                <div id="postExamLoading" class="text-center py-5">
+                                    <div class="spinner-border text-teal mb-2" role="status" style="width: 2.5rem; height: 2.5rem; color: #0d9488;"></div>
+                                    <p class="text-secondary small mb-0">Đang tải kết quả khám và đơn thuốc từ bác sĩ...</p>
+                                </div>
+
+                                <!-- Content State -->
+                                <div id="postExamContent" class="d-none">
+                                    <!-- Banner trạng thái hoàn tất -->
+                                    <div class="alert alert-success py-2.5 px-3 rounded-3 mb-3 d-flex align-items-center justify-content-between" style="font-size: 13px;">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="bi bi-check-circle-fill fs-5 text-success"></i>
+                                            <div>
+                                                <strong class="text-success">Bác sĩ đã hoàn tất ca khám</strong>
+                                                <div class="text-secondary" style="font-size: 11.5px;" id="postExamHeaderTime">Thời gian hoàn thành: Hôm nay</div>
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-success px-2.5 py-1.5 fw-semibold" style="font-size: 11.5px;">Sẵn sàng xuất viện</span>
+                                    </div>
+
+                                    <!-- 1. Tóm tắt kết quả chẩn đoán y khoa -->
+                                    <div class="card border rounded-3 mb-3 shadow-none bg-light">
+                                        <div class="card-body p-3">
+                                            <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-1.5" style="font-size: 13.5px;">
+                                                <i class="bi bi-activity text-teal" style="color: #0d9488;"></i> Chẩn đoán & Kết luận của Bác sĩ
+                                            </h6>
+                                            <div class="row g-2 text-dark small" style="font-size: 12.5px;">
+                                                <div class="col-sm-6">
+                                                    <span class="text-muted d-block" style="font-size: 11.5px;">Chẩn đoán lâm sàng:</span>
+                                                    <strong id="postExamDiagnosis" class="text-primary">---</strong>
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    <span class="text-muted d-block" style="font-size: 11.5px;">Bác sĩ phụ trách:</span>
+                                                    <span id="postExamDoctor" class="fw-semibold">---</span>
+                                                </div>
+                                                <div class="col-12 mt-2 pt-2 border-top">
+                                                    <span class="text-muted d-block" style="font-size: 11.5px;">Lời dặn của bác sĩ:</span>
+                                                    <div id="postExamDoctorNotes" class="fst-italic text-secondary bg-white p-2 rounded border mt-1">---</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 2. Danh sách đơn thuốc -->
+                                    <div class="card border rounded-3 mb-3 shadow-none">
+                                        <div class="card-header bg-white py-2.5 px-3 border-bottom d-flex align-items-center justify-content-between">
+                                            <span class="fw-bold text-dark small d-flex align-items-center gap-1.5" style="font-size: 13.5px;">
+                                                <i class="bi bi-capsule text-primary"></i> Đơn thuốc xuất viện
+                                            </span>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle" id="postExamMedCount">0 loại thuốc</span>
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover mb-0 align-middle" style="font-size: 12.5px;">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th style="width: 40px;" class="text-center">#</th>
+                                                        <th>Tên thuốc</th>
+                                                        <th style="width: 100px;" class="text-center">Số lượng</th>
+                                                        <th>Hướng dẫn dùng thuốc</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="postExamMedicineList">
+                                                    <tr><td colspan="4" class="text-center text-muted py-2">Không có đơn thuốc kê theo ca khám này</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- 3. Cận lâm sàng / Thủ thuật (nếu có) -->
+                                    <div id="postExamProceduresBox" class="card border rounded-3 mb-3 shadow-none d-none">
+                                        <div class="card-header bg-white py-2 px-3 border-bottom">
+                                            <span class="fw-bold text-dark small d-flex align-items-center gap-1.5" style="font-size: 13px;">
+                                                <i class="bi bi-tools text-warning"></i> Cận lâm sàng & Thủ thuật đã thực hiện
+                                            </span>
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm mb-0 align-middle" style="font-size: 12px;">
+                                                <tbody id="postExamProcedureList"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- 4. Tình trạng viện phí -->
+                                    <div class="p-2.5 rounded-3 bg-light border d-flex align-items-center justify-content-between flex-wrap gap-2 text-dark small" style="font-size: 12.5px;">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                                                <i class="bi bi-credit-card"></i>
+                                            </div>
+                                            <div>
+                                                <span class="text-muted d-block" style="font-size: 11px;">Phí khám & Dịch vụ:</span>
+                                                <strong id="postExamInvoiceAmount">200.000 ₫</strong>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2 fw-semibold" id="postExamInvoiceStatus">
+                                                <i class="bi bi-check-circle me-1"></i>Đã thanh toán (Paid)
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer px-4 py-3 bg-light border-top d-flex justify-content-between">
+                                <div>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="printPostExamSheet()">
+                                        <i class="bi bi-printer me-1"></i> In đơn thuốc & Phiếu khám
+                                    </button>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button type="button" class="btn btn-light btn-sm px-3 border" data-bs-dismiss="modal">Đóng</button>
+                                    <button type="button" class="btn btn-teal btn-sm px-3.5 py-1.5 fw-semibold shadow-sm" id="btnConfirmHandover" onclick="confirmPostExamHandover()">
+                                        <i class="bi bi-check2-all me-1"></i> Xác nhận đã bàn giao & Hoàn tất
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Bootstrap 5 JS -->
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
                 <script>
@@ -678,17 +789,6 @@
                         }
                     }
 
-                    function openCompleteModal(id, name) {
-                        var idInput = document.getElementById('completeModalAppointmentId');
-                        if (idInput) idInput.value = id;
-                        var nameElem = document.getElementById('completeModalPatientName');
-                        if (nameElem) nameElem.textContent = name || 'này';
-                        var modalElem = document.getElementById('completeModal');
-                        if (modalElem) {
-                            var modal = bootstrap.Modal.getInstance(modalElem) || new bootstrap.Modal(modalElem);
-                            modal.show();
-                        }
-                    }
 
                     function openAbsentModal(id, name) {
                         var idInput = document.getElementById('absentModalAppointmentId');
@@ -725,7 +825,219 @@
                         }
                     }
 
+                    var currentPostExamId = null;
+                    function openPostExamModal(id, name) {
+                        currentPostExamId = id;
+                        var subElem = document.getElementById('postExamSubtitle');
+                        if (subElem) subElem.textContent = 'Bệnh nhân: ' + (name || '---') + ' (#APPT-' + id + ')';
+
+                        var loading = document.getElementById('postExamLoading');
+                        var content = document.getElementById('postExamContent');
+                        if (loading) loading.classList.remove('d-none');
+                        if (content) content.classList.add('d-none');
+
+                        var modalElem = document.getElementById('postExamModal');
+                        if (modalElem) {
+                            var modal = bootstrap.Modal.getInstance(modalElem) || new bootstrap.Modal(modalElem);
+                            modal.show();
+                        }
+
+                        fetch('${pageContext.request.contextPath}/staff/waiting-list?ajax=postExamDetail&appointmentId=' + id)
+                            .then(function(res) { return res.json(); })
+                            .then(function(data) {
+                                if (data && data.success) {
+                                    window._currentPostExamData = data;
+                                    var diagElem = document.getElementById('postExamDiagnosis');
+                                    if (diagElem) diagElem.textContent = data.clinicalDiagnosis || 'Khám mắt tổng quát';
+
+                                    var docElem = document.getElementById('postExamDoctor');
+                                    if (docElem) docElem.textContent = (data.doctorName || 'Bác sĩ') + ' (' + (data.roomName || '') + ')';
+
+                                    var notesElem = document.getElementById('postExamDoctorNotes');
+                                    if (notesElem) notesElem.textContent = data.doctorNotes || 'Uống và nhỏ thuốc theo đúng hướng dẫn.';
+
+                                    var timeElem = document.getElementById('postExamHeaderTime');
+                                    if (timeElem) timeElem.textContent = 'Giờ khám: ' + (data.timeSlot || '--:--') + ' · Ngày: ' + (data.appointmentDate || '');
+
+                                    var medTbody = document.getElementById('postExamMedicineList');
+                                    var medCount = document.getElementById('postExamMedCount');
+                                    if (medTbody) {
+                                        if (data.medicines && data.medicines.length > 0) {
+                                            if (medCount) medCount.textContent = data.medicines.length + ' loại thuốc';
+                                            var rows = '';
+                                            data.medicines.forEach(function(m, idx) {
+                                                rows += '<tr>'
+                                                    + '<td class="text-center text-muted fw-semibold">' + (idx + 1) + '</td>'
+                                                    + '<td><strong class="text-dark">' + (m.name || '') + '</strong></td>'
+                                                    + '<td class="text-center"><span class="badge bg-secondary-subtle text-secondary border px-2 py-1">' + (m.quantity || 1) + '</span></td>'
+                                                    + '<td><span class="text-secondary">' + (m.dosageInstruction || 'Chưa cập nhật') + '</span></td>'
+                                                    + '</tr>';
+                                            });
+                                            medTbody.innerHTML = rows;
+                                        } else {
+                                            if (medCount) medCount.textContent = '0 loại thuốc';
+                                            medTbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3 fst-italic">Bác sĩ không kê đơn thuốc cho ca khám này.</td></tr>';
+                                        }
+                                    }
+
+                                    var procBox = document.getElementById('postExamProceduresBox');
+                                    var procTbody = document.getElementById('postExamProcedureList');
+                                    if (procBox && procTbody) {
+                                        if (data.procedures && data.procedures.length > 0) {
+                                            var pRows = '';
+                                            data.procedures.forEach(function(p) {
+                                                pRows += '<tr>'
+                                                    + '<td class="ps-3"><strong class="text-dark">' + (p.serviceName || '') + '</strong></td>'
+                                                    + '<td class="text-end fw-semibold text-primary">' + (p.priceFmt || '') + '</td>'
+                                                    + '<td class="text-end pe-3"><span class="badge bg-success-subtle text-success border border-success-subtle">' + (p.status || 'Hoàn tất') + '</span></td>'
+                                                    + '</tr>';
+                                            });
+                                            procTbody.innerHTML = pRows;
+                                            procBox.classList.remove('d-none');
+                                        } else {
+                                            procBox.classList.add('d-none');
+                                        }
+                                    }
+
+                                    var feeElem = document.getElementById('postExamInvoiceAmount');
+                                    if (feeElem) feeElem.textContent = data.invoiceAmountFmt || '200.000 ₫';
+
+                                    var invStatElem = document.getElementById('postExamInvoiceStatus');
+                                    if (invStatElem) {
+                                        if (data.invoiceStatus === 'Paid') {
+                                            invStatElem.className = 'badge bg-success-subtle text-success border border-success-subtle py-1 px-2 fw-semibold';
+                                            invStatElem.innerHTML = '<i class="bi bi-check-circle me-1"></i>Đã thanh toán (Paid)';
+                                        } else {
+                                            invStatElem.className = 'badge bg-warning-subtle text-warning border border-warning-subtle py-1 px-2 fw-semibold';
+                                            invStatElem.innerHTML = '<i class="bi bi-clock me-1"></i>' + (data.invoiceStatus || 'Chờ đối soát');
+                                        }
+                                    }
+
+                                    if (loading) loading.classList.add('d-none');
+                                    if (content) content.classList.remove('d-none');
+                                } else {
+                                    alert(data && data.message ? data.message : 'Không thể tải chi tiết ca khám.');
+                                }
+                            })
+                            .catch(function(err) {
+                                console.error('Error fetching post exam details', err);
+                                alert('Lỗi kết nối tải dữ liệu sau khám: ' + err.message);
+                            });
+                    }
+
+                    function printPostExamSheet() {
+                        var data = window._currentPostExamData;
+                        if (!data) {
+                            alert('Không có dữ liệu ca khám để in.');
+                            return;
+                        }
+
+                        var medRowsHtml = '';
+                        if (data.medicines && data.medicines.length > 0) {
+                            data.medicines.forEach(function(m, idx) {
+                                medRowsHtml += '<tr>'
+                                    + '<td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">' + (idx + 1) + '</td>'
+                                    + '<td style="border: 1px solid #cbd5e1; padding: 8px;"><strong>' + (m.name || '') + '</strong></td>'
+                                    + '<td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">' + (m.quantity || 1) + '</td>'
+                                    + '<td style="border: 1px solid #cbd5e1; padding: 8px;">' + (m.dosageInstruction || 'Theo chỉ định') + '</td>'
+                                    + '</tr>';
+                            });
+                        } else {
+                            medRowsHtml = '<tr><td colspan="4" style="border: 1px solid #cbd5e1; padding: 12px; text-align: center; color: #64748b;">Không có đơn thuốc chỉ định theo ca khám</td></tr>';
+                        }
+
+                        var printContent = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Phiếu kết quả & Đơn thuốc - ' + (data.patientName || '') + '</title>'
+                            + '<style>'
+                            + 'body { font-family: "Segoe UI", Arial, sans-serif; padding: 30px; color: #0f172a; line-height: 1.5; font-size: 13.5px; }'
+                            + '.header { display: flex; justify-content: space-between; border-bottom: 2px solid #0d9488; padding-bottom: 12px; margin-bottom: 20px; }'
+                            + '.clinic-name { font-size: 17px; font-weight: bold; color: #0d9488; text-transform: uppercase; }'
+                            + '.title { text-align: center; font-size: 19px; font-weight: bold; margin: 15px 0; text-transform: uppercase; color: #0f172a; letter-spacing: 0.5px; }'
+                            + '.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; }'
+                            + 'table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; }'
+                            + 'th { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px; font-weight: 600; text-align: left; font-size: 13px; }'
+                            + '.footer { display: flex; justify-content: space-between; margin-top: 40px; text-align: center; }'
+                            + '@media print { body { padding: 0; } }'
+                            + '</style></head><body>'
+                            + '<div class="header">'
+                            + '<div><div class="clinic-name">BỆNH VIỆN MẮT QUỐC TẾ VISIONCARE</div><div>Địa chỉ: Khu Công nghệ cao Hòa Lạc, Hà Nội</div><div>Hotline: 1900 8888 · Email: contact@visioncare.vn</div></div>'
+                            + '<div style="text-align: right;"><div>Mã ca khám: <strong>#APPT-' + data.appointmentId + '</strong></div><div>Mã hồ sơ: <strong>' + (data.recordId || '#MR-' + data.appointmentId) + '</strong></div><div>Ngày khám: ' + (data.appointmentDate || '') + '</div></div>'
+                            + '</div>'
+                            + '<div class="title">PHIẾU KẾT QUẢ KHÁM & ĐƠN THUỐC</div>'
+                            + '<div class="info-grid">'
+                            + '<div><strong>Họ và tên:</strong> ' + (data.patientName || '') + '</div>'
+                            + '<div><strong>Số điện thoại:</strong> ' + (data.phone || '') + '</div>'
+                            + '<div><strong>Bác sĩ phụ trách:</strong> ' + (data.doctorName || '') + '</div>'
+                            + '<div><strong>Phòng khám:</strong> ' + (data.roomName || '') + '</div>'
+                            + '<div style="grid-column: span 2;"><strong>Chẩn đoán lâm sàng:</strong> ' + (data.clinicalDiagnosis || 'Khám mắt tổng quát') + '</div>'
+                            + '<div style="grid-column: span 2;"><strong>Lời dặn của Bác sĩ:</strong> ' + (data.doctorNotes || 'Uống thuốc đúng giờ, tái khám khi có dấu hiệu bất thường.') + '</div>'
+                            + '</div>'
+                            + '<h4 style="margin-bottom: 8px; font-size: 14px; color: #0d9488; text-transform: uppercase;">DANH MỤC THUỐC ĐIỀU TRỊ</h4>'
+                            + '<table><thead><tr><th style="width: 40px; text-align: center;">STT</th><th>Tên thuốc</th><th style="width: 90px; text-align: center;">Số lượng</th><th>Hướng dẫn sử dụng</th></tr></thead><tbody>'
+                            + medRowsHtml
+                            + '</tbody></table>'
+                            + '<div class="footer">'
+                            + '<div><strong>BỆNH NHÂN</strong><br><small style="color: #64748b;">(Ký và ghi rõ họ tên)</small></div>'
+                            + '<div><strong>BÁC SĨ KHÁM BỆNH</strong><br><small style="color: #64748b;">(Ký và ghi rõ họ tên)</small><br><br><br><strong>' + (data.doctorName || '') + '</strong></div>'
+                            + '</div>'
+                            + '</body></html>';
+
+                        var printWin = window.open('', '_blank', 'width=850,height=700');
+                        if (printWin) {
+                            printWin.document.open();
+                            printWin.document.write(printContent);
+                            printWin.document.close();
+                            printWin.focus();
+                            setTimeout(function() {
+                                printWin.print();
+                            }, 350);
+                        }
+                    }
+
+                    function confirmPostExamHandover() {
+                        if (!currentPostExamId) return;
+                        var btn = document.getElementById('btnConfirmHandover');
+                        if (btn) {
+                            btn.disabled = true;
+                            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang xử lý...';
+                        }
+
+                        fetch('${pageContext.request.contextPath}/staff/waiting-list', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: 'action=confirmHandover&appointmentId=' + currentPostExamId + '&ajax=1'
+                        })
+                        .then(function(res) { return res.json(); })
+                        .then(function(data) {
+                            if (btn) {
+                                btn.disabled = false;
+                                btn.innerHTML = '<i class="bi bi-check2-all me-1"></i> Xác nhận đã bàn giao & Hoàn tất';
+                            }
+                            var modalElem = document.getElementById('postExamModal');
+                            if (modalElem) {
+                                var modal = bootstrap.Modal.getInstance(modalElem);
+                                if (modal) modal.hide();
+                            }
+                            alert('Đã hoàn tất bàn giao đơn thuốc và hướng dẫn xuất viện cho bệnh nhân!');
+                            window.location.reload();
+                        })
+                        .catch(function(err) {
+                            if (btn) {
+                                btn.disabled = false;
+                                btn.innerHTML = '<i class="bi bi-check2-all me-1"></i> Xác nhận đã bàn giao & Hoàn tất';
+                            }
+                            alert('Lỗi xác nhận bàn giao: ' + err.message);
+                        });
+                    }
+
                     document.addEventListener('click', function (e) {
+                        var btnPostExam = e.target.closest('.btn-trigger-post-exam');
+                        if (btnPostExam) {
+                            var id = btnPostExam.getAttribute('data-id');
+                            var name = btnPostExam.getAttribute('data-name');
+                            openPostExamModal(id, name);
+                            return;
+                        }
+
                         var btnStart = e.target.closest('.btn-trigger-start');
                         if (btnStart) {
                             var id = btnStart.getAttribute('data-id');
@@ -734,13 +1046,6 @@
                             return;
                         }
 
-                        var btnComplete = e.target.closest('.btn-trigger-complete');
-                        if (btnComplete) {
-                            var id = btnComplete.getAttribute('data-id');
-                            var name = btnComplete.getAttribute('data-name');
-                            openCompleteModal(id, name);
-                            return;
-                        }
 
                         var btnSkip = e.target.closest('.btn-trigger-skip');
                         if (btnSkip) {
@@ -759,10 +1064,14 @@
                         }
                     });
 
-                    // Auto refresh waiting list every 60 seconds
-                    setTimeout(function () {
-                        window.location.reload();
-                    }, 60000);
+                    // Smart auto-refresh waiting list every 15 seconds when on current day and no modal is active
+                    setInterval(function () {
+                        var isModalOpen = document.querySelector('.modal.show');
+                        var isInputFocused = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA');
+                        if (document.visibilityState === 'visible' && !isModalOpen && !isInputFocused) {
+                            window.location.reload();
+                        }
+                    }, 15000);
                 </script>
             </body>
 

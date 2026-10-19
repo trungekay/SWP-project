@@ -124,12 +124,9 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
                     session.setAttribute("errorMessage", "Không thể cập nhật trạng thái vào khám.");
                 }
             } else if ("complete".equalsIgnoreCase(action)) {
-                boolean success = appointmentDAO.updateAppointmentStatus(apptId, "Completed");
-                if (success) {
-                    session.setAttribute("successMessage", "Ca khám (#APPT-" + apptId + ") đã được xác nhận hoàn tất thành công.");
-                } else {
-                    session.setAttribute("errorMessage", "Không thể cập nhật hoàn tất ca khám.");
-                }
+                session.setAttribute("errorMessage", "Không thể hoàn tất ca khám từ màn hình Lễ tân! Thao tác này phải do Bác sĩ phụ trách thực hiện trong phòng khám sau khi kết thúc chẩn đoán và kê đơn.");
+                response.sendRedirect(request.getContextPath() + "/staff/appointment-detail?id=" + apptId);
+                return;
             } else if ("absent".equalsIgnoreCase(action)) {
                 String reasonSelect = request.getParameter("cancelReasonSelect");
                 String reasonCustom = request.getParameter("cancelReasonCustom");

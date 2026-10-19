@@ -70,6 +70,13 @@
                                     <i class="bi bi-prescription2" aria-hidden="true"></i> Kê đơn
                                 </a>
                             </c:if>
+                            <c:if test="${appointment.status eq 'In_Progress'}">
+                                <button type="button" class="doctor-detail-button doctor-detail-desktop-action"
+                                        onclick="openDoctorCompleteModal()"
+                                        style="background: #059669; color: #fff; border-color: #059669; font-weight: 600;">
+                                    <i class="bi bi-check2-circle" aria-hidden="true"></i> Hoàn tất ca khám
+                                </button>
+                            </c:if>
                             </div>
                         </c:if>
                     </header>
@@ -261,11 +268,83 @@
                                     <i class="bi bi-prescription2" aria-hidden="true"></i> Kê đơn
                                 </a>
                             </c:if>
+                            <c:if test="${appointment.status eq 'In_Progress'}">
+                                <button type="button" class="doctor-detail-button"
+                                        onclick="openDoctorCompleteModal()"
+                                        style="background: #059669; color: #fff; border-color: #059669; font-weight: 600;">
+                                    <i class="bi bi-check2-circle" aria-hidden="true"></i> Hoàn tất ca khám
+                                </button>
+                            </c:if>
                         </div>
                     </c:if>
                 </c:otherwise>
             </c:choose>
         </div>
     </main>
+
+    <!-- Modal xác nhận hoàn tất ca khám cho Bác sĩ -->
+    <c:if test="${appointment.status eq 'In_Progress'}">
+        <div class="modal fade" id="doctorCompleteModal" tabindex="-1" aria-labelledby="doctorCompleteModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+                <div class="modal-content shadow border-0" style="border-radius: 16px; overflow: hidden;">
+                    <div class="modal-header border-bottom px-4 py-3 bg-light">
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); color: #059669; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                                <i class="bi bi-check2-circle"></i>
+                            </div>
+                            <h5 class="modal-title fw-bold text-dark mb-0" id="doctorCompleteModalLabel" style="font-size: 16px;">Xác nhận hoàn tất ca khám</h5>
+                        </div>
+                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4 text-start">
+                        <p class="text-secondary small mb-3">
+                            Bác sĩ xác nhận đã hoàn thành việc khám bệnh cho bệnh nhân <strong class="text-dark"><c:out value="${appointment.patientName}" /></strong> (#APPT-<c:out value="${appointment.id}" />).
+                        </p>
+                        <div class="bg-light p-3 rounded-3 small border mb-3">
+                            <div class="d-flex justify-content-between py-1 border-bottom">
+                                <span class="text-muted">Bệnh nhân:</span>
+                                <strong class="text-dark"><c:out value="${appointment.patientName}" /></strong>
+                            </div>
+                            <div class="d-flex justify-content-between py-1 border-bottom">
+                                <span class="text-muted">Giờ hẹn:</span>
+                                <span class="text-dark fw-semibold"><c:out value="${appointment.timeSlot}" /></span>
+                            </div>
+                            <div class="d-flex justify-content-between py-1">
+                                <span class="text-muted">Trạng thái sau hoàn tất:</span>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle py-1">Đã khám xong (Chuyển ra quầy lễ tân)</span>
+                            </div>
+                        </div>
+                        <div class="alert alert-info py-2 px-3 small rounded-3 mb-0" style="font-size: 12px;">
+                            <i class="bi bi-info-circle-fill me-1"></i> Sau khi hoàn tất, thông tin đơn thuốc và kết quả sẽ tự động đồng bộ sang màn hình của <strong>Lễ tân</strong> để bàn giao và hướng dẫn xuất viện.
+                        </div>
+                    </div>
+                    <div class="modal-footer px-4 py-3 bg-light border-top d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Hủy</button>
+                        <form action="${pageContext.request.contextPath}/doctor/waiting-list" method="post" class="m-0">
+                            <input type="hidden" name="action" value="complete">
+                            <input type="hidden" name="appointmentId" value="${appointment.id}">
+                            <input type="hidden" name="csrfToken" value="${csrfToken}">
+                            <input type="hidden" name="date" value="${appointment.appointmentDate}">
+                            <input type="hidden" name="status" value="Completed">
+                            <button type="submit" class="btn btn-success btn-sm px-3.5 fw-semibold shadow-sm">
+                                <i class="bi bi-check2 me-1"></i> Xác nhận hoàn tất
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </c:if>
+
+    <script src="${pageContext.request.contextPath}/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function openDoctorCompleteModal() {
+            var modalEl = document.getElementById('doctorCompleteModal');
+            if (modalEl) {
+                var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.show();
+            }
+        }
+    </script>
 </body>
 </html>

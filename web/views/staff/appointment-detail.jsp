@@ -753,37 +753,6 @@
                     </div>
                 </div>
 
-                <!-- Modal Xác nhận Hoàn tất khám -->
-                <div class="modal fade" id="completeModal" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="modal-icon-success">
-                                    <i class="bi bi-check2-circle"></i>
-                                </div>
-                                <h3 class="modal-title-custom">Xác nhận hoàn tất khám?</h3>
-                                <p class="modal-text">
-                                    Bệnh nhân <strong class="text-dark">${appointment.patientName}</strong> sẽ được xác
-                                    nhận hoàn thành ca khám.
-                                </p>
-                                <form action="${pageContext.request.contextPath}/staff/appointment-detail" method="post"
-                                    class="m-0">
-                                    <input type="hidden" name="action" value="complete">
-                                    <input type="hidden" name="appointmentId" value="${appointment.id}">
-                                    <div class="modal-actions">
-                                        <button type="button" class="btn btn-modal-cancel"
-                                            data-bs-dismiss="modal">Hủy</button>
-                                        <button type="submit" class="btn btn-modal-success">Hoàn tất khám</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Modal Xác nhận Hủy lịch hẹn -->
                 <div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">

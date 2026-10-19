@@ -35,6 +35,7 @@ public class Appointment {
     private String createdAt;
     private String endTime;
     private int queueNumber;
+    private String doctorCompletedAt;
 
     public Appointment() {
     }
@@ -292,5 +293,21 @@ public class Appointment {
     }
     public void setRemainingSeconds(long remainingSeconds) {
         this.remainingSeconds = remainingSeconds;
+    }
+
+    public String getDoctorCompletedAt() {
+        return doctorCompletedAt;
+    }
+
+    public void setDoctorCompletedAt(String doctorCompletedAt) {
+        this.doctorCompletedAt = doctorCompletedAt;
+    }
+
+    public boolean isDoctorCompleted() {
+        return (doctorCompletedAt != null && !doctorCompletedAt.trim().isEmpty()) || "Completed".equalsIgnoreCase(status);
+    }
+
+    public boolean getDoctorCompleted() {
+        return isDoctorCompleted();
     }
 }

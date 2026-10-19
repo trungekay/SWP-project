@@ -68,6 +68,12 @@ public class DoctorPatientDetailServlet extends HttpServlet {
                 request.setAttribute("prescriptionUrl",
                         request.getContextPath() + "/doctor/prescription?id=" + appointmentId);
             }
+            String csrf = (String) session.getAttribute("doctorQueueCsrf");
+            if (csrf == null) {
+                csrf = java.util.UUID.randomUUID().toString();
+                session.setAttribute("doctorQueueCsrf", csrf);
+            }
+            request.setAttribute("csrfToken", csrf);
             request.getRequestDispatcher("/views/doctor/patient-detail.jsp").forward(request, response);
         } catch (Exception error) {
             log("Cannot load doctor patient detail", error);

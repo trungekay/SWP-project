@@ -153,7 +153,7 @@
                                 <input type="hidden" name="status" value="${selectedStatus}">
                                 <div
                                     class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-between gap-3">
-                                    <!-- 1. Thanh tìm kiếm nhanh (Tên, SĐT, Mã hẹn) -->
+                                    <!-- 1. Thanh tìm kiếm nhanh (Tên, SĐT) -->
                                     <div class="search-filter-input flex-grow-1" style="max-width: 520px;">
                                         <i class="bi bi-search"></i>
                                         <input type="text" name="keyword" value="${param.keyword}" class="w-100"
@@ -857,6 +857,110 @@
                     </div>
                 </div>
 
+                <!-- Modal Xác Nhận Thu Tiền Mặt Cho Khách Vãng Lai -->
+                <div class="modal fade" id="walkinCashModal" tabindex="-1" aria-labelledby="walkinCashModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+                        <div class="modal-content shadow-lg border-0" style="border-radius: 16px; overflow: hidden; position: relative;">
+                            
+                            <!-- Success Overlay khi thu tiền mặt thành công -->
+                            <div id="cashSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 d-none flex-column align-items-center justify-content-center" style="background: rgba(240, 253, 244, 0.96); z-index: 1055;">
+                                <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mb-2 shadow" style="width: 56px; height: 56px; font-size: 28px;">
+                                    <i class="bi bi-check-lg"></i>
+                                </div>
+                                <h5 class="fw-bold text-success mb-1">Thu tiền mặt thành công!</h5>
+                                <p class="text-secondary small mb-0">Đang chuyển bệnh nhân vào hàng đợi khám...</p>
+                            </div>
+
+                            <div class="modal-header border-bottom px-4 py-3 bg-light">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(16, 185, 129, 0.14); color: #059669; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                        <i class="bi bi-cash-stack"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="modal-title fw-bold text-dark mb-0" id="walkinCashModalLabel" style="font-size: 16px;">Xác nhận thu tiền mặt tại quầy</h5>
+                                        <small class="text-secondary" style="font-size: 12px;" id="cashPatientSubtitle">Bệnh nhân: Khách vãng lai</small>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close shadow-none" onclick="cancelWalkinCash()"></button>
+                            </div>
+
+                            <div class="modal-body p-4 text-start">
+                                <!-- Banner thông báo lỗi nếu có -->
+                                <div id="cashErrorAlert" class="alert alert-danger py-2 px-3 small rounded-3 mb-3 d-none align-items-center gap-2" style="font-size: 12.5px;">
+                                    <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+                                    <span id="cashErrorText"></span>
+                                </div>
+
+                                <!-- Thẻ số tiền cần thu to rõ ràng -->
+                                <div class="p-3 rounded-3 text-center mb-3" style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); border: 1.5px solid #a7f3d0;">
+                                    <div class="text-secondary small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 11px;">Số tiền cần thu từ bệnh nhân</div>
+                                    <div class="fw-bold text-success display-6 my-1" style="font-size: 28px;" id="cashTotalFee">200.000 ₫</div>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2" style="font-size: 11.5px;">
+                                        <i class="bi bi-shield-check me-1"></i>Hóa đơn sẽ tự động chuyển: ĐÃ THANH TOÁN (PAID)
+                                    </span>
+                                </div>
+
+                                <!-- Bảng tóm tắt thông tin tiếp đón -->
+                                <div class="bg-light p-3 rounded-3 small border mb-3" style="font-size: 12.5px;">
+                                    <div class="d-flex justify-content-between py-1 border-bottom">
+                                        <span class="text-muted">Họ và tên bệnh nhân:</span>
+                                        <strong class="text-dark" id="cashModalPatientName">---</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1 border-bottom">
+                                        <span class="text-muted">Số điện thoại:</span>
+                                        <strong class="text-dark font-monospace" id="cashModalPhone">---</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1 border-bottom">
+                                        <span class="text-muted">Gói dịch vụ:</span>
+                                        <span class="fw-semibold text-dark text-end" id="cashModalServiceName" style="max-width: 60%;">---</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1 border-bottom">
+                                        <span class="text-muted">Bác sĩ tiếp đón:</span>
+                                        <span class="fw-semibold text-primary" id="cashModalDoctorName">---</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1">
+                                        <span class="text-muted">Khung giờ khám:</span>
+                                        <span class="badge bg-secondary-subtle text-secondary border py-0.5 px-2" id="cashModalTimeSlot">---</span>
+                                    </div>
+                                </div>
+
+                                <!-- Tiện ích tính tiền thối lại cho lễ tân -->
+                                <div class="border rounded-3 p-3" style="background: #ffffff;">
+                                    <label class="form-label small fw-semibold text-dark mb-1.5 d-flex justify-content-between">
+                                        <span>Tiền khách đưa:</span>
+                                        <span class="text-muted fw-normal" style="font-size: 11.5px;">(Không bắt buộc)</span>
+                                    </label>
+                                    <div class="input-group input-group-sm mb-2">
+                                        <input type="text" id="cashGivenInput" class="form-control form-control-sm text-end fw-bold shadow-none" placeholder="Nhập số tiền..." style="font-size: 14px; border-radius: 6px 0 0 6px;" oninput="onCashGivenChange(this.value)">
+                                        <span class="input-group-text bg-light text-muted">₫</span>
+                                    </div>
+
+                                    <!-- Nút chọn nhanh mệnh giá -->
+                                    <div class="d-flex gap-1.5 flex-wrap mb-2">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 11.5px; border-radius: 6px;" onclick="setCashGivenPreset('exact')">Đưa đủ tiền</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 11.5px; border-radius: 6px;" onclick="setCashGivenPreset(200000)">200.000 ₫</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 11.5px; border-radius: 6px;" onclick="setCashGivenPreset(500000)">500.000 ₫</button>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center pt-2 border-top small" style="font-size: 12.5px;">
+                                        <span class="text-secondary">Tiền thối lại cho khách:</span>
+                                        <strong class="fs-6 text-primary" id="cashChangeAmount">0 ₫</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer px-4 py-3 bg-light border-top d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="cancelWalkinCash()">
+                                    <i class="bi bi-arrow-left me-1"></i>Hủy / Quay lại
+                                </button>
+                                <button type="button" class="btn btn-success btn-sm px-3.5 py-1.5 fw-semibold shadow-sm" id="btnConfirmCashPayment" onclick="submitWalkinCashPayment()">
+                                    <i class="bi bi-check2-circle me-1"></i>Xác nhận đã nhận tiền & Đưa vào hàng đợi
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Bootstrap 5 JS -->
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
                 <script>
@@ -1240,6 +1344,7 @@
 
                     var walkinPollTimer = null;
                     var currentWalkinApptId = null;
+                    var currentWalkinOrderCode = null;
 
                     function initiateWalkinQR() {
                         var form = document.getElementById('walkinForm');
@@ -1290,6 +1395,7 @@
                                 }
 
                                 currentWalkinApptId = data.appointmentId;
+                                currentWalkinOrderCode = data.orderCode || null;
                                 var pSub = document.getElementById('qrPatientSubtitle');
                                 if (pSub) pSub.textContent = 'Bệnh nhân: ' + data.patientName + ' (' + data.phone + ')';
                                 var qrImg = document.getElementById('walkinQrImg');
@@ -1326,7 +1432,7 @@
                                     qrModal.show();
                                 }
 
-                                startWalkinQrPolling(data.appointmentId);
+                                startWalkinQrPolling(data.appointmentId, data.orderCode || null);
                             } else {
                                 alert(data.message || 'Không thể tạo mã VietQR lúc này. Vui lòng thử lại!');
                             }
@@ -1340,7 +1446,7 @@
                         });
                     }
 
-                    function startWalkinQrPolling(apptId) {
+                    function startWalkinQrPolling(apptId, orderCode) {
                         clearInterval(walkinPollTimer);
                         var attempts = 0;
                         walkinPollTimer = setInterval(function() {
@@ -1352,7 +1458,9 @@
                                 return;
                             }
 
-                            fetch('${pageContext.request.contextPath}/staff/appointments?ajax=checkPayment&appointmentId=' + apptId)
+                            var pollUrl = '${pageContext.request.contextPath}/staff/appointments?ajax=checkPayment&appointmentId=' + apptId;
+                            if (orderCode) pollUrl += '&orderCode=' + orderCode;
+                            fetch(pollUrl)
                                 .then(function(res) { return res.json(); })
                                 .then(function(data) {
                                     if (data && data.isPaid) {
@@ -1393,13 +1501,16 @@
                         var btn = document.getElementById('btnManualConfirmQR');
                         if (btn) {
                             btn.disabled = true;
-                            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang xác nhận...';
+                            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang kiểm tra thanh toán...';
                         }
+
+                        var body = 'action=confirmWalkinPayment&appointmentId=' + currentWalkinApptId;
+                        if (currentWalkinOrderCode) body += '&orderCode=' + currentWalkinOrderCode;
 
                         fetch('${pageContext.request.contextPath}/staff/appointments', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: 'action=confirmWalkinPayment&appointmentId=' + currentWalkinApptId
+                            body: body
                         })
                         .then(function(res) { return res.json(); })
                         .then(function(data) {
@@ -1407,7 +1518,8 @@
                                 clearInterval(walkinPollTimer);
                                 onWalkinPaymentSuccess();
                             } else {
-                                alert('Không thể xác nhận thanh toán lúc này.');
+                                var msg = (data && data.message) ? data.message : 'Chưa nhận được tiền từ ngân hàng. Vui lòng đợi bệnh nhân quét mã!';
+                                showQrToast(msg, 'error');
                                 if (btn) {
                                     btn.disabled = false;
                                     btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Lễ tân xác nhận đã nhận tiền';
@@ -1415,12 +1527,31 @@
                             }
                         })
                         .catch(function(err) {
-                            alert('Lỗi khi gửi yêu cầu xác nhận: ' + err);
+                            showQrToast('Lỗi kết nối khi xác nhận thanh toán. Vui lòng thử lại!', 'error');
                             if (btn) {
                                 btn.disabled = false;
                                 btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Lễ tân xác nhận đã nhận tiền';
                             }
                         });
+                    }
+
+                    // Toast notification đẹp cho QR modal
+                    function showQrToast(message, type) {
+                        var toast = document.getElementById('qrPayToast');
+                        var toastIcon = document.getElementById('qrToastIcon');
+                        var toastMsg = document.getElementById('qrToastMsg');
+                        if (!toast || !toastMsg) return;
+
+                        var isError = (type === 'error');
+                        toast.className = 'qr-toast-notify ' + (isError ? 'qr-toast-error' : 'qr-toast-success');
+                        if (toastIcon) toastIcon.className = 'bi ' + (isError ? 'bi-exclamation-circle-fill' : 'bi-check-circle-fill');
+                        toastMsg.textContent = message;
+
+                        toast.classList.add('show');
+                        clearTimeout(toast._hideTimer);
+                        toast._hideTimer = setTimeout(function() {
+                            toast.classList.remove('show');
+                        }, 4000);
                     }
 
                     function cancelWalkinQR() {
@@ -1432,13 +1563,205 @@
                         }
                     }
 
+                    function initiateWalkinCash() {
+                        var form = document.getElementById('walkinForm');
+                        if (!form) return;
+                        if (form.checkValidity && !form.checkValidity()) {
+                            form.reportValidity();
+                            return;
+                        }
+
+                        var name = (document.getElementById('walkinPatientName') || {}).value || '';
+                        var phone = (document.getElementById('walkinPhone') || {}).value || '';
+                        var feeDisplay = document.getElementById('walkinFeeDisplay');
+                        var feeText = feeDisplay ? feeDisplay.textContent : '200.000 ₫';
+
+                        var svcSelect = document.getElementById('walkinServiceId');
+                        var svcName = (svcSelect && svcSelect.selectedIndex > 0) ? svcSelect.options[svcSelect.selectedIndex].text : 'Khám mắt tổng quát';
+
+                        var docSelect = document.getElementById('walkinDoctorId');
+                        var docName = (docSelect && docSelect.selectedIndex > 0) ? docSelect.options[docSelect.selectedIndex].text : 'Bác sĩ trực';
+
+                        var timeSelect = document.getElementById('walkinTimeSlot');
+                        var timeSlot = (timeSelect && timeSelect.selectedIndex >= 0) ? timeSelect.options[timeSelect.selectedIndex].text : '';
+
+                        var subEl = document.getElementById('cashPatientSubtitle');
+                        if (subEl) subEl.textContent = 'Bệnh nhân: ' + name + ' (' + phone + ')';
+                        var pNameEl = document.getElementById('cashModalPatientName');
+                        if (pNameEl) pNameEl.textContent = name;
+                        var pPhoneEl = document.getElementById('cashModalPhone');
+                        if (pPhoneEl) pPhoneEl.textContent = phone;
+                        var feeEl = document.getElementById('cashTotalFee');
+                        if (feeEl) feeEl.textContent = feeText;
+                        var sNameEl = document.getElementById('cashModalServiceName');
+                        if (sNameEl) sNameEl.textContent = svcName;
+                        var dNameEl = document.getElementById('cashModalDoctorName');
+                        if (dNameEl) dNameEl.textContent = docName;
+                        var tSlotEl = document.getElementById('cashModalTimeSlot');
+                        if (tSlotEl) tSlotEl.textContent = timeSlot;
+
+                        var overlay = document.getElementById('cashSuccessOverlay');
+                        if (overlay) {
+                            overlay.classList.add('d-none');
+                            overlay.classList.remove('d-flex');
+                        }
+                        var errAlert = document.getElementById('cashErrorAlert');
+                        if (errAlert) {
+                            errAlert.classList.add('d-none');
+                            errAlert.classList.remove('d-flex');
+                        }
+
+                        var cleanFee = parseInt(feeText.replace(/[^0-9]/g, '')) || 200000;
+                        window._currentWalkinCashFee = cleanFee;
+                        var givenInput = document.getElementById('cashGivenInput');
+                        if (givenInput) givenInput.value = String(cleanFee).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                        var changeEl = document.getElementById('cashChangeAmount');
+                        if (changeEl) {
+                            changeEl.className = 'fs-6 text-primary';
+                            changeEl.textContent = '0 ₫';
+                        }
+
+                        var btnConfirm = document.getElementById('btnConfirmCashPayment');
+                        if (btnConfirm) {
+                            btnConfirm.disabled = false;
+                            btnConfirm.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Xác nhận đã nhận tiền & Đưa vào hàng đợi';
+                        }
+
+                        var walkinModalEl = document.getElementById('walkinModal');
+                        if (walkinModalEl) {
+                            var m = bootstrap.Modal.getInstance(walkinModalEl);
+                            if (m) m.hide();
+                        }
+                        var cashModalEl = document.getElementById('walkinCashModal');
+                        if (cashModalEl) {
+                            var cashModal = bootstrap.Modal.getInstance(cashModalEl) || new bootstrap.Modal(cashModalEl);
+                            cashModal.show();
+                        }
+                    }
+
+                    function submitWalkinCashPayment() {
+                        var form = document.getElementById('walkinForm');
+                        if (!form) return;
+
+                        var btnConfirm = document.getElementById('btnConfirmCashPayment');
+                        if (btnConfirm) {
+                            btnConfirm.disabled = true;
+                            btnConfirm.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang xử lý...';
+                        }
+
+                        var errAlert = document.getElementById('cashErrorAlert');
+                        var errText = document.getElementById('cashErrorText');
+                        if (errAlert) {
+                            errAlert.classList.add('d-none');
+                            errAlert.classList.remove('d-flex');
+                        }
+
+                        var formData = new FormData(form);
+                        formData.append('ajax', '1');
+
+                        fetch('${pageContext.request.contextPath}/staff/appointments', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: new URLSearchParams(formData)
+                        })
+                        .then(function(res) {
+                            return res.text().then(function(text) {
+                                try {
+                                    return JSON.parse(text);
+                                } catch (e) {
+                                    console.error("Phản hồi không phải JSON:", text);
+                                    throw new Error("Lỗi máy chủ (" + res.status + ")");
+                                }
+                            });
+                        })
+                        .then(function(data) {
+                            if (data && data.success) {
+                                var overlay = document.getElementById('cashSuccessOverlay');
+                                if (overlay) {
+                                    overlay.classList.remove('d-none');
+                                    overlay.classList.add('d-flex');
+                                }
+                                setTimeout(function() {
+                                    window.location.href = '${pageContext.request.contextPath}/staff/waiting-list';
+                                }, 1200);
+                            } else {
+                                if (btnConfirm) {
+                                    btnConfirm.disabled = false;
+                                    btnConfirm.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Xác nhận đã nhận tiền & Đưa vào hàng đợi';
+                                }
+                                if (errAlert && errText) {
+                                    errText.textContent = (data && data.message) ? data.message : 'Không thể tiếp đón khách vãng lai lúc này.';
+                                    errAlert.classList.remove('d-none');
+                                    errAlert.classList.add('d-flex');
+                                }
+                            }
+                        })
+                        .catch(function(err) {
+                            if (btnConfirm) {
+                                btnConfirm.disabled = false;
+                                btnConfirm.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Xác nhận đã nhận tiền & Đưa vào hàng đợi';
+                            }
+                            if (errAlert && errText) {
+                                errText.textContent = 'Lỗi kết nối: ' + err.message;
+                                errAlert.classList.remove('d-none');
+                                errAlert.classList.add('d-flex');
+                            }
+                        });
+                    }
+
+                    function cancelWalkinCash() {
+                        var cashModalEl = document.getElementById('walkinCashModal');
+                        if (cashModalEl) {
+                            var m = bootstrap.Modal.getInstance(cashModalEl);
+                            if (m) m.hide();
+                        }
+                        var walkinModalEl = document.getElementById('walkinModal');
+                        if (walkinModalEl) {
+                            setTimeout(function() {
+                                var walkinModal = bootstrap.Modal.getInstance(walkinModalEl) || new bootstrap.Modal(walkinModalEl);
+                                walkinModal.show();
+                            }, 350);
+                        }
+                    }
+
+                    function onCashGivenChange(val) {
+                        var num = parseInt((val || '').replace(/[^0-9]/g, '')) || 0;
+                        var fee = window._currentWalkinCashFee || 200000;
+                        var change = num - fee;
+                        var changeEl = document.getElementById('cashChangeAmount');
+                        if (changeEl) {
+                            if (change < 0) {
+                                changeEl.className = 'fs-6 text-danger';
+                                changeEl.textContent = 'Còn thiếu ' + String(Math.abs(change)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' ₫';
+                            } else {
+                                changeEl.className = 'fs-6 text-success';
+                                changeEl.textContent = String(change).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' ₫';
+                            }
+                        }
+                    }
+
+                    function setCashGivenPreset(amount) {
+                        var fee = window._currentWalkinCashFee || 200000;
+                        var target = (amount === 'exact') ? fee : amount;
+                        var givenInput = document.getElementById('cashGivenInput');
+                        if (givenInput) {
+                            givenInput.value = String(target).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                            onCashGivenChange(givenInput.value);
+                        }
+                    }
+
                     var walkinFormEl = document.getElementById('walkinForm');
                     if (walkinFormEl) {
                         walkinFormEl.addEventListener('submit', function(e) {
+                            e.preventDefault();
                             var selectedMethod = document.querySelector('input[name="paymentMethod"]:checked');
                             if (selectedMethod && selectedMethod.value === 'VietQR_Banking') {
-                                e.preventDefault();
                                 initiateWalkinQR();
+                            } else {
+                                initiateWalkinCash();
                             }
                         });
                     }
@@ -1530,6 +1853,72 @@
                     updateClock();
                     setInterval(updateClock, 1000);
                 </script>
-            </body>
+            <!-- QR Payment Toast Notification -->
+            <div id="qrPayToast" class="qr-toast-notify" role="alert" aria-live="assertive">
+                <i id="qrToastIcon" class="bi bi-exclamation-circle-fill"></i>
+                <span id="qrToastMsg"></span>
+                <button type="button" onclick="document.getElementById('qrPayToast').classList.remove('show')" class="qr-toast-close" aria-label="Đóng">&times;</button>
+            </div>
 
+            <style>
+                .qr-toast-notify {
+                    position: fixed;
+                    top: 24px;
+                    right: 24px;
+                    z-index: 99999;
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 10px;
+                    min-width: 300px;
+                    max-width: 420px;
+                    padding: 14px 16px;
+                    border-radius: 12px;
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
+                    font-size: 14px;
+                    font-weight: 500;
+                    opacity: 0;
+                    transform: translateX(120%);
+                    transition: opacity 0.35s ease, transform 0.35s cubic-bezier(.22,.68,0,1.2);
+                    pointer-events: none;
+                    backdrop-filter: blur(6px);
+                }
+                .qr-toast-notify.show {
+                    opacity: 1;
+                    transform: translateX(0);
+                    pointer-events: auto;
+                }
+                .qr-toast-error {
+                    background: linear-gradient(135deg, #ff4757ee 0%, #c0392bee 100%);
+                    color: #fff;
+                    border-left: 4px solid #ff1744;
+                }
+                .qr-toast-success {
+                    background: linear-gradient(135deg, #2ed573ee 0%, #0abf53ee 100%);
+                    color: #fff;
+                    border-left: 4px solid #00e676;
+                }
+                .qr-toast-notify i {
+                    font-size: 20px;
+                    flex-shrink: 0;
+                    margin-top: 1px;
+                }
+                .qr-toast-notify span {
+                    flex: 1;
+                    line-height: 1.45;
+                }
+                .qr-toast-close {
+                    background: none;
+                    border: none;
+                    color: rgba(255,255,255,0.8);
+                    font-size: 18px;
+                    line-height: 1;
+                    cursor: pointer;
+                    padding: 0 0 0 4px;
+                    flex-shrink: 0;
+                    transition: color 0.2s;
+                }
+                .qr-toast-close:hover { color: #fff; }
+            </style>
+
+            </body>
             </html>

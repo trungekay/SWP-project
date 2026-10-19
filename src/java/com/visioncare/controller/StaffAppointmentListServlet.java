@@ -37,6 +37,8 @@ public class StaffAppointmentListServlet extends HttpServlet {
         if ("checkPayment".equalsIgnoreCase(ajaxAction)) {
             response.setContentType("application/json;charset=UTF-8");
             String apptIdStr = request.getParameter("appointmentId");
+            // orderCode được truyền từ JS (lưu từ lúc tạo QR)
+            String orderCodeStr = request.getParameter("orderCode");
             boolean isPaid = false;
             if (apptIdStr != null && !apptIdStr.trim().isEmpty()) {
                 try {
@@ -44,13 +46,20 @@ public class StaffAppointmentListServlet extends HttpServlet {
                     Appointment appt = appointmentDAO.getAppointmentDetailById(apptId);
                     isPaid = (appt != null && ("Confirmed".equalsIgnoreCase(appt.getStatus()) || "Paid".equalsIgnoreCase(appt.getInvoiceStatus())));
                     if (!isPaid) {
-                        String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(apptId);
-                        if ("PAID".equalsIgnoreCase(payosStatus)) {
-                            HttpSession session = request.getSession();
-                            User currentUser = (User) session.getAttribute("user");
-                            int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
-                            appointmentDAO.confirmAndCheckinWalkin(apptId, staffEmployeeId);
-                            isPaid = true;
+                        // Dùng orderCode thực từ khi tạo PayOS link, KHÔNG dùng apptId
+                        long orderCode = 0;
+                        if (orderCodeStr != null && !orderCodeStr.trim().isEmpty()) {
+                            try { orderCode = Long.parseLong(orderCodeStr.trim()); } catch (NumberFormatException ignored2) {}
+                        }
+                        if (orderCode > 0) {
+                            String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(orderCode);
+                            if ("PAID".equalsIgnoreCase(payosStatus)) {
+                                HttpSession session = request.getSession();
+                                User currentUser = (User) session.getAttribute("user");
+                                int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
+                                appointmentDAO.confirmAndCheckinWalkin(apptId, staffEmployeeId);
+                                isPaid = true;
+                            }
                         }
                     } else if (appt != null && (appt.getCheckinTime() == null || appt.getCheckinTime().isEmpty())) {
                         HttpSession session = request.getSession();
@@ -296,7 +305,9 @@ public class StaffAppointmentListServlet extends HttpServlet {
         } else if ("confirmWalkinPayment".equalsIgnoreCase(action)) {
             response.setContentType("application/json;charset=UTF-8");
             String apptIdStr = request.getParameter("appointmentId");
+            String orderCodeStr2 = request.getParameter("orderCode");
             boolean success = false;
+            String errorMsg = null;
             if (apptIdStr != null && !apptIdStr.trim().isEmpty()) {
                 try {
                     int apptId = Integer.parseInt(apptIdStr.trim());
@@ -305,9 +316,15 @@ public class StaffAppointmentListServlet extends HttpServlet {
                     success = appointmentDAO.confirmAndCheckinWalkin(apptId, staffEmployeeId);
                 } catch (Exception e) {
                     e.printStackTrace();
+                    errorMsg = "Lỗi khi xác nhận: " + e.getMessage();
                 }
             }
-            response.getWriter().write("{\"success\":" + success + "}");
+            if (success) {
+                response.getWriter().write("{\"success\":true}");
+            } else {
+                String safeMsg = errorMsg != null ? errorMsg.replace("\"", "'") : "Không thể xác nhận thanh toán.";
+                response.getWriter().write("{\"success\":false,\"message\":\"" + safeMsg + "\"}");
+            }
             return;
         } else if ("walkin".equalsIgnoreCase(action)) {
             String patientName = request.getParameter("patientName");
@@ -406,12 +423,13 @@ public class StaffAppointmentListServlet extends HttpServlet {
                             String accountHolder = "NGUYEN DINH TRUNG";
                             String qrUrl = null;
 
+                            long orderCodeFinal = 0;
                             try {
-                                long orderCode = ((long) newApptId * 1000000L) + (System.currentTimeMillis() / 1000L % 1000000L);
+                                orderCodeFinal = ((long) newApptId * 1000000L) + (System.currentTimeMillis() / 1000L % 1000000L);
                                 String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
                                 String cancelUrl = baseUrl + "/staff/appointments";
                                 String returnUrl = baseUrl + "/staff/waiting-list";
-                                com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(orderCode, (int) fee, "VC" + newApptId, cancelUrl, returnUrl);
+                                com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(orderCodeFinal, (int) fee, "VC" + newApptId, cancelUrl, returnUrl);
                                 if (payosRes != null && payosRes.success && payosRes.qrCode != null && !payosRes.qrCode.isEmpty()) {
                                     qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + URLEncoder.encode(payosRes.qrCode, StandardCharsets.UTF_8);
                                 }
@@ -430,6 +448,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                                 String json = "{"
                                         + "\"success\":true,"
                                         + "\"appointmentId\":" + newApptId + ","
+                                        + "\"orderCode\":" + orderCodeFinal + ","
                                         + "\"patientName\":\"" + escapeJson(patientName.trim()) + "\","
                                         + "\"phone\":\"" + escapeJson(phone.trim()) + "\","
                                         + "\"fee\":" + fee + ","
@@ -439,6 +458,24 @@ public class StaffAppointmentListServlet extends HttpServlet {
                                         + "\"bankName\":\"" + escapeJson(bankName) + "\","
                                         + "\"accountNumber\":\"" + escapeJson(accountNumber) + "\","
                                         + "\"accountHolder\":\"" + escapeJson(accountHolder) + "\""
+                                        + "}";
+                                response.getWriter().write(json);
+                                return;
+                            }
+                        } else {
+                            String ajaxParam = request.getParameter("ajax");
+                            String ajaxHeader = request.getHeader("X-Requested-With");
+                            if ("1".equals(ajaxParam) || "XMLHttpRequest".equalsIgnoreCase(ajaxHeader)) {
+                                response.setContentType("application/json;charset=UTF-8");
+                                String json = "{"
+                                        + "\"success\":true,"
+                                        + "\"appointmentId\":" + newApptId + ","
+                                        + "\"paymentMethod\":\"Cash_At_Counter\","
+                                        + "\"patientName\":\"" + escapeJson(patientName.trim()) + "\","
+                                        + "\"phone\":\"" + escapeJson(phone.trim()) + "\","
+                                        + "\"fee\":" + fee + ","
+                                        + "\"formattedFee\":\"" + String.format("%,d ₫", fee).replace(',', '.') + "\","
+                                        + "\"message\":\"Thu tiền mặt và tiếp đón thành công!\""
                                         + "}";
                                 response.getWriter().write(json);
                                 return;

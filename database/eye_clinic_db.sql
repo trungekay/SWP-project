@@ -1,4 +1,4 @@
-﻿-- ==========================================================================
+-- ==========================================================================
 -- VisionCare Eye Clinic Database Full Setup Script
 -- Exported: 2026-10-19 11:03:44
 -- Database: eye_clinic_db
@@ -227,6 +227,7 @@ CREATE TABLE [dbo].[Appointment](
 	[Status] [nvarchar](50) NOT NULL,
 	[created_at] [datetime2](7) NOT NULL,
 	[checkin_time] [datetime2](7) NULL,
+	[doctor_completed_at] [datetime2](7) NULL,
 PRIMARY KEY CLUSTERED 
 (
 	[Appointment_ID] ASC

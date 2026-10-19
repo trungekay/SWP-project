@@ -3,6 +3,7 @@ package com.visioncare.controller;
 import com.visioncare.dao.AppointmentDAO;
 import com.visioncare.dao.CatalogDAO;
 import com.visioncare.dao.DoctorDAO;
+import com.visioncare.dao.MedicalRecordDAO;
 import com.visioncare.dao.RoomDAO;
 import com.visioncare.model.Appointment;
 import com.visioncare.model.CatalogService;
@@ -34,10 +35,17 @@ public class StaffWaitingListServlet extends HttpServlet {
     private final DoctorDAO doctorDAO = new DoctorDAO();
     private final RoomDAO roomDAO = new RoomDAO();
     private final CatalogDAO catalogDAO = new CatalogDAO();
+    private final MedicalRecordDAO medicalRecordDAO = new MedicalRecordDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        String ajax = request.getParameter("ajax");
+        if ("postExamDetail".equalsIgnoreCase(ajax)) {
+            handlePostExamDetailAjax(request, response);
+            return;
+        }
+
         try {
             String dateParam = request.getParameter("date");
             String statusParam = request.getParameter("status");
@@ -94,7 +102,7 @@ public class StaffWaitingListServlet extends HttpServlet {
             long totalWaiting = allDayQueue.stream().filter(a -> "Confirmed".equalsIgnoreCase(a.getStatus())).count();
             long totalExamining = allDayQueue.stream().filter(a -> "In_Progress".equalsIgnoreCase(a.getStatus())).count();
             long totalCompleted = allDayQueue.stream().filter(a -> "Completed".equalsIgnoreCase(a.getStatus())).count();
-            long totalQueue = totalWaiting + totalExamining;
+            long totalQueue = totalWaiting + totalExamining + totalCompleted;
 
             // Danh sách các bác sĩ hiện đang có bệnh nhân trong phòng khám (In_Progress)
             Set<Integer> busyDoctorIds = allDayQueue.stream()
@@ -251,6 +259,17 @@ public class StaffWaitingListServlet extends HttpServlet {
             if (apptIdParam != null && newStatus != null) {
                 try {
                     int apptId = Integer.parseInt(apptIdParam.trim());
+
+                    if ("Completed".equalsIgnoreCase(newStatus.trim())) {
+                        session.setAttribute("errorMessage", "Không thể hoàn tất ca khám từ màn hình Lễ tân! Thao tác này phải do Bác sĩ phụ trách thực hiện trong phòng khám sau khi kết thúc chẩn đoán và kê đơn.");
+                        String returnUrl = request.getParameter("returnUrl");
+                        if (returnUrl != null && !returnUrl.trim().isEmpty() && !returnUrl.contains(".jsp")) {
+                            response.sendRedirect(returnUrl);
+                        } else {
+                            response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
+                        }
+                        return;
+                    }
 
                     if ("Canceled".equalsIgnoreCase(newStatus.trim())) {
                         boolean success = appointmentDAO.cancelAppointment(apptId, "Lễ tân hủy ca / Vắng mặt");
@@ -422,6 +441,44 @@ public class StaffWaitingListServlet extends HttpServlet {
                     session.setAttribute("errorMessage", "Lỗi tiếp đón khách vãng lai: " + e.getMessage());
                 }
             }
+        } else if ("confirmHandover".equalsIgnoreCase(action)) {
+            apptIdParam = request.getParameter("appointmentId");
+            if (apptIdParam != null && !apptIdParam.trim().isEmpty()) {
+                try {
+                    int apptId = Integer.parseInt(apptIdParam.trim());
+                    Appointment checkAppt = appointmentDAO.getAppointmentById(apptId);
+                    if (checkAppt == null || !"Completed".equalsIgnoreCase(checkAppt.getStatus())) {
+                        if ("1".equals(request.getParameter("ajax"))) {
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("{\"success\":false,\"message\":\"Ca khám này chưa được Bác sĩ hoàn thành trong phòng khám!\"}");
+                            return;
+                        }
+                        session.setAttribute("errorMessage", "Ca khám (#APPT-" + apptId + ") chưa được Bác sĩ hoàn thành trong phòng khám!");
+                        String returnUrl = request.getParameter("returnUrl");
+                        if (returnUrl != null && !returnUrl.trim().isEmpty() && !returnUrl.contains(".jsp")) {
+                            response.sendRedirect(returnUrl);
+                        } else {
+                            response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
+                        }
+                        return;
+                    }
+
+                    if ("1".equals(request.getParameter("ajax"))) {
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.getWriter().write("{\"success\":true,\"message\":\"Đã hoàn tất thủ tục bàn giao đơn thuốc và kết thúc ca khám!\"}");
+                        return;
+                    }
+                    session.setAttribute("successMessage", "Đã bàn giao đơn thuốc và hoàn tất thủ tục cho bệnh nhân (#APPT-" + apptId + ").");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    if ("1".equals(request.getParameter("ajax"))) {
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.getWriter().write("{\"success\":false,\"message\":\"Lỗi bàn giao: " + escapeJson(e.getMessage()) + "\"}");
+                        return;
+                    }
+                    session.setAttribute("errorMessage", "Không thể hoàn tất bàn giao: " + e.getMessage());
+                }
+            }
         }
 
         String returnUrl = request.getParameter("returnUrl");
@@ -430,5 +487,131 @@ public class StaffWaitingListServlet extends HttpServlet {
         } else {
             response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
         }
+    }
+
+    private void handlePostExamDetailAjax(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.setContentType("application/json;charset=UTF-8");
+        String idParam = request.getParameter("appointmentId");
+        if (idParam == null || idParam.trim().isEmpty()) {
+            response.getWriter().write("{\"success\":false,\"message\":\"Thiếu mã lịch hẹn\"}");
+            return;
+        }
+
+        try {
+            int apptId = Integer.parseInt(idParam.trim());
+            Appointment appt = appointmentDAO.getAppointmentById(apptId);
+            if (appt == null) {
+                response.getWriter().write("{\"success\":false,\"message\":\"Không tìm thấy lịch hẹn\"}");
+                return;
+            }
+
+            Map<String, Object> mr = null;
+            try {
+                mr = medicalRecordDAO.getMedicalRecordDetail(apptId);
+            } catch (Exception mrEx) {
+                log("Cannot fetch medical record detail for #" + apptId, mrEx);
+            }
+
+            StringBuilder sb = new StringBuilder("{");
+            sb.append("\"success\":true,");
+            sb.append("\"appointmentId\":").append(appt.getId()).append(",");
+            sb.append("\"patientName\":\"").append(escapeJson(appt.getPatientName())).append("\",");
+            sb.append("\"phone\":\"").append(escapeJson(appt.getPhone())).append("\",");
+            sb.append("\"dob\":\"").append(escapeJson(appt.getDob() != null ? appt.getDob().toString() : "")).append("\",");
+            sb.append("\"doctorName\":\"").append(escapeJson(appt.getDoctorName() != null ? appt.getDoctorName() : "Bác sĩ")).append("\",");
+            sb.append("\"roomName\":\"").append(escapeJson(appt.getRoomName() != null ? appt.getRoomName() : "Phòng khám")).append("\",");
+            sb.append("\"timeSlot\":\"").append(escapeJson(appt.getTimeSlot() != null ? appt.getTimeSlot() : "")).append("\",");
+            sb.append("\"appointmentDate\":\"").append(appt.getAppointmentDate() != null ? appt.getAppointmentDate().toString() : "").append("\",");
+            sb.append("\"status\":\"").append(escapeJson(appt.getStatus())).append("\",");
+
+            if (mr != null) {
+                Object formId = mr.get("formattedId");
+                sb.append("\"recordId\":\"").append(escapeJson(formId != null ? String.valueOf(formId) : "#MR-" + apptId)).append("\",");
+                Object diag = mr.get("clinicalDiagnosis");
+                sb.append("\"clinicalDiagnosis\":\"").append(escapeJson(diag != null ? String.valueOf(diag) : "Khám mắt tổng quát")).append("\",");
+                Object examRes = mr.get("examinationResult");
+                sb.append("\"examinationResult\":\"").append(escapeJson(examRes != null ? String.valueOf(examRes) : "")).append("\",");
+                Object conc = mr.get("conclusion");
+                sb.append("\"conclusion\":\"").append(escapeJson(conc != null ? String.valueOf(conc) : "")).append("\",");
+                Object docNotes = mr.get("doctorNotes");
+                sb.append("\"doctorNotes\":\"").append(escapeJson(docNotes != null ? String.valueOf(docNotes) : "Uống/nhỏ thuốc theo đúng hướng dẫn của bác sĩ.")).append("\",");
+                Object invStat = mr.get("invoiceStatus");
+                sb.append("\"invoiceStatus\":\"").append(escapeJson(invStat != null ? String.valueOf(invStat) : "Paid")).append("\",");
+                Object invAmt = mr.get("invoiceAmountFmt");
+                sb.append("\"invoiceAmountFmt\":\"").append(escapeJson(invAmt != null ? String.valueOf(invAmt) : "0 ₫")).append("\",");
+
+                // Medicines
+                sb.append("\"medicines\":[");
+                Object rawMeds = mr.get("medicines");
+                if (rawMeds instanceof List) {
+                    List<?> meds = (List<?>) rawMeds;
+                    for (int i = 0; i < meds.size(); i++) {
+                        Object item = meds.get(i);
+                        if (item instanceof Map) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> m = (Map<String, Object>) item;
+                            if (i > 0) sb.append(",");
+                            Object sttVal = m.get("stt");
+                            Object nameVal = m.get("medicineName");
+                            Object qtyVal = m.get("quantity");
+                            Object doseVal = m.get("dosageInstruction");
+
+                            sb.append("{");
+                            sb.append("\"stt\":").append(sttVal != null ? sttVal : (i + 1)).append(",");
+                            sb.append("\"name\":\"").append(escapeJson(nameVal != null ? String.valueOf(nameVal) : "")).append("\",");
+                            sb.append("\"quantity\":").append(qtyVal != null ? qtyVal : 1).append(",");
+                            sb.append("\"dosageInstruction\":\"").append(escapeJson(doseVal != null ? String.valueOf(doseVal) : "")).append("\"");
+                            sb.append("}");
+                        }
+                    }
+                }
+                sb.append("],");
+
+                // Procedures
+                sb.append("\"procedures\":[");
+                Object rawProcs = mr.get("procedures");
+                if (rawProcs instanceof List) {
+                    List<?> procs = (List<?>) rawProcs;
+                    for (int i = 0; i < procs.size(); i++) {
+                        Object item = procs.get(i);
+                        if (item instanceof Map) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> p = (Map<String, Object>) item;
+                            if (i > 0) sb.append(",");
+                            Object sName = p.get("serviceName");
+                            Object pFmt = p.get("priceFmt");
+                            Object pStat = p.get("status");
+
+                            sb.append("{");
+                            sb.append("\"serviceName\":\"").append(escapeJson(sName != null ? String.valueOf(sName) : "")).append("\",");
+                            sb.append("\"priceFmt\":\"").append(escapeJson(pFmt != null ? String.valueOf(pFmt) : "0 ₫")).append("\",");
+                            sb.append("\"status\":\"").append(escapeJson(pStat != null ? String.valueOf(pStat) : "")).append("\"");
+                            sb.append("}");
+                        }
+                    }
+                }
+                sb.append("]");
+            } else {
+                sb.append("\"clinicalDiagnosis\":\"Khám mắt tổng quát\",");
+                sb.append("\"examinationResult\":\"\",");
+                sb.append("\"conclusion\":\"Bình thường\",");
+                sb.append("\"doctorNotes\":\"Uống thuốc và tái khám theo chỉ định.\",");
+                sb.append("\"invoiceStatus\":\"Paid\",");
+                sb.append("\"invoiceAmountFmt\":\"0 đ\",");
+                sb.append("\"medicines\":[],");
+                sb.append("\"procedures\":[]");
+            }
+
+            sb.append("}");
+            response.getWriter().write(sb.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.getWriter().write("{\"success\":false,\"message\":\"Lỗi tải thông tin sau khám: " + escapeJson(e.getMessage()) + "\"}");
+        }
+    }
+
+    private String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
     }
 }
