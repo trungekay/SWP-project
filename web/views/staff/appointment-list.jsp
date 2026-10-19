@@ -828,11 +828,11 @@
                                     </div>
                                     <div class="d-flex justify-content-between py-1 border-bottom">
                                         <span class="text-muted">Số tài khoản:</span>
-                                        <span class="fw-bold text-dark font-monospace" id="qrAccountNumber">0335889999</span>
+                                        <span class="fw-bold text-dark font-monospace" id="qrAccountNumber">0877757889</span>
                                     </div>
                                     <div class="d-flex justify-content-between py-1 border-bottom">
                                         <span class="text-muted">Chủ tài khoản:</span>
-                                        <span class="fw-semibold text-dark" id="qrAccountHolder">PHONG KHAM MAT VISIONCARE</span>
+                                        <span class="fw-semibold text-dark" id="qrAccountHolder">NGUYEN DINH TRUNG</span>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center py-1">
                                         <span class="text-muted">Nội dung chuyển khoản:</span>

@@ -400,7 +400,28 @@ public class StaffAppointmentListServlet extends HttpServlet {
                             String phoneSafe = appt.getPhone() != null ? appt.getPhone() : "";
                             String paymentDesc = "VC" + newApptId + " " + phoneSafe;
                             String encodedDesc = URLEncoder.encode(paymentDesc, StandardCharsets.UTF_8);
-                            String qrUrl = "https://img.vietqr.io/image/MB-0335889999-compact2.png?amount=" + fee + "&addInfo=" + encodedDesc + "&accountName=PHONG%20KHAM%20MAT%20VISIONCARE";
+
+                            String bankName = "Ngân hàng Quân Đội (MB Bank)";
+                            String accountNumber = "0877757889";
+                            String accountHolder = "NGUYEN DINH TRUNG";
+                            String qrUrl = null;
+
+                            try {
+                                long orderCode = ((long) newApptId * 1000000L) + (System.currentTimeMillis() / 1000L % 1000000L);
+                                String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
+                                String cancelUrl = baseUrl + "/staff/appointments";
+                                String returnUrl = baseUrl + "/staff/waiting-list";
+                                com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(orderCode, (int) fee, "VC" + newApptId, cancelUrl, returnUrl);
+                                if (payosRes != null && payosRes.success && payosRes.qrCode != null && !payosRes.qrCode.isEmpty()) {
+                                    qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + URLEncoder.encode(payosRes.qrCode, StandardCharsets.UTF_8);
+                                }
+                            } catch (Exception payosEx) {
+                                payosEx.printStackTrace();
+                            }
+
+                            if (qrUrl == null || qrUrl.isEmpty()) {
+                                qrUrl = "https://img.vietqr.io/image/MB-" + accountNumber + "-compact2.png?amount=" + fee + "&addInfo=" + encodedDesc + "&accountName=" + URLEncoder.encode(accountHolder, StandardCharsets.UTF_8);
+                            }
 
                             String ajaxParam = request.getParameter("ajax");
                             String ajaxHeader = request.getHeader("X-Requested-With");
@@ -415,9 +436,9 @@ public class StaffAppointmentListServlet extends HttpServlet {
                                         + "\"formattedFee\":\"" + String.format("%,d ₫", fee).replace(',', '.') + "\","
                                         + "\"paymentDesc\":\"" + escapeJson(paymentDesc) + "\","
                                         + "\"qrUrl\":\"" + escapeJson(qrUrl) + "\","
-                                        + "\"bankName\":\"Ngân hàng Quân Đội (MB Bank)\","
-                                        + "\"accountNumber\":\"0335889999\","
-                                        + "\"accountHolder\":\"PHONG KHAM MAT VISIONCARE\""
+                                        + "\"bankName\":\"" + escapeJson(bankName) + "\","
+                                        + "\"accountNumber\":\"" + escapeJson(accountNumber) + "\","
+                                        + "\"accountHolder\":\"" + escapeJson(accountHolder) + "\""
                                         + "}";
                                 response.getWriter().write(json);
                                 return;
