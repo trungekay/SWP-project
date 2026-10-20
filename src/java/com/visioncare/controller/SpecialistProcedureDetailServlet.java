@@ -83,11 +83,14 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
             List<ProcedureOrder> todoList = procedureOrderDAO.getTodoListByRecordId(order.getRecordId());
 
             // Feature 3: Phân tích kết quả khám của Bác sĩ và Biên bản thủ thuật của Specialist
-            Map<String, String> protocolData = parseProtocolData(
-                    record != null ? record.getExaminationResult() : null,
-                    record != null ? record.getConclusion() : null,
-                    order
-            );
+            String rawExamText = (order.getExaminationResult() != null && !order.getExaminationResult().trim().isEmpty())
+                    ? order.getExaminationResult()
+                    : (record != null ? record.getExaminationResult() : null);
+            String rawConclusion = (order.getConclusion() != null && !order.getConclusion().trim().isEmpty())
+                    ? order.getConclusion()
+                    : (record != null ? record.getConclusion() : null);
+
+            Map<String, String> protocolData = parseProtocolData(rawExamText, rawConclusion, order);
 
             // Khôi phục form tạm nếu có lỗi validation từ session
             @SuppressWarnings("unchecked")
@@ -188,7 +191,7 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
 
             if ("saveDraft".equalsIgnoreCase(action)) {
                 // Lưu nháp: Giữ nguyên trạng thái Pending
-                procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Pending");
+                procedureOrderDAO.saveResults(orderId, specialistEmployeeId, serializedResult, conclusion, "Pending");
                 procedureOrderDAO.updateMedicalRecordExaminationResult(order.getRecordId(), serializedResult);
 
                 session.setAttribute("successMessage", "Đã lưu nháp biên bản thủ thuật ca #CD-" + orderId + " thành công!");
@@ -196,7 +199,7 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
 
             } else if ("complete".equalsIgnoreCase(action)) {
                 // Hoàn thành thủ thuật: Chuyển sang Completed
-                procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Completed");
+                procedureOrderDAO.saveResults(orderId, specialistEmployeeId, serializedResult, conclusion, "Completed");
                 procedureOrderDAO.updateMedicalRecordExaminationResult(order.getRecordId(), serializedResult);
 
                 session.setAttribute("successMessage", "Đã hoàn thành thủ thuật và trả kết quả về cho Bác sĩ thành công cho ca #CD-" + orderId + "!");
@@ -204,6 +207,7 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
 
             } else if ("updateResults".equalsIgnoreCase(action)) {
                 // Cập nhật lại biên bản khi đã Completed
+                procedureOrderDAO.saveResults(orderId, specialistEmployeeId, serializedResult, conclusion, "Completed");
                 procedureOrderDAO.updateMedicalRecordExaminationResult(order.getRecordId(), serializedResult);
 
                 session.setAttribute("successMessage", "Đã lưu cập nhật biên bản thủ thuật thành công!");

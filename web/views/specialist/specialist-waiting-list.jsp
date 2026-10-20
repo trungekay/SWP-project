@@ -49,6 +49,34 @@
         </div>
       </div>
 
+      <!-- Thông báo Flash Messages -->
+      <c:if test="${not empty sessionScope.successMessage}">
+        <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4" role="alert">
+          <i class="bi bi-check-circle-fill me-2 fs-5 align-middle"></i>
+          <strong>Thành công!</strong> <c:out value="${sessionScope.successMessage}" />
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <c:remove var="successMessage" scope="session" />
+      </c:if>
+
+      <c:if test="${not empty sessionScope.errorMessage}">
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4" role="alert">
+          <i class="bi bi-exclamation-triangle-fill me-2 fs-5 align-middle"></i>
+          <strong>Lỗi!</strong> <c:out value="${sessionScope.errorMessage}" />
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <c:remove var="errorMessage" scope="session" />
+      </c:if>
+
+      <c:if test="${not empty sessionScope.infoMessage}">
+        <div class="alert alert-info alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4" role="alert">
+          <i class="bi bi-info-circle-fill me-2 fs-5 align-middle"></i>
+          <c:out value="${sessionScope.infoMessage}" />
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <c:remove var="infoMessage" scope="session" />
+      </c:if>
+
       <!-- KPI Summary Cards (Bấm trực tiếp để lọc theo trạng thái) -->
       <div class="row g-3 mb-4 align-items-stretch">
         <!-- 1. Tất cả ca trong hàng đợi -->
