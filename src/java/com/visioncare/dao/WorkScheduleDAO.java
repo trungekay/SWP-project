@@ -245,7 +245,7 @@ public class WorkScheduleDAO {
                      "         WHEN ws.Status = 'Booked' THEN 1 " +
                      "         WHEN EXISTS (SELECT 1 FROM Appointment ap WHERE ap.Schedule_ID = ws.Schedule_ID " +
                      "                      AND (ap.Status IN ('Confirmed', 'In_Progress', 'Completed') " +
-                     "                           OR (ap.Status = 'Pending' AND DATEDIFF(MINUTE, ap.created_at, SYSUTCDATETIME()) < 15))) THEN 1 " +
+                     "                           OR (ap.Status = 'Pending' AND DATEDIFF(MINUTE, ap.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) < 15))) THEN 1 " +
                      "         ELSE 0 " +
                      "       END AS Is_Booked " +
                      "FROM Work_Schedule ws " +

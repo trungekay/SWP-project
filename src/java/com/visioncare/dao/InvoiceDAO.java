@@ -524,9 +524,9 @@ public class InvoiceDAO {
      * Update invoice payment status (e.g. from Admin billing screen)
      */
     public boolean updateInvoiceStatus(int invoiceId, String newStatus, String paymentGateway, long amount) {
-        String updateInv = "UPDATE Master_Invoice SET Status = ?, Balance_Due = 0, Close_At = SYSUTCDATETIME() WHERE Invoice_ID = ?";
+        String updateInv = "UPDATE Master_Invoice SET Status = ?, Balance_Due = 0, Close_At = DATEADD(HOUR, 7, SYSUTCDATETIME()) WHERE Invoice_ID = ?";
         String insertTx = "INSERT INTO Payment_Transaction (Invoice_ID, Amount, Gateway_Status, Payment_Gateway, Trans_Date) " +
-                          "VALUES (?, ?, 'Success', ?, SYSUTCDATETIME())";
+                          "VALUES (?, ?, 'Success', ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
 
         Connection conn = null;
         try {
@@ -646,7 +646,7 @@ public class InvoiceDAO {
         String findPatient = "SELECT Patient_ID FROM Patient WHERE Account_ID = ?";
         String findStaff = "SELECT TOP 1 Employee_ID FROM Employee_Profile";
         String insertSql = "INSERT INTO Refund_Request (Invoice_ID, created_by_employee_id, Patient_ID, Refund_Amount, Reason, Status, Created_At, Update_At) " +
-                           "VALUES (?, ?, ?, ?, ?, 'Pending', SYSUTCDATETIME(), SYSUTCDATETIME())";
+                           "VALUES (?, ?, ?, ?, ?, 'Pending', DATEADD(HOUR, 7, SYSUTCDATETIME()), DATEADD(HOUR, 7, SYSUTCDATETIME()))";
         try (Connection conn = DBContext.getConnection()) {
             int patientId = 0;
             try (PreparedStatement psP = conn.prepareStatement(findPatient)) {
@@ -708,7 +708,7 @@ public class InvoiceDAO {
         }
 
         if (invoiceId <= 0) {
-            String sqlCreateInv = "INSERT INTO Master_Invoice (Appointment_ID, Total_Amount, Deposit_Amount, Balance_Due, Status, Create_At) VALUES (?, ?, ?, 0, 'Paid', SYSUTCDATETIME())";
+            String sqlCreateInv = "INSERT INTO Master_Invoice (Appointment_ID, Total_Amount, Deposit_Amount, Balance_Due, Status, Create_At) VALUES (?, ?, ?, 0, 'Paid', DATEADD(HOUR, 7, SYSUTCDATETIME()))";
             try (Connection conn = DBContext.getConnection();
                  PreparedStatement ps = conn.prepareStatement(sqlCreateInv, Statement.RETURN_GENERATED_KEYS)) {
                 long defAmt = amount > 0 ? amount : 200000;
@@ -747,7 +747,7 @@ public class InvoiceDAO {
         } catch (Exception ignored) {}
 
         String insertSql = "INSERT INTO Refund_Request (Invoice_ID, created_by_employee_id, Patient_ID, Refund_Amount, Reason, Status, Created_At, Update_At) " +
-                           "VALUES (?, ?, ?, ?, ?, 'Pending', SYSUTCDATETIME(), SYSUTCDATETIME())";
+                           "VALUES (?, ?, ?, ?, ?, 'Pending', DATEADD(HOUR, 7, SYSUTCDATETIME()), DATEADD(HOUR, 7, SYSUTCDATETIME()))";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement psIns = conn.prepareStatement(insertSql)) {
             psIns.setInt(1, invoiceId);
