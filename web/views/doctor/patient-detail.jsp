@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css">
     <jsp:include page="/views/admin/layout/admin-css.jsp" />
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-patient-detail.css?v=3">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-patient-detail.css?v=5">
 </head>
 <body>
     <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
@@ -109,6 +109,9 @@
                                 <c:when test="${appointment.status eq 'Completed'}">
                                     <span class="doctor-detail-status completed"><i class="bi bi-check-circle" aria-hidden="true"></i> Hoàn tất</span>
                                 </c:when>
+                                <c:when test="${appointment.status eq 'Canceled'}">
+                                    <span class="doctor-detail-status canceled"><i class="bi bi-x-circle" aria-hidden="true"></i> Đã hủy</span>
+                                </c:when>
                                 <c:otherwise>
                                     <span class="doctor-detail-status neutral"><c:out value="${appointment.status}" default="Chưa rõ trạng thái" /></span>
                                 </c:otherwise>
@@ -177,6 +180,7 @@
                         </section>
                     </div>
 
+                    <div class="doctor-detail-support-grid">
                     <section class="doctor-detail-card doctor-detail-staff-notes" aria-labelledby="staff-notes-heading">
                         <div class="doctor-detail-card-heading">
                             <span class="doctor-detail-card-icon teal"><i class="bi bi-journal-medical" aria-hidden="true"></i></span>
@@ -245,6 +249,7 @@
                             </c:otherwise>
                         </c:choose>
                     </section>
+                    </div>
 
                     <c:if test="${appointment.status eq 'In_Progress' || appointment.status eq 'Completed'}">
                         <div class="doctor-detail-mobile-action">

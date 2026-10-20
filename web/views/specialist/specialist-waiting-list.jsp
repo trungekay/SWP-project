@@ -34,6 +34,11 @@
     <!-- Page Content -->
     <div class="page-content" style="padding: 24px 30px;">
 
+      <c:if test="${not empty sessionScope.errorMessage}">
+        <div class="alert alert-warning" role="alert"><c:out value="${sessionScope.errorMessage}" /></div>
+        <c:remove var="errorMessage" scope="session" />
+      </c:if>
+
       <!-- Header Section -->
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
@@ -230,12 +235,17 @@
                       <!-- Bệnh nhân -->
                       <td>
                         <div class="patient-name-title">
+                          <c:choose>
+                          <c:when test="${item.paymentBlocked}"><strong class="text-dark" style="font-size: 13.5px;"><c:out value="${item.patientName}" /></strong></c:when>
+                          <c:otherwise>
                           <a href="${pageContext.request.contextPath}/specialist/patient-detail?patientId=${item.patientId}&orderId=${item.orderId}" 
                              class="text-decoration-none text-dark hover-teal fw-bold" 
                              style="font-size: 13.5px;"
                              title="Xem hồ sơ bệnh nhân">
                             <c:out value="${item.patientName}" />
                           </a>
+                          </c:otherwise>
+                          </c:choose>
                         </div>
                         <div class="patient-sub-info text-secondary small mt-1" style="font-size: 12px; line-height: 1.45;">
                           <div class="fw-medium" style="color: #334155;">
@@ -299,6 +309,9 @@
                       <!-- Trạng thái -->
                       <td class="text-center">
                         <c:choose>
+                          <c:when test="${item.paymentBlocked}">
+                            <span class="badge bg-warning text-dark">Chờ thanh toán</span>
+                          </c:when>
                           <c:when test="${item.status == 'Pending'}">
                             <span class="badge-status badge-pending">Chờ thực hiện</span>
                           </c:when>
@@ -318,6 +331,9 @@
                       <td class="text-center text-nowrap">
                         <div class="d-flex align-items-center justify-content-center gap-2">
                           <c:choose>
+                            <c:when test="${item.paymentBlocked}">
+                              <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="Staff chưa xác nhận thanh toán">Chưa thể tiếp nhận</button>
+                            </c:when>
                             <c:when test="${item.status == 'Pending'}">
                               <a href="${pageContext.request.contextPath}/specialist/procedure-detail?orderId=${item.orderId}" 
                                  class="btn-action-execute shadow-sm" 
@@ -345,11 +361,13 @@
                             </c:otherwise>
                           </c:choose>
 
+                          <c:if test="${!item.paymentBlocked}">
                           <a href="${pageContext.request.contextPath}/specialist/patient-detail?patientId=${item.patientId}&orderId=${item.orderId}" 
                              class="btn-action-patient-card" 
                              title="Xem hồ sơ bệnh nhân">
                             <i class="bi bi-person-vcard"></i>
                           </a>
+                          </c:if>
                         </div>
                       </td>
                     </tr>

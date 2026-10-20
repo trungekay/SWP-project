@@ -25,6 +25,7 @@ public class InvoiceDAO {
                 return "Chờ đặt cọc";
             case "Refunded":
                 return "Đã hoàn tiền";
+            case "Partial_Paid":
             case "Partially_Paid":
                 return "Thanh toán 1 phần";
             default:
@@ -362,12 +363,14 @@ public class InvoiceDAO {
 
         // Fetch additional procedures (if any, excluding base examination already covered by consultation deposit)
         long totalProcedureCost = 0;
-        String sqlProcedures = "SELECT po.Order_ID, s.Service_ID, s.Service_Name, po.Actual_Price, po.Status " +
+        String sqlProcedures = "SELECT po.Order_ID, s.Service_ID, s.Service_Name, po.Actual_Price, " +
+                              "COALESCE(pr.Credit_Amount, 0) AS Credit_Amount, po.Status " +
                               "FROM Procedure_Order po " +
+                              "LEFT JOIN Procedure_Payment_Request pr ON pr.Order_ID = po.Order_ID " +
                               "JOIN Service_Catalog s ON po.Service_ID = s.Service_ID " +
                               "JOIN Medical_Record m ON po.Record_ID = m.Record_ID " +
                               "JOIN Master_Invoice i ON m.Appointment_ID = i.Appointment_ID " +
-                              "WHERE i.Invoice_ID = ? AND (po.Referral_Notes IS NULL OR po.Status = 'Completed')";
+                              "WHERE i.Invoice_ID = ? AND (po.Referral_Notes IS NULL OR po.Status = 'Completed' OR pr.Status = 'Paid')";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sqlProcedures)) {
             ps.setInt(1, invoiceId);
@@ -380,7 +383,9 @@ public class InvoiceDAO {
                         continue;
                     }
                     Map<String, Object> item = new HashMap<>();
-                    long price = rs.getLong("Actual_Price");
+                    long credit = rs.getLong("Credit_Amount");
+                    long price = rs.getLong("Actual_Price") - credit;
+                    if (credit > 0) item.put("name", svcName + " (đã trừ phí khám tiền phẫu)");
                     item.put("stt", stt++);
                     item.put("name", svcName);
                     item.put("type", "Cận lâm sàng / Thủ thuật");

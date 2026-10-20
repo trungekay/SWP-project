@@ -25,6 +25,7 @@ public class ProcedureOrderDAO {
         "    po.Service_ID, " +
         "    po.Status, " +
         "    po.Referral_Notes, " +
+        "    s.Service_Code, pr.Status AS Payment_Status, " +
         "    s.Service_Name, " +
         "    po.Actual_Price AS Service_Price, " +
         "    spec.Full_Name AS Specialist_Name, " +
@@ -44,6 +45,7 @@ public class ProcedureOrderDAO {
         "    p.Address AS Patient_Address " +
         "FROM Procedure_Order po " +
         "JOIN Service_Catalog s ON po.Service_ID = s.Service_ID " +
+        "LEFT JOIN Procedure_Payment_Request pr ON pr.Order_ID = po.Order_ID " +
         "JOIN Medical_Record mr ON po.Record_ID = mr.Record_ID " +
         "JOIN Appointment a ON mr.Appointment_ID = a.Appointment_ID " +
         "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
@@ -373,7 +375,11 @@ public class ProcedureOrderDAO {
      * Cập nhật trạng thái của thủ thuật (Pending -> Completed hoặc Cancelled) và gán KTV thực hiện
      */
     public boolean updateOrderStatus(int orderId, Integer specialistEmployeeId, String newStatus) throws Exception {
-        String sql = "UPDATE Procedure_Order SET Status = ?, Specialist_Employee_ID = ? WHERE Order_ID = ?";
+        String sql = "UPDATE po SET po.Status = ?, po.Specialist_Employee_ID = ? "
+                + "FROM Procedure_Order po JOIN Service_Catalog s ON s.Service_ID = po.Service_ID "
+                + "WHERE po.Order_ID = ? AND (po.Referral_Notes IS NULL OR s.Service_Code NOT LIKE 'PT-%' "
+                + "OR po.Status IN ('Completed', 'Cancelled') OR EXISTS "
+                + "(SELECT 1 FROM Procedure_Payment_Request pr WHERE pr.Order_ID = po.Order_ID AND pr.Status = 'Paid'))";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, newStatus);
@@ -390,11 +396,15 @@ public class ProcedureOrderDAO {
     /** Keep specialist findings on the order so the doctor's clinical record remains intact. */
     public boolean saveResults(int orderId, Integer specialistEmployeeId, String examinationResult,
                                String conclusion, String status) throws Exception {
-        String sql = "UPDATE Procedure_Order SET Result_Text = ?, Result_Conclusion = ?, " +
+        String sql = "UPDATE po SET Result_Text = ?, Result_Conclusion = ?, " +
                 "Status = ?, Specialist_Employee_ID = ?, Completed_At = CASE WHEN ? = 'Completed' " +
                 "THEN COALESCE(Completed_At, SYSDATETIME()) ELSE Completed_At END " +
-                "WHERE Order_ID = ? AND Status <> 'Cancelled' " +
-                "AND (Status <> 'Completed' OR ? = 'Completed')";
+                "FROM Procedure_Order po JOIN Service_Catalog s ON s.Service_ID = po.Service_ID " +
+                "WHERE po.Order_ID = ? AND po.Status <> 'Cancelled' " +
+                "AND (po.Status <> 'Completed' OR ? = 'Completed') " +
+                "AND (po.Referral_Notes IS NULL OR s.Service_Code NOT LIKE 'PT-%' " +
+                "OR po.Status = 'Completed' OR EXISTS " +
+                "(SELECT 1 FROM Procedure_Payment_Request pr WHERE pr.Order_ID = po.Order_ID AND pr.Status = 'Paid'))";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setNString(1, examinationResult);
@@ -470,6 +480,8 @@ public class ProcedureOrderDAO {
         po.setServiceId(rs.getInt("Service_ID"));
         po.setStatus(rs.getString("Status"));
         po.setReferralNotes(rs.getString("Referral_Notes"));
+        po.setServiceCode(rs.getString("Service_Code"));
+        po.setPaymentStatus(rs.getString("Payment_Status"));
 
         po.setServiceName(rs.getString("Service_Name"));
         po.setServicePrice(rs.getDouble("Service_Price"));

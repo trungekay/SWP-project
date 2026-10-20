@@ -13,6 +13,8 @@ public class ProcedureOrder {
     private int serviceId;
     private String status; // 'Pending', 'Completed', 'Cancelled'
     private String referralNotes;
+    private String serviceCode;
+    private String paymentStatus;
 
     // Service info
     private String serviceName;
@@ -84,6 +86,15 @@ public class ProcedureOrder {
 
     public String getReferralNotes() { return referralNotes; }
     public void setReferralNotes(String referralNotes) { this.referralNotes = referralNotes; }
+    public String getServiceCode() { return serviceCode; }
+    public void setServiceCode(String serviceCode) { this.serviceCode = serviceCode; }
+    public String getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+    public boolean isPaymentBlocked() {
+        return serviceCode != null && serviceCode.startsWith("PT-") && referralNotes != null
+                && ("Pending".equals(status) || "In_Progress".equals(status))
+                && !"Paid".equals(paymentStatus);
+    }
 
     public String getServiceName() {
         return serviceName;

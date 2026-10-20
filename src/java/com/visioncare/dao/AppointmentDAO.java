@@ -1201,7 +1201,9 @@ public class AppointmentDAO {
         }
 
         if (status != null && !status.trim().isEmpty() && !"all".equalsIgnoreCase(status) && !"all_queue".equalsIgnoreCase(status)) {
-            if ("all_day".equalsIgnoreCase(status)) {
+            if ("doctor_day".equalsIgnoreCase(status)) {
+                sql.append(" AND a.Status IN ('Confirmed', 'In_Progress', 'Completed', 'Canceled')");
+            } else if ("all_day".equalsIgnoreCase(status)) {
                 sql.append(" AND a.Status IN ('Confirmed', 'In_Progress', 'Completed')");
             } else {
                 sql.append(" AND a.Status = ?");
