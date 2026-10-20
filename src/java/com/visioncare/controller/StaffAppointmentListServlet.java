@@ -352,6 +352,27 @@ public class StaffAppointmentListServlet extends HttpServlet {
                 response.getWriter().write("{\"success\":false,\"message\":\"" + safeMsg + "\"}");
             }
             return;
+        } else if ("abortWalkinQR".equalsIgnoreCase(action) || "cancelWalkinQR".equalsIgnoreCase(action)) {
+            response.setContentType("application/json;charset=UTF-8");
+            String apptIdStr = request.getParameter("appointmentId");
+            boolean success = false;
+            String errorMsg = null;
+            if (apptIdStr != null && !apptIdStr.trim().isEmpty()) {
+                try {
+                    int apptId = Integer.parseInt(apptIdStr.trim());
+                    success = appointmentDAO.abortWalkinAppointment(apptId);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    errorMsg = e.getMessage();
+                }
+            }
+            if (success) {
+                response.getWriter().write("{\"success\":true}");
+            } else {
+                String safeMsg = errorMsg != null ? errorMsg.replace("\"", "'") : "Không thể hủy lịch hẹn chưa thanh toán.";
+                response.getWriter().write("{\"success\":false,\"message\":\"" + safeMsg + "\"}");
+            }
+            return;
         } else if ("walkin".equalsIgnoreCase(action)) {
             String patientName = request.getParameter("patientName");
             String phone = request.getParameter("phone");
@@ -362,15 +383,36 @@ public class StaffAppointmentListServlet extends HttpServlet {
             String timeSlot = request.getParameter("timeSlot");
             String reason = request.getParameter("reason");
 
-            if (patientName == null || patientName.trim().isEmpty() ||
-                phone == null || phone.trim().isEmpty() ||
-                doctorIdParam == null || doctorIdParam.trim().isEmpty()) {
+            String cleanName = patientName != null ? patientName.trim() : "";
+            if (cleanName.isEmpty() || cleanName.matches(".*\\d.*")) {
                 if ("1".equals(request.getParameter("ajax"))) {
                     response.setContentType("application/json;charset=UTF-8");
-                    response.getWriter().write("{\"success\":false,\"message\":\"Vui lòng nhập họ tên, số điện thoại và chọn bác sĩ tiếp đón!\"}");
+                    response.getWriter().write("{\"success\":false,\"message\":\"Họ và tên bệnh nhân chỉ được nhập chữ, không được chứa chữ số!\"}");
                     return;
                 }
-                session.setAttribute("errorMessage", "Vui lòng nhập họ tên, số điện thoại và chọn bác sĩ tiếp đón!");
+                session.setAttribute("errorMessage", "Họ và tên bệnh nhân chỉ được nhập chữ, không được chứa chữ số!");
+                response.sendRedirect(request.getContextPath() + "/staff/appointments");
+                return;
+            }
+
+            if (!cleanName.matches("^[\\p{L}\\s'-]+$")) {
+                if ("1".equals(request.getParameter("ajax"))) {
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"success\":false,\"message\":\"Họ và tên bệnh nhân chỉ được chứa chữ cái, không được chứa ký tự đặc biệt!\"}");
+                    return;
+                }
+                session.setAttribute("errorMessage", "Họ và tên bệnh nhân chỉ được chứa chữ cái, không được chứa ký tự đặc biệt!");
+                response.sendRedirect(request.getContextPath() + "/staff/appointments");
+                return;
+            }
+
+            if (phone == null || phone.trim().isEmpty() || doctorIdParam == null || doctorIdParam.trim().isEmpty()) {
+                if ("1".equals(request.getParameter("ajax"))) {
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"success\":false,\"message\":\"Vui lòng nhập đầy đủ số điện thoại và chọn bác sĩ tiếp đón!\"}");
+                    return;
+                }
+                session.setAttribute("errorMessage", "Vui lòng nhập đầy đủ số điện thoại và chọn bác sĩ tiếp đón!");
             } else {
                 try {
                     int doctorId = Integer.parseInt(doctorIdParam.trim());
@@ -379,22 +421,81 @@ public class StaffAppointmentListServlet extends HttpServlet {
                     Date dob = null;
                     if (dobStr != null && !dobStr.trim().isEmpty()) {
                         String s = dobStr.trim();
+                        int d = 0, m = 0, y = 0;
                         try {
                             if (s.contains("/")) {
                                 String[] parts = s.split("/");
-                                if (parts.length == 3) {
-                                    int d = Integer.parseInt(parts[0].trim());
-                                    int m = Integer.parseInt(parts[1].trim());
-                                    int y = Integer.parseInt(parts[2].trim());
-                                    if (y < 100) {
-                                        y += (y > 26 ? 1900 : 2000);
-                                    }
-                                    dob = Date.valueOf(String.format("%04d-%02d-%02d", y, m, d));
+                                if (parts.length != 3) {
+                                    throw new IllegalArgumentException("Định dạng ngày sinh phải là dd/mm/yyyy!");
                                 }
+                                d = Integer.parseInt(parts[0].trim());
+                                m = Integer.parseInt(parts[1].trim());
+                                y = Integer.parseInt(parts[2].trim());
                             } else if (s.contains("-")) {
-                                dob = Date.valueOf(s);
+                                String[] parts = s.split("-");
+                                if (parts.length != 3) {
+                                    throw new IllegalArgumentException("Định dạng ngày sinh phải là dd/mm/yyyy!");
+                                }
+                                y = Integer.parseInt(parts[0].trim());
+                                m = Integer.parseInt(parts[1].trim());
+                                d = Integer.parseInt(parts[2].trim());
+                            } else {
+                                throw new IllegalArgumentException("Định dạng ngày sinh không hợp lệ!");
                             }
-                        } catch (Exception ignored) {}
+
+                            int currentYear = LocalDate.now().getYear();
+                            if (y < 1900) {
+                                throw new IllegalArgumentException("Năm sinh không hợp lệ (phải từ năm 1900 trở lên)!");
+                            }
+                            if (y > currentYear) {
+                                throw new IllegalArgumentException("Năm sinh không được vượt quá năm hiện tại (" + currentYear + ")!");
+                            }
+                            if (m < 1 || m > 12) {
+                                throw new IllegalArgumentException("Tháng sinh không hợp lệ (1 năm chỉ có 12 tháng: 01 - 12)!");
+                            }
+
+                            int maxDaysInMonth;
+                            switch (m) {
+                                case 4: case 6: case 9: case 11:
+                                    maxDaysInMonth = 30;
+                                    break;
+                                case 2:
+                                    boolean isLeap = (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0);
+                                    maxDaysInMonth = isLeap ? 29 : 28;
+                                    break;
+                                default:
+                                    maxDaysInMonth = 31;
+                                    break;
+                            }
+
+                            if (d < 1 || d > maxDaysInMonth) {
+                                throw new IllegalArgumentException("Tháng " + m + " năm " + y + " chỉ có tối đa " + maxDaysInMonth + " ngày!");
+                            }
+
+                            LocalDate parsedDate = LocalDate.of(y, m, d);
+                            if (parsedDate.isAfter(LocalDate.now())) {
+                                throw new IllegalArgumentException("Ngày sinh không được ở tương lai!");
+                            }
+                            dob = Date.valueOf(parsedDate);
+                        } catch (IllegalArgumentException e) {
+                            if ("1".equals(request.getParameter("ajax"))) {
+                                response.setContentType("application/json;charset=UTF-8");
+                                response.getWriter().write("{\"success\":false,\"message\":\"" + e.getMessage() + "\"}");
+                                return;
+                            }
+                            session.setAttribute("errorMessage", e.getMessage());
+                            response.sendRedirect(request.getContextPath() + "/staff/appointments");
+                            return;
+                        } catch (Exception e) {
+                            if ("1".equals(request.getParameter("ajax"))) {
+                                response.setContentType("application/json;charset=UTF-8");
+                                response.getWriter().write("{\"success\":false,\"message\":\"Ngày sinh không hợp lệ! Vui lòng kiểm tra lại ngày, tháng, năm sinh.\"}");
+                                return;
+                            }
+                            session.setAttribute("errorMessage", "Ngày sinh không hợp lệ!");
+                            response.sendRedirect(request.getContextPath() + "/staff/appointments");
+                            return;
+                        }
                     }
 
                     int serviceId = 0;

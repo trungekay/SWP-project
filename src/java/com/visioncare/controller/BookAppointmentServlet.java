@@ -63,6 +63,34 @@ public class BookAppointmentServlet extends HttpServlet {
                         if ("PAID".equalsIgnoreCase(payosStatus)) {
                             appointmentDAO.confirmPayment(apptId);
                             isPaid = true;
+
+                            // Tự động gửi email xác nhận đặt lịch & hướng dẫn đi khám
+                            try {
+                                String emailSentKey = "email_sent_appt_" + apptId;
+                                if (request.getSession().getAttribute(emailSentKey) == null) {
+                                    request.getSession().setAttribute(emailSentKey, true);
+                                    Appointment fullAppt = appointmentDAO.getAppointmentDetailById(apptId);
+                                    String email = fullAppt != null ? fullAppt.getEmail() : null;
+                                    if (email == null || email.trim().isEmpty()) {
+                                        User sessionUser = (User) request.getSession().getAttribute("user");
+                                        if (sessionUser != null) email = sessionUser.getEmail();
+                                    }
+                                    if (email != null && !email.trim().isEmpty() && fullAppt != null) {
+                                        EmailUtil.sendAppointmentConfirmationEmail(
+                                                email.trim(),
+                                                fullAppt.getPatientName(),
+                                                fullAppt.getId(),
+                                                fullAppt.getDoctorName() != null ? fullAppt.getDoctorName() : "Bác sĩ Chuyên khoa VisionCare",
+                                                fullAppt.getDepartment() != null ? fullAppt.getDepartment() : "Khám chuyên khoa mắt",
+                                                fullAppt.getAppointmentDate() != null ? fullAppt.getAppointmentDate().toString() : "",
+                                                fullAppt.getTimeSlot() != null ? fullAppt.getTimeSlot() : "",
+                                                fullAppt.getFee() > 0 ? fullAppt.getFee() : 200000
+                                        );
+                                    }
+                                }
+                            } catch (Exception ex) {
+                                System.err.println("[checkPayment] Lỗi gửi email xác nhận: " + ex.getMessage());
+                            }
                         }
                     }
                     response.getWriter().write("{\"isPaid\":" + isPaid + "}");
@@ -85,6 +113,33 @@ public class BookAppointmentServlet extends HttpServlet {
                     int apptId = Integer.parseInt(apptIdParam);
                     Appointment fullAppt = appointmentDAO.getAppointmentDetailById(apptId);
                     if (fullAppt != null) {
+                        // Gửi email dự phòng nếu luồng trước chưa kịp gửi
+                        try {
+                            String emailSentKey = "email_sent_appt_" + apptId;
+                            if (request.getSession().getAttribute(emailSentKey) == null) {
+                                request.getSession().setAttribute(emailSentKey, true);
+                                String email = fullAppt.getEmail();
+                                if (email == null || email.trim().isEmpty()) {
+                                    User sessionUser = (User) request.getSession().getAttribute("user");
+                                    if (sessionUser != null) email = sessionUser.getEmail();
+                                }
+                                if (email != null && !email.trim().isEmpty()) {
+                                    EmailUtil.sendAppointmentConfirmationEmail(
+                                            email.trim(),
+                                            fullAppt.getPatientName(),
+                                            fullAppt.getId(),
+                                            fullAppt.getDoctorName() != null ? fullAppt.getDoctorName() : "Bác sĩ Chuyên khoa VisionCare",
+                                            fullAppt.getDepartment() != null ? fullAppt.getDepartment() : "Khám chuyên khoa mắt",
+                                            fullAppt.getAppointmentDate() != null ? fullAppt.getAppointmentDate().toString() : "",
+                                            fullAppt.getTimeSlot() != null ? fullAppt.getTimeSlot() : "",
+                                            fullAppt.getFee() > 0 ? fullAppt.getFee() : 200000
+                                    );
+                                }
+                            }
+                        } catch (Exception ex) {
+                            System.err.println("[step=success] Lỗi gửi email xác nhận: " + ex.getMessage());
+                        }
+
                         request.setAttribute("step", "success");
                         request.setAttribute("appointment", fullAppt);
                         request.getRequestDispatcher("/views/appointment/book-appointment.jsp").forward(request, response);

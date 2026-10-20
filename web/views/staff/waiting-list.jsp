@@ -19,6 +19,18 @@
 
                 <!-- Employee / Staff Unified Layout CSS -->
                 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/employee.css">
+                <style>
+                    .action-btn.medical-notes {
+                        background-color: #f0fdfa !important;
+                        color: #0d9488 !important;
+                        border: 1px solid #99f6e4 !important;
+                    }
+                    .action-btn.medical-notes:hover {
+                        background-color: #0d9488 !important;
+                        color: #ffffff !important;
+                        border-color: #0d9488 !important;
+                    }
+                </style>
             </head>
 
             <body>
@@ -212,25 +224,25 @@
                             <div class="table-container">
                                 <table class="custom-table" style="table-layout: fixed; width: 100%;">
                                     <colgroup>
-                                        <col style="width: 65px;">
-                                        <col style="width: 110px;">
+                                        <col style="width: 55px;">
+                                        <col style="width: 105px;">
                                         <col style="width: 17%;">
-                                        <col style="width: 14%;">
-                                        <col style="width: 17%;">
-                                        <col style="width: 17%;">
-                                        <col style="width: 125px;">
-                                        <col style="width: 155px;">
+                                        <col style="width: 13%;">
+                                        <col style="width: 16%;">
+                                        <col style="width: 16%;">
+                                        <col style="width: 120px;">
+                                        <col style="width: 175px;">
                                     </colgroup>
                                     <thead>
                                         <tr>
-                                            <th class="text-center text-nowrap" style="width: 65px;">STT</th>
-                                            <th class="text-center text-nowrap" style="width: 110px;">Mã Hẹn</th>
+                                            <th class="text-center text-nowrap" style="width: 55px;">STT</th>
+                                            <th class="text-center text-nowrap" style="width: 105px;">Mã Hẹn</th>
                                             <th class="text-nowrap" style="width: 17%;">Bệnh Nhân</th>
-                                            <th class="text-nowrap" style="width: 14%;">Ca Khám</th>
-                                            <th class="text-nowrap" style="width: 17%;">Bác Sĩ</th>
-                                            <th class="text-nowrap" style="width: 17%;">Phòng Khám</th>
-                                            <th class="text-center text-nowrap" style="width: 125px;">Trạng Thái</th>
-                                            <th class="text-center text-nowrap" style="width: 155px;">Thao Tác</th>
+                                            <th class="text-nowrap" style="width: 13%;">Ca Khám</th>
+                                            <th class="text-nowrap" style="width: 16%;">Bác Sĩ</th>
+                                            <th class="text-nowrap" style="width: 16%;">Phòng Khám</th>
+                                            <th class="text-center text-nowrap" style="width: 120px;">Trạng Thái</th>
+                                            <th class="text-center text-nowrap" style="width: 175px;">Thao Tác</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -364,59 +376,39 @@
                                                         <!-- Thao Tác (Khi đã qua ngày: chỉ cho phép xem thông tin hồ sơ chi tiết) -->
                                                         <td class="text-center text-nowrap">
                                                             <div class="action-btns justify-content-center">
-                                                                <!-- 1. Xem chi tiết / Hồ sơ bệnh nhân (Luôn hiển thị) -->
+                                                                <!-- 1. Xem chi tiết / Hồ sơ bệnh nhân -->
                                                                 <a href="${pageContext.request.contextPath}/staff/appointment-detail?id=${appt.id}"
                                                                     class="action-btn"
-                                                                    title="Xem hồ sơ / Chi tiết ca khám & Ghi chú y tế" data-bs-toggle="tooltip">
+                                                                    title="Xem chi tiết ca khám / Hồ sơ bệnh nhân" data-bs-toggle="tooltip">
                                                                     <i class="bi bi-pencil"></i>
                                                                 </a>
 
-                                                                <!-- Các thao tác khám: Chỉ hiển thị khi ca khám CHƯA qua ngày -->
+                                                                <!-- 2. Xem Phiếu khám & Ghi chú y tế -->
+                                                                <button type="button"
+                                                                    class="action-btn medical-notes btn-trigger-post-exam"
+                                                                    title="Xem phiếu khám & Ghi chú y tế" data-bs-toggle="tooltip"
+                                                                    data-id="${appt.id}"
+                                                                    data-name="${appt.patientName}">
+                                                                    <i class="bi bi-file-earmark-medical"></i>
+                                                                </button>
+
+                                                                <!-- Các thao tác theo trạng thái: Chỉ hiển thị khi ca khám CHƯA qua ngày -->
                                                                 <c:if test="${!isPastAppt}">
                                                                     <c:choose>
                                                                         <c:when test="${appt.status == 'Confirmed'}">
-                                                                            <!-- 2. Gọi vào khám -->
-                                                                            <c:choose>
-                                                                                <c:when test="${busyDoctorIds != null && busyDoctorIds.contains(appt.doctorId)}">
-                                                                                    <button type="button" class="action-btn"
-                                                                                        disabled
-                                                                                        title="Bác sĩ hiện đang khám cho ca trước. Vui lòng đợi hoàn tất ca hiện tại."
-                                                                                        data-bs-toggle="tooltip">
-                                                                                        <i class="bi bi-hourglass-split"></i>
-                                                                                    </button>
-                                                                                </c:when>
-                                                                                <c:when test="${callableApptIds != null && !callableApptIds.contains(appt.id)}">
-                                                                                    <button type="button" class="action-btn"
-                                                                                        disabled
-                                                                                        title="Chưa đến lượt: Bác sĩ vẫn còn ca khám trước đó chưa khám. Bắt buộc phải gọi ca trước theo đúng thứ tự slot!"
-                                                                                        data-bs-toggle="tooltip">
-                                                                                        <i class="bi bi-lock-fill text-muted"></i>
-                                                                                    </button>
-                                                                                </c:when>
-                                                                                <c:otherwise>
-                                                                                    <button type="button"
-                                                                                        class="action-btn checkin btn-trigger-start"
-                                                                                        title="Gọi bệnh nhân vào phòng khám (Đúng lượt ca khám)" data-bs-toggle="tooltip"
-                                                                                        data-id="${appt.id}"
-                                                                                        data-name="${appt.patientName}">
-                                                                                        <i class="bi bi-box-arrow-in-right"></i>
-                                                                                    </button>
-                                                                                </c:otherwise>
-                                                                            </c:choose>
-
-                                                                            <!-- 3. Bỏ qua lượt (Vàng pastel - Hoán đổi lượt với ca tiếp theo sau mình) -->
+                                                                            <!-- Bỏ qua lượt (Vàng pastel) -->
                                                                             <button type="button"
                                                                                 class="action-btn warning btn-trigger-skip"
-                                                                                title="Bỏ qua lượt: Đổi ca khám với lượt tiếp theo sau mình để nhường lượt vào khám" data-bs-toggle="tooltip"
+                                                                                title="Bỏ qua lượt: Đổi ca khám với lượt tiếp theo sau mình" data-bs-toggle="tooltip"
                                                                                 data-id="${appt.id}"
                                                                                 data-name="${appt.patientName}">
                                                                                 <i class="bi bi-arrow-down-circle"></i>
                                                                             </button>
 
-                                                                            <!-- 4. Báo vắng mặt / Hủy ca (Đỏ pastel - icon thùng rác giống Quản lý người dùng) -->
+                                                                            <!-- Báo vắng mặt (Đỏ pastel) -->
                                                                             <button type="button"
                                                                                 class="action-btn delete btn-trigger-absent"
-                                                                                title="Báo vắng mặt: Gọi tên nhiều lần không có mặt / Tự ý bỏ về" data-bs-toggle="tooltip"
+                                                                                title="Báo vắng mặt: Gọi tên nhiều lần không có mặt" data-bs-toggle="tooltip"
                                                                                 data-id="${appt.id}"
                                                                                 data-name="${appt.patientName}">
                                                                                 <i class="bi bi-trash"></i>
@@ -424,35 +416,34 @@
                                                                         </c:when>
 
                                                                         <c:when test="${appt.status == 'In_Progress'}">
-                                                                            <!-- Đang trong phòng khám: Chỉ Bác sĩ mới có quyền hoàn thành ca khám -->
-                                                                            <button type="button"
-                                                                                class="action-btn disabled"
-                                                                                style="cursor: not-allowed; background-color: #f1f5f9; color: #64748b; border: 1px dashed #cbd5e1;"
-                                                                                title="Bác sĩ đang thực hiện ca khám trong phòng. Chỉ Bác sĩ mới có quyền hoàn tất ca khám này!" data-bs-toggle="tooltip">
-                                                                                <i class="bi bi-hourglass-split"></i>
-                                                                            </button>
-
-                                                                            <!-- Báo vắng mặt / Hủy ca giữa chừng (Đỏ pastel - icon thùng rác) -->
-                                                                            <button type="button"
-                                                                                class="action-btn delete btn-trigger-absent"
-                                                                                title="Báo vắng mặt / Bệnh nhân tự ý bỏ về giữa chừng" data-bs-toggle="tooltip"
-                                                                                data-id="${appt.id}"
-                                                                                data-name="${appt.patientName}">
-                                                                                <i class="bi bi-trash"></i>
-                                                                            </button>
-                                                                        </c:when>
-
-                                                                        <c:when test="${appt.status == 'Completed'}">
-                                                                            <!-- Đã khám xong: Bàn giao đơn thuốc & Hoàn tất thủ tục -->
-                                                                            <button type="button"
-                                                                                class="action-btn checkin btn-trigger-post-exam"
-                                                                                title="Tiếp nhận sau khám: Xem kết quả, đơn thuốc & Bàn giao cho bệnh nhân" data-bs-toggle="tooltip"
-                                                                                data-id="${appt.id}"
-                                                                                data-name="${appt.patientName}">
-                                                                                <i class="bi bi-clipboard2-check"></i>
-                                                                            </button>
+                                                                            <!-- Đang khám trong phòng -->
+                                                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 small fw-semibold"
+                                                                                title="Bác sĩ đang khám trong phòng. Bấm nút Xem phiếu khám để kiểm tra ghi chú y tế & đơn thuốc." data-bs-toggle="tooltip">
+                                                                                <i class="bi bi-heart-pulse-fill me-1"></i>Đang khám
+                                                                            </span>
                                                                         </c:when>
                                                                         <c:otherwise>
+                                                                        </c:otherwise>
+                                                                    </c:choose>
+                                                                </c:if>
+
+                                                                <!-- Đã khám xong / Hoàn tất lịch hẹn -->
+                                                                <c:if test="${appt.status == 'Completed'}">
+                                                                    <c:choose>
+                                                                        <c:when test="${appt.balanceDue > 0}">
+                                                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 small fw-semibold btn-trigger-post-exam"
+                                                                                style="cursor: pointer;"
+                                                                                title="Bác sĩ đã khám xong. Bấm để thu viện phí còn lại & hoàn tất lịch hẹn." data-bs-toggle="tooltip"
+                                                                                data-id="${appt.id}"
+                                                                                data-name="${appt.patientName}">
+                                                                                <i class="bi bi-cash-coin me-1"></i>Chờ thu phí
+                                                                            </span>
+                                                                        </c:when>
+                                                                        <c:otherwise>
+                                                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small fw-semibold"
+                                                                                title="Ca khám đã hoàn tất. Bấm nút Xem phiếu khám để kiểm tra hồ sơ." data-bs-toggle="tooltip">
+                                                                                <i class="bi bi-check2-circle me-1"></i>Đã xong
+                                                                            </span>
                                                                         </c:otherwise>
                                                                     </c:choose>
                                                                 </c:if>
@@ -474,7 +465,7 @@
                                                                 <c:when test="${selectedStatus == 'In_Progress'}">
                                                                     <i class="bi bi-heart-pulse fs-1 d-block mb-2 text-primary"></i>
                                                                     <p class="mb-1 fw-semibold text-dark">Hiện không có ca nào đang khám trong phòng!</p>
-                                                                    <p class="small text-muted">Vui lòng gọi bệnh nhân ở danh sách "Chờ khám" vào phòng khám.</p>
+                                                                    <p class="small text-muted">Bác sĩ chưa gọi bệnh nhân nào vào phòng khám.</p>
                                                                 </c:when>
                                                                 <c:when test="${selectedStatus == 'Completed'}">
                                                                     <i class="bi bi-check2-circle fs-1 d-block mb-2 text-success"></i>
@@ -512,39 +503,6 @@
 
                     </div>
                 </main>
-
-                <!-- Modal Xác nhận Bệnh nhân Vào khám (Chuyển trạng thái sang Đang khám) -->
-                <div class="modal fade" id="startExamModal" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="modal-icon-teal">
-                                    <i class="bi bi-box-arrow-in-right"></i>
-                                </div>
-                                <h3 class="modal-title-custom">Xác nhận vào khám?</h3>
-                                <p class="modal-text">
-                                    Gọi bệnh nhân <strong id="startExamModalPatientName" class="text-dark">---</strong>
-                                    vào phòng khám. Trạng thái ca khám sẽ được chuyển thành <strong>Đang khám</strong>.
-                                </p>
-                                <form action="${pageContext.request.contextPath}/staff/waiting-list" method="post"
-                                    id="startExamForm" class="m-0">
-                                    <input type="hidden" name="action" value="updateStatus">
-                                    <input type="hidden" name="appointmentId" id="startExamModalAppointmentId">
-                                    <input type="hidden" name="status" value="In_Progress">
-                                    <div class="modal-actions">
-                                        <button type="button" class="btn btn-modal-cancel"
-                                            data-bs-dismiss="modal">Hủy</button>
-                                        <button type="submit" class="btn btn-modal-teal">Vào khám</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
 
                 <!-- Modal Báo Vắng Mặt / Hủy ca khỏi hàng đợi -->
@@ -625,17 +583,17 @@
                     </div>
                 </div>
 
-                <!-- Modal Tiếp nhận Bệnh nhân Sau Khám & Bàn giao Đơn thuốc -->
+                <!-- Modal Xem Phiếu Khám Bệnh & Ghi Chú Y Tế -->
                 <div class="modal fade" id="postExamModal" tabindex="-1" aria-labelledby="postExamModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 720px;">
+                    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 760px;">
                         <div class="modal-content shadow border-0" style="border-radius: 16px; overflow: hidden;">
                             <div class="modal-header border-bottom px-4 py-3 bg-light">
                                 <div class="d-flex align-items-center gap-2.5">
                                     <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(13, 148, 136, 0.12); color: #0d9488; display: flex; align-items: center; justify-content: center; font-size: 20px;">
-                                        <i class="bi bi-clipboard2-check"></i>
+                                        <i class="bi bi-file-earmark-medical"></i>
                                     </div>
                                     <div>
-                                        <h5 class="modal-title fw-bold text-dark mb-0" id="postExamModalLabel" style="font-size: 16.5px;">Tiếp nhận sau khám & Bàn giao đơn thuốc</h5>
+                                        <h5 class="modal-title fw-bold text-dark mb-0" id="postExamModalLabel" style="font-size: 16.5px;">Phiếu Khám Bệnh & Ghi Chú Y Tế</h5>
                                         <small class="text-secondary" style="font-size: 12px;" id="postExamSubtitle">Bệnh nhân: --- | BS: ---</small>
                                     </div>
                                 </div>
@@ -646,28 +604,40 @@
                                 <!-- Loading State -->
                                 <div id="postExamLoading" class="text-center py-5">
                                     <div class="spinner-border text-teal mb-2" role="status" style="width: 2.5rem; height: 2.5rem; color: #0d9488;"></div>
-                                    <p class="text-secondary small mb-0">Đang tải kết quả khám và đơn thuốc từ bác sĩ...</p>
+                                    <p class="text-secondary small mb-0">Đang tải thông tin phiếu khám và kết quả từ bác sĩ...</p>
                                 </div>
 
                                 <!-- Content State -->
                                 <div id="postExamContent" class="d-none">
-                                    <!-- Banner trạng thái hoàn tất -->
-                                    <div class="alert alert-success py-2.5 px-3 rounded-3 mb-3 d-flex align-items-center justify-content-between" style="font-size: 13px;">
+                                    <!-- Banner trạng thái ca khám -->
+                                    <div class="alert alert-success py-2.5 px-3 rounded-3 mb-3 d-flex align-items-center justify-content-between" style="font-size: 13px;" id="postExamStatusBanner">
                                         <div class="d-flex align-items-center gap-2">
-                                            <i class="bi bi-check-circle-fill fs-5 text-success"></i>
+                                            <i class="bi bi-check-circle-fill fs-5 text-success" id="postExamBannerIcon"></i>
                                             <div>
-                                                <strong class="text-success">Bác sĩ đã hoàn tất ca khám</strong>
-                                                <div class="text-secondary" style="font-size: 11.5px;" id="postExamHeaderTime">Thời gian hoàn thành: Hôm nay</div>
+                                                <strong class="text-success" id="postExamBannerText">Bác sĩ đã hoàn tất ca khám</strong>
+                                                <div class="text-secondary" style="font-size: 11.5px;" id="postExamBannerSub">Đã có kết luận khám bệnh và đơn thuốc. Sẵn sàng thanh toán và hoàn tất lịch hẹn.</div>
                                             </div>
                                         </div>
-                                        <span class="badge bg-success px-2.5 py-1.5 fw-semibold" style="font-size: 11.5px;">Sẵn sàng xuất viện</span>
+                                        <span class="badge bg-success px-2.5 py-1.5 fw-semibold" style="font-size: 11.5px;" id="postExamBannerBadge">Đã khám xong</span>
                                     </div>
 
-                                    <!-- 1. Tóm tắt kết quả chẩn đoán y khoa -->
+                                    <!-- 1. Ghi chú y tế ban đầu (Lễ tân ghi nhận khi tiếp đón) -->
+                                    <div class="card border rounded-3 mb-3 shadow-none bg-light" id="postExamInitialNotesCard">
+                                        <div class="card-body p-3">
+                                            <h6 class="fw-bold text-dark mb-1.5 d-flex align-items-center gap-1.5" style="font-size: 13.5px;">
+                                                <i class="bi bi-journal-medical text-teal" style="color: #0d9488;"></i> Ghi chú y tế ban đầu (Lễ tân ghi nhận khi tiếp đón)
+                                            </h6>
+                                            <div id="postExamInitialNotes" class="bg-white p-2.5 rounded border mt-1 text-dark small" style="font-size: 12.5px; line-height: 1.5;">
+                                                Chưa có ghi chú y tế ban đầu.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 2. Chẩn đoán & Kết luận của Bác sĩ -->
                                     <div class="card border rounded-3 mb-3 shadow-none bg-light">
                                         <div class="card-body p-3">
                                             <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-1.5" style="font-size: 13.5px;">
-                                                <i class="bi bi-activity text-teal" style="color: #0d9488;"></i> Chẩn đoán & Kết luận của Bác sĩ
+                                                <i class="bi bi-activity text-teal" style="color: #0d9488;"></i> Chẩn đoán & Lời dặn của Bác sĩ
                                             </h6>
                                             <div class="row g-2 text-dark small" style="font-size: 12.5px;">
                                                 <div class="col-sm-6">
@@ -686,11 +656,11 @@
                                         </div>
                                     </div>
 
-                                    <!-- 2. Danh sách đơn thuốc -->
+                                    <!-- 3. Danh sách đơn thuốc do Bác sĩ kê -->
                                     <div class="card border rounded-3 mb-3 shadow-none">
                                         <div class="card-header bg-white py-2.5 px-3 border-bottom d-flex align-items-center justify-content-between">
                                             <span class="fw-bold text-dark small d-flex align-items-center gap-1.5" style="font-size: 13.5px;">
-                                                <i class="bi bi-capsule text-primary"></i> Đơn thuốc xuất viện
+                                                <i class="bi bi-capsule text-primary"></i> Đơn thuốc do Bác sĩ kê
                                             </span>
                                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle" id="postExamMedCount">0 loại thuốc</span>
                                         </div>
@@ -705,17 +675,17 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody id="postExamMedicineList">
-                                                    <tr><td colspan="4" class="text-center text-muted py-2">Không có đơn thuốc kê theo ca khám này</td></tr>
+                                                    <tr><td colspan="4" class="text-center text-muted py-2">Bác sĩ chưa kê đơn thuốc cho ca khám này</td></tr>
                                                 </tbody>
                                             </table>
                                         </div>
                                     </div>
 
-                                    <!-- 3. Cận lâm sàng / Thủ thuật (nếu có) -->
+                                    <!-- 4. Cận lâm sàng / Thủ thuật (nếu có) -->
                                     <div id="postExamProceduresBox" class="card border rounded-3 mb-3 shadow-none d-none">
                                         <div class="card-header bg-white py-2 px-3 border-bottom">
                                             <span class="fw-bold text-dark small d-flex align-items-center gap-1.5" style="font-size: 13px;">
-                                                <i class="bi bi-tools text-warning"></i> Cận lâm sàng & Thủ thuật đã thực hiện
+                                                <i class="bi bi-tools text-warning"></i> Cận lâm sàng & Dịch vụ đã thực hiện
                                             </span>
                                         </div>
                                         <div class="table-responsive">
@@ -725,21 +695,69 @@
                                         </div>
                                     </div>
 
-                                    <!-- 4. Tình trạng viện phí -->
-                                    <div class="p-2.5 rounded-3 bg-light border d-flex align-items-center justify-content-between flex-wrap gap-2 text-dark small" style="font-size: 12.5px;">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
-                                                <i class="bi bi-credit-card"></i>
-                                            </div>
-                                            <div>
-                                                <span class="text-muted d-block" style="font-size: 11px;">Phí khám & Dịch vụ:</span>
-                                                <strong id="postExamInvoiceAmount">200.000 ₫</strong>
-                                            </div>
-                                        </div>
-                                        <div>
+                                    <!-- 5. Tình trạng viện phí & Thanh toán phần còn lại tại quầy Lễ tân -->
+                                    <div class="card border rounded-3 mb-3 shadow-none bg-light">
+                                        <div class="card-header bg-white py-2 px-3 border-bottom d-flex align-items-center justify-content-between">
+                                            <span class="fw-bold text-dark small d-flex align-items-center gap-1.5" style="font-size: 13px;">
+                                                <i class="bi bi-receipt text-teal" style="color: #0d9488;"></i> Viện Phí & Thanh Toán Tại Quầy Lễ Tân
+                                            </span>
                                             <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2 fw-semibold" id="postExamInvoiceStatus">
                                                 <i class="bi bi-check-circle me-1"></i>Đã thanh toán (Paid)
                                             </span>
+                                        </div>
+                                        <div class="card-body p-3">
+                                            <!-- Bảng 3 ô tổng quan viện phí -->
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-4">
+                                                    <div class="bg-white p-2.5 rounded-2 border text-center">
+                                                        <div class="text-secondary small" style="font-size: 11.5px;">Tổng chi phí:</div>
+                                                        <strong class="text-dark fs-6" id="postExamTotalAmount">200.000 ₫</strong>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="bg-white p-2.5 rounded-2 border text-center">
+                                                        <div class="text-secondary small" style="font-size: 11.5px;">Đã thanh toán (Cọc):</div>
+                                                        <strong class="text-success fs-6" id="postExamDepositAmount">200.000 ₫</strong>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="bg-white p-2.5 rounded-2 border text-center" id="postExamBalanceDueBox">
+                                                        <div class="text-secondary small" style="font-size: 11.5px;">Phần còn lại phải thu:</div>
+                                                        <strong class="text-danger fs-6" id="postExamBalanceDue">0 ₫</strong>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Khung chọn hình thức thanh toán khi Balance Due > 0 -->
+                                            <div id="postExamPaymentSelectionBox" class="p-2.5 rounded-2 border bg-warning-subtle text-dark small d-none" style="font-size: 12.5px;">
+                                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                                    <span class="fw-bold text-warning-emphasis d-flex align-items-center gap-1">
+                                                        <i class="bi bi-exclamation-triangle-fill text-warning"></i> Cần thu phần còn lại:
+                                                    </span>
+                                                    <strong class="text-danger fs-6" id="postExamBalanceDueNotice">0 ₫</strong>
+                                                </div>
+                                                <div class="text-secondary small mb-2">Chọn phương thức thanh toán tại quầy lễ tân:</div>
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="postExamPaymentGateway" id="payMethodCash" value="Cash" checked>
+                                                        <label class="form-check-label fw-semibold" for="payMethodCash">
+                                                            <i class="bi bi-cash-stack text-success me-1"></i> Tiền mặt tại quầy (Cash)
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="postExamPaymentGateway" id="payMethodVietQR" value="VietQR_Banking">
+                                                        <label class="form-check-label fw-semibold" for="payMethodVietQR">
+                                                            <i class="bi bi-qr-code text-primary me-1"></i> Quét mã QR (VietQR Banking)
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Thông báo khi đã thanh toán đủ -->
+                                            <div id="postExamFullyPaidNotice" class="text-success small d-flex align-items-center gap-1.5 py-1">
+                                                <i class="bi bi-check-circle-fill"></i>
+                                                <span>Bệnh nhân đã thanh toán đầy đủ viện phí. Không còn khoản thu phát sinh.</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -747,14 +765,14 @@
 
                             <div class="modal-footer px-4 py-3 bg-light border-top d-flex justify-content-between">
                                 <div>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="printPostExamSheet()">
-                                        <i class="bi bi-printer me-1"></i> In đơn thuốc & Phiếu khám
-                                    </button>
+                                    <small class="text-muted" style="font-size: 12px;" id="postExamFooterNote">
+                                        <i class="bi bi-info-circle me-1"></i>Lễ tân kiểm tra phiếu khám và xác nhận hoàn tất sau khi thu viện phí.
+                                    </small>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
-                                    <button type="button" class="btn btn-light btn-sm px-3 border" data-bs-dismiss="modal">Đóng</button>
-                                    <button type="button" class="btn btn-teal btn-sm px-3.5 py-1.5 fw-semibold shadow-sm" id="btnConfirmHandover" onclick="confirmPostExamHandover()">
-                                        <i class="bi bi-check2-all me-1"></i> Xác nhận đã bàn giao & Hoàn tất
+                                    <button type="button" class="btn btn-light btn-sm px-3.5 py-1.5 border" data-bs-dismiss="modal">Đóng</button>
+                                    <button type="button" class="btn btn-teal btn-sm px-3.5 py-1.5 fw-semibold shadow-sm" id="btnCompleteAppointment" onclick="submitCompleteAppointment()">
+                                        <i class="bi bi-check2-circle me-1.5"></i> Hoàn tất lịch hẹn
                                     </button>
                                 </div>
                             </div>
@@ -776,19 +794,6 @@
                             customText.value = '';
                         }
                     }
-
-                    function openStartExamModal(id, name) {
-                        var idInput = document.getElementById('startExamModalAppointmentId');
-                        if (idInput) idInput.value = id;
-                        var nameElem = document.getElementById('startExamModalPatientName');
-                        if (nameElem) nameElem.textContent = name || 'này';
-                        var modalElem = document.getElementById('startExamModal');
-                        if (modalElem) {
-                            var modal = bootstrap.Modal.getInstance(modalElem) || new bootstrap.Modal(modalElem);
-                            modal.show();
-                        }
-                    }
-
 
                     function openAbsentModal(id, name) {
                         var idInput = document.getElementById('absentModalAppointmentId');
@@ -847,6 +852,64 @@
                             .then(function(data) {
                                 if (data && data.success) {
                                     window._currentPostExamData = data;
+
+                                    // 1. Cập nhật Banner trạng thái
+                                    var bannerElem = document.getElementById('postExamStatusBanner');
+                                    var bannerText = document.getElementById('postExamBannerText');
+                                    var bannerSub = document.getElementById('postExamBannerSub');
+                                    var bannerBadge = document.getElementById('postExamBannerBadge');
+                                    var bannerIcon = document.getElementById('postExamBannerIcon');
+                                    if (data.status === 'Completed') {
+                                        if (bannerElem) bannerElem.className = 'alert alert-success py-2.5 px-3 rounded-3 mb-3 d-flex align-items-center justify-content-between';
+                                        if (bannerIcon) bannerIcon.className = 'bi bi-check-circle-fill fs-5 text-success';
+                                        if (bannerText) {
+                                            bannerText.className = 'text-success';
+                                            bannerText.textContent = 'Bác sĩ đã hoàn tất ca khám';
+                                        }
+                                        if (bannerSub) bannerSub.textContent = (data.balanceDue > 0) ? 'Đã có kết luận khám bệnh và đơn thuốc. Cần thu phần viện phí còn lại để hoàn tất lịch hẹn.' : 'Đã có kết luận khám bệnh và đơn thuốc. Viện phí đã thanh toán đủ.';
+                                        if (bannerBadge) {
+                                            bannerBadge.className = 'badge bg-success px-2.5 py-1.5 fw-semibold';
+                                            bannerBadge.textContent = 'Đã khám xong';
+                                        }
+                                    } else if (data.status === 'In_Progress') {
+                                        if (bannerElem) bannerElem.className = 'alert alert-primary py-2.5 px-3 rounded-3 mb-3 d-flex align-items-center justify-content-between';
+                                        if (bannerIcon) bannerIcon.className = 'bi bi-heart-pulse-fill fs-5 text-primary';
+                                        if (bannerText) {
+                                            bannerText.className = 'text-primary';
+                                            bannerText.textContent = 'Bác sĩ đang thực hiện ca khám';
+                                        }
+                                        if (bannerSub) bannerSub.textContent = (data.medicines && data.medicines.length > 0) ? 'Bác sĩ đã kê đơn thuốc cho bệnh nhân.' : 'Đang trong quá trình khám và kê đơn thuốc.';
+                                        if (bannerBadge) {
+                                            bannerBadge.className = 'badge bg-primary px-2.5 py-1.5 fw-semibold';
+                                            bannerBadge.textContent = 'Đang khám';
+                                        }
+                                    } else {
+                                        if (bannerElem) bannerElem.className = 'alert alert-secondary py-2.5 px-3 rounded-3 mb-3 d-flex align-items-center justify-content-between';
+                                        if (bannerIcon) bannerIcon.className = 'bi bi-hourglass-split fs-5 text-secondary';
+                                        if (bannerText) {
+                                            bannerText.className = 'text-secondary';
+                                            bannerText.textContent = 'Bệnh nhân đang chờ khám';
+                                        }
+                                        if (bannerSub) bannerSub.textContent = 'Ghi nhận ghi chú y tế ban đầu chuẩn bị cho bác sĩ tiếp nhận.';
+                                        if (bannerBadge) {
+                                            bannerBadge.className = 'badge bg-secondary px-2.5 py-1.5 fw-semibold';
+                                            bannerBadge.textContent = 'Chờ khám';
+                                        }
+                                    }
+
+                                    // 2. Ghi chú y tế ban đầu (tiếp đón)
+                                    var initialNotesElem = document.getElementById('postExamInitialNotes');
+                                    if (initialNotesElem) {
+                                        if (data.medicalNotes && data.medicalNotes.trim().length > 0) {
+                                            initialNotesElem.textContent = data.medicalNotes;
+                                            initialNotesElem.className = 'bg-white p-2.5 rounded border mt-1 text-dark small';
+                                        } else {
+                                            initialNotesElem.textContent = 'Chưa có ghi chú y tế ban đầu khi tiếp đón.';
+                                            initialNotesElem.className = 'bg-white p-2.5 rounded border mt-1 text-muted fst-italic small';
+                                        }
+                                    }
+
+                                    // 3. Chẩn đoán & Lời dặn của bác sĩ
                                     var diagElem = document.getElementById('postExamDiagnosis');
                                     if (diagElem) diagElem.textContent = data.clinicalDiagnosis || 'Khám mắt tổng quát';
 
@@ -856,13 +919,13 @@
                                     var notesElem = document.getElementById('postExamDoctorNotes');
                                     if (notesElem) notesElem.textContent = data.doctorNotes || 'Uống và nhỏ thuốc theo đúng hướng dẫn.';
 
-                                    var timeElem = document.getElementById('postExamHeaderTime');
-                                    if (timeElem) timeElem.textContent = 'Giờ khám: ' + (data.timeSlot || '--:--') + ' · Ngày: ' + (data.appointmentDate || '');
-
+                                    // 4. Danh sách đơn thuốc
                                     var medTbody = document.getElementById('postExamMedicineList');
                                     var medCount = document.getElementById('postExamMedCount');
+                                    var hasPrescription = false;
                                     if (medTbody) {
                                         if (data.medicines && data.medicines.length > 0) {
+                                            hasPrescription = true;
                                             if (medCount) medCount.textContent = data.medicines.length + ' loại thuốc';
                                             var rows = '';
                                             data.medicines.forEach(function(m, idx) {
@@ -876,10 +939,11 @@
                                             medTbody.innerHTML = rows;
                                         } else {
                                             if (medCount) medCount.textContent = '0 loại thuốc';
-                                            medTbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3 fst-italic">Bác sĩ không kê đơn thuốc cho ca khám này.</td></tr>';
+                                            medTbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3 fst-italic">Bác sĩ chưa kê đơn thuốc cho ca khám này.</td></tr>';
                                         }
                                     }
 
+                                    // 5. Cận lâm sàng & Thủ thuật
                                     var procBox = document.getElementById('postExamProceduresBox');
                                     var procTbody = document.getElementById('postExamProcedureList');
                                     if (procBox && procTbody) {
@@ -899,18 +963,55 @@
                                         }
                                     }
 
-                                    var feeElem = document.getElementById('postExamInvoiceAmount');
-                                    if (feeElem) feeElem.textContent = data.invoiceAmountFmt || '200.000 ₫';
+                                    // 6. Viện phí & Thanh toán phần còn lại
+                                    var totElem = document.getElementById('postExamTotalAmount');
+                                    if (totElem) totElem.textContent = data.totalAmountFmt || '200.000 ₫';
+
+                                    var depElem = document.getElementById('postExamDepositAmount');
+                                    if (depElem) depElem.textContent = data.depositAmountFmt || '200.000 ₫';
+
+                                    var balElem = document.getElementById('postExamBalanceDue');
+                                    if (balElem) balElem.textContent = data.balanceDueFmt || '0 ₫';
+
+                                    var payBox = document.getElementById('postExamPaymentSelectionBox');
+                                    var noticeBox = document.getElementById('postExamFullyPaidNotice');
+                                    var balNotice = document.getElementById('postExamBalanceDueNotice');
 
                                     var invStatElem = document.getElementById('postExamInvoiceStatus');
                                     if (invStatElem) {
-                                        if (data.invoiceStatus === 'Paid') {
+                                        if (data.isFullyPaid) {
                                             invStatElem.className = 'badge bg-success-subtle text-success border border-success-subtle py-1 px-2 fw-semibold';
                                             invStatElem.innerHTML = '<i class="bi bi-check-circle me-1"></i>Đã thanh toán (Paid)';
                                         } else {
-                                            invStatElem.className = 'badge bg-warning-subtle text-warning border border-warning-subtle py-1 px-2 fw-semibold';
-                                            invStatElem.innerHTML = '<i class="bi bi-clock me-1"></i>' + (data.invoiceStatus || 'Chờ đối soát');
+                                            invStatElem.className = 'badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-1 px-2 fw-semibold';
+                                            invStatElem.innerHTML = '<i class="bi bi-clock me-1"></i>' + (data.invoiceStatus || 'Còn phần chưa thanh toán');
                                         }
+                                    }
+
+                                    var completeBtn = document.getElementById('btnCompleteAppointment');
+                                    var footerNote = document.getElementById('postExamFooterNote');
+
+                                    if (data.balanceDue > 0) {
+                                        if (payBox) payBox.classList.remove('d-none');
+                                        if (noticeBox) noticeBox.classList.add('d-none');
+                                        if (balNotice) balNotice.textContent = data.balanceDueFmt || (data.balanceDue + ' ₫');
+
+                                        if (completeBtn) {
+                                            completeBtn.disabled = false;
+                                            completeBtn.className = 'btn btn-warning btn-sm px-3.5 py-1.5 fw-semibold shadow-sm text-dark';
+                                            completeBtn.innerHTML = '<i class="bi bi-cash-coin me-1.5"></i> Thanh toán phần còn lại & Hoàn tất lịch hẹn';
+                                        }
+                                        if (footerNote) footerNote.innerHTML = '<i class="bi bi-exclamation-circle text-warning me-1"></i>Vui lòng thu phần còn lại <strong>' + (data.balanceDueFmt || '') + '</strong> và bấm hoàn tất.';
+                                    } else {
+                                        if (payBox) payBox.classList.add('d-none');
+                                        if (noticeBox) noticeBox.classList.remove('d-none');
+
+                                        if (completeBtn) {
+                                            completeBtn.disabled = false;
+                                            completeBtn.className = 'btn btn-teal btn-sm px-3.5 py-1.5 fw-semibold shadow-sm';
+                                            completeBtn.innerHTML = '<i class="bi bi-check2-circle me-1.5"></i> Hoàn tất lịch hẹn';
+                                        }
+                                        if (footerNote) footerNote.innerHTML = '<i class="bi bi-check-circle text-success me-1"></i>Viện phí đã thanh toán đủ. Lễ tân bấm nút để hoàn tất lịch hẹn.';
                                     }
 
                                     if (loading) loading.classList.add('d-none');
@@ -921,81 +1022,22 @@
                             })
                             .catch(function(err) {
                                 console.error('Error fetching post exam details', err);
-                                alert('Lỗi kết nối tải dữ liệu sau khám: ' + err.message);
+                                alert('Lỗi kết nối tải dữ liệu phiếu khám: ' + err.message);
                             });
                     }
 
-                    function printPostExamSheet() {
-                        var data = window._currentPostExamData;
-                        if (!data) {
-                            alert('Không có dữ liệu ca khám để in.');
-                            return;
-                        }
-
-                        var medRowsHtml = '';
-                        if (data.medicines && data.medicines.length > 0) {
-                            data.medicines.forEach(function(m, idx) {
-                                medRowsHtml += '<tr>'
-                                    + '<td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">' + (idx + 1) + '</td>'
-                                    + '<td style="border: 1px solid #cbd5e1; padding: 8px;"><strong>' + (m.name || '') + '</strong></td>'
-                                    + '<td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">' + (m.quantity || 1) + '</td>'
-                                    + '<td style="border: 1px solid #cbd5e1; padding: 8px;">' + (m.dosageInstruction || 'Theo chỉ định') + '</td>'
-                                    + '</tr>';
-                            });
-                        } else {
-                            medRowsHtml = '<tr><td colspan="4" style="border: 1px solid #cbd5e1; padding: 12px; text-align: center; color: #64748b;">Không có đơn thuốc chỉ định theo ca khám</td></tr>';
-                        }
-
-                        var printContent = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Phiếu kết quả & Đơn thuốc - ' + (data.patientName || '') + '</title>'
-                            + '<style>'
-                            + 'body { font-family: "Segoe UI", Arial, sans-serif; padding: 30px; color: #0f172a; line-height: 1.5; font-size: 13.5px; }'
-                            + '.header { display: flex; justify-content: space-between; border-bottom: 2px solid #0d9488; padding-bottom: 12px; margin-bottom: 20px; }'
-                            + '.clinic-name { font-size: 17px; font-weight: bold; color: #0d9488; text-transform: uppercase; }'
-                            + '.title { text-align: center; font-size: 19px; font-weight: bold; margin: 15px 0; text-transform: uppercase; color: #0f172a; letter-spacing: 0.5px; }'
-                            + '.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; }'
-                            + 'table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; }'
-                            + 'th { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px; font-weight: 600; text-align: left; font-size: 13px; }'
-                            + '.footer { display: flex; justify-content: space-between; margin-top: 40px; text-align: center; }'
-                            + '@media print { body { padding: 0; } }'
-                            + '</style></head><body>'
-                            + '<div class="header">'
-                            + '<div><div class="clinic-name">BỆNH VIỆN MẮT QUỐC TẾ VISIONCARE</div><div>Địa chỉ: Khu Công nghệ cao Hòa Lạc, Hà Nội</div><div>Hotline: 1900 8888 · Email: contact@visioncare.vn</div></div>'
-                            + '<div style="text-align: right;"><div>Mã ca khám: <strong>#APPT-' + data.appointmentId + '</strong></div><div>Mã hồ sơ: <strong>' + (data.recordId || '#MR-' + data.appointmentId) + '</strong></div><div>Ngày khám: ' + (data.appointmentDate || '') + '</div></div>'
-                            + '</div>'
-                            + '<div class="title">PHIẾU KẾT QUẢ KHÁM & ĐƠN THUỐC</div>'
-                            + '<div class="info-grid">'
-                            + '<div><strong>Họ và tên:</strong> ' + (data.patientName || '') + '</div>'
-                            + '<div><strong>Số điện thoại:</strong> ' + (data.phone || '') + '</div>'
-                            + '<div><strong>Bác sĩ phụ trách:</strong> ' + (data.doctorName || '') + '</div>'
-                            + '<div><strong>Phòng khám:</strong> ' + (data.roomName || '') + '</div>'
-                            + '<div style="grid-column: span 2;"><strong>Chẩn đoán lâm sàng:</strong> ' + (data.clinicalDiagnosis || 'Khám mắt tổng quát') + '</div>'
-                            + '<div style="grid-column: span 2;"><strong>Lời dặn của Bác sĩ:</strong> ' + (data.doctorNotes || 'Uống thuốc đúng giờ, tái khám khi có dấu hiệu bất thường.') + '</div>'
-                            + '</div>'
-                            + '<h4 style="margin-bottom: 8px; font-size: 14px; color: #0d9488; text-transform: uppercase;">DANH MỤC THUỐC ĐIỀU TRỊ</h4>'
-                            + '<table><thead><tr><th style="width: 40px; text-align: center;">STT</th><th>Tên thuốc</th><th style="width: 90px; text-align: center;">Số lượng</th><th>Hướng dẫn sử dụng</th></tr></thead><tbody>'
-                            + medRowsHtml
-                            + '</tbody></table>'
-                            + '<div class="footer">'
-                            + '<div><strong>BỆNH NHÂN</strong><br><small style="color: #64748b;">(Ký và ghi rõ họ tên)</small></div>'
-                            + '<div><strong>BÁC SĨ KHÁM BỆNH</strong><br><small style="color: #64748b;">(Ký và ghi rõ họ tên)</small><br><br><br><strong>' + (data.doctorName || '') + '</strong></div>'
-                            + '</div>'
-                            + '</body></html>';
-
-                        var printWin = window.open('', '_blank', 'width=850,height=700');
-                        if (printWin) {
-                            printWin.document.open();
-                            printWin.document.write(printContent);
-                            printWin.document.close();
-                            printWin.focus();
-                            setTimeout(function() {
-                                printWin.print();
-                            }, 350);
-                        }
-                    }
-
-                    function confirmPostExamHandover() {
+                    function submitCompleteAppointment() {
                         if (!currentPostExamId) return;
-                        var btn = document.getElementById('btnConfirmHandover');
+                        var data = window._currentPostExamData;
+                        var balanceDue = (data && data.balanceDue) ? data.balanceDue : 0;
+
+                        var selectedGateway = 'Cash';
+                        var payRadio = document.querySelector('input[name="postExamPaymentGateway"]:checked');
+                        if (payRadio) {
+                            selectedGateway = payRadio.value;
+                        }
+
+                        var btn = document.getElementById('btnCompleteAppointment');
                         if (btn) {
                             btn.disabled = true;
                             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang xử lý...';
@@ -1004,28 +1046,36 @@
                         fetch('${pageContext.request.contextPath}/staff/waiting-list', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: 'action=confirmHandover&appointmentId=' + currentPostExamId + '&ajax=1'
+                            body: 'action=completeAppointment&appointmentId=' + currentPostExamId + '&paymentGateway=' + encodeURIComponent(selectedGateway) + '&ajax=1'
                         })
                         .then(function(res) { return res.json(); })
-                        .then(function(data) {
-                            if (btn) {
-                                btn.disabled = false;
-                                btn.innerHTML = '<i class="bi bi-check2-all me-1"></i> Xác nhận đã bàn giao & Hoàn tất';
+                        .then(function(result) {
+                            if (result && result.success) {
+                                var modalElem = document.getElementById('postExamModal');
+                                if (modalElem) {
+                                    var modal = bootstrap.Modal.getInstance(modalElem);
+                                    if (modal) modal.hide();
+                                }
+                                alert(result.message || 'Đã hoàn tất lịch hẹn thành công!');
+                                window.location.reload();
+                            } else {
+                                if (btn) {
+                                    btn.disabled = false;
+                                    btn.innerHTML = balanceDue > 0
+                                        ? '<i class="bi bi-cash-coin me-1.5"></i> Thanh toán phần còn lại & Hoàn tất lịch hẹn'
+                                        : '<i class="bi bi-check2-circle me-1.5"></i> Hoàn tất lịch hẹn';
+                                }
+                                alert(result && result.message ? result.message : 'Không thể hoàn tất lịch hẹn.');
                             }
-                            var modalElem = document.getElementById('postExamModal');
-                            if (modalElem) {
-                                var modal = bootstrap.Modal.getInstance(modalElem);
-                                if (modal) modal.hide();
-                            }
-                            alert('Đã hoàn tất bàn giao đơn thuốc và hướng dẫn xuất viện cho bệnh nhân!');
-                            window.location.reload();
                         })
                         .catch(function(err) {
                             if (btn) {
                                 btn.disabled = false;
-                                btn.innerHTML = '<i class="bi bi-check2-all me-1"></i> Xác nhận đã bàn giao & Hoàn tất';
+                                btn.innerHTML = balanceDue > 0
+                                    ? '<i class="bi bi-cash-coin me-1.5"></i> Thanh toán phần còn lại & Hoàn tất lịch hẹn'
+                                    : '<i class="bi bi-check2-circle me-1.5"></i> Hoàn tất lịch hẹn';
                             }
-                            alert('Lỗi xác nhận bàn giao: ' + err.message);
+                            alert('Lỗi hoàn tất lịch hẹn: ' + err.message);
                         });
                     }
 
@@ -1037,15 +1087,6 @@
                             openPostExamModal(id, name);
                             return;
                         }
-
-                        var btnStart = e.target.closest('.btn-trigger-start');
-                        if (btnStart) {
-                            var id = btnStart.getAttribute('data-id');
-                            var name = btnStart.getAttribute('data-name');
-                            openStartExamModal(id, name);
-                            return;
-                        }
-
 
                         var btnSkip = e.target.closest('.btn-trigger-skip');
                         if (btnSkip) {

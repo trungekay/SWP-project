@@ -86,6 +86,8 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
+        cursor: pointer !important;
+        user-select: none;
     }
     .sidebar-submenu {
         display: none;
@@ -95,8 +97,11 @@
         background-color: #fcfcfc;
         border-radius: 0 0 8px 8px;
     }
+    .sidebar-dropdown:hover .sidebar-submenu:not(.show) {
+        display: none !important;
+    }
     .sidebar-submenu.show {
-        display: block;
+        display: block !important;
     }
     .sidebar-submenu li a {
         padding: 8px 16px;
