@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css">
     <jsp:include page="/views/admin/layout/admin-css.jsp" />
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-waiting-list.css?v=8">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-waiting-list.css?v=11">
 </head>
 <body class="doctor-queue-body">
 <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
@@ -26,10 +26,6 @@
                     <h1>Hàng đợi khám bệnh</h1>
                     <p>Danh sách bệnh nhân đã check-in theo lịch làm việc của bạn.</p>
                 </div>
-                <c:url var="refreshUrl" value="/doctor/waiting-list"><c:param name="date" value="${selectedDate}" /><c:param name="status" value="${selectedStatus}" /><c:param name="keyword" value="${keyword}" /></c:url>
-                <a class="doctor-queue-refresh" href="<c:out value='${refreshUrl}' />">
-                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Làm mới
-                </a>
             </header>
 
             <c:if test="${not empty sessionScope.doctorQueueMessage}">
@@ -40,28 +36,33 @@
                 <c:remove var="doctorQueueMessage" scope="session" />
             </c:if>
 
-            <section class="doctor-queue-stats" aria-label="Tổng quan ca khám">
-                <div class="doctor-queue-stat">
-                    <span class="doctor-queue-stat-icon waiting"><i class="bi bi-hourglass-split" aria-hidden="true"></i></span>
-                    <div><strong><c:out value="${waitingCount}" default="0" /></strong><span>Chờ khám</span></div>
-                </div>
-                <div class="doctor-queue-stat">
-                    <span class="doctor-queue-stat-icon examining"><i class="bi bi-activity" aria-hidden="true"></i></span>
-                    <div><strong><c:out value="${examiningCount}" default="0" /></strong><span>Đang khám</span></div>
-                </div>
-                <div class="doctor-queue-stat">
-                    <span class="doctor-queue-stat-icon completed"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
-                    <div><strong><c:out value="${completedCount}" default="0" /></strong><span>Hoàn tất</span></div>
-                </div>
-                <div class="doctor-queue-stat">
-                    <span class="doctor-queue-stat-icon canceled"><i class="bi bi-x-circle" aria-hidden="true"></i></span>
-                    <div><strong><c:out value="${canceledCount}" default="0" /></strong><span>Đã hủy</span></div>
-                </div>
-                <div class="doctor-queue-stat">
+            <c:url var="allUrl" value="/doctor/waiting-list"><c:param name="date" value="${selectedDate}" /><c:param name="keyword" value="${keyword}" /><c:param name="status" value="all_day" /><c:param name="sort" value="${selectedSort}" /></c:url>
+            <c:url var="waitingUrl" value="/doctor/waiting-list"><c:param name="date" value="${selectedDate}" /><c:param name="keyword" value="${keyword}" /><c:param name="status" value="Confirmed" /><c:param name="sort" value="${selectedSort}" /></c:url>
+            <c:url var="examiningUrl" value="/doctor/waiting-list"><c:param name="date" value="${selectedDate}" /><c:param name="keyword" value="${keyword}" /><c:param name="status" value="In_Progress" /><c:param name="sort" value="${selectedSort}" /></c:url>
+            <c:url var="completedUrl" value="/doctor/waiting-list"><c:param name="date" value="${selectedDate}" /><c:param name="keyword" value="${keyword}" /><c:param name="status" value="Completed" /><c:param name="sort" value="${selectedSort}" /></c:url>
+            <c:url var="canceledUrl" value="/doctor/waiting-list"><c:param name="date" value="${selectedDate}" /><c:param name="keyword" value="${keyword}" /><c:param name="status" value="Canceled" /><c:param name="sort" value="${selectedSort}" /></c:url>
+            <nav class="doctor-queue-stats" aria-label="Lọc ca khám theo trạng thái">
+                <a class="doctor-queue-stat ${selectedStatus eq 'all_day' ? 'active' : ''}" href="<c:out value='${allUrl}' />" aria-current="${selectedStatus eq 'all_day' ? 'page' : 'false'}">
                     <span class="doctor-queue-stat-icon total"><i class="bi bi-people" aria-hidden="true"></i></span>
                     <div><strong><c:out value="${totalCount}" default="0" /></strong><span>Tổng ca phù hợp</span></div>
-                </div>
-            </section>
+                </a>
+                <a class="doctor-queue-stat ${selectedStatus eq 'Confirmed' ? 'active' : ''}" href="<c:out value='${waitingUrl}' />" aria-current="${selectedStatus eq 'Confirmed' ? 'page' : 'false'}">
+                    <span class="doctor-queue-stat-icon waiting"><i class="bi bi-hourglass-split" aria-hidden="true"></i></span>
+                    <div><strong><c:out value="${waitingCount}" default="0" /></strong><span>Chờ khám</span></div>
+                </a>
+                <a class="doctor-queue-stat ${selectedStatus eq 'In_Progress' ? 'active' : ''}" href="<c:out value='${examiningUrl}' />" aria-current="${selectedStatus eq 'In_Progress' ? 'page' : 'false'}">
+                    <span class="doctor-queue-stat-icon examining"><i class="bi bi-activity" aria-hidden="true"></i></span>
+                    <div><strong><c:out value="${examiningCount}" default="0" /></strong><span>Đang khám</span></div>
+                </a>
+                <a class="doctor-queue-stat ${selectedStatus eq 'Completed' ? 'active' : ''}" href="<c:out value='${completedUrl}' />" aria-current="${selectedStatus eq 'Completed' ? 'page' : 'false'}">
+                    <span class="doctor-queue-stat-icon completed"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
+                    <div><strong><c:out value="${completedCount}" default="0" /></strong><span>Hoàn tất</span></div>
+                </a>
+                <a class="doctor-queue-stat ${selectedStatus eq 'Canceled' ? 'active' : ''}" href="<c:out value='${canceledUrl}' />" aria-current="${selectedStatus eq 'Canceled' ? 'page' : 'false'}">
+                    <span class="doctor-queue-stat-icon canceled"><i class="bi bi-x-circle" aria-hidden="true"></i></span>
+                    <div><strong><c:out value="${canceledCount}" default="0" /></strong><span>Đã hủy</span></div>
+                </a>
+            </nav>
 
             <c:if test="${overdueCount > 0}">
                 <div class="doctor-queue-overdue-notice" role="alert">
@@ -80,9 +81,9 @@
                     <span class="doctor-queue-date-chip"><i class="bi bi-calendar3" aria-hidden="true"></i> <c:out value="${displayDate}" /></span>
                 </div>
 
-                <c:url var="previousUrl" value="/doctor/waiting-list"><c:param name="date" value="${previousDate}" /><c:param name="status" value="${selectedStatus}" /><c:param name="keyword" value="${keyword}" /></c:url>
-                <c:url var="nextUrl" value="/doctor/waiting-list"><c:param name="date" value="${nextDate}" /><c:param name="status" value="${selectedStatus}" /><c:param name="keyword" value="${keyword}" /></c:url>
-                <c:url var="todayUrl" value="/doctor/waiting-list"><c:param name="date" value="${todayDate}" /><c:param name="status" value="${selectedStatus}" /><c:param name="keyword" value="${keyword}" /></c:url>
+                <c:url var="previousUrl" value="/doctor/waiting-list"><c:param name="date" value="${previousDate}" /><c:param name="status" value="${selectedStatus}" /><c:param name="keyword" value="${keyword}" /><c:param name="sort" value="${selectedSort}" /></c:url>
+                <c:url var="nextUrl" value="/doctor/waiting-list"><c:param name="date" value="${nextDate}" /><c:param name="status" value="${selectedStatus}" /><c:param name="keyword" value="${keyword}" /><c:param name="sort" value="${selectedSort}" /></c:url>
+                <c:url var="todayUrl" value="/doctor/waiting-list"><c:param name="date" value="${todayDate}" /><c:param name="status" value="${selectedStatus}" /><c:param name="keyword" value="${keyword}" /><c:param name="sort" value="${selectedSort}" /></c:url>
                 <form class="doctor-queue-search" action="${pageContext.request.contextPath}/doctor/waiting-list" method="get" role="search">
                     <input type="hidden" name="status" value="<c:out value='${selectedStatus}' />">
                     <div class="doctor-queue-date-controls" aria-label="Chọn ngày khám">
@@ -101,22 +102,24 @@
                         <input type="search" name="keyword" maxlength="100" placeholder="Tên bệnh nhân, SĐT hoặc mã lịch hẹn"
                                value="<c:out value='${keyword}' />">
                     </label>
+                    <details class="doctor-queue-sort ${selectedSort ne 'default' ? 'active' : ''}">
+                        <summary><i class="bi bi-funnel" aria-hidden="true"></i> Bộ lọc <i class="bi bi-chevron-down doctor-queue-sort-chevron" aria-hidden="true"></i></summary>
+                        <div class="doctor-queue-sort-menu">
+                            <fieldset>
+                                <legend>Sắp xếp theo</legend>
+                                <label><input type="radio" name="sort" value="default" ${selectedSort eq 'default' ? 'checked' : ''} onchange="this.form.requestSubmit()"> Mặc định</label>
+                                <label><input type="radio" name="sort" value="time_asc" ${selectedSort eq 'time_asc' ? 'checked' : ''} onchange="this.form.requestSubmit()"> Khung giờ: sớm đến muộn</label>
+                                <label><input type="radio" name="sort" value="id_asc" ${selectedSort eq 'id_asc' ? 'checked' : ''} onchange="this.form.requestSubmit()"> Mã hẹn: thấp đến cao</label>
+                                <label><input type="radio" name="sort" value="name_asc" ${selectedSort eq 'name_asc' ? 'checked' : ''} onchange="this.form.requestSubmit()"> Tên bệnh nhân: A–Z</label>
+                            </fieldset>
+                        </div>
+                    </details>
                     <button class="doctor-queue-filter-button" type="submit">Áp dụng</button>
-                    <c:if test="${not empty keyword}"><a class="doctor-queue-clear" href="${pageContext.request.contextPath}/doctor/waiting-list?date=${selectedDate}&amp;status=${selectedStatus}">Xóa tìm kiếm</a></c:if>
+                    <c:if test="${not empty keyword}">
+                        <c:url var="clearSearchUrl" value="/doctor/waiting-list"><c:param name="date" value="${selectedDate}" /><c:param name="status" value="${selectedStatus}" /><c:param name="sort" value="${selectedSort}" /></c:url>
+                        <a class="doctor-queue-clear" href="<c:out value='${clearSearchUrl}' />">Xóa tìm kiếm</a>
+                    </c:if>
                 </form>
-
-                <c:url var="allUrl" value="/doctor/waiting-list"><c:param name="date" value="${selectedDate}" /><c:param name="keyword" value="${keyword}" /><c:param name="status" value="all_day" /></c:url>
-                <c:url var="waitingUrl" value="/doctor/waiting-list"><c:param name="date" value="${selectedDate}" /><c:param name="keyword" value="${keyword}" /><c:param name="status" value="Confirmed" /></c:url>
-                <c:url var="examiningUrl" value="/doctor/waiting-list"><c:param name="date" value="${selectedDate}" /><c:param name="keyword" value="${keyword}" /><c:param name="status" value="In_Progress" /></c:url>
-                <c:url var="completedUrl" value="/doctor/waiting-list"><c:param name="date" value="${selectedDate}" /><c:param name="keyword" value="${keyword}" /><c:param name="status" value="Completed" /></c:url>
-                <c:url var="canceledUrl" value="/doctor/waiting-list"><c:param name="date" value="${selectedDate}" /><c:param name="keyword" value="${keyword}" /><c:param name="status" value="Canceled" /></c:url>
-                <nav class="doctor-queue-tabs" aria-label="Lọc theo trạng thái">
-                    <a class="${selectedStatus eq 'all_day' ? 'active' : ''}" href="<c:out value='${allUrl}' />">Tất cả <span><c:out value="${totalCount}" default="0" /></span></a>
-                    <a class="${selectedStatus eq 'Confirmed' ? 'active' : ''}" href="<c:out value='${waitingUrl}' />">Chờ khám <span><c:out value="${waitingCount}" default="0" /></span></a>
-                    <a class="${selectedStatus eq 'In_Progress' ? 'active' : ''}" href="<c:out value='${examiningUrl}' />">Đang khám <span><c:out value="${examiningCount}" default="0" /></span></a>
-                    <a class="${selectedStatus eq 'Completed' ? 'active' : ''}" href="<c:out value='${completedUrl}' />">Hoàn tất <span><c:out value="${completedCount}" default="0" /></span></a>
-                    <a class="${selectedStatus eq 'Canceled' ? 'active' : ''}" href="<c:out value='${canceledUrl}' />">Đã hủy <span><c:out value="${canceledCount}" default="0" /></span></a>
-                </nav>
 
                 <c:choose>
                     <c:when test="${empty appointments}">
@@ -127,46 +130,43 @@
                         </div>
                     </c:when>
                     <c:otherwise>
-                        <div class="doctor-queue-list-header" aria-hidden="true">
-                            <span>BỆNH NHÂN</span><span>GIỜ HẸN / CHECK-IN</span><span>PHÒNG KHÁM</span><span>TRẠNG THÁI</span><span>THAO TÁC</span>
-                        </div>
-                        <div class="doctor-queue-list" role="list">
+                        <div class="table-container doctor-queue-table-wrap">
+                        <table class="custom-table doctor-queue-table">
+                            <colgroup><col style="width: 8%"><col style="width: 15%"><col style="width: 13%"><col style="width: 15%"><col style="width: 23%"><col style="width: 14%"><col style="width: 12%"></colgroup>
+                            <thead><tr><th class="text-center">Mã Hẹn</th><th>Bệnh Nhân</th><th>Khung Giờ &amp; Ngày</th><th>Bác Sĩ Phụ Trách</th><th>Phòng Khám</th><th class="text-center">Trạng Thái</th><th class="text-center">Thao Tác</th></tr></thead>
+                            <tbody>
                             <c:forEach var="item" items="${appointments}">
                                 <c:set var="startWindowState" value="${startWindowStates[item.id]}" />
-                                <article class="doctor-queue-item" role="listitem">
-                                    <div class="doctor-queue-patient">
-                                        <div class="doctor-queue-avatar" aria-hidden="true"><c:out value="${fn:substring(item.patientName, 0, 1)}" default="BN" /></div>
-                                        <div class="doctor-queue-patient-copy">
-                                            <h3><c:out value="${item.patientName}" default="Chưa có tên" /></h3>
-                                            <span>#APPT-<c:out value="${item.id}" /> <span class="doctor-queue-separator">·</span> <c:out value="${item.phone}" default="Chưa có SĐT" /></span>
-                                        </div>
-                                    </div>
-                                    <div class="doctor-queue-cell">
-                                        <span class="doctor-queue-mobile-label">Giờ hẹn / check-in</span>
-                                        <strong><c:out value="${item.timeSlot}" default="--:--" /></strong>
-                                        <small>Check-in <c:out value="${fn:substring(item.checkinTime, 11, 16)}" default="--:--" /></small>
+                                <tr>
+                                    <td class="text-center text-nowrap"><a class="badge bg-light text-dark border px-2 py-1 fw-bold text-decoration-none doctor-queue-link" href="${pageContext.request.contextPath}/doctor/patient-detail?id=${item.id}">#APPT-<c:out value="${item.id}" /></a></td>
+                                    <td class="text-nowrap text-truncate">
+                                        <a class="fw-semibold text-dark text-decoration-none doctor-queue-link" href="${pageContext.request.contextPath}/doctor/patient-detail?id=${item.id}" title="<c:out value='${item.patientName}' />"><c:out value="${item.patientName}" default="Chưa có tên" /></a>
+                                    </td>
+                                    <td class="text-nowrap">
+                                        <div class="fw-semibold text-dark doctor-queue-time"><i class="bi bi-clock text-teal me-1" aria-hidden="true"></i><c:out value="${item.timeSlot}" default="--:--" /><c:if test="${not empty item.endTime}"> - <c:out value="${item.endTime}" /></c:if></div>
+                                        <div class="text-muted small"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i><c:out value="${item.appointmentDate}" /></div>
+                                        <div class="text-muted small">Check-in <c:out value="${fn:substring(item.checkinTime, 11, 16)}" default="--:--" /></div>
                                         <c:if test="${startWindowState eq 'late' && (item.status eq 'Confirmed' || item.status eq 'In_Progress')}">
-                                            <small class="doctor-queue-overdue-label">Quá giờ hẹn, chưa hoàn tất khám</small>
+                                            <div class="small doctor-queue-overdue-label">Quá giờ hẹn</div>
                                         </c:if>
-                                    </div>
-                                    <div class="doctor-queue-cell">
-                                        <span class="doctor-queue-mobile-label">Phòng khám</span>
-                                        <strong><c:out value="${item.roomName}" default="Chưa phân phòng" /></strong>
-                                    </div>
-                                    <div class="doctor-queue-cell">
-                                        <span class="doctor-queue-mobile-label">Trạng thái</span>
+                                    </td>
+                                    <td class="text-nowrap text-truncate"><span class="fw-semibold text-dark" title="<c:out value='${item.doctorName}' />"><c:out value="${item.doctorName}" default="Chưa phân công" /></span></td>
+                                    <td class="text-nowrap">
+                                        <span class="badge bg-light text-dark border px-2 py-1 fw-medium doctor-queue-room" title="<c:out value='${item.roomName}' />"><i class="bi bi-door-open text-success" aria-hidden="true"></i><span class="text-truncate"><c:out value="${item.roomName}" default="Chưa phân phòng" /></span></span>
+                                    </td>
+                                    <td class="text-center text-nowrap">
                                         <c:choose>
-                                            <c:when test="${item.status eq 'Confirmed'}"><span class="doctor-queue-status waiting"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Chờ khám</span></c:when>
-                                            <c:when test="${item.status eq 'In_Progress'}"><span class="doctor-queue-status examining"><i class="bi bi-activity" aria-hidden="true"></i> Đang khám</span></c:when>
-                                            <c:when test="${item.status eq 'Completed'}"><span class="doctor-queue-status completed"><i class="bi bi-check-circle" aria-hidden="true"></i> Hoàn tất</span></c:when>
-                                            <c:when test="${item.status eq 'Canceled'}"><span class="doctor-queue-status canceled"><i class="bi bi-x-circle" aria-hidden="true"></i> Đã hủy</span></c:when>
-                                            <c:otherwise><span class="doctor-queue-status neutral"><c:out value="${item.status}" /></span></c:otherwise>
+                                            <c:when test="${item.status eq 'Confirmed'}"><span class="badge-status badge-confirmed">Chờ khám</span></c:when>
+                                            <c:when test="${item.status eq 'In_Progress'}"><span class="badge-status badge-in-progress">Đang khám</span></c:when>
+                                            <c:when test="${item.status eq 'Completed'}"><span class="badge-status badge-completed">Hoàn tất</span></c:when>
+                                            <c:when test="${item.status eq 'Canceled'}"><span class="badge-status badge-canceled">Đã hủy</span></c:when>
+                                            <c:otherwise><span class="badge-status badge-pending"><c:out value="${item.status}" /></span></c:otherwise>
                                         </c:choose>
-                                    </div>
-                                    <div class="doctor-queue-actions">
-                                        <a class="doctor-queue-button doctor-queue-button-outline"
+                                    </td>
+                                    <td class="text-center text-nowrap"><div class="action-btns doctor-queue-actions">
+                                        <a class="action-btn" title="Xem hồ sơ" aria-label="Xem hồ sơ"
                                            href="${pageContext.request.contextPath}/doctor/patient-detail?id=${item.id}">
-                                            <i class="bi bi-person-vcard" aria-hidden="true"></i> Xem hồ sơ
+                                            <i class="bi bi-pencil" aria-hidden="true"></i>
                                         </a>
                                         <c:if test="${item.status eq 'Confirmed'}">
                                             <form action="${pageContext.request.contextPath}/doctor/waiting-list" method="post">
@@ -176,40 +176,46 @@
                                                 <input type="hidden" name="date" value="<c:out value='${selectedDate}' />">
                                                 <input type="hidden" name="status" value="<c:out value='${selectedStatus}' />">
                                                 <input type="hidden" name="keyword" value="<c:out value='${keyword}' />">
+                                                <input type="hidden" name="sort" value="<c:out value='${selectedSort}' />">
                                                 <c:choose>
                                                     <c:when test="${startWindowState eq 'early'}">
-                                                        <button class="doctor-queue-button doctor-queue-button-primary doctor-queue-button-unavailable" type="button"
+                                                        <button class="action-btn warning" type="button" title="Chưa đến giờ gọi vào khám" aria-label="Chưa đến giờ gọi vào khám"
                                                                 data-bs-toggle="modal" data-bs-target="#examWindowModal" data-window-state="early">
-                                                            <i class="bi bi-play-fill" aria-hidden="true"></i> Gọi vào khám
+                                                            <i class="bi bi-play-fill" aria-hidden="true"></i>
                                                         </button>
                                                     </c:when>
                                                     <c:when test="${startWindowState eq 'late'}">
-                                                        <button class="doctor-queue-button doctor-queue-button-primary doctor-queue-button-unavailable" type="button"
+                                                        <button class="action-btn warning" type="button" title="Đã quá giờ gọi vào khám" aria-label="Đã quá giờ gọi vào khám"
                                                                 data-bs-toggle="modal" data-bs-target="#examWindowModal" data-window-state="late">
-                                                            <i class="bi bi-play-fill" aria-hidden="true"></i> Gọi vào khám
+                                                            <i class="bi bi-play-fill" aria-hidden="true"></i>
                                                         </button>
                                                     </c:when>
                                                     <c:when test="${startWindowState ne 'open'}">
-                                                        <button class="doctor-queue-button doctor-queue-button-primary doctor-queue-button-unavailable" type="button"
+                                                        <button class="action-btn warning" type="button" title="Không xác định được giờ hẹn" aria-label="Không xác định được giờ hẹn"
                                                                 data-bs-toggle="modal" data-bs-target="#examWindowModal" data-window-state="invalid">
-                                                            <i class="bi bi-play-fill" aria-hidden="true"></i> Gọi vào khám
+                                                            <i class="bi bi-play-fill" aria-hidden="true"></i>
                                                         </button>
                                                     </c:when>
                                                     <c:when test="${doctorBusy}">
-                                                        <button class="doctor-queue-button doctor-queue-button-primary" type="button" disabled
-                                                                title="Hãy hoàn tất ca đang khám trước">
-                                                            <i class="bi bi-play-fill" aria-hidden="true"></i> Gọi vào khám
+                                                        <button class="action-btn checkin" type="button" disabled title="Hãy hoàn tất ca đang khám trước" aria-label="Gọi vào khám: bác sĩ đang bận">
+                                                            <i class="bi bi-play-fill" aria-hidden="true"></i>
                                                         </button>
                                                     </c:when>
                                                     <c:otherwise>
-                                                        <button class="doctor-queue-button doctor-queue-button-primary" type="submit">
-                                                            <i class="bi bi-play-fill" aria-hidden="true"></i> Gọi vào khám
+                                                        <button class="action-btn checkin" type="submit" title="Gọi vào khám" aria-label="Gọi vào khám">
+                                                            <i class="bi bi-play-fill" aria-hidden="true"></i>
                                                         </button>
                                                     </c:otherwise>
                                                 </c:choose>
                                             </form>
                                         </c:if>
                                         <c:if test="${item.status eq 'In_Progress'}">
+                                            <c:if test="${not completionReadyIds.contains(item.id)}">
+                                                <a class="action-btn" href="${pageContext.request.contextPath}/doctor/examination?id=${item.id}" title="Điền kết quả khám, chẩn đoán và kết luận" aria-label="Điền phiếu khám">
+                                                    <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i>
+                                                </a>
+                                            </c:if>
+                                            <c:if test="${completionReadyIds.contains(item.id)}">
                                             <form action="${pageContext.request.contextPath}/doctor/waiting-list" method="post">
                                                 <input type="hidden" name="action" value="complete">
                                                 <input type="hidden" name="appointmentId" value="${item.id}">
@@ -217,31 +223,34 @@
                                                 <input type="hidden" name="date" value="<c:out value='${selectedDate}' />">
                                                 <input type="hidden" name="status" value="<c:out value='${selectedStatus}' />">
                                                 <input type="hidden" name="keyword" value="<c:out value='${keyword}' />">
+                                                <input type="hidden" name="sort" value="<c:out value='${selectedSort}' />">
                                                 <c:choose>
                                                     <c:when test="${not isToday}">
-                                                        <button class="doctor-queue-button doctor-queue-button-primary" type="button" disabled
-                                                                title="Chỉ có thể hoàn tất ca khám trong ngày hôm nay">
-                                                            <i class="bi bi-check2" aria-hidden="true"></i> Hoàn tất
+                                                        <button class="action-btn complete" type="button" disabled title="Chỉ có thể hoàn tất ca khám trong ngày hôm nay" aria-label="Không thể hoàn tất ca ngoài ngày hôm nay">
+                                                            <i class="bi bi-check2" aria-hidden="true"></i>
                                                         </button>
                                                     </c:when>
                                                     <c:otherwise>
-                                                        <button class="doctor-queue-button doctor-queue-button-primary" type="submit">
-                                                            <i class="bi bi-check2" aria-hidden="true"></i> Hoàn tất
+                                                        <button class="action-btn complete" type="submit" title="Hoàn tất ca khám" aria-label="Hoàn tất ca khám">
+                                                            <i class="bi bi-check2" aria-hidden="true"></i>
                                                         </button>
                                                     </c:otherwise>
                                                 </c:choose>
                                             </form>
+                                            </c:if>
                                         </c:if>
                                         <c:if test="${item.status eq 'In_Progress' || (item.status eq 'Confirmed' && startWindowState eq 'late')}">
-                                            <button class="doctor-queue-button doctor-queue-button-cancel" type="button"
+                                            <button class="action-btn delete" type="button" title="${item.status eq 'In_Progress' ? 'Dừng khám' : 'Hủy khám'}" aria-label="${item.status eq 'In_Progress' ? 'Dừng khám' : 'Hủy khám'}"
                                                     data-bs-toggle="modal" data-bs-target="#cancelExamModal" data-appointment-id="${item.id}"
                                                     data-exam-status="${item.status}">
-                                                <i class="bi bi-x-circle" aria-hidden="true"></i> ${item.status eq 'In_Progress' ? 'Dừng khám' : 'Hủy khám'}
+                                                <i class="bi bi-trash" aria-hidden="true"></i>
                                             </button>
                                         </c:if>
-                                    </div>
-                                </article>
+                                    </div></td>
+                                </tr>
                             </c:forEach>
+                            </tbody>
+                        </table>
                         </div>
                     </c:otherwise>
                 </c:choose>
@@ -268,6 +277,7 @@
                     <input type="hidden" name="date" value="<c:out value='${selectedDate}' />">
                     <input type="hidden" name="status" value="<c:out value='${selectedStatus}' />">
                     <input type="hidden" name="keyword" value="<c:out value='${keyword}' />">
+                    <input type="hidden" name="sort" value="<c:out value='${selectedSort}' />">
                     <label for="cancelExamReason" class="form-label fw-semibold">Lý do dừng/hủy ca khám</label>
                     <textarea id="cancelExamReason" name="reason" class="form-control" rows="3" maxlength="500" required></textarea>
                     <div class="modal-actions">

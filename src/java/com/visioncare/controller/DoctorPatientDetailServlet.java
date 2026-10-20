@@ -1,6 +1,7 @@
 package com.visioncare.controller;
 
 import com.visioncare.dao.AppointmentDAO;
+import com.visioncare.dao.DoctorQueueDAO;
 import com.visioncare.dao.ProcedureOrderDAO;
 import com.visioncare.model.Appointment;
 import com.visioncare.model.MedicalRecord;
@@ -18,6 +19,7 @@ import java.util.List;
 @WebServlet(name = "DoctorPatientDetailServlet", urlPatterns = {"/doctor/patient-detail"})
 public class DoctorPatientDetailServlet extends HttpServlet {
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
+    private final DoctorQueueDAO doctorQueueDAO = new DoctorQueueDAO();
     private final ProcedureOrderDAO procedureOrderDAO = new ProcedureOrderDAO();
 
     @Override
@@ -68,6 +70,9 @@ public class DoctorPatientDetailServlet extends HttpServlet {
             if ("In_Progress".equals(appointment.getStatus())) {
                 request.setAttribute("prescriptionUrl",
                         request.getContextPath() + "/doctor/prescription?id=" + appointmentId);
+                request.setAttribute("completionReady", appointment.getAppointmentDate() != null
+                        && doctorQueueDAO.readyForCompletion(doctor.getActorId(), appointment.getAppointmentDate())
+                                .contains(appointmentId));
             }
             String csrf = (String) session.getAttribute("doctorQueueCsrf");
             if (csrf == null) {

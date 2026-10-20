@@ -7,9 +7,36 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 /** Status transition for a doctor's own checked-in appointment. */
 public class DoctorQueueDAO {
+    private static final String EXAMINATION_READY = "EXISTS (SELECT 1 FROM Medical_Record mr "
+            + "JOIN Examination_Detail ed ON ed.Record_ID = mr.Record_ID "
+            + "WHERE mr.Appointment_ID = a.Appointment_ID "
+            + "AND NULLIF(LTRIM(RTRIM(mr.Clinical_Diagnosis)), '') IS NOT NULL "
+            + "AND NULLIF(LTRIM(RTRIM(mr.examination_result)), '') IS NOT NULL "
+            + "AND NULLIF(LTRIM(RTRIM(mr.conclusion)), '') IS NOT NULL)";
+
+    /** Appointments whose saved examination form has the required result and conclusion. */
+    public Set<Integer> readyForCompletion(int doctorEmployeeId, Date clinicDate) throws Exception {
+        Set<Integer> ready = new HashSet<>();
+        String sql = "SELECT a.Appointment_ID FROM Appointment a "
+                + "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID "
+                + "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? "
+                + "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL AND " + EXAMINATION_READY;
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, doctorEmployeeId);
+            ps.setDate(2, clinicDate);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) ready.add(rs.getInt(1));
+            }
+        }
+        return ready;
+    }
+
     /** The assigned doctor may cancel an overdue waiting case or stop an active examination. */
     public boolean cancelExamination(int appointmentId, int doctorEmployeeId,
             LocalDateTime clinicNow, String reason) throws Exception {
@@ -116,7 +143,7 @@ public class DoctorQueueDAO {
                 + "FROM Appointment a "
                 + "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID "
                 + "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? "
-                + "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL";
+                + "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL AND " + EXAMINATION_READY;
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, appointmentId);

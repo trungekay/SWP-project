@@ -4,19 +4,18 @@ import com.visioncare.model.Appointment;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Set;
 
 /** Clinic-local window for starting a scheduled examination. */
 public final class ExaminationWindow {
-    private static final int EARLY_START_APPOINTMENT_ID = 32;
-    private static final int ADDITIONAL_EARLY_START_APPOINTMENT_ID = 33;
+    private static final Set<Integer> EARLY_START_APPOINTMENT_IDS = Set.of(32, 33, 37);
     private static final LocalDate EARLY_START_DATE = LocalDate.of(2026, 10, 21);
 
     private ExaminationWindow() {}
 
-    /** One-day early start exceptions for the checked-in appointments #32 and #33. */
+    /** One-day start-window exceptions for the checked-in appointments #32, #33 and #37. */
     public static String startState(int appointmentId, LocalDate date, LocalTime time, LocalDateTime now) {
-        if ((appointmentId == EARLY_START_APPOINTMENT_ID
-                || appointmentId == ADDITIONAL_EARLY_START_APPOINTMENT_ID) && EARLY_START_DATE.equals(date)
+        if (EARLY_START_APPOINTMENT_IDS.contains(appointmentId) && EARLY_START_DATE.equals(date)
                 && now != null && EARLY_START_DATE.equals(now.toLocalDate())) {
             return "open";
         }
