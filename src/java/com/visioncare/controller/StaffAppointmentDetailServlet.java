@@ -123,7 +123,7 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
                 if (success) {
                     session.setAttribute("successMessage", "Đã ghi nhận bệnh nhân (#APPT-" + apptId + ") vắng mặt và gỡ khỏi hàng đợi khám.");
                 } else {
-                    session.setAttribute("errorMessage", "Không thể ghi nhận vắng mặt cho ca khám #" + apptId);
+                    session.setAttribute("errorMessage", "Không thể ghi nhận vắng mặt cho ca khám #" + apptId + ". Ca có thể đã được bác sĩ gọi vào khám; vui lòng tải lại trang.");
                 }
             } else if ("skip".equalsIgnoreCase(action)) {
                 try {
@@ -151,7 +151,7 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
                 if (success) {
                     session.setAttribute("successMessage", "Lịch hẹn (#APPT-" + apptId + ") đã được hủy thành công. Ca khám của bác sĩ đã được giải phóng.");
                 } else {
-                    session.setAttribute("errorMessage", "Không thể hủy lịch hẹn #" + apptId);
+                    session.setAttribute("errorMessage", "Không thể hủy lịch hẹn #" + apptId + ". Ca có thể đã được bác sĩ gọi vào khám hoặc đã hoàn tất; vui lòng tải lại trang.");
                 }
             }
 

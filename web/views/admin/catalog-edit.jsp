@@ -71,7 +71,7 @@
               </label>
             </div>
             <label><span class="catalog-label-title catalog-service-label">Tên dịch vụ <em>*</em></span><input name="name" maxlength="255" required value="${fn:escapeXml(item.name)}"></label>
-            <label><span class="catalog-label-title catalog-service-label">Đơn giá (VNĐ) <em>*</em></span><input name="price" type="number" min="0" step="1" required value="${fn:escapeXml(item.price)}"></label>
+            <label><span class="catalog-label-title catalog-service-label">Đơn giá (VNĐ) <em>*</em></span><input name="price" type="number" min="10000" step="1" required value="${fn:escapeXml(item.price)}"><small>Nhập số nguyên từ 10.000 VNĐ trở lên.</small></label>
             <label>Tóm tắt ngắn<input name="summary" maxlength="500" value="${fn:escapeXml(item.summary)}"></label>
             <label>Mô tả chi tiết<textarea name="description" rows="5" maxlength="4000"><c:out value="${item.description}" /></textarea></label>
           </c:when>

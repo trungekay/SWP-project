@@ -232,10 +232,11 @@
                                                 </c:choose>
                                             </form>
                                         </c:if>
-                                        <c:if test="${startWindowState eq 'late' && (item.status eq 'Confirmed' || item.status eq 'In_Progress')}">
+                                        <c:if test="${item.status eq 'In_Progress' || (item.status eq 'Confirmed' && startWindowState eq 'late')}">
                                             <button class="doctor-queue-button doctor-queue-button-cancel" type="button"
-                                                    data-bs-toggle="modal" data-bs-target="#cancelExamModal" data-appointment-id="${item.id}">
-                                                <i class="bi bi-x-circle" aria-hidden="true"></i> Hủy khám
+                                                    data-bs-toggle="modal" data-bs-target="#cancelExamModal" data-appointment-id="${item.id}"
+                                                    data-exam-status="${item.status}">
+                                                <i class="bi bi-x-circle" aria-hidden="true"></i> ${item.status eq 'In_Progress' ? 'Dừng khám' : 'Hủy khám'}
                                             </button>
                                         </c:if>
                                     </div>
@@ -258,8 +259,8 @@
                 <div class="modal-icon-danger"><i class="bi bi-x-circle" aria-hidden="true"></i></div>
                 <h3 class="modal-title-custom" id="cancelExamModalTitle">Xác nhận hủy khám?</h3>
                 <p class="modal-text">Ca khám <strong id="cancelExamCode">#APPT-</strong> của
-                    <strong id="cancelExamPatient">bệnh nhân</strong> đã quá 1 giờ sau giờ hẹn và chưa hoàn tất.
-                    Ca này sẽ được lưu với trạng thái <strong>Đã hủy</strong>.</p>
+                    <strong id="cancelExamPatient">bệnh nhân</strong> <span id="cancelExamDescription"></span>
+                    Ca này sẽ được lưu với trạng thái <strong>Đã hủy</strong>; thông tin khám đã ghi vẫn được giữ lại.</p>
                 <form action="${pageContext.request.contextPath}/doctor/waiting-list" method="post" class="m-0">
                     <input type="hidden" name="action" value="cancel">
                     <input type="hidden" name="appointmentId" id="cancelExamAppointmentId">
@@ -267,6 +268,8 @@
                     <input type="hidden" name="date" value="<c:out value='${selectedDate}' />">
                     <input type="hidden" name="status" value="<c:out value='${selectedStatus}' />">
                     <input type="hidden" name="keyword" value="<c:out value='${keyword}' />">
+                    <label for="cancelExamReason" class="form-label fw-semibold">Lý do dừng/hủy ca khám</label>
+                    <textarea id="cancelExamReason" name="reason" class="form-control" rows="3" maxlength="500" required></textarea>
                     <div class="modal-actions">
                         <button type="button" class="btn btn-modal-cancel" data-bs-dismiss="modal">Đóng</button>
                         <button type="submit" class="btn btn-modal-danger"><i class="bi bi-x-circle me-1" aria-hidden="true"></i> Hủy khám</button>
@@ -311,10 +314,16 @@
     document.getElementById('cancelExamModal').addEventListener('show.bs.modal', function (event) {
         var trigger = event.relatedTarget;
         var id = trigger.getAttribute('data-appointment-id');
+        var active = trigger.getAttribute('data-exam-status') === 'In_Progress';
         var patient = trigger.closest('.doctor-queue-item').querySelector('.doctor-queue-patient-copy h3').textContent.trim();
         document.getElementById('cancelExamAppointmentId').value = id;
         document.getElementById('cancelExamCode').textContent = '#APPT-' + id;
         document.getElementById('cancelExamPatient').textContent = patient;
+        document.getElementById('cancelExamModalTitle').textContent = active ? 'Xác nhận dừng ca đang khám?' : 'Xác nhận hủy ca quá giờ?';
+        document.getElementById('cancelExamDescription').textContent = active
+                ? 'đang được khám. Chỉ bác sĩ phụ trách có thể dừng ca này.'
+                : 'đã quá 1 giờ sau giờ hẹn và chưa bắt đầu khám.';
+        document.getElementById('cancelExamReason').value = '';
     });
 
     document.getElementById('examWindowModal').addEventListener('show.bs.modal', function (event) {

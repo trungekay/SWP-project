@@ -295,7 +295,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                     if (success) {
                         session.setAttribute("successMessage", "Đã hủy lịch hẹn (#APPT-" + apptId + ") thành công! Ca khám của bác sĩ đã được giải phóng.");
                     } else {
-                        session.setAttribute("errorMessage", "Không thể hủy lịch hẹn #" + apptId);
+                        session.setAttribute("errorMessage", "Không thể hủy lịch hẹn #" + apptId + ". Ca có thể đã được bác sĩ gọi vào khám hoặc đã hoàn tất; vui lòng tải lại danh sách.");
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

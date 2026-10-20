@@ -87,7 +87,7 @@ public class StaffRefundServlet extends HttpServlet {
                 if (ok) {
                     session.setAttribute("successMessage", "Đã duyệt và xác nhận hoàn tiền cho yêu cầu #REF-" + refundId + " thành công!");
                 } else {
-                    session.setAttribute("errorMessage", "Không thể duyệt hoàn tiền cho yêu cầu #REF-" + refundId);
+                    session.setAttribute("errorMessage", "Không thể duyệt hoàn tiền cho yêu cầu #REF-" + refundId + ". Nếu ca đang khám, hãy đợi bác sĩ kết thúc hoặc dừng ca trước.");
                 }
             } else if ("reject".equalsIgnoreCase(action)) {
                 int refundId = Integer.parseInt(request.getParameter("refundId"));

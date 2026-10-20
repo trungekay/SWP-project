@@ -150,14 +150,20 @@ public class DoctorWaitingListServlet extends HttpServlet {
             if ("start".equals(action)) {
                 updated = doctorQueueDAO.startExamination(appointmentId, doctor.getActorId(), LocalDateTime.now(CLINIC_ZONE));
             } else if ("cancel".equals(action)) {
-                updated = doctorQueueDAO.cancelOverdueExamination(appointmentId, doctor.getActorId(), LocalDateTime.now(CLINIC_ZONE));
+                String reason = request.getParameter("reason");
+                if (reason == null || reason.trim().isEmpty() || reason.trim().length() > 500) {
+                    session.setAttribute("doctorQueueMessage", "Vui lòng nhập lý do hủy khám (tối đa 500 ký tự).");
+                    response.sendRedirect(returnToQueue(request));
+                    return;
+                }
+                updated = doctorQueueDAO.cancelExamination(appointmentId, doctor.getActorId(), LocalDateTime.now(CLINIC_ZONE), reason);
             } else {
                 updated = doctorQueueDAO.completeExamination(appointmentId, doctor.getActorId(), clinicDate);
             }
             if (updated && "start".equals(action)) {
                 response.sendRedirect(request.getContextPath() + "/doctor/patient-detail?id=" + appointmentId);
             } else if (updated && "cancel".equals(action)) {
-                session.setAttribute("doctorQueueMessage", "Đã hủy ca khám quá giờ #APPT-" + appointmentId + ".");
+                session.setAttribute("doctorQueueMessage", "Đã dừng/hủy ca khám #APPT-" + appointmentId + ".");
                 response.sendRedirect(returnToQueue(request));
             } else if (updated) {
                 session.setAttribute("doctorQueueMessage", "Đã hoàn tất ca khám #APPT-" + appointmentId + ".");
@@ -173,7 +179,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
                         if ("late".equals(state)) message = "Đã quá giờ khám. Chỉ có thể bắt đầu trong vòng 1 giờ sau giờ hẹn.";
                     }
                 } else if ("cancel".equals(action)) {
-                    message = "Chỉ có thể hủy ca đã check-in, quá 1 giờ sau giờ hẹn, chưa hoàn tất và thuộc lịch của bạn.";
+                    message = "Chỉ bác sĩ phụ trách được dừng ca đang khám hoặc hủy ca chờ khám quá 1 giờ sau giờ hẹn.";
                 }
                 session.setAttribute("doctorQueueMessage", message);
                 response.sendRedirect(returnToQueue(request));

@@ -120,6 +120,9 @@ public class AdminCatalogServlet extends HttpServlet {
                 String code = field(request, "code", 20, false);
                 String name = field(request, "name", 255, true);
                 BigDecimal price = price(request);
+                if (price.compareTo(BigDecimal.valueOf(10000)) < 0) {
+                    throw new IllegalArgumentException("Đơn giá dịch vụ phải từ 10.000 VNĐ trở lên.");
+                }
                 String category = field(request, "category", 100, true);
                 if (ServiceCategory.fromVietnameseName(category) == null) {
                     throw new IllegalArgumentException("Nhóm dịch vụ không hợp lệ.");
