@@ -152,8 +152,13 @@ public class DoctorFormSaveServlet extends HttpServlet {
             } else {
                 formDAO.saveExamination(appointmentId, doctor.getActorId(), values,
                         referSurgery ? surgeryServiceId : null, values.get("surgeryNotes"));
-                session.setAttribute("doctorFormMessage", referSurgery
-                        ? "Đã lưu phiếu khám và gửi chỉ định phẫu thuật vào hàng đợi bác sĩ thủ thuật."
+                final Integer paymentServiceId = surgeryServiceId;
+                boolean requiresPayment = referSurgery && paymentServiceId != null && surgeryServices.stream()
+                        .anyMatch(s -> s.getId() == paymentServiceId && s.getCode() != null
+                                && s.getCode().startsWith("PT-"));
+                session.setAttribute("doctorFormMessage", requiresPayment
+                        ? "Đã lưu chỉ định phẫu thuật và gửi yêu cầu thanh toán đến staff. Specialist sẽ tiếp nhận sau khi thanh toán."
+                        : referSurgery ? "Đã lưu phiếu khám và gửi chỉ định đến bác sĩ thủ thuật."
                         : "Đã lưu kết quả khám.");
             }
             String formPath = prescription ? "/doctor/prescription" : "/doctor/examination";

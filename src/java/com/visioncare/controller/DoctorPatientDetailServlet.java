@@ -50,7 +50,8 @@ public class DoctorPatientDetailServlet extends HttpServlet {
                     || appointment.getCheckinTime().isBlank()
                     || (!"Confirmed".equals(appointment.getStatus())
                         && !"In_Progress".equals(appointment.getStatus())
-                        && !"Completed".equals(appointment.getStatus()))) {
+                        && !"Completed".equals(appointment.getStatus())
+                        && !"Canceled".equals(appointment.getStatus()))) {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
                 return;
             }
