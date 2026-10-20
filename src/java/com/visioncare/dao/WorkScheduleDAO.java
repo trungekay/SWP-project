@@ -247,7 +247,13 @@ public class WorkScheduleDAO {
                      "                      AND (ap.Status IN ('Confirmed', 'In_Progress', 'Completed') " +
                      "                           OR (ap.Status = 'Pending' AND DATEDIFF(MINUTE, ap.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) < 15))) THEN 1 " +
                      "         ELSE 0 " +
-                     "       END AS Is_Booked " +
+                     "       END AS Is_Booked, " +
+                     "       CASE " +
+                     "         WHEN ws.Work_Date < CAST(DATEADD(HOUR, 7, SYSUTCDATETIME()) AS DATE) THEN 1 " +
+                     "         WHEN ws.Work_Date = CAST(DATEADD(HOUR, 7, SYSUTCDATETIME()) AS DATE) " +
+                     "              AND CAST(ws.Start_Time AS TIME) <= CAST(DATEADD(HOUR, 7, SYSUTCDATETIME()) AS TIME) THEN 1 " +
+                     "         ELSE 0 " +
+                     "       END AS Is_Past " +
                      "FROM Work_Schedule ws " +
                      "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? " +
                      "  AND CAST(ws.Start_Time AS TIME) < '17:30:00' " + // Bỏ toàn bộ ca tối
@@ -269,7 +275,10 @@ public class WorkScheduleDAO {
                     ts.setSlotName(rs.getString("Slot"));
                     boolean isMorning = startStr != null && startStr.compareTo("12:00") < 0;
                     ts.setSession(isMorning ? "Morning" : "Afternoon");
-                    ts.setBooked(rs.getInt("Is_Booked") == 1);
+                    boolean isBooked = rs.getInt("Is_Booked") == 1;
+                    boolean isPast = rs.getInt("Is_Past") == 1;
+                    ts.setBooked(isBooked);
+                    ts.setPast(isPast);
                     list.add(ts);
                 }
             }

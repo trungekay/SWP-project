@@ -20,8 +20,8 @@ public class AppointmentDAO {
                 scheduleId = getOrCreateSchedule(conn, a);
             }
 
-            // Check if slot is already booked or taken
-            String checkSlotSql = "SELECT ws.Status, " +
+            // Check if slot is already booked, taken, or in the past
+            String checkSlotSql = "SELECT ws.Status, ws.Work_Date, ws.Start_Time, " +
                                   "       (SELECT COUNT(*) FROM Appointment ap WHERE ap.Schedule_ID = ws.Schedule_ID " +
                                   "        AND (ap.Status IN ('Confirmed', 'In_Progress', 'Completed') " +
                                   "             OR (ap.Status = 'Pending' AND DATEDIFF(MINUTE, ap.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) < 15))) AS ActiveAppts " +
@@ -32,6 +32,19 @@ public class AppointmentDAO {
                     if (rsCheck.next()) {
                         String st = rsCheck.getString("Status");
                         int count = rsCheck.getInt("ActiveAppts");
+                        java.sql.Date workDate = rsCheck.getDate("Work_Date");
+                        Time startTime = rsCheck.getTime("Start_Time");
+
+                        // Không cho phép đặt slot trong quá khứ
+                        if (workDate != null && startTime != null) {
+                            java.time.LocalDate today = java.time.LocalDate.now();
+                            java.time.LocalDate wDate = workDate.toLocalDate();
+                            if (wDate.isBefore(today) || (wDate.isEqual(today) && startTime.toLocalTime().isBefore(java.time.LocalTime.now()))) {
+                                conn.rollback();
+                                return -1; // Slot đã qua
+                            }
+                        }
+
                         if ("Booked".equalsIgnoreCase(st) || count > 0) {
                             conn.rollback();
                             return -1; // Slot already booked

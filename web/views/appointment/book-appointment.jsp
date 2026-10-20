@@ -132,12 +132,21 @@
             box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
           }
 
-          .slot-btn:disabled {
-            background: #f1f5f9;
-            border-color: #e2e8f0;
-            color: #94a3b8;
-            cursor: not-allowed;
+          .btn-check:disabled+.slot-btn,
+          .slot-btn:disabled,
+          .slot-btn.disabled {
+            background: #f1f5f9 !important;
+            border-color: #e2e8f0 !important;
+            color: #94a3b8 !important;
+            cursor: not-allowed !important;
+            pointer-events: none;
+            opacity: 0.7;
+          }
+
+          .slot-btn-past {
             text-decoration: line-through;
+            background: #f8fafc !important;
+            color: #a1a1aa !important;
           }
 
           .service-card {
@@ -1696,16 +1705,24 @@
                     const slotItem = document.createElement('div');
                     slotItem.className = 'position-relative';
 
+                    const isUnavailable = Boolean(s.isBooked || s.isPast);
+                    let badgeHtml = '';
+                    if (s.isPast) {
+                      badgeHtml = '<span class="badge bg-secondary ms-1 small" style="font-size:10px;">Đã qua</span>';
+                    } else if (s.isBooked) {
+                      badgeHtml = '<span class="badge bg-secondary ms-1 small" style="font-size:10px;">Đã kín</span>';
+                    }
+
                     let inputHtml = '<input type="radio" class="btn-check" name="timeSlot" id="slot_' + s.id + '" '
                       + 'value="' + s.startTime + '" data-schedule-id="' + s.id + '" '
                       + 'data-time-range="' + s.startTime + ' — ' + s.endTime + '" '
-                      + (s.isBooked ? 'disabled ' : ' ')
-                      + (isChecked ? 'checked ' : ' ')
+                      + (isUnavailable ? 'disabled ' : ' ')
+                      + (isChecked && !isUnavailable ? 'checked ' : ' ')
                       + 'onchange="onSlotSelected(this)" required>';
 
-                    let labelHtml = '<label class="slot-btn" for="slot_' + s.id + '">'
+                    let labelHtml = '<label class="slot-btn' + (s.isPast ? ' slot-btn-past' : '') + '" for="slot_' + s.id + '">'
                       + s.startTime + ' — ' + s.endTime
-                      + (s.isBooked ? '<span class="badge bg-secondary ms-1 small" style="font-size:10px;">Đã kín</span>' : '')
+                      + badgeHtml
                       + '</label>';
 
                     slotItem.innerHTML = inputHtml + labelHtml;
@@ -1835,6 +1852,14 @@
 
             // Tự động khởi tạo khi tải trang
             document.addEventListener('DOMContentLoaded', function () {
+              const apptDateInput = document.getElementById('appointmentDate');
+              if (apptDateInput) {
+                const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+                apptDateInput.min = todayStr;
+                if (!apptDateInput.value) {
+                  apptDateInput.value = todayStr;
+                }
+              }
               updateFeeDisplay();
               const docSelect = document.getElementById('doctorSelect');
               const checkedSvc = document.querySelector('input[name="serviceId"]:checked');

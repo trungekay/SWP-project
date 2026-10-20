@@ -96,7 +96,7 @@ public class SpecialistPatientDetailServlet extends HttpServlet {
 
         } catch (Exception e) {
             e.printStackTrace();
-            session.setAttribute("errorMessage", "Đã xảy ra lỗi khi tải hồ sơ bệnh nhân: " + e.getMessage());
+            request.getSession().setAttribute("errorMessage", "Đã xảy ra lỗi khi tải hồ sơ bệnh nhân: " + e.getMessage());
             response.sendRedirect(request.getContextPath() + "/specialist/waiting-list");
         }
     }

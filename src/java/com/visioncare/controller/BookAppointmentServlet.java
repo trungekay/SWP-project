@@ -183,7 +183,8 @@ public class BookAppointmentServlet extends HttpServlet {
                     json.append("\"startTime\":\"").append(escapeJson(s.getStartTime())).append("\",");
                     json.append("\"endTime\":\"").append(escapeJson(s.getEndTime())).append("\",");
                     json.append("\"session\":\"").append(escapeJson(s.getSession())).append("\",");
-                    json.append("\"isBooked\":").append(s.isBooked());
+                    json.append("\"isBooked\":").append(s.isBooked()).append(",");
+                    json.append("\"isPast\":").append(s.isPast());
                     json.append("}");
                 }
                 json.append("]}");
@@ -485,6 +486,29 @@ public class BookAppointmentServlet extends HttpServlet {
                 request.setAttribute("error", "Vui lòng chọn khung giờ khám phù hợp.");
                 repopulateAndForward(request, response, appointment);
                 return;
+            }
+
+            // KIỂM TRA THỜI GIAN THỰC: KHÔNG CHO ĐẶT LỊCH TRONG QUÁ KHỨ (Real-time check)
+            java.time.LocalDate today = java.time.LocalDate.now();
+            if (appointment.getAppointmentDate() != null) {
+                java.time.LocalDate apptDate = appointment.getAppointmentDate().toLocalDate();
+                if (apptDate.isBefore(today)) {
+                    request.setAttribute("error", "Ngày khám này đã qua. Vui lòng chọn ngày khám trong tương lai.");
+                    repopulateAndForward(request, response, appointment);
+                    return;
+                } else if (apptDate.isEqual(today) && appointment.getTimeSlot() != null) {
+                    java.time.LocalTime now = java.time.LocalTime.now();
+                    try {
+                        String slotStr = appointment.getTimeSlot().trim();
+                        if (slotStr.length() > 5) slotStr = slotStr.substring(0, 5);
+                        java.time.LocalTime slotTime = java.time.LocalTime.parse(slotStr);
+                        if (slotTime.isBefore(now)) {
+                            request.setAttribute("error", "Khung giờ " + appointment.getTimeSlot() + " hôm nay đã trôi qua. Vui lòng chọn khung giờ khác.");
+                            repopulateAndForward(request, response, appointment);
+                            return;
+                        }
+                    } catch (Exception ignored) {}
+                }
             }
 
             // KIỂM TRA TÍNH KHẢ DỤNG CỦA KHUNG GIỜ (Check slot availability)

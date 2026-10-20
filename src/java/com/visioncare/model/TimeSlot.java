@@ -82,11 +82,21 @@ public class TimeSlot {
         this.session = session;
     }
 
+    private boolean past;
+
     public boolean isBooked() {
         return booked;
     }
 
     public void setBooked(boolean booked) {
         this.booked = booked;
+    }
+
+    public boolean isPast() {
+        return past;
+    }
+
+    public void setPast(boolean past) {
+        this.past = past;
     }
 }
