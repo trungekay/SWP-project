@@ -24,7 +24,7 @@ public class AppointmentDAO {
             String checkSlotSql = "SELECT ws.Status, " +
                                   "       (SELECT COUNT(*) FROM Appointment ap WHERE ap.Schedule_ID = ws.Schedule_ID " +
                                   "        AND (ap.Status IN ('Confirmed', 'In_Progress', 'Completed') " +
-                                  "             OR (ap.Status = 'Pending' AND DATEDIFF(MINUTE, ap.created_at, SYSUTCDATETIME()) < 15))) AS ActiveAppts " +
+                                  "             OR (ap.Status = 'Pending' AND DATEDIFF(MINUTE, ap.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) < 15))) AS ActiveAppts " +
                                   "FROM Work_Schedule ws WHERE ws.Schedule_ID = ?";
             try (PreparedStatement psCheck = conn.prepareStatement(checkSlotSql)) {
                 psCheck.setInt(1, scheduleId);
@@ -41,7 +41,7 @@ public class AppointmentDAO {
             }
 
             // Insert Appointment as Pending
-            String sqlAppt = "INSERT INTO Appointment (Patient_ID, Schedule_ID, Status, created_at) VALUES (?, ?, 'Pending', SYSUTCDATETIME())";
+            String sqlAppt = "INSERT INTO Appointment (Patient_ID, Schedule_ID, Status, created_at) VALUES (?, ?, 'Pending', DATEADD(HOUR, 7, SYSUTCDATETIME()))";
             int appointmentId = -1;
             try (PreparedStatement psAppt = conn.prepareStatement(sqlAppt, Statement.RETURN_GENERATED_KEYS)) {
                 psAppt.setInt(1, patientId);
@@ -61,7 +61,7 @@ public class AppointmentDAO {
                 long balanceDue = totalServiceAmount > depositFee ? (totalServiceAmount - depositFee) : 0;
 
                 String sqlInvoice = "INSERT INTO Master_Invoice (Appointment_ID, Total_Amount, Deposit_Amount, Balance_Due, Status, Create_At) " +
-                                    "VALUES (?, ?, ?, ?, 'Pending_Deposit', SYSUTCDATETIME())";
+                                    "VALUES (?, ?, ?, ?, 'Pending_Deposit', DATEADD(HOUR, 7, SYSUTCDATETIME()))";
                 try (PreparedStatement psInv = conn.prepareStatement(sqlInvoice)) {
                     psInv.setInt(1, appointmentId);
                     psInv.setLong(2, totalServiceAmount);
@@ -79,7 +79,7 @@ public class AppointmentDAO {
                     diag += (diag.isEmpty() ? "" : " | ") + "Lý do khám: " + a.getReason().trim();
                 }
                 if (!diag.isEmpty()) {
-                    String sqlRecord = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, Created_At) VALUES (?, ?, ?, SYSUTCDATETIME())";
+                    String sqlRecord = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, Created_At) VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
                     try (PreparedStatement psRec = conn.prepareStatement(sqlRecord)) {
                         psRec.setInt(1, appointmentId);
                         psRec.setInt(2, a.getDoctorId());
@@ -136,7 +136,7 @@ public class AppointmentDAO {
             if (invoiceId <= 0) {
                 // If invoice didn't exist yet, create it
                 String sqlInsInv = "INSERT INTO Master_Invoice (Appointment_ID, Total_Amount, Deposit_Amount, Balance_Due, Status, Create_At, Close_At) " +
-                                   "VALUES (?, 200000, 200000, 0, 'Paid', SYSUTCDATETIME(), SYSUTCDATETIME())";
+                                   "VALUES (?, 200000, 200000, 0, 'Paid', DATEADD(HOUR, 7, SYSUTCDATETIME()), DATEADD(HOUR, 7, SYSUTCDATETIME()))";
                 try (PreparedStatement psIns = conn.prepareStatement(sqlInsInv, Statement.RETURN_GENERATED_KEYS)) {
                     psIns.setInt(1, appointmentId);
                     psIns.executeUpdate();
@@ -147,7 +147,7 @@ public class AppointmentDAO {
             } else {
                 // Update Invoice: Nếu còn dư nợ thì Partial_Paid, nếu đã xong thì Paid
                 String invStatus = balanceDue <= 0 ? "Paid" : "Partial_Paid";
-                String sqlUpdInv = "UPDATE Master_Invoice SET Deposit_Amount = ?, Balance_Due = ?, Status = ?, Close_At = SYSUTCDATETIME() WHERE Invoice_ID = ?";
+                String sqlUpdInv = "UPDATE Master_Invoice SET Deposit_Amount = ?, Balance_Due = ?, Status = ?, Close_At = DATEADD(HOUR, 7, SYSUTCDATETIME()) WHERE Invoice_ID = ?";
                 try (PreparedStatement psUpd = conn.prepareStatement(sqlUpdInv)) {
                     psUpd.setLong(1, depositAmount);
                     psUpd.setLong(2, balanceDue);
@@ -159,7 +159,7 @@ public class AppointmentDAO {
 
             // 2. Insert Payment_Transaction
             String sqlTrans = "INSERT INTO Payment_Transaction (Invoice_ID, Amount, Gateway_Status, Trans_Date, Payment_Gateway) " +
-                              "VALUES (?, ?, 'Success', SYSUTCDATETIME(), 'VietQR_Banking')";
+                              "VALUES (?, ?, 'Success', DATEADD(HOUR, 7, SYSUTCDATETIME()), 'VietQR_Banking')";
             try (PreparedStatement psTrans = conn.prepareStatement(sqlTrans)) {
                 psTrans.setInt(1, invoiceId);
                 psTrans.setLong(2, depositAmount);
@@ -450,10 +450,10 @@ public class AppointmentDAO {
             String sqlAppt;
             if (isPendingPayment) {
                 sqlAppt = "INSERT INTO Appointment (Patient_ID, Schedule_ID, Staff_Employee_ID, Status, created_at) " +
-                          "VALUES (?, ?, ?, 'Pending', SYSUTCDATETIME())";
+                          "VALUES (?, ?, ?, 'Pending', DATEADD(HOUR, 7, SYSUTCDATETIME()))";
             } else {
                 sqlAppt = "INSERT INTO Appointment (Patient_ID, Schedule_ID, Staff_Employee_ID, Status, checkin_time, created_at) " +
-                          "VALUES (?, ?, ?, 'Confirmed', SYSUTCDATETIME(), SYSUTCDATETIME())";
+                          "VALUES (?, ?, ?, 'Confirmed', DATEADD(HOUR, 7, SYSUTCDATETIME()), DATEADD(HOUR, 7, SYSUTCDATETIME()))";
             }
             int appointmentId = -1;
             try (PreparedStatement psAppt = conn.prepareStatement(sqlAppt, Statement.RETURN_GENERATED_KEYS)) {
@@ -483,7 +483,7 @@ public class AppointmentDAO {
             long totalFee = a.getTotalAmount() > 0 ? a.getTotalAmount() : (a.getFee() > 0 ? a.getFee() : 200000);
             if (isPendingPayment) {
                 String sqlInv = "INSERT INTO Master_Invoice (Appointment_ID, Total_Amount, Deposit_Amount, Balance_Due, Status, Create_At) " +
-                                "VALUES (?, ?, ?, 0, 'Pending_Deposit', SYSUTCDATETIME())";
+                                "VALUES (?, ?, ?, 0, 'Pending_Deposit', DATEADD(HOUR, 7, SYSUTCDATETIME()))";
                 try (PreparedStatement psInv = conn.prepareStatement(sqlInv)) {
                     psInv.setInt(1, appointmentId);
                     psInv.setLong(2, totalFee);
@@ -492,7 +492,7 @@ public class AppointmentDAO {
                 }
             } else {
                 String sqlInv = "INSERT INTO Master_Invoice (Appointment_ID, Total_Amount, Deposit_Amount, Balance_Due, Status, Create_At, Close_At) " +
-                                "VALUES (?, ?, ?, 0, 'Paid', SYSUTCDATETIME(), SYSUTCDATETIME())";
+                                "VALUES (?, ?, ?, 0, 'Paid', DATEADD(HOUR, 7, SYSUTCDATETIME()), DATEADD(HOUR, 7, SYSUTCDATETIME()))";
                 int invoiceId = -1;
                 try (PreparedStatement psInv = conn.prepareStatement(sqlInv, Statement.RETURN_GENERATED_KEYS)) {
                     psInv.setInt(1, appointmentId);
@@ -510,7 +510,7 @@ public class AppointmentDAO {
                 if (invoiceId > 0) {
                     String gateway = (a.getPayment() != null && !a.getPayment().trim().isEmpty()) ? a.getPayment().trim() : "Cash_At_Counter";
                     String sqlTrans = "INSERT INTO Payment_Transaction (Invoice_ID, Amount, Gateway_Status, Trans_Date, Payment_Gateway) " +
-                                      "VALUES (?, ?, 'Success', SYSUTCDATETIME(), ?)";
+                                      "VALUES (?, ?, 'Success', DATEADD(HOUR, 7, SYSUTCDATETIME()), ?)";
                     try (PreparedStatement psTrans = conn.prepareStatement(sqlTrans)) {
                         psTrans.setInt(1, invoiceId);
                         psTrans.setLong(2, totalFee);
@@ -534,7 +534,7 @@ public class AppointmentDAO {
                 diag = "Khách vãng lai: Khám mắt tổng quát";
             }
             String sqlMR = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, Created_At) " +
-                           "VALUES (?, ?, ?, SYSUTCDATETIME())";
+                           "VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
             try (PreparedStatement psMR = conn.prepareStatement(sqlMR)) {
                 psMR.setInt(1, appointmentId);
                 psMR.setInt(2, a.getDoctorId());
@@ -578,7 +578,7 @@ public class AppointmentDAO {
             // Nếu chưa có Master_Invoice thì tạo mới với trạng thái Paid
             if (invoiceId <= 0) {
                 String sqlInsInv = "INSERT INTO Master_Invoice (Appointment_ID, Total_Amount, Deposit_Amount, Balance_Due, Status, Create_At, Close_At) " +
-                                   "VALUES (?, ?, ?, 0, 'Paid', SYSUTCDATETIME(), SYSUTCDATETIME())";
+                                   "VALUES (?, ?, ?, 0, 'Paid', DATEADD(HOUR, 7, SYSUTCDATETIME()), DATEADD(HOUR, 7, SYSUTCDATETIME()))";
                 try (PreparedStatement psIns = conn.prepareStatement(sqlInsInv, Statement.RETURN_GENERATED_KEYS)) {
                     psIns.setInt(1, appointmentId);
                     psIns.setLong(2, totalAmount);
@@ -589,7 +589,7 @@ public class AppointmentDAO {
                     }
                 }
             } else {
-                String sqlUpdInv = "UPDATE Master_Invoice SET Deposit_Amount = Total_Amount, Balance_Due = 0, Status = 'Paid', Close_At = SYSUTCDATETIME() WHERE Invoice_ID = ?";
+                String sqlUpdInv = "UPDATE Master_Invoice SET Deposit_Amount = Total_Amount, Balance_Due = 0, Status = 'Paid', Close_At = DATEADD(HOUR, 7, SYSUTCDATETIME()) WHERE Invoice_ID = ?";
                 try (PreparedStatement psUpd = conn.prepareStatement(sqlUpdInv)) {
                     psUpd.setInt(1, invoiceId);
                     psUpd.executeUpdate();
@@ -598,7 +598,7 @@ public class AppointmentDAO {
 
             // 2. Ghi nhận giao dịch thanh toán VietQR vào Payment_Transaction
             String sqlTrans = "INSERT INTO Payment_Transaction (Invoice_ID, Amount, Gateway_Status, Trans_Date, Payment_Gateway) " +
-                              "VALUES (?, ?, 'Success', SYSUTCDATETIME(), 'VietQR_Banking')";
+                              "VALUES (?, ?, 'Success', DATEADD(HOUR, 7, SYSUTCDATETIME()), 'VietQR_Banking')";
             try (PreparedStatement psTrans = conn.prepareStatement(sqlTrans)) {
                 psTrans.setInt(1, invoiceId);
                 psTrans.setLong(2, totalAmount);
@@ -606,7 +606,7 @@ public class AppointmentDAO {
             }
 
             // 3. Cập nhật Appointment Confirmed và checkin_time
-            String sqlAppt = "UPDATE Appointment SET Status = 'Confirmed', checkin_time = COALESCE(checkin_time, SYSUTCDATETIME()), " +
+            String sqlAppt = "UPDATE Appointment SET Status = 'Confirmed', checkin_time = COALESCE(checkin_time, DATEADD(HOUR, 7, SYSUTCDATETIME())), " +
                              "Staff_Employee_ID = CASE WHEN ? > 0 THEN ? ELSE Staff_Employee_ID END WHERE Appointment_ID = ?";
             try (PreparedStatement psAppt = conn.prepareStatement(sqlAppt)) {
                 psAppt.setInt(1, staffEmployeeId);
@@ -737,7 +737,7 @@ public class AppointmentDAO {
         autoCancelExpiredPendingAppointments();
         List<Appointment> list = new ArrayList<>();
         String sql = "SELECT a.Appointment_ID, a.Status, a.created_at, " +
-                     "       DATEDIFF(SECOND, a.created_at, SYSUTCDATETIME()) AS Elapsed_Sec, " +
+                     "       DATEDIFF(SECOND, a.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) AS Elapsed_Sec, " +
                      "       p.Full_Name, p.Phone, p.DOB, ws.Start_Time, ws.Doctor_Employee_ID, p.Account_ID, ws.Work_Date, e.Full_Name AS Doctor_Name, " +
                      "       i.Invoice_ID, i.Deposit_Amount, i.Total_Amount, i.Balance_Due, i.Status AS Invoice_Status, " +
                      "       mr.Clinical_Diagnosis, mr.conclusion, " +
@@ -809,7 +809,7 @@ public class AppointmentDAO {
                      "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
                      "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? AND CAST(ws.Start_Time AS VARCHAR(5)) = ? " +
                      "  AND (a.Status IN ('Confirmed', 'In_Progress', 'Completed') " +
-                     "       OR (a.Status = 'Pending' AND DATEDIFF(MINUTE, a.created_at, SYSUTCDATETIME()) < 15))";
+                     "       OR (a.Status = 'Pending' AND DATEDIFF(MINUTE, a.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) < 15))";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, doctorId);
@@ -996,7 +996,7 @@ public class AppointmentDAO {
                 }
             }
 
-            String sql = "UPDATE Appointment SET Status = 'Confirmed', checkin_time = SYSUTCDATETIME(), Staff_Employee_ID = ? WHERE Appointment_ID = ?";
+            String sql = "UPDATE Appointment SET Status = 'Confirmed', checkin_time = DATEADD(HOUR, 7, SYSUTCDATETIME()), Staff_Employee_ID = ? WHERE Appointment_ID = ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 if (validStaffId != null && validStaffId > 0) {
                     ps.setInt(1, validStaffId);
@@ -1089,7 +1089,7 @@ public class AppointmentDAO {
                     }
                 }
                 if (docId > 0) {
-                    String sqlInsMR = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, conclusion, Created_At) VALUES (?, ?, ?, SYSUTCDATETIME())";
+                    String sqlInsMR = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, conclusion, Created_At) VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
                     try (PreparedStatement psInsMR = conn.prepareStatement(sqlInsMR)) {
                         psInsMR.setInt(1, appointmentId);
                         psInsMR.setInt(2, docId);
@@ -1142,7 +1142,7 @@ public class AppointmentDAO {
                     return psUp.executeUpdate() > 0;
                 }
             } else {
-                String insertSql = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, Created_At) VALUES (?, ?, ?, SYSUTCDATETIME())";
+                String insertSql = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, Created_At) VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
                 try (PreparedStatement psIns = conn.prepareStatement(insertSql)) {
                     psIns.setInt(1, appointmentId);
                     psIns.setInt(2, doctorId);
@@ -1393,7 +1393,7 @@ public class AppointmentDAO {
                     // HOÁN ĐỔI KHUNG GIỜ GIỮA 2 BỆNH NHÂN:
                     // Bệnh nhân sau (VD: Nguyễn Văn An) nhận slot trước (Slot 2 của Bình)
                     // Bệnh nhân bị bỏ qua (VD: Trần Thị Bình) nhận slot sau (Slot 3 của An)
-                    String updateCur = "UPDATE Appointment SET Schedule_ID = ?, checkin_time = SYSUTCDATETIME() WHERE Appointment_ID = ?";
+                    String updateCur = "UPDATE Appointment SET Schedule_ID = ?, checkin_time = DATEADD(HOUR, 7, SYSUTCDATETIME()) WHERE Appointment_ID = ?";
                     try (PreparedStatement ps = conn.prepareStatement(updateCur)) {
                         ps.setInt(1, nextScheduleId);
                         ps.setInt(2, curApptId);
@@ -1437,7 +1437,7 @@ public class AppointmentDAO {
 
                 if (emptySlotScheduleId > 0) {
                     // Chuyển bệnh nhân sang khung giờ trống kế tiếp
-                    String updateAppt = "UPDATE Appointment SET Schedule_ID = ?, checkin_time = SYSUTCDATETIME() WHERE Appointment_ID = ?";
+                    String updateAppt = "UPDATE Appointment SET Schedule_ID = ?, checkin_time = DATEADD(HOUR, 7, SYSUTCDATETIME()) WHERE Appointment_ID = ?";
                     try (PreparedStatement ps = conn.prepareStatement(updateAppt)) {
                         ps.setInt(1, emptySlotScheduleId);
                         ps.setInt(2, curApptId);
@@ -1529,7 +1529,7 @@ public class AppointmentDAO {
                     psFree.executeUpdate();
                 }
                 // If invoice was pending deposit, mark it as Canceled as well
-                String sqlCancelInv = "UPDATE Master_Invoice SET Status = 'Canceled', Close_At = SYSUTCDATETIME() WHERE Appointment_ID = ? AND Status IN ('Pending_Deposit', 'Unpaid')";
+                String sqlCancelInv = "UPDATE Master_Invoice SET Status = 'Canceled', Close_At = DATEADD(HOUR, 7, SYSUTCDATETIME()) WHERE Appointment_ID = ? AND Status IN ('Pending_Deposit', 'Unpaid')";
                 try (PreparedStatement psInv = conn.prepareStatement(sqlCancelInv)) {
                     psInv.setInt(1, appointmentId);
                     psInv.executeUpdate();
@@ -1562,7 +1562,7 @@ public class AppointmentDAO {
                         }
                     }
                     if (docId > 0) {
-                        String insMr = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, conclusion, Created_At) VALUES (?, ?, ?, SYSUTCDATETIME())";
+                        String insMr = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, conclusion, Created_At) VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
                         try (PreparedStatement psIns = conn.prepareStatement(insMr)) {
                             psIns.setInt(1, appointmentId);
                             psIns.setInt(2, docId);
@@ -1587,7 +1587,7 @@ public class AppointmentDAO {
                              "LEFT JOIN Master_Invoice mi ON a.Appointment_ID = mi.Appointment_ID " +
                              "WHERE a.Status = 'Pending' " +
                              "  AND (mi.Status IS NULL OR mi.Status IN ('Pending_Deposit', 'Unpaid')) " +
-                             "  AND DATEDIFF(SECOND, a.created_at, SYSUTCDATETIME()) >= 900";
+                             "  AND DATEDIFF(SECOND, a.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) >= 900";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement psFind = conn.prepareStatement(findExpired);
              ResultSet rs = psFind.executeQuery()) {
