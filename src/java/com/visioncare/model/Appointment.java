@@ -188,6 +188,20 @@ public class Appointment {
         this.invoiceStatus = invoiceStatus;
     }
 
+    public boolean isDepositPaid() {
+        return "Paid".equalsIgnoreCase(invoiceStatus)
+                || "Partial_Paid".equalsIgnoreCase(invoiceStatus);
+    }
+
+    public boolean isAwaitingPayment() {
+        return "Pending".equalsIgnoreCase(status) && !isDepositPaid();
+    }
+
+    public boolean isReadyForCheckIn() {
+        return "Confirmed".equalsIgnoreCase(status)
+                && checkinTime == null && isDepositPaid();
+    }
+
     public int getInvoiceId() {
         return invoiceId;
     }

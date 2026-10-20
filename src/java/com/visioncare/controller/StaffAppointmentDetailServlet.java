@@ -95,7 +95,7 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
                     return;
                 } else {
-                    session.setAttribute("errorMessage", "Check-in không thành công.");
+                    session.setAttribute("errorMessage", "Check-in không thành công. Lịch phải được xác nhận thanh toán và chưa check-in.");
                 }
             } else if ("startExam".equalsIgnoreCase(action) || "inProgress".equalsIgnoreCase(action)) {
                 session.setAttribute("errorMessage", "Không thể gọi vào khám từ màn hình Lễ tân! Thao tác này phải do Bác sĩ phụ trách gọi từ trong phòng khám.");

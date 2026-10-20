@@ -971,7 +971,8 @@ public class AppointmentDAO {
             "stf.Full_Name AS Staff_Name, " +
             "mr.Clinical_Diagnosis AS Medical_Notes, " +
             "mr.conclusion AS Cancel_Reason, " +
-            "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Status AS Invoice_Status " +
+            "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, " +
+            "mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status " +
             "FROM Appointment a " +
             "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
             "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
@@ -990,7 +991,7 @@ public class AppointmentDAO {
         }
         if (status != null && !status.trim().isEmpty() && !"all".equalsIgnoreCase(status)) {
             if ("Pending".equalsIgnoreCase(status) || "not_checked_in".equalsIgnoreCase(status)) {
-                sql.append(" AND a.checkin_time IS NULL AND a.Status NOT IN ('Canceled', 'Completed')");
+                sql.append(" AND a.checkin_time IS NULL AND a.Status = 'Confirmed' AND mi.Status IN ('Paid', 'Partial_Paid')");
             } else if ("CheckedIn".equalsIgnoreCase(status)) {
                 sql.append(" AND a.checkin_time IS NOT NULL AND a.Status NOT IN ('Canceled')");
             } else {
@@ -1105,7 +1106,9 @@ public class AppointmentDAO {
             }
 
             String sql = "UPDATE Appointment SET Status = 'Confirmed', checkin_time = DATEADD(HOUR, 7, SYSUTCDATETIME()), Staff_Employee_ID = ? "
-                    + "WHERE Appointment_ID = ? AND Status IN ('Pending', 'Confirmed') AND checkin_time IS NULL";
+                    + "WHERE Appointment_ID = ? AND Status = 'Confirmed' AND checkin_time IS NULL "
+                    + "AND EXISTS (SELECT 1 FROM Master_Invoice mi WHERE mi.Appointment_ID = Appointment.Appointment_ID "
+                    + "AND mi.Status IN ('Paid', 'Partial_Paid'))";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 if (validStaffId != null && validStaffId > 0) {
                     ps.setInt(1, validStaffId);

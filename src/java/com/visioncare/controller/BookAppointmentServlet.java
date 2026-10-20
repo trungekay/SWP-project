@@ -46,7 +46,7 @@ public class BookAppointmentServlet extends HttpServlet {
                 try {
                     int apptId = Integer.parseInt(apptIdStr);
                     Appointment appt = appointmentDAO.getAppointmentDetailById(apptId);
-                    boolean isPaid = (appt != null && ("Confirmed".equalsIgnoreCase(appt.getStatus()) || "Paid".equalsIgnoreCase(appt.getInvoiceStatus())));
+                    boolean isPaid = appt != null && appt.isDepositPaid();
 
                     // Nếu DB chưa ghi nhận Paid, kiểm tra trực tiếp sang cổng PayOS
                     if (!isPaid) {

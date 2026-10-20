@@ -44,7 +44,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                 try {
                     int apptId = Integer.parseInt(apptIdStr.trim());
                     Appointment appt = appointmentDAO.getAppointmentDetailById(apptId);
-                    isPaid = (appt != null && ("Confirmed".equalsIgnoreCase(appt.getStatus()) || "Paid".equalsIgnoreCase(appt.getInvoiceStatus())));
+                    isPaid = appt != null && appt.isDepositPaid();
                     if (!isPaid) {
                         // Dùng orderCode thực từ khi tạo PayOS link, KHÔNG dùng apptId
                         long orderCode = 0;
@@ -169,7 +169,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
             // Lấy toàn bộ lịch hẹn trong ngày để tính chỉ số KPI tiếp đón
             List<Appointment> allDayAppointments = appointmentDAO.getStaffAppointments(queryDate, "all", doctorId, null);
             int totalCount = allDayAppointments.size();
-            long pendingCount = allDayAppointments.stream().filter(a -> a.getCheckinTime() == null && !"Canceled".equalsIgnoreCase(a.getStatus())).count();
+            long pendingCount = allDayAppointments.stream().filter(Appointment::isReadyForCheckIn).count();
             long checkedInCount = allDayAppointments.stream().filter(a -> a.getCheckinTime() != null && !"Canceled".equalsIgnoreCase(a.getStatus())).count();
             long completedCount = allDayAppointments.stream().filter(a -> "Completed".equalsIgnoreCase(a.getStatus())).count();
             long canceledCount = allDayAppointments.stream().filter(a -> "Canceled".equalsIgnoreCase(a.getStatus())).count();
@@ -264,7 +264,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                         response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
                         return;
                     } else {
-                        session.setAttribute("errorMessage", "Không thể check-in lịch hẹn #" + apptId);
+                        session.setAttribute("errorMessage", "Không thể check-in lịch hẹn #" + apptId + ". Lịch phải được xác nhận thanh toán và chưa check-in.");
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
