@@ -49,7 +49,8 @@ public class DoctorWaitingListServlet extends HttpServlet {
         }
 
         String status = request.getParameter("status");
-        if (!"Confirmed".equals(status) && !"In_Progress".equals(status) && !"Completed".equals(status)) {
+        if (!"Confirmed".equals(status) && !"In_Progress".equals(status)
+                && !"Completed".equals(status) && !"Canceled".equals(status)) {
             status = "all_day";
         }
         final String selectedStatus = status;
@@ -61,7 +62,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
             Date sqlDate = Date.valueOf(day);
             int doctorId = doctor.getActorId();
             // One result set keeps tab counts and visible rows in sync with the search.
-            List<Appointment> matchingDay = appointmentDAO.getWaitingList(sqlDate, "all_day", doctorId, null, keyword);
+            List<Appointment> matchingDay = appointmentDAO.getWaitingList(sqlDate, "doctor_day", doctorId, null, keyword);
             List<Appointment> appointments = "all_day".equals(selectedStatus) ? matchingDay
                     : matchingDay.stream().filter(a -> selectedStatus.equals(a.getStatus())).collect(Collectors.toList());
 
@@ -71,7 +72,8 @@ public class DoctorWaitingListServlet extends HttpServlet {
             for (Appointment appointment : matchingDay) {
                 String windowState = ExaminationWindow.state(appointment, clinicNow);
                 startWindowStates.put(appointment.getId(), windowState);
-                if ("late".equals(windowState) && !"Completed".equals(appointment.getStatus())) {
+                if ("late".equals(windowState) && ("Confirmed".equals(appointment.getStatus())
+                        || "In_Progress".equals(appointment.getStatus()))) {
                     overdueCount++;
                 }
             }
@@ -79,6 +81,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
             long waitingCount = matchingDay.stream().filter(a -> "Confirmed".equals(a.getStatus())).count();
             long examiningCount = matchingDay.stream().filter(a -> "In_Progress".equals(a.getStatus())).count();
             long completedCount = matchingDay.stream().filter(a -> "Completed".equals(a.getStatus())).count();
+            long canceledCount = matchingDay.stream().filter(a -> "Canceled".equals(a.getStatus())).count();
             boolean doctorBusy = examiningCount > 0;
             if (!doctorBusy && !keyword.isEmpty()) {
                 doctorBusy = !appointmentDAO.getWaitingList(sqlDate, "In_Progress", doctorId, null, null).isEmpty();
@@ -96,6 +99,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
             request.setAttribute("waitingCount", waitingCount);
             request.setAttribute("examiningCount", examiningCount);
             request.setAttribute("completedCount", completedCount);
+            request.setAttribute("canceledCount", canceledCount);
             request.setAttribute("totalCount", matchingDay.size());
             request.setAttribute("doctorBusy", doctorBusy);
             request.setAttribute("selectedDate", day.toString());
@@ -126,7 +130,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
             return;
         }
         String action = request.getParameter("action");
-        if (!"start".equals(action) && !"complete".equals(action)) {
+        if (!"start".equals(action) && !"complete".equals(action) && !"cancel".equals(action)) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
@@ -142,11 +146,19 @@ public class DoctorWaitingListServlet extends HttpServlet {
 
         try {
             Date clinicDate = Date.valueOf(LocalDate.now(CLINIC_ZONE));
-            boolean updated = "start".equals(action)
-                    ? doctorQueueDAO.startExamination(appointmentId, doctor.getActorId(), LocalDateTime.now(CLINIC_ZONE))
-                    : doctorQueueDAO.completeExamination(appointmentId, doctor.getActorId(), clinicDate);
+            boolean updated;
+            if ("start".equals(action)) {
+                updated = doctorQueueDAO.startExamination(appointmentId, doctor.getActorId(), LocalDateTime.now(CLINIC_ZONE));
+            } else if ("cancel".equals(action)) {
+                updated = doctorQueueDAO.cancelOverdueExamination(appointmentId, doctor.getActorId(), LocalDateTime.now(CLINIC_ZONE));
+            } else {
+                updated = doctorQueueDAO.completeExamination(appointmentId, doctor.getActorId(), clinicDate);
+            }
             if (updated && "start".equals(action)) {
                 response.sendRedirect(request.getContextPath() + "/doctor/patient-detail?id=" + appointmentId);
+            } else if (updated && "cancel".equals(action)) {
+                session.setAttribute("doctorQueueMessage", "Đã hủy ca khám quá giờ #APPT-" + appointmentId + ".");
+                response.sendRedirect(returnToQueue(request));
             } else if (updated) {
                 session.setAttribute("doctorQueueMessage", "Đã hoàn tất ca khám #APPT-" + appointmentId + ".");
                 response.sendRedirect(request.getContextPath() + "/doctor/waiting-list?date="
@@ -160,12 +172,14 @@ public class DoctorWaitingListServlet extends HttpServlet {
                         if ("early".equals(state)) message = "Chưa đến giờ khám. Chỉ có thể bắt đầu trong vòng 1 giờ trước giờ hẹn.";
                         if ("late".equals(state)) message = "Đã quá giờ khám. Chỉ có thể bắt đầu trong vòng 1 giờ sau giờ hẹn.";
                     }
+                } else if ("cancel".equals(action)) {
+                    message = "Chỉ có thể hủy ca đã check-in, quá 1 giờ sau giờ hẹn, chưa hoàn tất và thuộc lịch của bạn.";
                 }
                 session.setAttribute("doctorQueueMessage", message);
                 response.sendRedirect(returnToQueue(request));
             }
         } catch (Exception error) {
-            log("Cannot start doctor examination", error);
+            log("Cannot update doctor examination", error);
             session.setAttribute("doctorQueueMessage", "Chưa thể cập nhật ca khám. Vui lòng thử lại.");
             response.sendRedirect(returnToQueue(request));
         }
@@ -180,7 +194,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
         }
         String status = request.getParameter("status");
         if (!"Confirmed".equals(status) && !"In_Progress".equals(status)
-                && !"Completed".equals(status)) status = "all_day";
+                && !"Completed".equals(status) && !"Canceled".equals(status)) status = "all_day";
         String keyword = request.getParameter("keyword");
         if (keyword == null) keyword = "";
         if (keyword.length() > 100) keyword = keyword.substring(0, 100);

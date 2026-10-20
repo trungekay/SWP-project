@@ -418,6 +418,26 @@ ALTER TABLE [dbo].[Procedure_Order]  WITH CHECK ADD  CONSTRAINT [CHK_Procedure_O
 ALTER TABLE [dbo].[Procedure_Order] CHECK CONSTRAINT [CHK_Procedure_Order_Actual_Price]
 GO
 
+-- Payment approval for doctor-referred surgery (separate from the appointment invoice).
+CREATE TABLE [dbo].[Procedure_Payment_Request](
+    [Order_ID] [int] NOT NULL PRIMARY KEY,
+    [Amount] [decimal](18, 0) NOT NULL,
+    [Credit_Amount] [decimal](18, 0) NOT NULL DEFAULT 0,
+    [Status] [nvarchar](20) NOT NULL DEFAULT N'Pending',
+    [Created_At] [datetime2](7) NOT NULL DEFAULT SYSUTCDATETIME(),
+    [Confirmed_At] [datetime2](7) NULL,
+    [Confirmed_By_Employee_ID] [int] NULL,
+    [Payment_Method] [nvarchar](50) NULL,
+    [Transaction_ID] [int] NULL,
+    CONSTRAINT [FK_ProcedurePayment_Order] FOREIGN KEY ([Order_ID]) REFERENCES [dbo].[Procedure_Order]([Order_ID]),
+    CONSTRAINT [FK_ProcedurePayment_Employee] FOREIGN KEY ([Confirmed_By_Employee_ID]) REFERENCES [dbo].[Employee_Profile]([Employee_ID]),
+    CONSTRAINT [FK_ProcedurePayment_Transaction] FOREIGN KEY ([Transaction_ID]) REFERENCES [dbo].[Payment_Transaction]([Transaction_ID]),
+    CONSTRAINT [CHK_ProcedurePayment_Amount] CHECK ([Amount] >= 0),
+    CONSTRAINT [CHK_ProcedurePayment_Credit] CHECK ([Credit_Amount] >= 0),
+    CONSTRAINT [CHK_ProcedurePayment_Status] CHECK ([Status] IN (N'Pending', N'Paid'))
+)
+GO
+
 -- -----------------------------------------------------
 -- Table: [Leave_Cancel_Request]
 -- -----------------------------------------------------

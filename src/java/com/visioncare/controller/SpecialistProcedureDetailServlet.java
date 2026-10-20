@@ -64,9 +64,16 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/specialist/waiting-list");
                 return;
             }
+            if (order.isPaymentBlocked()) {
+                session.setAttribute("errorMessage", "Ca #CD-" + orderId
+                        + " đang chờ staff xác nhận thanh toán phẫu thuật.");
+                response.sendRedirect(request.getContextPath() + "/specialist/waiting-list");
+                return;
+            }
 
             // Gán KTV hiện tại nếu ca chưa có người nhận
-            if (order.getSpecialistId() == null && currentUser.getActorId() > 0) {
+            if (order.getSpecialistId() == null && currentUser.getActorId() > 0
+                    && currentUser.getRoleId() == 4) {
                 try {
                     procedureOrderDAO.updateOrderStatus(orderId, currentUser.getActorId(), order.getStatus());
                     order.setSpecialistId(currentUser.getActorId());
@@ -126,6 +133,10 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+        if (currentUser.getRoleId() != 4 || currentUser.getActorId() <= 0) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
 
         String orderIdStr = request.getParameter("orderId");
         String action = request.getParameter("action");
@@ -143,6 +154,11 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/specialist/waiting-list");
                 return;
             }
+            if (order.isPaymentBlocked()) {
+                session.setAttribute("errorMessage", "Chỉ định phẫu thuật chưa được xác nhận thanh toán.");
+                response.sendRedirect(request.getContextPath() + "/specialist/waiting-list");
+                return;
+            }
 
             // Fallback action nếu form submit qua phím Enter hoặc nút không gửi name
             if (action == null || action.trim().isEmpty()) {
@@ -154,7 +170,9 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
 
             if ("cancel".equalsIgnoreCase(action)) {
                 // Hủy ca thủ thuật
-                procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Cancelled");
+                if (!procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Cancelled")) {
+                    throw new IllegalStateException("Ca chưa được xác nhận thanh toán hoặc đã thay đổi trạng thái.");
+                }
                 session.setAttribute("infoMessage", "Đã hủy ca chỉ định #CD-" + orderId + ".");
                 response.sendRedirect(request.getContextPath() + "/specialist/waiting-list");
                 return;
@@ -188,7 +206,9 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
 
             if ("saveDraft".equalsIgnoreCase(action)) {
                 // Lưu nháp: Giữ nguyên trạng thái Pending
-                procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Pending");
+                if (!procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Pending")) {
+                    throw new IllegalStateException("Ca chưa được xác nhận thanh toán hoặc đã thay đổi trạng thái.");
+                }
                 procedureOrderDAO.updateMedicalRecordExaminationResult(order.getRecordId(), serializedResult);
 
                 session.setAttribute("successMessage", "Đã lưu nháp biên bản thủ thuật ca #CD-" + orderId + " thành công!");
@@ -196,7 +216,9 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
 
             } else if ("complete".equalsIgnoreCase(action)) {
                 // Hoàn thành thủ thuật: Chuyển sang Completed
-                procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Completed");
+                if (!procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Completed")) {
+                    throw new IllegalStateException("Ca chưa được xác nhận thanh toán hoặc đã thay đổi trạng thái.");
+                }
                 procedureOrderDAO.updateMedicalRecordExaminationResult(order.getRecordId(), serializedResult);
 
                 session.setAttribute("successMessage", "Đã hoàn thành thủ thuật và trả kết quả về cho Bác sĩ thành công cho ca #CD-" + orderId + "!");

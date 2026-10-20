@@ -111,7 +111,7 @@
             if (matches.length === 0) {
                 const empty = document.createElement("div");
                 empty.className = "doctor-form-suggestion-empty";
-                empty.textContent = "Không có trong danh mục. Bạn vẫn có thể nhập tên thuốc này.";
+                empty.textContent = "Kh\u00f4ng c\u00f3 trong danh m\u1ee5c. B\u1ea1n v\u1eabn c\u00f3 th\u1ec3 nh\u1eadp t\u00ean thu\u1ed1c n\u00e0y.";
                 suggestions.appendChild(empty);
             } else {
                 matches.forEach((name, index) => {
