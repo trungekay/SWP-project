@@ -586,10 +586,13 @@
                                             <label class="form-label small fw-semibold text-dark mb-1">
                                                 Họ và tên bệnh nhân <span class="text-danger">*</span>
                                             </label>
-                                            <input type="text" name="patientName" id="walkinPatientName" required
+                                            <input type="text" name="patientName" id="walkinPatientName" required autocomplete="off"
                                                 class="form-control form-control-sm shadow-none"
                                                 placeholder="Ví dụ: Nguyễn Văn An"
-                                                style="border-radius: 8px; font-size: 13.5px; padding: 7px 12px;">
+                                                style="border-radius: 8px; font-size: 13.5px; padding: 7px 12px;"
+                                                oninput="this.value = this.value.replace(/[0-9]/g, ''); validateWalkinName();"
+                                                onblur="validateWalkinName();">
+                                            <div id="walkinNameFeedback" class="small mt-1" style="min-height: 18px;"></div>
                                         </div>
 
                                         <!-- Số điện thoại -->
@@ -632,14 +635,15 @@
                                         <!-- Ngày sinh -->
                                         <div class="col-md-5">
                                             <label class="form-label small fw-semibold text-dark mb-1">
-                                                Ngày sinh
+                                                Ngày sinh <span class="text-muted fw-normal">(dd/mm/yyyy)</span>
                                             </label>
                                             <div class="input-group input-group-sm position-relative">
-                                                <input type="text" name="dob" id="walkinDob"
+                                                <input type="text" name="dob" id="walkinDob" autocomplete="off"
                                                     class="form-control form-control-sm shadow-none"
                                                     placeholder="dd/mm/yyyy" maxlength="10"
                                                     style="border-radius: 8px 0 0 8px; font-size: 13.5px; padding: 7px 12px;"
-                                                    oninput="formatDobInput(this)">
+                                                    oninput="formatDobInput(this); validateWalkinDob();"
+                                                    onblur="validateWalkinDob();">
                                                 <button type="button" class="btn btn-outline-secondary px-2.5" id="btnPickWalkinDob"
                                                     style="border-radius: 0 8px 8px 0; border-color: #cbd5e1; background: #f8fafc;"
                                                     title="Mở lịch chọn ngày sinh"
@@ -647,9 +651,11 @@
                                                     <i class="bi bi-calendar-event text-secondary"></i>
                                                 </button>
                                                 <input type="date" id="nativeDobPicker" tabindex="-1"
+                                                    min="1900-01-01" max="${not empty todayStr ? todayStr : '2026-10-20'}"
                                                     style="position: absolute; right: 0; bottom: 0; opacity: 0; pointer-events: none; width: 0; height: 0;"
                                                     onchange="onNativeDobChange(this.value)">
                                             </div>
+                                            <div id="walkinDobFeedback" class="small mt-1" style="min-height: 18px;"></div>
                                         </div>
 
                                         <!-- Bác sĩ phụ trách -->
@@ -964,6 +970,171 @@
                 <!-- Bootstrap 5 JS -->
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
                 <script>
+                    function validateWalkinName() {
+                        var nameInput = document.getElementById('walkinPatientName');
+                        var feedback = document.getElementById('walkinNameFeedback');
+                        if (!nameInput) return true;
+                        var rawVal = nameInput.value || '';
+                        // Tự động loại bỏ chữ số nếu người dùng gõ hoặc paste vào
+                        if (/\d/.test(rawVal)) {
+                            nameInput.value = rawVal.replace(/[0-9]/g, '');
+                        }
+                        var val = nameInput.value.trim();
+
+                        if (!val) {
+                            nameInput.classList.remove('is-valid');
+                            nameInput.classList.add('is-invalid');
+                            if (feedback) {
+                                feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Vui lòng nhập họ và tên bệnh nhân!</span>';
+                            }
+                            return false;
+                        }
+
+                        // Họ tên chỉ được chứa chữ cái tiếng Việt/tiếng Anh và khoảng trắng, không chứa số hay ký tự đặc biệt
+                        var nameRegex = /^[a-zA-ZàáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệđìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵÀÁẢÃẠĂẮẰẲẴẶÂẤẦẨẪẬÈÉẺẼẸÊẾỀỂỄỆĐÌÍỈĨỊÒÓỎÕỌÔỐỒỔỖỘƠỚỜỞỠỢÙÚỦŨỤƯỨỪỬỮỰỲÝỶỸỴ\s'-]+$/;
+                        if (!nameRegex.test(val)) {
+                            nameInput.classList.remove('is-valid');
+                            nameInput.classList.add('is-invalid');
+                            if (feedback) {
+                                feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Họ và tên chỉ được ghi chữ, không được chứa chữ số hoặc ký tự đặc biệt!</span>';
+                            }
+                            return false;
+                        }
+
+                        if (val.length < 2) {
+                            nameInput.classList.remove('is-valid');
+                            nameInput.classList.add('is-invalid');
+                            if (feedback) {
+                                feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Họ và tên bệnh nhân phải có từ 2 ký tự trở lên!</span>';
+                            }
+                            return false;
+                        }
+
+                        nameInput.classList.remove('is-invalid');
+                        nameInput.classList.add('is-valid');
+                        if (feedback) {
+                            feedback.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Họ và tên hợp lệ</span>';
+                        }
+                        return true;
+                    }
+
+                    function validateWalkinDob() {
+                        var dobInput = document.getElementById('walkinDob');
+                        var feedback = document.getElementById('walkinDobFeedback');
+                        if (!dobInput) return true;
+                        var val = (dobInput.value || '').trim();
+
+                        if (!val) {
+                            dobInput.classList.remove('is-invalid');
+                            dobInput.classList.remove('is-valid');
+                            if (feedback) feedback.innerHTML = '';
+                            return true;
+                        }
+
+                        var parts = val.split('/');
+                        if (parts.length !== 3 || parts[0].length !== 2 || parts[1].length !== 2 || parts[2].length !== 4) {
+                            dobInput.classList.remove('is-valid');
+                            dobInput.classList.add('is-invalid');
+                            if (feedback) {
+                                feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Ngày sinh phải đúng định dạng ngày/tháng/năm: dd/mm/yyyy!</span>';
+                            }
+                            return false;
+                        }
+
+                        var d = parseInt(parts[0], 10);
+                        var m = parseInt(parts[1], 10);
+                        var y = parseInt(parts[2], 10);
+
+                        if (isNaN(d) || isNaN(m) || isNaN(y)) {
+                            dobInput.classList.remove('is-valid');
+                            dobInput.classList.add('is-invalid');
+                            if (feedback) {
+                                feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Ngày sinh không hợp lệ!</span>';
+                            }
+                            return false;
+                        }
+
+                        var now = new Date();
+                        var currentYear = now.getFullYear();
+
+                        // 1. Kiểm tra năm: Không được vượt quá năm hiện tại và phải từ 1900 trở lên
+                        if (y > currentYear) {
+                            dobInput.classList.remove('is-valid');
+                            dobInput.classList.add('is-invalid');
+                            if (feedback) {
+                                feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Năm sinh (' + y + ') không được vượt quá năm hiện tại (' + currentYear + ')!</span>';
+                            }
+                            return false;
+                        }
+                        if (y < 1900) {
+                            dobInput.classList.remove('is-valid');
+                            dobInput.classList.add('is-invalid');
+                            if (feedback) {
+                                feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Năm sinh phải từ năm 1900 trở lên!</span>';
+                            }
+                            return false;
+                        }
+
+                        // 2. Kiểm tra tháng: 1 năm chỉ có 12 tháng (01 - 12)
+                        if (m < 1 || m > 12) {
+                            dobInput.classList.remove('is-valid');
+                            dobInput.classList.add('is-invalid');
+                            if (feedback) {
+                                feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Tháng sinh (' + parts[1] + ') không hợp lệ! Một năm chỉ có 12 tháng (từ 01 đến 12).</span>';
+                            }
+                            return false;
+                        }
+
+                        // 3. Kiểm tra ngày: 1 tháng có 31 hoặc 30 ngày (riêng tháng 2 có 28 hoặc 29 ngày)
+                        var isLeap = (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+                        var maxDays = 31;
+                        if (m === 4 || m === 6 || m === 9 || m === 11) {
+                            maxDays = 30;
+                        } else if (m === 2) {
+                            maxDays = isLeap ? 29 : 28;
+                        }
+
+                        if (d < 1 || d > maxDays) {
+                            dobInput.classList.remove('is-valid');
+                            dobInput.classList.add('is-invalid');
+                            if (feedback) {
+                                if (m === 2) {
+                                    feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Tháng 2 năm ' + y + (isLeap ? ' (năm nhuận) chỉ có tối đa 29 ngày!' : ' chỉ có tối đa 28 ngày!') + '</span>';
+                                } else {
+                                    feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Tháng ' + m + ' chỉ có tối đa ' + maxDays + ' ngày! Ngày ' + d + ' không hợp lệ.</span>';
+                                }
+                            }
+                            return false;
+                        }
+
+                        // 4. Kiểm tra ngày sinh không được ở tương lai (so với ngày hiện tại)
+                        var dobDate = new Date(y, m - 1, d, 0, 0, 0);
+                        var todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+                        if (dobDate > todayEnd) {
+                            dobInput.classList.remove('is-valid');
+                            dobInput.classList.add('is-invalid');
+                            if (feedback) {
+                                feedback.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Ngày sinh không được lớn hơn ngày hiện tại!</span>';
+                            }
+                            return false;
+                        }
+
+                        // Hợp lệ!
+                        dobInput.classList.remove('is-invalid');
+                        dobInput.classList.add('is-valid');
+                        var nativePicker = document.getElementById('nativeDobPicker');
+                        if (nativePicker) {
+                            var mm = m < 10 ? '0' + m : m;
+                            var dd = d < 10 ? '0' + d : d;
+                            nativePicker.value = y + '-' + mm + '-' + dd;
+                        }
+                        if (feedback) {
+                            var age = now.getFullYear() - y;
+                            feedback.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Ngày sinh hợp lệ (' + age + ' tuổi)</span>';
+                        }
+                        return true;
+                    }
+
                     function formatDobInput(input) {
                         var v = (input.value || '').replace(/[^0-9]/g, '');
                         if (v.length > 8) v = v.substring(0, 8);
@@ -980,13 +1151,12 @@
                         input.value = formatted;
 
                         if (v.length === 8) {
-                            var d = v.substring(0, 2);
-                            var m = v.substring(2, 4);
-                            var y = v.substring(4, 8);
-                            var nativePicker = document.getElementById('nativeDobPicker');
-                            if (nativePicker) {
-                                nativePicker.value = y + '-' + m + '-' + d;
-                            }
+                            validateWalkinDob();
+                        } else if (v.length === 0) {
+                            var feedback = document.getElementById('walkinDobFeedback');
+                            if (feedback) feedback.innerHTML = '';
+                            input.classList.remove('is-invalid');
+                            input.classList.remove('is-valid');
                         }
                     }
 
@@ -1009,7 +1179,7 @@
                             var dobInput = document.getElementById('walkinDob');
                             if (dobInput) {
                                 dobInput.value = parts[2] + '/' + parts[1] + '/' + parts[0];
-                                dobInput.classList.add('is-valid');
+                                validateWalkinDob();
                             }
                         }
                     }
@@ -1556,12 +1726,55 @@
 
                     function cancelWalkinQR() {
                         clearInterval(walkinPollTimer);
+                        var apptIdToAbort = currentWalkinApptId;
+                        currentWalkinApptId = null;
+                        currentWalkinOrderCode = null;
+
                         var qrModalEl = document.getElementById('walkinQrModal');
                         if (qrModalEl) {
                             var modal = bootstrap.Modal.getInstance(qrModalEl);
                             if (modal) modal.hide();
                         }
+
+                        // Mở lại modal đón tiếp ban đầu để lễ tân có thể chọn tiền mặt hoặc chỉnh sửa/hủy
+                        var walkinModalEl = document.getElementById('walkinModal');
+                        if (walkinModalEl) {
+                            var submitBtn = document.getElementById('walkinSubmitBtn');
+                            if (submitBtn) {
+                                submitBtn.disabled = false;
+                                var payMode = document.querySelector('input[name="paymentMethod"]:checked');
+                                toggleWalkinPayMode(payMode ? payMode.value : 'VietQR_Banking');
+                            }
+                            var walkinModal = bootstrap.Modal.getInstance(walkinModalEl) || new bootstrap.Modal(walkinModalEl);
+                            walkinModal.show();
+                        }
+
+                        // Gửi yêu cầu xóa/hủy lịch hẹn chưa thanh toán về server để không bị lọt vào danh sách 'Chờ tiếp đón'
+                        if (apptIdToAbort) {
+                            fetch('${pageContext.request.contextPath}/staff/appointments', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                                body: 'action=abortWalkinQR&appointmentId=' + apptIdToAbort
+                            })
+                            .then(function(res) { return res.json(); })
+                            .then(function(data) {
+                                console.log('Đã dọn dẹp lịch hẹn chưa thanh toán #' + apptIdToAbort, data);
+                            })
+                            .catch(function(err) {
+                                console.error('Lỗi khi dọn dẹp lịch hẹn QR:', err);
+                            });
+                        }
                     }
+
+                    // Tự động giải phóng nếu người dùng tắt trang hoặc reload khi đang ở modal QR
+                    window.addEventListener('beforeunload', function() {
+                        if (currentWalkinApptId) {
+                            var data = new URLSearchParams();
+                            data.append('action', 'abortWalkinQR');
+                            data.append('appointmentId', currentWalkinApptId);
+                            navigator.sendBeacon('${pageContext.request.contextPath}/staff/appointments', data);
+                        }
+                    });
 
                     function initiateWalkinCash() {
                         var form = document.getElementById('walkinForm');

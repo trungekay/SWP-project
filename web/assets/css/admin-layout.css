@@ -22,9 +22,10 @@ body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); colo
 .sidebar-menu li a.active, .sidebar-menu li a:hover { background-color: #f0f7f6; color: var(--primary-color); font-weight: 600; }
 .sidebar-menu li a i { margin-right: 12px; font-size: 18px; }
 .sidebar-dropdown { position: relative; }
-.sidebar-dropdown > a { display: flex; align-items: center; justify-content: space-between; }
+.sidebar-dropdown > a { display: flex; align-items: center; justify-content: space-between; cursor: pointer !important; user-select: none; }
 .sidebar-submenu { display: none; list-style: none; padding: 4px 0 6px 12px; margin: 0; background-color: #fcfcfc; border-radius: 0 0 8px 8px; }
-.sidebar-submenu.show { display: block; }
+.sidebar-dropdown:hover .sidebar-submenu:not(.show) { display: none !important; }
+.sidebar-submenu.show { display: block !important; }
 .sidebar-submenu li a { padding: 8px 16px; font-size: 13px; color: var(--text-muted); border-radius: 6px; display: flex; align-items: center; gap: 8px; font-family: 'Inter', sans-serif; }
 .sidebar-submenu li a:hover, .sidebar-submenu li a.active { color: var(--primary-color); background-color: #f0f7f6; font-weight: 600; }
 

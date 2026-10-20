@@ -14,18 +14,31 @@
         padding: 12px 16px 4px;
         font-weight: 700;
     }
+    .sidebar-dropdown {
+        position: relative;
+    }
     .sidebar-dropdown > a {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        cursor: pointer !important;
+        user-select: none !important;
     }
-    .sidebar-submenu {
-        display: none;
-        list-style: none;
-        padding: 4px 0 6px 12px;
-        margin: 0;
+    .sidebar-dropdown .sidebar-submenu {
+        display: none !important;
+        list-style: none !important;
+        padding: 4px 0 6px 12px !important;
+        margin: 0 !important;
     }
-    .sidebar-submenu.show {
+    /* Strictly forbid opening on hover under any circumstances */
+    .sidebar-dropdown:hover .sidebar-submenu {
+        display: none !important;
+    }
+    .sidebar-dropdown:hover .sidebar-submenu:not(.show) {
+        display: none !important;
+    }
+    .sidebar-dropdown .sidebar-submenu.show,
+    .sidebar-dropdown:hover .sidebar-submenu.show {
         display: block !important;
     }
     .sidebar-submenu li a {
@@ -68,9 +81,9 @@
                     </a>
                 </li>
 
-                <!-- 2. Quản lý Lịch hẹn (Sổ xuống gồm 3 nội dung) -->
+                <!-- 2. Quản lý Lịch hẹn (Sổ xuống) -->
                 <li class="sidebar-dropdown">
-                    <a href="javascript:void(0);" onclick="toggleSubmenu('appt-sub', this);" class="${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'active' : ''}">
+                    <a href="javascript:void(0);" onclick="toggleSubmenu('appt-sub', this); return false;" class="${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'active' : ''}">
                         <div class="d-flex align-items-center gap-2">
                             <i class="bi bi-calendar2-check"></i>
                             <span>Quản lý Lịch hẹn</span>
@@ -153,8 +166,32 @@
                 <li>
                     <a href="${pageContext.request.contextPath}/employee/schedule" class="${param.activeNav == 'schedule' ? 'active' : ''}">
                         <i class="bi bi-calendar3"></i>
-                        Lịch làm việc (Staff)
+                        <span>Đặt lịch hẹn</span>
                     </a>
+                </li>
+                <!-- 2. Quản lý Lịch hẹn (Sổ xuống) -->
+                <li class="sidebar-dropdown">
+                    <a href="javascript:void(0);" onclick="toggleSubmenu('appt-sub-admin-menu', this); return false;" class="${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'active' : ''}">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-calendar2-check"></i>
+                            <span>Quản lý Lịch hẹn</span>
+                        </div>
+                        <i class="bi ${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'bi-chevron-up' : 'bi-chevron-down'}" style="font-size: 11px;"></i>
+                    </a>
+                    <ul class="sidebar-submenu ${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'show' : ''}" id="appt-sub-admin-menu">
+                        <li>
+                            <a href="${pageContext.request.contextPath}/staff/appointments" class="${param.activeNav == 'appointments' ? 'active' : ''}">
+                                <i class="bi bi-list-task"></i>
+                                <span>Xem danh sách lịch hẹn</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="${pageContext.request.contextPath}/staff/waiting-list" class="${param.activeNav == 'waiting-list' ? 'active' : ''}">
+                                <i class="bi bi-people"></i>
+                                <span>Hàng đợi phòng khám</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
             </c:otherwise>
         </c:choose>

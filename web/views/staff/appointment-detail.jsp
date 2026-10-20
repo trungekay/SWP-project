@@ -132,6 +132,12 @@
                                 <c:set var="isPastAppt" value="${not empty apptDateStr && apptDateStr < currentDateStr}" />
                                 <div class="d-flex align-items-center gap-2">
                                     <c:choose>
+                                        <c:when test="${appointment.status == 'Completed'}">
+                                            <a href="${pageContext.request.contextPath}/profile/medical-record?id=${appointment.id}"
+                                                class="btn btn-teal shadow-sm" target="_blank" title="Xem chi tiết phiếu kết quả khám bệnh">
+                                                <i class="bi bi-file-earmark-medical me-1.5"></i> Xem phiếu khám
+                                            </a>
+                                        </c:when>
                                         <c:when test="${isPastAppt}">
                                             <span class="badge bg-secondary-subtle text-secondary border px-3 py-2 fw-medium" style="font-size: 13px;">
                                                 <i class="bi bi-clock-history me-1"></i>Lịch hẹn đã qua ngày (${appointment.appointmentDate})
@@ -721,37 +727,6 @@
                     </div>
                 </div>
 
-                <!-- Modal Xác nhận Bệnh nhân Vào khám (Đang khám) -->
-                <div class="modal fade" id="startExamModal" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="modal-icon-teal">
-                                    <i class="bi bi-box-arrow-in-right"></i>
-                                </div>
-                                <h3 class="modal-title-custom">Xác nhận vào khám?</h3>
-                                <p class="modal-text">
-                                    Gọi bệnh nhân <strong class="text-dark">${appointment.patientName}</strong> vào
-                                    phòng khám. Trạng thái ca khám sẽ được chuyển thành <strong>Đang khám</strong>.
-                                </p>
-                                <form action="${pageContext.request.contextPath}/staff/appointment-detail" method="post"
-                                    class="m-0">
-                                    <input type="hidden" name="action" value="startExam">
-                                    <input type="hidden" name="appointmentId" value="${appointment.id}">
-                                    <div class="modal-actions">
-                                        <button type="button" class="btn btn-modal-cancel"
-                                            data-bs-dismiss="modal">Hủy</button>
-                                        <button type="submit" class="btn btn-modal-teal">Vào khám</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
 
                 <!-- Modal Xác nhận Hủy lịch hẹn -->

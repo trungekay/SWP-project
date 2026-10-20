@@ -98,36 +98,20 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
                     session.setAttribute("errorMessage", "Check-in không thành công.");
                 }
             } else if ("startExam".equalsIgnoreCase(action) || "inProgress".equalsIgnoreCase(action)) {
-                java.sql.Date todayDate = java.sql.Date.valueOf(java.time.LocalDate.now());
-                java.util.List<Appointment> currentQueue = appointmentDAO.getWaitingList(todayDate, null, null, null);
-                Appointment queueAppt = currentQueue.stream().filter(a -> a.getId() == apptId).findFirst().orElse(null);
-                if (queueAppt != null) {
-                    Appointment busyAppt = currentQueue.stream()
-                            .filter(a -> "In_Progress".equalsIgnoreCase(a.getStatus())
-                                    && a.getId() != apptId
-                                    && ((queueAppt.getDoctorId() > 0 && a.getDoctorId() == queueAppt.getDoctorId())
-                                        || (queueAppt.getRoomName() != null && !queueAppt.getRoomName().isEmpty() && queueAppt.getRoomName().equalsIgnoreCase(a.getRoomName()))))
-                            .findFirst().orElse(null);
-                    if (busyAppt != null) {
-                        session.setAttribute("errorMessage", "Không thể gọi vào phòng: "
-                                + (queueAppt.getDoctorName() != null ? queueAppt.getDoctorName() : "Bác sĩ")
-                                + " hiện đang khám cho bệnh nhân " + busyAppt.getPatientName() + " (#APPT-" + busyAppt.getId() + ")! Mỗi ca 30 phút chỉ có 1 bệnh nhân trong phòng, vui lòng hoàn tất ca hiện tại trước.");
-                        response.sendRedirect(request.getContextPath() + "/staff/appointment-detail?id=" + apptId);
-                        return;
-                    }
-                }
-
-                boolean success = appointmentDAO.updateAppointmentStatus(apptId, "In_Progress");
-                if (success) {
-                    session.setAttribute("successMessage", "Bệnh nhân (#APPT-" + apptId + ") đã được gọi vào phòng khám.");
-                } else {
-                    session.setAttribute("errorMessage", "Không thể cập nhật trạng thái vào khám.");
-                }
+                session.setAttribute("errorMessage", "Không thể gọi vào khám từ màn hình Lễ tân! Thao tác này phải do Bác sĩ phụ trách gọi từ trong phòng khám.");
+                response.sendRedirect(request.getContextPath() + "/staff/appointment-detail?id=" + apptId);
+                return;
             } else if ("complete".equalsIgnoreCase(action)) {
                 session.setAttribute("errorMessage", "Không thể hoàn tất ca khám từ màn hình Lễ tân! Thao tác này phải do Bác sĩ phụ trách thực hiện trong phòng khám sau khi kết thúc chẩn đoán và kê đơn.");
                 response.sendRedirect(request.getContextPath() + "/staff/appointment-detail?id=" + apptId);
                 return;
             } else if ("absent".equalsIgnoreCase(action)) {
+                if (targetAppt != null && "In_Progress".equalsIgnoreCase(targetAppt.getStatus())) {
+                    session.setAttribute("errorMessage", "Bệnh nhân đang ở trạng thái Đang khám trong phòng! Không thể báo vắng mặt hoặc hủy ca khám.");
+                    response.sendRedirect(request.getContextPath() + "/staff/appointment-detail?id=" + apptId);
+                    return;
+                }
+
                 String reasonSelect = request.getParameter("cancelReasonSelect");
                 String reasonCustom = request.getParameter("cancelReasonCustom");
                 String reason = "other".equalsIgnoreCase(reasonSelect) ? reasonCustom : reasonSelect;

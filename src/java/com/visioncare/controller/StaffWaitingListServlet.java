@@ -18,7 +18,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.sql.Connection;
 import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import com.visioncare.dao.DBContext;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -225,6 +229,18 @@ public class StaffWaitingListServlet extends HttpServlet {
             if (apptIdParam != null && !apptIdParam.trim().isEmpty()) {
                 try {
                     int apptId = Integer.parseInt(apptIdParam.trim());
+                    Appointment targetAppt = appointmentDAO.getAppointmentById(apptId);
+                    if (targetAppt != null && "In_Progress".equalsIgnoreCase(targetAppt.getStatus())) {
+                        session.setAttribute("errorMessage", "Bệnh nhân đang ở trạng thái Đang khám trong phòng! Không thể báo vắng mặt hoặc hủy ca khám.");
+                        String returnUrl = request.getParameter("returnUrl");
+                        if (returnUrl != null && !returnUrl.trim().isEmpty() && !returnUrl.contains(".jsp")) {
+                            response.sendRedirect(returnUrl);
+                        } else {
+                            response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
+                        }
+                        return;
+                    }
+
                     boolean success = appointmentDAO.cancelAppointment(apptId, "Báo vắng mặt: " + reason);
                     if (success) {
                         session.setAttribute("successMessage", "Đã ghi nhận bệnh nhân (#APPT-" + apptId + ") vắng mặt và gỡ khỏi hàng đợi.");
@@ -271,6 +287,17 @@ public class StaffWaitingListServlet extends HttpServlet {
                         return;
                     }
 
+                    if ("In_Progress".equalsIgnoreCase(newStatus.trim())) {
+                        session.setAttribute("errorMessage", "Không thể gọi vào khám từ màn hình Hàng đợi phòng khám của Lễ tân! Thao tác này phải do Bác sĩ phụ trách gọi từ trong phòng khám.");
+                        String returnUrl = request.getParameter("returnUrl");
+                        if (returnUrl != null && !returnUrl.trim().isEmpty() && !returnUrl.contains(".jsp")) {
+                            response.sendRedirect(returnUrl);
+                        } else {
+                            response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
+                        }
+                        return;
+                    }
+
                     if ("Canceled".equalsIgnoreCase(newStatus.trim())) {
                         boolean success = appointmentDAO.cancelAppointment(apptId, "Lễ tân hủy ca / Vắng mặt");
                         if (success) {
@@ -279,68 +306,10 @@ public class StaffWaitingListServlet extends HttpServlet {
                             session.setAttribute("errorMessage", "Không thể hủy ca khám #APPT-" + apptId);
                         }
                     } else {
-                        // Kiểm tra quy tắc: Mỗi ca khám / mỗi bác sĩ chỉ có 1 bệnh nhân tại 1 thời điểm
-                        if ("In_Progress".equalsIgnoreCase(newStatus.trim())) {
-                            Date todayDate = Date.valueOf(LocalDate.now());
-                            List<Appointment> currentQueue = appointmentDAO.getWaitingList(todayDate, null, null, null);
-                            Appointment targetAppt = currentQueue.stream().filter(a -> a.getId() == apptId).findFirst().orElse(null);
-                            if (targetAppt != null) {
-                                Appointment busyAppt = currentQueue.stream()
-                                        .filter(a -> "In_Progress".equalsIgnoreCase(a.getStatus())
-                                                && a.getId() != apptId
-                                                && ((targetAppt.getDoctorId() > 0 && a.getDoctorId() == targetAppt.getDoctorId())
-                                                    || (targetAppt.getRoomName() != null && !targetAppt.getRoomName().isEmpty() && targetAppt.getRoomName().equalsIgnoreCase(a.getRoomName()))))
-                                        .findFirst().orElse(null);
-                                if (busyAppt != null) {
-                                    session.setAttribute("errorMessage", "Không thể gọi vào phòng: "
-                                            + (targetAppt.getDoctorName() != null ? targetAppt.getDoctorName() : "Bác sĩ")
-                                            + " hiện đang khám cho bệnh nhân " + busyAppt.getPatientName() + " (#APPT-" + busyAppt.getId() + ")! Mỗi ca 30 phút chỉ có 1 bệnh nhân trong phòng, vui lòng hoàn tất ca hiện tại trước.");
-                                    String returnUrl = request.getParameter("returnUrl");
-                                    if (returnUrl != null && !returnUrl.trim().isEmpty() && !returnUrl.contains(".jsp")) {
-                                        response.sendRedirect(returnUrl);
-                                    } else {
-                                        response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
-                                    }
-                                    return;
-                                }
-
-                                // Bắt buộc theo từng slot đối với lịch 1 bác sĩ:
-                                // Không được gọi ca sau (ví dụ Ca 6) nếu bác sĩ đó vẫn còn ca trước (ví dụ Ca 2) đang ở trạng thái 'Confirmed'
-                                if (targetAppt.getDoctorId() > 0) {
-                                    Appointment earlierAppt = currentQueue.stream()
-                                            .filter(a -> "Confirmed".equalsIgnoreCase(a.getStatus())
-                                                    && a.getId() != apptId
-                                                    && a.getDoctorId() == targetAppt.getDoctorId()
-                                                    && (a.getTimeSlot() != null && targetAppt.getTimeSlot() != null && a.getTimeSlot().compareTo(targetAppt.getTimeSlot()) < 0))
-                                            .findFirst().orElse(null);
-                                    if (earlierAppt != null) {
-                                        String earlierTime = earlierAppt.getTimeSlot() + (earlierAppt.getEndTime() != null ? " - " + earlierAppt.getEndTime() : "");
-                                        session.setAttribute("errorMessage", "Không thể gọi ca này vào khám! Bác sĩ "
-                                                + (targetAppt.getDoctorName() != null ? targetAppt.getDoctorName() : "")
-                                                + " bắt buộc phải khám tuần tự theo từng ca. Hiện vẫn còn ca trước (#APPT-" + earlierAppt.getId()
-                                                + " - " + earlierTime + ") đang chờ khám!");
-                                        String returnUrl = request.getParameter("returnUrl");
-                                        if (returnUrl != null && !returnUrl.trim().isEmpty() && !returnUrl.contains(".jsp")) {
-                                            response.sendRedirect(returnUrl);
-                                        } else {
-                                            response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
-                                        }
-                                        return;
-                                    }
-                                }
-                            }
-                        }
-
                         boolean success = appointmentDAO.updateAppointmentStatus(apptId, newStatus.trim());
 
                         if (success) {
-                            if ("In_Progress".equalsIgnoreCase(newStatus.trim())) {
-                                session.setAttribute("successMessage", "Bệnh nhân (#APPT-" + apptId + ") đã được gọi vào phòng khám.");
-                            } else if ("Completed".equalsIgnoreCase(newStatus.trim())) {
-                                session.setAttribute("successMessage", "Ca khám (#APPT-" + apptId + ") đã được xác nhận hoàn tất thành công.");
-                            } else {
-                                session.setAttribute("successMessage", "Đã cập nhật ca khám (#APPT-" + apptId + ") thành công.");
-                            }
+                            session.setAttribute("successMessage", "Đã cập nhật ca khám (#APPT-" + apptId + ") thành công.");
                         } else {
                             session.setAttribute("errorMessage", "Không thể cập nhật trạng thái cho ca khám #APPT-" + apptId);
                         }
@@ -441,19 +410,24 @@ public class StaffWaitingListServlet extends HttpServlet {
                     session.setAttribute("errorMessage", "Lỗi tiếp đón khách vãng lai: " + e.getMessage());
                 }
             }
-        } else if ("confirmHandover".equalsIgnoreCase(action)) {
+        } else if ("confirmHandover".equalsIgnoreCase(action) || "completeAppointment".equalsIgnoreCase(action)) {
             apptIdParam = request.getParameter("appointmentId");
+            String paymentGateway = request.getParameter("paymentGateway");
+            if (paymentGateway == null || paymentGateway.trim().isEmpty()) {
+                paymentGateway = "Cash";
+            }
+
             if (apptIdParam != null && !apptIdParam.trim().isEmpty()) {
                 try {
                     int apptId = Integer.parseInt(apptIdParam.trim());
                     Appointment checkAppt = appointmentDAO.getAppointmentById(apptId);
-                    if (checkAppt == null || !"Completed".equalsIgnoreCase(checkAppt.getStatus())) {
+                    if (checkAppt == null) {
                         if ("1".equals(request.getParameter("ajax"))) {
                             response.setContentType("application/json;charset=UTF-8");
-                            response.getWriter().write("{\"success\":false,\"message\":\"Ca khám này chưa được Bác sĩ hoàn thành trong phòng khám!\"}");
+                            response.getWriter().write("{\"success\":false,\"message\":\"Không tìm thấy lịch hẹn!\"}");
                             return;
                         }
-                        session.setAttribute("errorMessage", "Ca khám (#APPT-" + apptId + ") chưa được Bác sĩ hoàn thành trong phòng khám!");
+                        session.setAttribute("errorMessage", "Không tìm thấy lịch hẹn #APPT-" + apptId);
                         String returnUrl = request.getParameter("returnUrl");
                         if (returnUrl != null && !returnUrl.trim().isEmpty() && !returnUrl.contains(".jsp")) {
                             response.sendRedirect(returnUrl);
@@ -463,20 +437,33 @@ public class StaffWaitingListServlet extends HttpServlet {
                         return;
                     }
 
-                    if ("1".equals(request.getParameter("ajax"))) {
-                        response.setContentType("application/json;charset=UTF-8");
-                        response.getWriter().write("{\"success\":true,\"message\":\"Đã hoàn tất thủ tục bàn giao đơn thuốc và kết thúc ca khám!\"}");
-                        return;
+                    User currentUser = (User) session.getAttribute("user");
+                    int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
+
+                    boolean success = appointmentDAO.completeAppointmentByStaff(apptId, staffEmployeeId, paymentGateway);
+                    if (success) {
+                        if ("1".equals(request.getParameter("ajax"))) {
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("{\"success\":true,\"message\":\"Đã thanh toán phần còn lại và hoàn tất lịch hẹn (#APPT-" + apptId + ") thành công!\"}");
+                            return;
+                        }
+                        session.setAttribute("successMessage", "Đã thanh toán và hoàn tất lịch hẹn cho bệnh nhân (#APPT-" + apptId + ").");
+                    } else {
+                        if ("1".equals(request.getParameter("ajax"))) {
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("{\"success\":false,\"message\":\"Không thể hoàn tất lịch hẹn #APPT-" + apptId + "\"}");
+                            return;
+                        }
+                        session.setAttribute("errorMessage", "Không thể hoàn tất lịch hẹn: #APPT-" + apptId);
                     }
-                    session.setAttribute("successMessage", "Đã bàn giao đơn thuốc và hoàn tất thủ tục cho bệnh nhân (#APPT-" + apptId + ").");
                 } catch (Exception e) {
                     e.printStackTrace();
                     if ("1".equals(request.getParameter("ajax"))) {
                         response.setContentType("application/json;charset=UTF-8");
-                        response.getWriter().write("{\"success\":false,\"message\":\"Lỗi bàn giao: " + escapeJson(e.getMessage()) + "\"}");
+                        response.getWriter().write("{\"success\":false,\"message\":\"Lỗi hoàn tất: " + escapeJson(e.getMessage()) + "\"}");
                         return;
                     }
-                    session.setAttribute("errorMessage", "Không thể hoàn tất bàn giao: " + e.getMessage());
+                    session.setAttribute("errorMessage", "Không thể hoàn tất lịch hẹn: " + e.getMessage());
                 }
             }
         }
@@ -523,6 +510,40 @@ public class StaffWaitingListServlet extends HttpServlet {
             sb.append("\"timeSlot\":\"").append(escapeJson(appt.getTimeSlot() != null ? appt.getTimeSlot() : "")).append("\",");
             sb.append("\"appointmentDate\":\"").append(appt.getAppointmentDate() != null ? appt.getAppointmentDate().toString() : "").append("\",");
             sb.append("\"status\":\"").append(escapeJson(appt.getStatus())).append("\",");
+            sb.append("\"medicalNotes\":\"").append(escapeJson(appt.getMedicalNotes() != null ? appt.getMedicalNotes() : "")).append("\",");
+
+            // Query Master_Invoice directly
+            long totalAmount = 200000;
+            long depositAmount = 200000;
+            long balanceDue = 0;
+            String invStatus = "Paid";
+            int invId = 0;
+            try (Connection conn = DBContext.getConnection();
+                 PreparedStatement psInv = conn.prepareStatement("SELECT Invoice_ID, Total_Amount, Deposit_Amount, Balance_Due, Status FROM Master_Invoice WHERE Appointment_ID = ?")) {
+                psInv.setInt(1, apptId);
+                try (ResultSet rsInv = psInv.executeQuery()) {
+                    if (rsInv.next()) {
+                        invId = rsInv.getInt("Invoice_ID");
+                        totalAmount = rsInv.getLong("Total_Amount");
+                        depositAmount = rsInv.getLong("Deposit_Amount");
+                        balanceDue = rsInv.getLong("Balance_Due");
+                        invStatus = rsInv.getString("Status");
+                    }
+                }
+            } catch (Exception ex) {
+                log("Error fetching invoice for appt #" + apptId, ex);
+            }
+
+            sb.append("\"invoiceId\":").append(invId).append(",");
+            sb.append("\"totalAmount\":").append(totalAmount).append(",");
+            sb.append("\"totalAmountFmt\":\"").append(String.format("%,d ₫", totalAmount)).append("\",");
+            sb.append("\"depositAmount\":").append(depositAmount).append(",");
+            sb.append("\"depositAmountFmt\":\"").append(String.format("%,d ₫", depositAmount)).append("\",");
+            sb.append("\"balanceDue\":").append(balanceDue).append(",");
+            sb.append("\"balanceDueFmt\":\"").append(String.format("%,d ₫", balanceDue)).append("\",");
+            sb.append("\"invoiceStatus\":\"").append(escapeJson(invStatus)).append("\",");
+            sb.append("\"invoiceAmountFmt\":\"").append(String.format("%,d ₫", totalAmount)).append("\",");
+            sb.append("\"isFullyPaid\":").append(balanceDue <= 0 && "Paid".equalsIgnoreCase(invStatus)).append(",");
 
             if (mr != null) {
                 Object formId = mr.get("formattedId");
@@ -533,12 +554,10 @@ public class StaffWaitingListServlet extends HttpServlet {
                 sb.append("\"examinationResult\":\"").append(escapeJson(examRes != null ? String.valueOf(examRes) : "")).append("\",");
                 Object conc = mr.get("conclusion");
                 sb.append("\"conclusion\":\"").append(escapeJson(conc != null ? String.valueOf(conc) : "")).append("\",");
+                Object followUp = mr.get("followUpDate");
+                sb.append("\"followUpDate\":\"").append(escapeJson(followUp != null ? String.valueOf(followUp) : "")).append("\",");
                 Object docNotes = mr.get("doctorNotes");
                 sb.append("\"doctorNotes\":\"").append(escapeJson(docNotes != null ? String.valueOf(docNotes) : "Uống/nhỏ thuốc theo đúng hướng dẫn của bác sĩ.")).append("\",");
-                Object invStat = mr.get("invoiceStatus");
-                sb.append("\"invoiceStatus\":\"").append(escapeJson(invStat != null ? String.valueOf(invStat) : "Paid")).append("\",");
-                Object invAmt = mr.get("invoiceAmountFmt");
-                sb.append("\"invoiceAmountFmt\":\"").append(escapeJson(invAmt != null ? String.valueOf(invAmt) : "0 ₫")).append("\",");
 
                 // Medicines
                 sb.append("\"medicines\":[");
@@ -596,8 +615,6 @@ public class StaffWaitingListServlet extends HttpServlet {
                 sb.append("\"examinationResult\":\"\",");
                 sb.append("\"conclusion\":\"Bình thường\",");
                 sb.append("\"doctorNotes\":\"Uống thuốc và tái khám theo chỉ định.\",");
-                sb.append("\"invoiceStatus\":\"Paid\",");
-                sb.append("\"invoiceAmountFmt\":\"0 đ\",");
                 sb.append("\"medicines\":[],");
                 sb.append("\"procedures\":[]");
             }

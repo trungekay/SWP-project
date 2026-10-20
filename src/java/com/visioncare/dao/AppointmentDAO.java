@@ -212,12 +212,14 @@ public class AppointmentDAO {
     public Appointment getAppointmentDetailById(int appointmentId) throws Exception {
         String sql = "SELECT a.Appointment_ID, a.Status AS Appt_Status, a.Patient_ID, a.Schedule_ID, a.created_at, " +
                      "       p.Full_Name AS Patient_Name, p.Phone AS Patient_Phone, p.DOB, p.Account_ID, " +
+                     "       acc.Email AS Patient_Email, " +
                      "       ws.Work_Date, ws.Start_Time, ws.End_Time, ws.Slot, " +
                      "       e.Employee_ID, e.Full_Name AS Doctor_Name, e.Specialty, " +
                      "       mr.Clinical_Diagnosis, " +
                      "       mi.Invoice_ID, mi.Total_Amount, mi.Deposit_Amount, mi.Balance_Due, mi.Status AS Invoice_Status " +
                      "FROM Appointment a " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
+                     "LEFT JOIN Account acc ON p.Account_ID = acc.Account_ID " +
                      "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
                      "LEFT JOIN Employee_Profile e ON ws.Doctor_Employee_ID = e.Employee_ID " +
                      "LEFT JOIN Medical_Record mr ON a.Appointment_ID = mr.Appointment_ID " +
@@ -234,6 +236,7 @@ public class AppointmentDAO {
                     appt.setPatientName(rs.getString("Patient_Name"));
                     appt.setPhone(rs.getString("Patient_Phone"));
                     appt.setDob(rs.getDate("DOB"));
+                    appt.setEmail(rs.getString("Patient_Email"));
                     appt.setDoctorId(rs.getInt("Employee_ID"));
                     appt.setDoctorName(rs.getString("Doctor_Name"));
                     appt.setDepartment(rs.getString("Specialty"));
@@ -651,6 +654,96 @@ public class AppointmentDAO {
         }
     }
 
+    /**
+     * Hủy và xóa hoàn toàn bản ghi cuộc hẹn khách vãng lai nếu chưa thanh toán (bấm Hủy / Quay lại tại modal VietQR).
+     * Giải phóng lại ca làm việc của bác sĩ về Available.
+     */
+    public boolean abortWalkinAppointment(int appointmentId) throws Exception {
+        if (appointmentId <= 0) return false;
+        Connection conn = null;
+        try {
+            conn = DBContext.getConnection();
+            conn.setAutoCommit(false);
+
+            // 1. Kiểm tra trạng thái hiện tại: chỉ cho phép hủy/xóa nếu là Pending và chưa thanh toán
+            String sqlCheck = "SELECT a.Status, a.Schedule_ID, inv.Status AS InvStatus " +
+                              "FROM Appointment a " +
+                              "LEFT JOIN Master_Invoice inv ON a.Appointment_ID = inv.Appointment_ID " +
+                              "WHERE a.Appointment_ID = ?";
+            int scheduleId = -1;
+            String apptStatus = null;
+            String invStatus = null;
+            try (PreparedStatement psCheck = conn.prepareStatement(sqlCheck)) {
+                psCheck.setInt(1, appointmentId);
+                try (ResultSet rs = psCheck.executeQuery()) {
+                    if (rs.next()) {
+                        apptStatus = rs.getString("Status");
+                        scheduleId = rs.getInt("Schedule_ID");
+                        invStatus = rs.getString("InvStatus");
+                    }
+                }
+            }
+
+            if (apptStatus == null) {
+                conn.rollback();
+                return false;
+            }
+
+            // Nếu đã thanh toán (Paid) hoặc đã tiếp đón/khám, tuyệt đối không được xóa
+            if ("Paid".equalsIgnoreCase(invStatus) || "Confirmed".equalsIgnoreCase(apptStatus) ||
+                "In_Progress".equalsIgnoreCase(apptStatus) || "Completed".equalsIgnoreCase(apptStatus)) {
+                conn.rollback();
+                return false;
+            }
+
+            // 2. Xóa các bản ghi liên quan (Payment_Transaction -> Master_Invoice -> Medical_Record -> Appointment)
+            String sqlDelTrans = "DELETE FROM Payment_Transaction WHERE Invoice_ID IN (SELECT Invoice_ID FROM Master_Invoice WHERE Appointment_ID = ?)";
+            try (PreparedStatement ps = conn.prepareStatement(sqlDelTrans)) {
+                ps.setInt(1, appointmentId);
+                ps.executeUpdate();
+            }
+
+            String sqlDelInv = "DELETE FROM Master_Invoice WHERE Appointment_ID = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sqlDelInv)) {
+                ps.setInt(1, appointmentId);
+                ps.executeUpdate();
+            }
+
+            String sqlDelMR = "DELETE FROM Medical_Record WHERE Appointment_ID = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sqlDelMR)) {
+                ps.setInt(1, appointmentId);
+                ps.executeUpdate();
+            }
+
+            String sqlDelAppt = "DELETE FROM Appointment WHERE Appointment_ID = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sqlDelAppt)) {
+                ps.setInt(1, appointmentId);
+                ps.executeUpdate();
+            }
+
+            // 3. Trả lại trạng thái Work_Schedule thành 'Available' để giải phóng slot khám cho bác sĩ
+            if (scheduleId > 0) {
+                String sqlSched = "UPDATE Work_Schedule SET Status = 'Available' WHERE Schedule_ID = ?";
+                try (PreparedStatement ps = conn.prepareStatement(sqlSched)) {
+                    ps.setInt(1, scheduleId);
+                    ps.executeUpdate();
+                }
+            }
+
+            conn.commit();
+            return true;
+        } catch (Exception e) {
+            if (conn != null) conn.rollback();
+            e.printStackTrace();
+            throw e;
+        } finally {
+            if (conn != null) {
+                conn.setAutoCommit(true);
+                conn.close();
+            }
+        }
+    }
+
     public Patient findPatientByPhone(String phone) {
         if (phone == null || phone.trim().isEmpty()) return null;
         String sql = "SELECT Patient_ID, Full_Name, Phone, DOB FROM Patient WHERE Phone = ?";
@@ -952,7 +1045,7 @@ public class AppointmentDAO {
                      "stf.Full_Name AS Staff_Name, " +
                      "mr.Clinical_Diagnosis AS Medical_Notes, " +
                      "mr.conclusion AS Cancel_Reason, " +
-                     "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Status AS Invoice_Status " +
+                     "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status " +
                      "FROM Appointment a " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
                      "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
@@ -1029,6 +1122,109 @@ public class AppointmentDAO {
             ps.setString(1, newStatus);
             ps.setInt(2, appointmentId);
             return ps.executeUpdate() > 0;
+        }
+    }
+
+    public boolean completeAppointmentByStaff(int appointmentId, int staffEmployeeId, String paymentGateway) throws Exception {
+        Connection conn = null;
+        try {
+            conn = DBContext.getConnection();
+            conn.setAutoCommit(false);
+
+            // 1. Kiểm tra Appointment
+            String sqlCheck = "SELECT Appointment_ID, Status FROM Appointment WHERE Appointment_ID = ?";
+            try (PreparedStatement psCheck = conn.prepareStatement(sqlCheck)) {
+                psCheck.setInt(1, appointmentId);
+                try (ResultSet rs = psCheck.executeQuery()) {
+                    if (!rs.next()) {
+                        conn.rollback();
+                        return false;
+                    }
+                }
+            }
+
+            // 2. Tìm Master_Invoice
+            int invoiceId = -1;
+            long totalAmount = 200000;
+            long depositAmount = 200000;
+            long balanceDue = 0;
+            String sqlFindInv = "SELECT Invoice_ID, Total_Amount, Deposit_Amount, Balance_Due, Status FROM Master_Invoice WHERE Appointment_ID = ?";
+            try (PreparedStatement psInv = conn.prepareStatement(sqlFindInv)) {
+                psInv.setInt(1, appointmentId);
+                try (ResultSet rs = psInv.executeQuery()) {
+                    if (rs.next()) {
+                        invoiceId = rs.getInt("Invoice_ID");
+                        totalAmount = rs.getLong("Total_Amount");
+                        depositAmount = rs.getLong("Deposit_Amount");
+                        balanceDue = rs.getLong("Balance_Due");
+                    }
+                }
+            }
+
+            String gateway = (paymentGateway != null && !paymentGateway.trim().isEmpty()) ? paymentGateway.trim() : "Cash";
+
+            if (invoiceId <= 0) {
+                // Nếu chưa có hóa đơn, tạo mới với trạng thái Paid
+                String sqlInsInv = "INSERT INTO Master_Invoice (Appointment_ID, Total_Amount, Deposit_Amount, Balance_Due, Status, Create_At, Close_At) " +
+                                   "VALUES (?, 200000, 200000, 0, 'Paid', SYSUTCDATETIME(), SYSUTCDATETIME())";
+                try (PreparedStatement psIns = conn.prepareStatement(sqlInsInv, Statement.RETURN_GENERATED_KEYS)) {
+                    psIns.setInt(1, appointmentId);
+                    psIns.executeUpdate();
+                    try (ResultSet keys = psIns.getGeneratedKeys()) {
+                        if (keys.next()) invoiceId = keys.getInt(1);
+                    }
+                }
+                if (invoiceId > 0) {
+                    String sqlTrans = "INSERT INTO Payment_Transaction (Invoice_ID, Amount, Gateway_Status, Trans_Date, Payment_Gateway) " +
+                                      "VALUES (?, 200000, 'Success', SYSUTCDATETIME(), ?)";
+                    try (PreparedStatement psTrans = conn.prepareStatement(sqlTrans)) {
+                        psTrans.setInt(1, invoiceId);
+                        psTrans.setString(2, gateway);
+                        psTrans.executeUpdate();
+                    }
+                }
+            } else {
+                // Nếu còn dư nợ (balanceDue > 0), ghi nhận giao dịch thanh toán phần còn lại
+                if (balanceDue > 0) {
+                    String sqlTrans = "INSERT INTO Payment_Transaction (Invoice_ID, Amount, Gateway_Status, Trans_Date, Payment_Gateway) " +
+                                      "VALUES (?, ?, 'Success', SYSUTCDATETIME(), ?)";
+                    try (PreparedStatement psTrans = conn.prepareStatement(sqlTrans)) {
+                        psTrans.setInt(1, invoiceId);
+                        psTrans.setLong(2, balanceDue);
+                        psTrans.setString(3, gateway);
+                        psTrans.executeUpdate();
+                    }
+                }
+
+                // Cập nhật Master_Invoice thành Paid toàn bộ
+                String sqlUpdInv = "UPDATE Master_Invoice SET Deposit_Amount = Total_Amount, Balance_Due = 0, Status = 'Paid', Close_At = SYSUTCDATETIME() WHERE Invoice_ID = ?";
+                try (PreparedStatement psUpd = conn.prepareStatement(sqlUpdInv)) {
+                    psUpd.setInt(1, invoiceId);
+                    psUpd.executeUpdate();
+                }
+            }
+
+            // 3. Cập nhật Appointment thành Completed và lưu Staff phụ trách
+            String sqlAppt = "UPDATE Appointment SET Status = 'Completed', " +
+                             "Staff_Employee_ID = CASE WHEN ? > 0 THEN ? ELSE Staff_Employee_ID END " +
+                             "WHERE Appointment_ID = ?";
+            try (PreparedStatement psAppt = conn.prepareStatement(sqlAppt)) {
+                psAppt.setInt(1, staffEmployeeId);
+                psAppt.setInt(2, staffEmployeeId);
+                psAppt.setInt(3, appointmentId);
+                psAppt.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+        } catch (Exception e) {
+            if (conn != null) conn.rollback();
+            throw e;
+        } finally {
+            if (conn != null) {
+                conn.setAutoCommit(true);
+                conn.close();
+            }
         }
     }
 
@@ -1195,7 +1391,7 @@ public class AppointmentDAO {
             "stf.Full_Name AS Staff_Name, " +
             "mr.Clinical_Diagnosis AS Medical_Notes, " +
             "mr.conclusion AS Cancel_Reason, " +
-            "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Status AS Invoice_Status " +
+            "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status " +
             "FROM Appointment a " +
             "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
             "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
@@ -1316,7 +1512,9 @@ public class AppointmentDAO {
         try {
             long dep = rs.getLong("Invoice_Deposit");
             long tot = rs.getLong("Invoice_Total");
+            long bal = rs.getLong("Invoice_Balance_Due");
             a.setTotalAmount(tot);
+            a.setBalanceDue(bal);
             a.setFee(dep > 0 ? dep : (tot > 0 ? tot : 200000));
             a.setInvoiceStatus(rs.getString("Invoice_Status"));
         } catch (SQLException ignored) {}
