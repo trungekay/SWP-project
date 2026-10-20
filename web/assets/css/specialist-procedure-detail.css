@@ -452,15 +452,12 @@ body {
   gap: 12px;
   text-decoration: none;
   color: inherit;
-  transition: all 0.2s ease;
+  cursor: default;
+  user-select: text;
 }
 
 .todo-item:last-child {
   border-bottom: none;
-}
-
-.todo-item:hover {
-  background-color: #f8fafc;
 }
 
 .todo-item.active-item {

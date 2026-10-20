@@ -432,23 +432,14 @@
                 </c:when>
                 <c:otherwise>
                   <c:forEach var="todo" items="${todoList}">
-                    <a href="${pageContext.request.contextPath}/specialist/procedure-detail?orderId=${todo.orderId}" 
-                       class="todo-item ${todo.orderId == order.orderId ? 'active-item' : ''}">
+                    <div class="todo-item ${todo.orderId == order.orderId ? 'active-item' : ''}" style="cursor: default;">
                       
                       <div class="d-flex align-items-start gap-2.5">
-                        <div class="pt-0.5">
-                          <c:choose>
-                            <c:when test="${todo.status == 'Completed'}">
-                              <i class="bi bi-check-circle-fill text-success fs-5"></i>
-                            </c:when>
-                            <c:when test="${todo.status == 'Cancelled'}">
-                              <i class="bi bi-x-circle-fill text-danger fs-5"></i>
-                            </c:when>
-                            <c:otherwise>
-                              <i class="bi bi-play-circle-fill text-primary fs-5"></i>
-                            </c:otherwise>
-                          </c:choose>
-                        </div>
+                        <c:if test="${todo.status == 'Completed'}">
+                          <div class="pt-0.5">
+                            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                          </div>
+                        </c:if>
                         <div>
                           <div class="todo-title">
                             <c:out value="${todo.serviceName}" />
@@ -479,7 +470,7 @@
                           </c:otherwise>
                         </c:choose>
                       </div>
-                    </a>
+                    </div>
                   </c:forEach>
                 </c:otherwise>
               </c:choose>
@@ -504,24 +495,13 @@
                   <div class="text-muted" style="font-size: 11.5px;">KTV / Phẫu thuật viên: <strong><c:out value="${order.specialistName != null ? order.specialistName : 'Kỹ thuật viên'}" /></strong></div>
                 </div>
               </div>
-              <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm" onclick="printResultSheet()" title="In biên bản thủ thuật">
-                  <i class="bi bi-printer text-teal"></i>
-                  <span>In biên bản</span>
-                </button>
-                <c:choose>
-                  <c:when test="${order.status == 'Completed'}">
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1">
-                      <i class="bi bi-check2-circle me-1"></i>Thủ thuật đã hoàn tất
-                    </span>
-                  </c:when>
-                  <c:otherwise>
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1">
-                      <span class="pulse-dot me-1 d-inline-block"></span>Đang tác nghiệp
-                    </span>
-                  </c:otherwise>
-                </c:choose>
-              </div>
+              <c:if test="${order.status == 'Completed'}">
+                <div>
+                  <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1">
+                    <i class="bi bi-check2-circle me-1"></i>Thủ thuật đã hoàn tất
+                  </span>
+                </div>
+              </c:if>
             </div>
 
             <!-- Card Body: Form Lập Biên Bản -->
@@ -537,10 +517,7 @@
                       <div class="small">Biên bản đã được lưu và đồng bộ về hồ sơ bệnh án của Bác sĩ.</div>
                     </div>
                   </div>
-                  <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1.5 fw-bold" onclick="printResultSheet()">
-                      <i class="bi bi-printer me-1"></i>In biên bản
-                    </button>
+                  <div>
                     <a href="${pageContext.request.contextPath}/profile/medical-record?id=${order.recordId}" target="_blank" class="btn btn-sm btn-teal rounded-pill px-3 py-1.5 fw-bold text-white shadow-sm d-inline-flex align-items-center gap-1.5">
                       <i class="bi bi-file-earmark-medical"></i>
                       <span>Xem Bệnh án</span>
@@ -870,27 +847,52 @@
       const textarea = document.getElementById('procedureSteps');
       if (!textarea) return;
       if (templates[type]) {
-        if (textarea.value.trim().length > 0) {
-          if (confirm('Bạn có muốn thay thế nội dung quy trình hiện tại bằng mẫu gợi ý này không?')) {
-            textarea.value = templates[type];
-          }
-        } else {
-          textarea.value = templates[type];
-        }
+        textarea.value = templates[type];
       }
       textarea.focus();
       syncPrintData();
     }
 
-    // 3. Chèn kết quả & Lời dặn nhanh
+    // 3. Chèn kết quả & Lời dặn nhanh (các phần có thể kết hợp nhưng mỗi nội dung chỉ hiện 1 lần, xuống dòng riêng biệt)
+    const outcomeSnippets = [
+      'Mắt êm, không chảy máu, mép rạch áp tốt.',
+      'Lệ đạo thông hoàn toàn, nước trào xuống họng tốt.',
+      'Bao sau mở trong suốt đường kính 3.5mm, IOL cân đối.',
+      'Bệnh nhân tỉnh táo, tiếp xúc tốt, sinh hiệu ổn định.'
+    ];
+
+    const postCareSnippets = [
+      'Băng ép mắt trong 2 giờ đầu. Không dụi tay lên mắt.',
+      'Tránh nước vào mắt trong 3 ngày đầu. Đeo kính bảo hộ khi ra ngoài.',
+      'Nhỏ thuốc kháng sinh và tra mỡ mắt theo đơn Bác sĩ.',
+      'Tái khám sau 24 giờ hoặc liên hệ ngay nếu đau nhức dữ dội.'
+    ];
+
     function appendOutcome(text) {
       const el = document.getElementById('procedureOutcome');
       if (!el) return;
-      if (el.value.trim().length > 0) {
-        el.value += ' ' + text;
-      } else {
-        el.value = text;
+      let val = el.value.trim();
+
+      // Nếu đã có nhưng đang bị dính liền trên cùng 1 dòng, tách thành các dòng riêng
+      if (val.includes(text)) {
+        let changed = false;
+        outcomeSnippets.forEach(snip => {
+          if (val.includes(snip) && !val.includes('- ' + snip) && !val.includes('\n' + snip)) {
+            val = val.replace(snip, '\n- ' + snip);
+            changed = true;
+          }
+        });
+        if (changed) {
+          val = val.replace(/^\n+/, '').trim();
+          if (!val.startsWith('- ') && val.length > 0) val = '- ' + val;
+          el.value = val;
+          syncPrintData();
+        }
+        return;
       }
+
+      const line = '- ' + text;
+      el.value = val ? val + '\n' + line : line;
       el.focus();
       syncPrintData();
     }
@@ -898,11 +900,28 @@
     function appendPostCare(text) {
       const el = document.getElementById('postCare');
       if (!el) return;
-      if (el.value.trim().length > 0) {
-        el.value += '\n- ' + text;
-      } else {
-        el.value = '- ' + text;
+      let val = el.value.trim();
+
+      // Nếu đã có nhưng đang bị dính liền trên cùng 1 dòng, tách thành các dòng riêng
+      if (val.includes(text)) {
+        let changed = false;
+        postCareSnippets.forEach(snip => {
+          if (val.includes(snip) && !val.includes('- ' + snip) && !val.includes('\n' + snip)) {
+            val = val.replace(snip, '\n- ' + snip);
+            changed = true;
+          }
+        });
+        if (changed) {
+          val = val.replace(/^\n+/, '').trim();
+          if (!val.startsWith('- ') && val.length > 0) val = '- ' + val;
+          el.value = val;
+          syncPrintData();
+        }
+        return;
       }
+
+      const line = '- ' + text;
+      el.value = val ? val + '\n' + line : line;
       el.focus();
       syncPrintData();
     }
@@ -936,8 +955,30 @@
 
     window.addEventListener('beforeprint', syncPrintData);
 
-    // 5. Kiểm tra Form trước khi submit
+    // 5. Kiểm tra Form trước khi submit & Tự động tách dòng nội dung hiện có
     document.addEventListener('DOMContentLoaded', function () {
+      // Tự động tách các câu dính liền thành từng dòng gạch đầu dòng rõ ràng
+      const formatExistingLines = (id, snippets) => {
+        const el = document.getElementById(id);
+        if (!el || !el.value) return;
+        let v = el.value.trim();
+        let changed = false;
+        snippets.forEach(snip => {
+          if (v.includes(snip) && !v.includes('- ' + snip) && !v.includes('\n' + snip)) {
+            v = v.replace(snip, '\n- ' + snip);
+            changed = true;
+          }
+        });
+        if (changed) {
+          v = v.replace(/^\n+/, '').trim();
+          if (!v.startsWith('- ') && v.length > 0) v = '- ' + v;
+          el.value = v;
+        }
+      };
+
+      formatExistingLines('procedureOutcome', outcomeSnippets);
+      formatExistingLines('postCare', postCareSnippets);
+
       syncPrintData();
 
       const form = document.getElementById('protocolForm');

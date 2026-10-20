@@ -10,7 +10,7 @@ public class WorkScheduleDAO {
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT ws.Schedule_ID, ws.Doctor_Employee_ID, ws.Specialist_Employee_ID, ")
            .append("       ws.Work_Date, ws.Slot, ws.Start_Time, ws.End_Time, ws.Status, ")
-           .append("       COALESCE(rm.Room_Name, N'P.101') AS Room_Name, ")
+           .append("       rm.Room_Name, ")
            .append("       ap.Appointment_ID, ap.Patient_ID, ap.Status AS Appointment_Status, ")
            .append("       p.Full_Name AS Patient_Name, p.Phone AS Patient_Phone ")
            .append("FROM Work_Schedule ws ")
@@ -181,7 +181,8 @@ public class WorkScheduleDAO {
     }
     public List<User> getStaffAndDoctorList() {
         List<User> list = new ArrayList<>();
-        String sql = "SELECT LOWER(r.Role_Name) AS Role_Type, e.Employee_ID AS Actor_ID, e.Full_Name, COALESCE(e.Specialty, 'Nhân viên') AS Specialty, COALESCE(rm.Room_Name, 'Chưa xếp phòng') AS Room_Name " +
+        String sql = "SELECT LOWER(r.Role_Name) AS Role_Type, e.Employee_ID AS Actor_ID, e.Full_Name, COALESCE(e.Specialty, N'Nhân viên') AS Specialty, " +
+                     "CASE WHEN LOWER(r.Role_Name) = 'staff' THEN NULL ELSE COALESCE(rm.Room_Name, N'Chưa xếp phòng') END AS Room_Name " +
                      "FROM Employee_Profile e " +
                      "JOIN Account a ON e.Account_ID = a.Account_ID " +
                      "JOIN Role r ON a.Role_ID = r.Role_ID " +
@@ -205,7 +206,8 @@ public class WorkScheduleDAO {
         return list;
     }
     public User getActorProfile(int actorId, String role) {
-        String sql = "SELECT e.Employee_ID AS Actor_ID, e.Full_Name, COALESCE(e.Specialty, 'Nhân viên') AS Specialty, COALESCE(rm.Room_Name, 'Chưa xếp phòng') AS Room_Name, e.License_Number, LOWER(r.Role_Name) AS Role " +
+        String sql = "SELECT e.Employee_ID AS Actor_ID, e.Full_Name, COALESCE(e.Specialty, N'Nhân viên') AS Specialty, " +
+                     "CASE WHEN LOWER(r.Role_Name) = 'staff' THEN NULL ELSE COALESCE(rm.Room_Name, N'Chưa xếp phòng') END AS Room_Name, e.License_Number, LOWER(r.Role_Name) AS Role " +
                      "FROM Employee_Profile e " +
                      "JOIN Account a ON e.Account_ID = a.Account_ID " +
                      "JOIN Role r ON a.Role_ID = r.Role_ID " +

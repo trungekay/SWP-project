@@ -84,10 +84,12 @@
                         <c:otherwise>Nhân viên</c:otherwise>
                       </c:choose>
                     </span>
-                    <span class="badge-room">
-                      <i class="bi bi-door-open-fill text-success"></i>
-                      <c:out value="${actorProfile.roomName != null ? actorProfile.roomName : 'Chưa xếp phòng'}" />
-                    </span>
+                    <c:if test="${actorProfile.role != 'staff'}">
+                      <span class="badge-room">
+                        <i class="bi bi-door-open-fill text-success"></i>
+                        <c:out value="${actorProfile.roomName != null ? actorProfile.roomName : 'Chưa xếp phòng'}" />
+                      </span>
+                    </c:if>
                   </div>
                   <div class="text-muted small mt-1">
                     <c:choose>
