@@ -49,6 +49,34 @@ public class DatabaseInitializerListener implements ServletContextListener {
                 System.err.println("[VisionCare] Note on doctor_completed_at check: " + e.getMessage());
             }
 
+            // 3. Tự động kiểm tra và bổ sung các cột mới cho Procedure_Order (2026-10-19)
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("IF COL_LENGTH('dbo.Procedure_Order', 'Result_Text') IS NULL "
+                           + "ALTER TABLE dbo.Procedure_Order ADD Result_Text NVARCHAR(MAX) NULL");
+                stmt.execute("IF COL_LENGTH('dbo.Procedure_Order', 'Result_Conclusion') IS NULL "
+                           + "ALTER TABLE dbo.Procedure_Order ADD Result_Conclusion NVARCHAR(MAX) NULL");
+                stmt.execute("IF COL_LENGTH('dbo.Procedure_Order', 'Completed_At') IS NULL "
+                           + "ALTER TABLE dbo.Procedure_Order ADD Completed_At DATETIME2 NULL");
+                stmt.execute("IF COL_LENGTH('dbo.Procedure_Order', 'Referral_Notes') IS NULL "
+                           + "ALTER TABLE dbo.Procedure_Order ADD Referral_Notes NVARCHAR(2000) NULL");
+            } catch (Exception e) {
+                System.err.println("[VisionCare] Note on Procedure_Order columns check: " + e.getMessage());
+            }
+
+            // 4. Tự động kiểm tra và bổ sung các cột mới cho Prescription_Detail (2026-10-19)
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("IF COL_LENGTH('dbo.Prescription_Detail', 'Morning_Dose') IS NULL "
+                           + "ALTER TABLE dbo.Prescription_Detail ADD Morning_Dose NVARCHAR(100) NULL");
+                stmt.execute("IF COL_LENGTH('dbo.Prescription_Detail', 'Afternoon_Dose') IS NULL "
+                           + "ALTER TABLE dbo.Prescription_Detail ADD Afternoon_Dose NVARCHAR(100) NULL");
+                stmt.execute("IF COL_LENGTH('dbo.Prescription_Detail', 'Evening_Dose') IS NULL "
+                           + "ALTER TABLE dbo.Prescription_Detail ADD Evening_Dose NVARCHAR(100) NULL");
+                stmt.execute("IF COL_LENGTH('dbo.Prescription_Detail', 'Is_Custom_Medicine') IS NULL "
+                           + "ALTER TABLE dbo.Prescription_Detail ADD Is_Custom_Medicine BIT NOT NULL DEFAULT(0)");
+            } catch (Exception e) {
+                System.err.println("[VisionCare] Note on Prescription_Detail columns check: " + e.getMessage());
+            }
+
             System.out.println("[VisionCare] Database check completed successfully!");
             System.out.println("==================================================================");
 

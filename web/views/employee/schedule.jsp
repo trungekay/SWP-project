@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <!-- Layout & Custom CSS -->
   <link href="${pageContext.request.contextPath}/assets/css/employee.css" rel="stylesheet">
-  <link href="${pageContext.request.contextPath}/assets/css/schedule.css" rel="stylesheet">
+  <link href="${pageContext.request.contextPath}/assets/css/schedule.css?v=2.2" rel="stylesheet">
 </head>
 <body>
 
@@ -36,7 +36,7 @@
           <p>Xem và theo dõi ca trực hàng tuần của bạn tại phòng khám</p>
         </div>
         <div>
-          <a href="${pageContext.request.contextPath}/employee/register-schedule" class="btn btn-primary d-flex align-items-center gap-2" style="background-color: var(--primary-color); border-color: var(--primary-color);">
+          <a href="${pageContext.request.contextPath}/employee/register-schedule?year=${selectedYear}&week=${selectedWeek}" class="btn btn-primary d-flex align-items-center gap-2" style="background-color: var(--primary-color); border-color: var(--primary-color);">
             <i class="bi bi-calendar-plus"></i> Đăng ký ca làm việc
           </a>
         </div>
@@ -76,22 +76,37 @@
                       <c:otherwise>NV-0${viewedActor.actorId}</c:otherwise>
                     </c:choose>
                   </span>
-                  <span class="badge-room">
-                    <i class="bi bi-door-open-fill text-success"></i>
-                    <c:out value="${viewedActor.roomName != null ? viewedActor.roomName : 'Chưa xếp phòng'}" />
-                  </span>
+                  <c:if test="${viewedActor.role != 'staff'}">
+                    <span class="badge-room">
+                      <i class="bi bi-door-open-fill text-success"></i>
+                      <c:out value="${viewedActor.roomName != null ? viewedActor.roomName : 'Chưa xếp phòng'}" />
+                    </span>
+                  </c:if>
                 </div>
-                <c:if test="${not empty viewedActor.specialty}">
-                  <div class="text-muted small mt-1">
-                    <i class="bi bi-briefcase me-1"></i>Chuyên môn: <strong>
-                      <c:out value="${viewedActor.specialty}" />
-                    </strong>
-                  </div>
-                </c:if>
+                <c:choose>
+                  <c:when test="${viewedActor.role == 'staff'}">
+                    <c:if test="${not empty viewedActor.specialty}">
+                      <div class="text-muted small mt-1">
+                        <i class="bi bi-person-badge me-1"></i>Vị trí: <strong>
+                          <c:out value="${viewedActor.specialty}" />
+                        </strong>
+                      </div>
+                    </c:if>
+                  </c:when>
+                  <c:otherwise>
+                    <c:if test="${not empty viewedActor.specialty}">
+                      <div class="text-muted small mt-1">
+                        <i class="bi bi-briefcase me-1"></i>Chuyên môn: <strong>
+                          <c:out value="${viewedActor.specialty}" />
+                        </strong>
+                      </div>
+                    </c:if>
+                  </c:otherwise>
+                </c:choose>
               </div>
             </div>
 
-            <!-- Right: Stats & Register CTA -->
+            <!-- Right: Stats & Action CTA -->
             <div class="d-flex align-items-center flex-wrap gap-2">
               <div>
                 <div class="stat-label text-md-end">Tổng ca tuần này</div>
@@ -103,32 +118,26 @@
                 <div class="stat-label text-md-end">Giờ làm dự kiến</div>
                 <div class="stat-value text-md-end">${totalWeeklyHours} giờ</div>
               </div>
-              <div class="stat-divider d-none d-sm-block"></div>
-
-              <!-- Nút Đăng Ký Lịch Làm Việc -->
-              <a href="${pageContext.request.contextPath}/employee/register-schedule?year=${selectedYear}&week=${selectedWeek}"
-                class="btn btn-primary btn-sm rounded-pill px-3 py-2 fw-semibold"
-                style="background: var(--vc-primary); border-color: var(--vc-primary);">
-                <i class="bi bi-calendar-plus me-1"></i> Đăng ký lịch
-              </a>
               <c:if test="${sessionScope.user.role == 'doctor'}">
+                <div class="stat-divider d-none d-sm-block"></div>
                 <a href="${pageContext.request.contextPath}/doctor/waiting-list"
                   class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold">
                   <i class="bi bi-people me-1"></i> Hàng đợi khám bệnh
                 </a>
               </c:if>
-
             </div>
 
           </div>
         </div>
 
         <!-- Toolbar: Date range & Filters -->
-        <div class="schedule-toolbar">
+        <div class="schedule-toolbar d-flex align-items-center justify-content-between flex-nowrap gap-2 mb-3"
+             style="display: flex !important; flex-wrap: nowrap !important; overflow-x: auto;">
 
           <!-- Cụm chọn Năm & Tuần Trong Năm -->
-          <div class="week-selector-group">
-            <span class="small fw-bold text-muted d-none d-sm-inline"><i class="bi bi-calendar3 me-1"></i>Thời
+          <div class="week-selector-group d-flex align-items-center flex-nowrap gap-1 gap-sm-2 flex-shrink-0"
+               style="display: flex !important; flex-wrap: nowrap !important;">
+            <span class="small fw-bold text-muted d-none d-sm-inline text-nowrap"><i class="bi bi-calendar3 me-1"></i>Thời
               gian:</span>
 
             <!-- 1. Dropdown Chọn Năm (Tối đa đến năm hiện tại + 1) -->
@@ -166,15 +175,18 @@
             <!-- 5. Nút về tuần hiện tại nếu đang xem tuần khác -->
             <c:if test="${!isViewingCurrentWeek}">
               <a href="${pageContext.request.contextPath}/employee/schedule?year=${currentYear}&week=${currentWeekOfThisYear}&session=${sessionFilter}"
-                class="btn btn-outline-primary btn-sm rounded-pill ms-1 px-2 py-1" style="font-size: 11.5px;">
-                Về tuần hiện tại
+                class="btn btn-outline-primary btn-sm rounded-pill px-2.5 py-1 text-nowrap d-inline-flex align-items-center gap-1 shadow-sm"
+                title="Quay lại tuần hiện tại"
+                style="font-size: 12px; font-weight: 600;">
+                <i class="bi bi-arrow-counterclockwise"></i> Về tuần hiện tại
               </a>
             </c:if>
           </div>
 
           <!-- Ca Filter Buttons  -->
-          <div class="d-flex align-items-center gap-2">
-            <span class="small fw-bold text-muted me-1 d-none d-md-inline">Khung ca:</span>
+          <div class="session-filter-group d-flex align-items-center flex-nowrap gap-1 gap-md-1.5 flex-shrink-0"
+               style="display: flex !important; flex-wrap: nowrap !important;">
+            <span class="small fw-bold text-muted me-1 d-none d-md-inline text-nowrap">Khung ca:</span>
             <a href="${pageContext.request.contextPath}/employee/schedule?year=${selectedYear}&week=${selectedWeek}&session=all"
               class="btn-session-filter ${sessionFilter == 'all' ? 'active' : ''}">Tất cả</a>
             <a href="${pageContext.request.contextPath}/employee/schedule?year=${selectedYear}&week=${selectedWeek}&session=Morning"
@@ -256,7 +268,9 @@
                                       <c:out value="${cell.patientName}" />
                                     </span>
                                     <span class="slot-sub">
-                                      <c:out value="${cell.roomName}" /> &bull;
+                                      <c:if test="${viewedActor.role != 'staff' && not empty cell.roomName && cell.roomName != 'Chưa xếp phòng'}">
+                                        <c:out value="${cell.roomName}" /> &bull;
+                                      </c:if>
                                       <c:out
                                         value="${cell.startTime.length() >= 5 ? cell.startTime.substring(0, 5) : cell.startTime}" />
                                     </span>
@@ -267,9 +281,11 @@
                                   <c:when test="${cell != null && cell.available}">
                                     <div class="slot-btn slot-available" title="Ca làm việc sẵn sàng tiếp nhận">
                                       <span class="slot-title"><i class="bi bi-check2-circle me-1"></i>Làm việc</span>
-                                      <span class="slot-sub">
-                                        <c:out value="${cell.roomName}" />
-                                      </span>
+                                      <c:if test="${viewedActor.role != 'staff' && not empty cell.roomName && cell.roomName != 'Chưa xếp phòng'}">
+                                        <span class="slot-sub">
+                                          <c:out value="${cell.roomName}" />
+                                        </span>
+                                      </c:if>
                                     </div>
                                   </c:when>
 
@@ -319,7 +335,7 @@
             <div class="d-flex align-items-center flex-wrap gap-3">
               <div class="legend-item">
                 <div class="legend-box" style="background: #0d9488;"></div>
-                <span><strong>Làm việc</strong> (Sẵn sàng tiếp nhận / Đã phân phòng)</span>
+                <span><strong>Làm việc</strong> (Ca trực đã đăng ký)</span>
               </div>
               <div class="legend-item">
                 <div class="legend-box" style="background: #2563eb;"></div>
