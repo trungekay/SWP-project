@@ -99,6 +99,9 @@
                                                 <c:when test="${appointment.status == 'Pending'}">
                                                     <span class="badge-status badge-pending" title="Chờ tiếp đón tại quầy lễ tân">Chờ tiếp đón</span>
                                                 </c:when>
+                                                <c:when test="${appointment.status == 'Confirmed' && empty appointment.checkinTime}">
+                                                    <span class="badge-status badge-pending" title="Đã xác nhận lịch, chưa check-in tại quầy lễ tân">Chờ tiếp đón</span>
+                                                </c:when>
                                                 <c:when test="${appointment.status == 'Confirmed'}">
                                                     <span class="badge-status badge-confirmed" title="Đã tiếp đón, đang chờ vào khám">Chờ khám</span>
                                                 </c:when>

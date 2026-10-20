@@ -1,6 +1,7 @@
 package com.visioncare.controller;
 
 import com.visioncare.dao.InvoiceDAO;
+import com.visioncare.dao.ProcedurePaymentDAO;
 import com.visioncare.model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -15,11 +16,21 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
-@WebServlet(name = "AdminBillingServlet", urlPatterns = {"/admin/billing", "/admin/dashboard"})
+@WebServlet(name = "AdminBillingServlet", urlPatterns = {"/admin/billing", "/admin/dashboard", "/staff/payments"})
 public class AdminBillingServlet extends HttpServlet {
 
     private final InvoiceDAO invoiceDAO = new InvoiceDAO();
+    private final ProcedurePaymentDAO procedurePaymentDAO = new ProcedurePaymentDAO();
+
+    private boolean isStaffPage(HttpServletRequest request) {
+        return request.getServletPath().startsWith("/staff/");
+    }
+
+    private String billingPath(HttpServletRequest request) {
+        return isStaffPage(request) ? "/staff/payments" : "/admin/billing";
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -30,6 +41,10 @@ public class AdminBillingServlet extends HttpServlet {
         // Optional check: if not logged in or role not admin/staff/manager
         if (currentUser == null) {
             response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+        if (currentUser.getRoleId() != 1 && currentUser.getRoleId() != 2 && currentUser.getRoleId() != 5) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
 
@@ -173,9 +188,19 @@ public class AdminBillingServlet extends HttpServlet {
         try {
             Map<String, Object> stats = invoiceDAO.getBillingStats(computedDateFrom, computedDateTo);
             List<Map<String, Object>> invoices = invoiceDAO.getAllInvoices(search, status, computedDateFrom, computedDateTo);
+            List<Map<String, Object>> procedureRequests = procedurePaymentDAO.listRequests();
+            String csrf = (String) session.getAttribute("procedurePaymentCsrf");
+            if (csrf == null) {
+                csrf = UUID.randomUUID().toString();
+                session.setAttribute("procedurePaymentCsrf", csrf);
+            }
 
             request.setAttribute("stats", stats);
             request.setAttribute("invoices", invoices);
+            request.setAttribute("procedureRequests", procedureRequests);
+            request.setAttribute("procedurePaymentCsrf", csrf);
+            request.setAttribute("staffBilling", isStaffPage(request));
+            request.setAttribute("billingPath", billingPath(request));
             request.setAttribute("search", search);
             request.setAttribute("status", status != null ? status : "all");
             request.setAttribute("timeRange", timeRange);
@@ -210,10 +235,39 @@ public class AdminBillingServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
-        HttpSession session = request.getSession();
+        HttpSession session = request.getSession(false);
+        User currentUser = session == null ? null : (User) session.getAttribute("user");
+        if (currentUser == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+        if (currentUser.getRoleId() != 1 && currentUser.getRoleId() != 2 && currentUser.getRoleId() != 5) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
 
         String action = request.getParameter("action");
         String idParam = request.getParameter("invoiceId");
+
+        if ("confirm-procedure".equals(action)) {
+            String expected = (String) session.getAttribute("procedurePaymentCsrf");
+            if (expected == null || !expected.equals(request.getParameter("csrfToken"))) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
+            try {
+                int orderId = Integer.parseInt(request.getParameter("orderId"));
+                boolean paid = procedurePaymentDAO.confirm(orderId, currentUser.getActorId(), request.getParameter("paymentMethod"));
+                session.setAttribute(paid ? "successMessage" : "errorMessage", paid
+                        ? "Đã xác nhận thanh toán ca #CD-" + orderId + ". Specialist có thể tiếp nhận."
+                        : "Không thể xác nhận ca #CD-" + orderId + ". Vui lòng kiểm tra trạng thái yêu cầu.");
+            } catch (Exception error) {
+                log("Cannot confirm surgery payment", error);
+                session.setAttribute("errorMessage", "Chưa thể ghi nhận thanh toán phẫu thuật. Vui lòng thử lại.");
+            }
+            response.sendRedirect(request.getContextPath() + billingPath(request));
+            return;
+        }
 
         if ("update-status".equalsIgnoreCase(action) && idParam != null) {
             try {
@@ -239,7 +293,7 @@ public class AdminBillingServlet extends HttpServlet {
             }
         }
 
-        response.sendRedirect(request.getContextPath() + "/admin/billing");
+        response.sendRedirect(request.getContextPath() + billingPath(request));
     }
 
     /**

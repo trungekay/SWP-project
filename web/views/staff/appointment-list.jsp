@@ -330,6 +330,11 @@
                                                                         Chờ tiếp đón
                                                                     </span>
                                                                 </c:when>
+                                                                <c:when test="${appt.status == 'Confirmed' && empty appt.checkinTime}">
+                                                                    <span class="badge-status badge-pending" title="Đã xác nhận lịch, chưa check-in tại quầy lễ tân">
+                                                                        Chờ tiếp đón
+                                                                    </span>
+                                                                </c:when>
                                                                 <c:when test="${appt.status == 'Confirmed'}">
                                                                     <span class="badge-status badge-confirmed" title="Đã tiếp đón, đang chờ vào khám">
                                                                         Chờ khám
@@ -400,7 +405,7 @@
                                                                     </c:if>
 
                                                                     <!-- 4. Ca Đã tiếp đón / Đang khám hôm nay: Nút sang Hàng đợi phòng khám -->
-                                                                    <c:if test="${appt.status == 'Confirmed' || appt.status == 'In_Progress'}">
+                                                                    <c:if test="${not empty appt.checkinTime && (appt.status == 'Confirmed' || appt.status == 'In_Progress')}">
                                                                         <a href="${pageContext.request.contextPath}/staff/waiting-list"
                                                                             class="action-btn warning"
                                                                             title="Xem trong Hàng đợi phòng khám" data-bs-toggle="tooltip">

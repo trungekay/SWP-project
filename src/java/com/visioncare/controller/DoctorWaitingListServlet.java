@@ -71,7 +71,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
             long overdueCount = 0;
             for (Appointment appointment : matchingDay) {
                 String windowState = ExaminationWindow.state(appointment, clinicNow);
-                startWindowStates.put(appointment.getId(), windowState);
+                startWindowStates.put(appointment.getId(), ExaminationWindow.startState(appointment, clinicNow));
                 if ("late".equals(windowState) && ("Confirmed".equals(appointment.getStatus())
                         || "In_Progress".equals(appointment.getStatus()))) {
                     overdueCount++;
@@ -168,7 +168,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
                 if ("start".equals(action)) {
                     Appointment appointment = appointmentDAO.getAppointmentById(appointmentId);
                     if (appointment != null && appointment.getDoctorId() == doctor.getActorId()) {
-                        String state = ExaminationWindow.state(appointment, LocalDateTime.now(CLINIC_ZONE));
+                        String state = ExaminationWindow.startState(appointment, LocalDateTime.now(CLINIC_ZONE));
                         if ("early".equals(state)) message = "Chưa đến giờ khám. Chỉ có thể bắt đầu trong vòng 1 giờ trước giờ hẹn.";
                         if ("late".equals(state)) message = "Đã quá giờ khám. Chỉ có thể bắt đầu trong vòng 1 giờ sau giờ hẹn.";
                     }

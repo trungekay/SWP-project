@@ -7,7 +7,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hóa đơn & Thanh toán - VisionCare Admin</title>
+    <title>Quản lý thanh toán - VisionCare</title>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Bootstrap CSS -->
@@ -192,21 +192,33 @@
 <body>
 
     <!-- Sidebar Include -->
-    <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
-        <jsp:param name="activeNav" value="billing" />
-    </jsp:include>
+    <c:choose>
+        <c:when test="${staffBilling}">
+            <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
+                <jsp:param name="activeNav" value="payments" />
+            </jsp:include>
+        </c:when>
+        <c:otherwise>
+            <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
+                <jsp:param name="activeNav" value="billing" />
+            </jsp:include>
+        </c:otherwise>
+    </c:choose>
 
     <!-- Main Content -->
     <main class="main-wrapper">
         
         <!-- Header Include -->
-        <jsp:include page="/views/admin/layout/admin-header.jsp" />
+        <c:choose>
+            <c:when test="${staffBilling}"><jsp:include page="/views/employee/layout/employee-header.jsp" /></c:when>
+            <c:otherwise><jsp:include page="/views/admin/layout/admin-header.jsp" /></c:otherwise>
+        </c:choose>
 
         <div class="page-content bg-light pb-5">
             <!-- Breadcrumbs & Header -->
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
                 <div>
-                    <h3 class="fw-bold mb-1" style="color: #0f172a;">Hóa đơn & Thanh toán</h3>
+                    <h3 class="fw-bold mb-1" style="color: #0f172a;">Quản lý thanh toán</h3>
                     <p class="text-muted small mb-0">Quản lý hóa đơn khám bệnh, theo dõi doanh thu và tiến trình thanh toán</p>
                 </div>
             </div>
@@ -224,6 +236,49 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             </c:if>
+
+            <div class="content-card mb-4" id="procedure-requests">
+                <div class="p-3 border-bottom bg-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold mb-1">Yêu cầu thanh toán phẫu thuật</h5>
+                        <div class="text-muted small">Bác sĩ đã chỉ định; specialist tiếp nhận sau khi staff xác nhận tiền.</div>
+                    </div>
+                    <span class="badge bg-warning text-dark">${procedureRequests.size()} yêu cầu</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light"><tr><th>Mã chỉ định</th><th>Bệnh nhân</th><th>Dịch vụ</th><th>Giá phẫu thuật</th><th>Đã trừ tiền khám</th><th>Cần thu</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+                        <tbody>
+                            <c:forEach var="item" items="${procedureRequests}">
+                                <tr>
+                                    <td><strong>#CD-${item.orderId}</strong><div class="small text-muted">#APPT-${item.appointmentId}</div></td>
+                                    <td><c:out value="${item.patientName}" /></td>
+                                    <td><c:out value="${item.serviceName}" /></td>
+                                    <td><fmt:formatNumber value="${item.price}" pattern="#,###" /> đ</td>
+                                    <td class="text-success">−<fmt:formatNumber value="${item.creditAmount}" pattern="#,###" /> đ</td>
+                                    <td class="fw-bold"><fmt:formatNumber value="${item.amount}" pattern="#,###" /> đ</td>
+                                    <td><c:choose><c:when test="${item.status eq 'Paid'}"><span class="badge bg-success">Đã thanh toán</span></c:when><c:otherwise><span class="badge bg-warning text-dark">Chờ thanh toán</span></c:otherwise></c:choose></td>
+                                    <td>
+                                        <c:if test="${item.status eq 'Pending'}">
+                                            <form method="post" action="${pageContext.request.contextPath}${billingPath}" class="d-flex gap-2" onsubmit="return confirm('Xác nhận đã thu tiền cho ca #CD-${item.orderId}?');">
+                                                <input type="hidden" name="action" value="confirm-procedure">
+                                                <input type="hidden" name="orderId" value="${item.orderId}">
+                                                <input type="hidden" name="csrfToken" value="<c:out value='${procedurePaymentCsrf}' />">
+                                                <select name="paymentMethod" class="form-select form-select-sm" aria-label="Phương thức thanh toán">
+                                                    <option value="Cash_At_Counter">Tiền mặt</option>
+                                                    <option value="Bank_Transfer">Chuyển khoản</option>
+                                                </select>
+                                                <button class="btn btn-success btn-sm text-nowrap" type="submit">Xác nhận đã thu</button>
+                                            </form>
+                                        </c:if>
+                                    </td>
+                                </tr>
+                            </c:forEach>
+                            <c:if test="${empty procedureRequests}"><tr><td colspan="8" class="text-center text-muted py-4">Chưa có yêu cầu thanh toán phẫu thuật.</td></tr></c:if>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
             <!-- Stats Overview Cards -->
             <div class="row g-3 mb-4">
@@ -292,7 +347,7 @@
             <div class="content-card">
                 <!-- Filter bar -->
                 <div class="p-3 border-bottom bg-white">
-                    <form method="GET" action="${pageContext.request.contextPath}/admin/billing" id="billingFilterForm" onsubmit="return validateDateRange()">
+                    <form method="GET" action="${pageContext.request.contextPath}${billingPath}" id="billingFilterForm" onsubmit="return validateDateRange()">
                         <div class="row g-2 align-items-center">
                             <!-- Search -->
                             <div class="col-lg-4 col-md-6">
@@ -330,7 +385,7 @@
                                 <span class="badge bg-light text-secondary border px-3 py-2 text-nowrap">
                                     <i class="bi bi-list-check me-1"></i><strong>${invoices.size()}</strong> HĐ
                                 </span>
-                                <a href="${pageContext.request.contextPath}/admin/billing" class="btn btn-outline-secondary" title="Đặt lại bộ lọc"><i class="bi bi-arrow-clockwise"></i></a>
+                                <a href="${pageContext.request.contextPath}${billingPath}" class="btn btn-outline-secondary" title="Đặt lại bộ lọc"><i class="bi bi-arrow-clockwise"></i></a>
                             </div>
                         </div>
 
@@ -512,7 +567,7 @@
                     <h5 class="modal-title fw-bold" style="color: #059669;"><i class="bi bi-check-circle me-2"></i>Xác nhận thanh toán</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form method="POST" action="${pageContext.request.contextPath}/admin/billing">
+                <form method="POST" action="${pageContext.request.contextPath}${billingPath}">
                     <input type="hidden" name="action" value="update-status">
                     <input type="hidden" name="invoiceId" id="payModalInvoiceId">
                     <input type="hidden" name="newStatus" value="Paid">
@@ -568,7 +623,7 @@
                     '<p class="mt-2 text-muted small">Đang tải chi tiết hóa đơn #' + id + '...</p>' +
                 '</div>';
 
-            fetch('${pageContext.request.contextPath}/admin/billing?action=detail&format=json&id=' + id)
+            fetch('${pageContext.request.contextPath}${billingPath}?action=detail&format=json&id=' + id)
                 .then(res => res.json())
                 .then(data => {
                     renderInvoiceDetail(data);

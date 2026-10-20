@@ -7,7 +7,30 @@ import java.time.LocalTime;
 
 /** Clinic-local window for starting a scheduled examination. */
 public final class ExaminationWindow {
+    private static final int EARLY_START_APPOINTMENT_ID = 32;
+    private static final LocalDate EARLY_START_DATE = LocalDate.of(2026, 10, 21);
+
     private ExaminationWindow() {}
+
+    /** One-time early start exception for the checked-in appointment #32. */
+    public static String startState(int appointmentId, LocalDate date, LocalTime time, LocalDateTime now) {
+        if (appointmentId == EARLY_START_APPOINTMENT_ID && EARLY_START_DATE.equals(date)
+                && now != null && EARLY_START_DATE.equals(now.toLocalDate())) {
+            return "open";
+        }
+        return state(date, time, now);
+    }
+
+    public static String startState(Appointment appointment, LocalDateTime now) {
+        if (appointment == null || appointment.getAppointmentDate() == null
+                || appointment.getTimeSlot() == null) return "invalid";
+        try {
+            return startState(appointment.getId(), appointment.getAppointmentDate().toLocalDate(),
+                    LocalTime.parse(appointment.getTimeSlot()), now);
+        } catch (RuntimeException invalidTime) {
+            return "invalid";
+        }
+    }
 
     public static String state(Appointment appointment, LocalDateTime now) {
         if (appointment == null || appointment.getAppointmentDate() == null
