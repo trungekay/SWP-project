@@ -393,59 +393,35 @@
                                                                 </button>
 
                                                                 <!-- Các thao tác theo trạng thái: Chỉ hiển thị khi ca khám CHƯA qua ngày -->
-                                                                <c:if test="${!isPastAppt}">
-                                                                    <c:choose>
-                                                                        <c:when test="${appt.status == 'Confirmed'}">
-                                                                            <!-- Bỏ qua lượt (Vàng pastel) -->
-                                                                            <button type="button"
-                                                                                class="action-btn warning btn-trigger-skip"
-                                                                                title="Bỏ qua lượt: Đổi ca khám với lượt tiếp theo sau mình" data-bs-toggle="tooltip"
-                                                                                data-id="${appt.id}"
-                                                                                data-name="${appt.patientName}">
-                                                                                <i class="bi bi-arrow-down-circle"></i>
-                                                                            </button>
+                                                                <c:if test="${!isPastAppt && appt.status == 'Confirmed'}">
+                                                                    <!-- Bỏ qua lượt (Vàng pastel) -->
+                                                                    <button type="button"
+                                                                        class="action-btn warning btn-trigger-skip"
+                                                                        title="Bỏ qua lượt: Đổi ca khám với lượt tiếp theo sau mình" data-bs-toggle="tooltip"
+                                                                        data-id="${appt.id}"
+                                                                        data-name="${appt.patientName}">
+                                                                        <i class="bi bi-arrow-down-circle"></i>
+                                                                    </button>
 
-                                                                            <!-- Báo vắng mặt (Đỏ pastel) -->
-                                                                            <button type="button"
-                                                                                class="action-btn delete btn-trigger-absent"
-                                                                                title="Báo vắng mặt: Gọi tên nhiều lần không có mặt" data-bs-toggle="tooltip"
-                                                                                data-id="${appt.id}"
-                                                                                data-name="${appt.patientName}">
-                                                                                <i class="bi bi-trash"></i>
-                                                                            </button>
-                                                                        </c:when>
-
-                                                                        <c:when test="${appt.status == 'In_Progress'}">
-                                                                            <!-- Đang khám trong phòng -->
-                                                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 small fw-semibold"
-                                                                                title="Bác sĩ đang khám trong phòng. Bấm nút Xem phiếu khám để kiểm tra ghi chú y tế & đơn thuốc." data-bs-toggle="tooltip">
-                                                                                <i class="bi bi-heart-pulse-fill me-1"></i>Đang khám
-                                                                            </span>
-                                                                        </c:when>
-                                                                        <c:otherwise>
-                                                                        </c:otherwise>
-                                                                    </c:choose>
+                                                                    <!-- Báo vắng mặt (Đỏ pastel) -->
+                                                                    <button type="button"
+                                                                        class="action-btn delete btn-trigger-absent"
+                                                                        title="Báo vắng mặt: Gọi tên nhiều lần không có mặt" data-bs-toggle="tooltip"
+                                                                        data-id="${appt.id}"
+                                                                        data-name="${appt.patientName}">
+                                                                        <i class="bi bi-trash"></i>
+                                                                    </button>
                                                                 </c:if>
 
-                                                                <!-- Đã khám xong / Hoàn tất lịch hẹn -->
-                                                                <c:if test="${appt.status == 'Completed'}">
-                                                                    <c:choose>
-                                                                        <c:when test="${appt.balanceDue > 0}">
-                                                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 small fw-semibold btn-trigger-post-exam"
-                                                                                style="cursor: pointer;"
-                                                                                title="Bác sĩ đã khám xong. Bấm để thu viện phí còn lại & hoàn tất lịch hẹn." data-bs-toggle="tooltip"
-                                                                                data-id="${appt.id}"
-                                                                                data-name="${appt.patientName}">
-                                                                                <i class="bi bi-cash-coin me-1"></i>Chờ thu phí
-                                                                            </span>
-                                                                        </c:when>
-                                                                        <c:otherwise>
-                                                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small fw-semibold"
-                                                                                title="Ca khám đã hoàn tất. Bấm nút Xem phiếu khám để kiểm tra hồ sơ." data-bs-toggle="tooltip">
-                                                                                <i class="bi bi-check2-circle me-1"></i>Đã xong
-                                                                            </span>
-                                                                        </c:otherwise>
-                                                                    </c:choose>
+                                                                <!-- Đã khám xong nhưng còn nợ viện phí / thuốc / thủ thuật: Nút thu phí -->
+                                                                <c:if test="${appt.status == 'Completed' && appt.balanceDue > 0}">
+                                                                    <button type="button"
+                                                                        class="action-btn warning btn-trigger-post-exam"
+                                                                        title="Bác sĩ đã khám xong. Bấm để thu viện phí còn lại & hoàn tất lịch hẹn." data-bs-toggle="tooltip"
+                                                                        data-id="${appt.id}"
+                                                                        data-name="${appt.patientName}">
+                                                                        <i class="bi bi-cash-coin"></i>
+                                                                    </button>
                                                                 </c:if>
                                                             </div>
                                                         </td>
@@ -601,6 +577,9 @@
                             </div>
 
                             <div class="modal-body p-4" id="postExamModalBody">
+                                <!-- Hộp thông báo / cảnh báo trong modal -->
+                                <div id="postExamAlertBox" class="alert alert-danger py-2.5 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2 shadow-sm d-none" style="font-size: 13px;"></div>
+
                                 <!-- Loading State -->
                                 <div id="postExamLoading" class="text-center py-5">
                                     <div class="spinner-border text-teal mb-2" role="status" style="width: 2.5rem; height: 2.5rem; color: #0d9488;"></div>
@@ -836,6 +815,12 @@
                         var subElem = document.getElementById('postExamSubtitle');
                         if (subElem) subElem.textContent = 'Bệnh nhân: ' + (name || '---') + ' (#APPT-' + id + ')';
 
+                        var alertBox = document.getElementById('postExamAlertBox');
+                        if (alertBox) {
+                            alertBox.classList.add('d-none');
+                            alertBox.innerHTML = '';
+                        }
+
                         var loading = document.getElementById('postExamLoading');
                         var content = document.getElementById('postExamContent');
                         if (loading) loading.classList.remove('d-none');
@@ -991,46 +976,119 @@
                                     var completeBtn = document.getElementById('btnCompleteAppointment');
                                     var footerNote = document.getElementById('postExamFooterNote');
 
-                                    if (data.balanceDue > 0) {
-                                        if (payBox) payBox.classList.remove('d-none');
-                                        if (noticeBox) noticeBox.classList.add('d-none');
-                                        if (balNotice) balNotice.textContent = data.balanceDueFmt || (data.balanceDue + ' ₫');
-
-                                        if (completeBtn) {
-                                            completeBtn.disabled = false;
-                                            completeBtn.className = 'btn btn-warning btn-sm px-3.5 py-1.5 fw-semibold shadow-sm text-dark';
-                                            completeBtn.innerHTML = '<i class="bi bi-cash-coin me-1.5"></i> Thanh toán phần còn lại & Hoàn tất lịch hẹn';
-                                        }
-                                        if (footerNote) footerNote.innerHTML = '<i class="bi bi-exclamation-circle text-warning me-1"></i>Vui lòng thu phần còn lại <strong>' + (data.balanceDueFmt || '') + '</strong> và bấm hoàn tất.';
-                                    } else {
+                                    if (data.status === 'In_Progress') {
                                         if (payBox) payBox.classList.add('d-none');
-                                        if (noticeBox) noticeBox.classList.remove('d-none');
+                                        if (noticeBox) noticeBox.classList.add('d-none');
 
                                         if (completeBtn) {
-                                            completeBtn.disabled = false;
-                                            completeBtn.className = 'btn btn-teal btn-sm px-3.5 py-1.5 fw-semibold shadow-sm';
-                                            completeBtn.innerHTML = '<i class="bi bi-check2-circle me-1.5"></i> Hoàn tất lịch hẹn';
+                                            completeBtn.disabled = true;
+                                            completeBtn.className = 'btn btn-secondary btn-sm px-3.5 py-1.5 fw-semibold shadow-sm opacity-75';
+                                            completeBtn.innerHTML = '<i class="bi bi-heart-pulse me-1.5"></i> Bác sĩ đang khám (Chưa thể hoàn tất)';
                                         }
-                                        if (footerNote) footerNote.innerHTML = '<i class="bi bi-check-circle text-success me-1"></i>Viện phí đã thanh toán đủ. Lễ tân bấm nút để hoàn tất lịch hẹn.';
+                                        if (footerNote) {
+                                            footerNote.innerHTML = '<i class="bi bi-info-circle text-primary me-1"></i>Bác sĩ đang thực hiện ca khám trong phòng. Sau khi bác sĩ bấm hoàn tất chẩn đoán và đơn thuốc, lễ tân mới có thể thu viện phí và đóng lịch hẹn.';
+                                        }
+                                    } else if (data.status === 'Confirmed') {
+                                        if (payBox) payBox.classList.add('d-none');
+                                        if (noticeBox) noticeBox.classList.add('d-none');
+
+                                        if (completeBtn) {
+                                            completeBtn.disabled = true;
+                                            completeBtn.className = 'btn btn-secondary btn-sm px-3.5 py-1.5 fw-semibold shadow-sm opacity-75';
+                                            completeBtn.innerHTML = '<i class="bi bi-clock me-1.5"></i> Chờ bác sĩ tiếp nhận khám';
+                                        }
+                                        if (footerNote) {
+                                            footerNote.innerHTML = '<i class="bi bi-info-circle text-secondary me-1"></i>Bệnh nhân đang chờ gọi vào phòng khám.';
+                                        }
+                                    } else if (data.status === 'Completed') {
+                                        if (data.balanceDue > 0) {
+                                            if (payBox) payBox.classList.remove('d-none');
+                                            if (noticeBox) noticeBox.classList.add('d-none');
+                                            if (balNotice) balNotice.textContent = data.balanceDueFmt || (data.balanceDue + ' ₫');
+
+                                            if (completeBtn) {
+                                                completeBtn.disabled = false;
+                                                completeBtn.className = 'btn btn-warning btn-sm px-3.5 py-1.5 fw-semibold shadow-sm text-dark';
+                                                completeBtn.innerHTML = '<i class="bi bi-cash-coin me-1.5"></i> Thu ' + (data.balanceDueFmt || '') + ' & Hoàn tất lịch hẹn';
+                                            }
+                                            if (footerNote) {
+                                                footerNote.innerHTML = '<i class="bi bi-exclamation-circle text-warning me-1"></i>Bác sĩ đã khám xong. Vui lòng thu phần còn lại <strong>' + (data.balanceDueFmt || '') + '</strong> và bấm hoàn tất.';
+                                            }
+                                        } else {
+                                            if (payBox) payBox.classList.add('d-none');
+                                            if (noticeBox) noticeBox.classList.remove('d-none');
+
+                                            if (completeBtn) {
+                                                completeBtn.disabled = true;
+                                                completeBtn.className = 'btn btn-success btn-sm px-3.5 py-1.5 fw-semibold shadow-sm';
+                                                completeBtn.innerHTML = '<i class="bi bi-check2-circle me-1.5"></i> Lịch hẹn đã hoàn tất';
+                                            }
+                                            if (footerNote) {
+                                                footerNote.innerHTML = '<i class="bi bi-check-circle text-success me-1"></i>Ca khám và viện phí đã hoàn tất toàn bộ.';
+                                            }
+                                        }
                                     }
 
                                     if (loading) loading.classList.add('d-none');
                                     if (content) content.classList.remove('d-none');
                                 } else {
-                                    alert(data && data.message ? data.message : 'Không thể tải chi tiết ca khám.');
+                                    showToast(data && data.message ? data.message : 'Không thể tải chi tiết ca khám.', 'danger');
                                 }
                             })
                             .catch(function(err) {
                                 console.error('Error fetching post exam details', err);
-                                alert('Lỗi kết nối tải dữ liệu phiếu khám: ' + err.message);
+                                showToast('Lỗi kết nối tải dữ liệu phiếu khám: ' + err.message, 'danger');
                             });
+                    }
+
+                    function showPostExamAlert(msg, type) {
+                        var box = document.getElementById('postExamAlertBox');
+                        if (!box) return;
+                        var isSuccess = (type === 'success');
+                        box.className = 'alert ' + (isSuccess ? 'alert-success' : 'alert-danger') + ' py-2.5 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2 shadow-sm';
+                        var icon = isSuccess ? 'bi-check-circle-fill text-success' : 'bi-exclamation-triangle-fill text-danger';
+                        box.innerHTML = '<i class="bi ' + icon + ' fs-5 flex-shrink-0"></i><div>' + msg + '</div>';
+                        box.classList.remove('d-none');
+                        box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+
+                    function showToast(message, type) {
+                        var container = document.getElementById('toastNotificationContainer');
+                        if (!container) return;
+                        var isSuccess = (type === 'success');
+                        var toastId = 'toast_' + Date.now();
+                        var bgClass = isSuccess ? 'bg-success text-white' : 'bg-danger text-white';
+                        var icon = isSuccess ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill';
+                        var html = '<div id="' + toastId + '" class="toast align-items-center ' + bgClass + ' border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">'
+                                 + '  <div class="d-flex">'
+                                 + '    <div class="toast-body d-flex align-items-center gap-2 fs-6 py-2.5 px-3">'
+                                 + '      <i class="bi ' + icon + ' fs-5"></i>'
+                                 + '      <span>' + message + '</span>'
+                                 + '    </div>'
+                                 + '    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>'
+                                 + '  </div>'
+                                 + '</div>';
+                        container.insertAdjacentHTML('beforeend', html);
+                        var toastElem = document.getElementById(toastId);
+                        if (toastElem && window.bootstrap && bootstrap.Toast) {
+                            var bsToast = new bootstrap.Toast(toastElem, { delay: 4500 });
+                            bsToast.show();
+                            toastElem.addEventListener('hidden.bs.toast', function () {
+                                toastElem.remove();
+                            });
+                        }
                     }
 
                     function submitCompleteAppointment() {
                         if (!currentPostExamId) return;
                         var data = window._currentPostExamData;
-                        var balanceDue = (data && data.balanceDue) ? data.balanceDue : 0;
+                        if (data && data.status !== 'Completed') {
+                            showPostExamAlert('Không thể hoàn tất lịch hẹn (#APPT-' + currentPostExamId + ') do Bác sĩ đang khám trong phòng và chưa kết thúc ca khám!', 'danger');
+                            showToast('Không thể hoàn tất lịch hẹn: Ca khám đang diễn ra trong phòng bác sĩ!', 'danger');
+                            return;
+                        }
 
+                        var balanceDue = (data && data.balanceDue) ? data.balanceDue : 0;
                         var selectedGateway = 'Cash';
                         var payRadio = document.querySelector('input[name="postExamPaymentGateway"]:checked');
                         if (payRadio) {
@@ -1056,26 +1114,32 @@
                                     var modal = bootstrap.Modal.getInstance(modalElem);
                                     if (modal) modal.hide();
                                 }
-                                alert(result.message || 'Đã hoàn tất lịch hẹn thành công!');
-                                window.location.reload();
+                                showToast(result.message || 'Đã hoàn tất lịch hẹn thành công!', 'success');
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 1200);
                             } else {
+                                var msg = (result && result.message) ? result.message : 'Không thể hoàn tất lịch hẹn.';
                                 if (btn) {
                                     btn.disabled = false;
                                     btn.innerHTML = balanceDue > 0
-                                        ? '<i class="bi bi-cash-coin me-1.5"></i> Thanh toán phần còn lại & Hoàn tất lịch hẹn'
+                                        ? '<i class="bi bi-cash-coin me-1.5"></i> Thu ' + (data.balanceDueFmt || '') + ' & Hoàn tất lịch hẹn'
                                         : '<i class="bi bi-check2-circle me-1.5"></i> Hoàn tất lịch hẹn';
                                 }
-                                alert(result && result.message ? result.message : 'Không thể hoàn tất lịch hẹn.');
+                                showPostExamAlert(msg, 'danger');
+                                showToast(msg, 'danger');
                             }
                         })
                         .catch(function(err) {
+                            var errMsg = 'Lỗi kết nối khi hoàn tất: ' + err.message;
                             if (btn) {
                                 btn.disabled = false;
                                 btn.innerHTML = balanceDue > 0
-                                    ? '<i class="bi bi-cash-coin me-1.5"></i> Thanh toán phần còn lại & Hoàn tất lịch hẹn'
+                                    ? '<i class="bi bi-cash-coin me-1.5"></i> Thu ' + (data.balanceDueFmt || '') + ' & Hoàn tất lịch hẹn'
                                     : '<i class="bi bi-check2-circle me-1.5"></i> Hoàn tất lịch hẹn';
                             }
-                            alert('Lỗi hoàn tất lịch hẹn: ' + err.message);
+                            showPostExamAlert(errMsg, 'danger');
+                            showToast(errMsg, 'danger');
                         });
                     }
 
@@ -1114,6 +1178,9 @@
                         }
                     }, 15000);
                 </script>
+
+                <!-- Toast Container for Clean Notifications -->
+                <div id="toastNotificationContainer" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 2050;"></div>
             </body>
 
             </html>
