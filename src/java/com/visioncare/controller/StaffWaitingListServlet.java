@@ -245,7 +245,7 @@ public class StaffWaitingListServlet extends HttpServlet {
                     if (success) {
                         session.setAttribute("successMessage", "Đã ghi nhận bệnh nhân (#APPT-" + apptId + ") vắng mặt và gỡ khỏi hàng đợi.");
                     } else {
-                        session.setAttribute("errorMessage", "Không thể ghi nhận vắng mặt cho ca khám #APPT-" + apptId);
+                        session.setAttribute("errorMessage", "Không thể ghi nhận vắng mặt cho ca khám #APPT-" + apptId + ". Ca có thể đã được bác sĩ gọi vào khám; vui lòng tải lại hàng đợi.");
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -303,16 +303,10 @@ public class StaffWaitingListServlet extends HttpServlet {
                         if (success) {
                             session.setAttribute("successMessage", "Đã hủy ca khám (#APPT-" + apptId + ") và gỡ khỏi hàng đợi.");
                         } else {
-                            session.setAttribute("errorMessage", "Không thể hủy ca khám #APPT-" + apptId);
+                            session.setAttribute("errorMessage", "Không thể hủy ca khám #APPT-" + apptId + ". Ca có thể đã được bác sĩ gọi vào khám hoặc đã hoàn tất; vui lòng tải lại hàng đợi.");
                         }
                     } else {
-                        boolean success = appointmentDAO.updateAppointmentStatus(apptId, newStatus.trim());
-
-                        if (success) {
-                            session.setAttribute("successMessage", "Đã cập nhật ca khám (#APPT-" + apptId + ") thành công.");
-                        } else {
-                            session.setAttribute("errorMessage", "Không thể cập nhật trạng thái cho ca khám #APPT-" + apptId);
-                        }
+                        session.setAttribute("errorMessage", "Không thể đổi trạng thái khám từ màn hình Lễ tân. Vui lòng dùng thao tác tiếp đón hoặc để bác sĩ xử lý ca khám.");
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

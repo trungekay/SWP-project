@@ -96,8 +96,14 @@
                                             <h3 class="mb-0 fw-bold text-dark">${appointment.patientName}</h3>
                                             <span class="badge bg-light text-dark border">#APPT-${appointment.id}</span>
                                             <c:choose>
+                                                <c:when test="${appointment.awaitingPayment}">
+                                                    <span class="badge-status badge-pending" title="Chưa xác nhận thanh toán phí khám">Chờ thanh toán</span>
+                                                </c:when>
                                                 <c:when test="${appointment.status == 'Pending'}">
-                                                    <span class="badge-status badge-pending" title="Chờ tiếp đón tại quầy lễ tân">Chờ tiếp đón</span>
+                                                    <span class="badge-status badge-pending" title="Lịch hẹn đang chờ xử lý">Chờ xử lý</span>
+                                                </c:when>
+                                                <c:when test="${appointment.status == 'Confirmed' && empty appointment.checkinTime}">
+                                                    <span class="badge-status badge-pending" title="Đã xác nhận lịch, chưa check-in tại quầy lễ tân">Chờ tiếp đón</span>
                                                 </c:when>
                                                 <c:when test="${appointment.status == 'Confirmed'}">
                                                     <span class="badge-status badge-confirmed" title="Đã tiếp đón, đang chờ vào khám">Chờ khám</span>
@@ -144,18 +150,20 @@
                                             </span>
                                         </c:when>
                                         <c:otherwise>
-                                            <c:if test="${appointment.status == 'Pending'}">
+                                            <c:if test="${appointment.readyForCheckIn}">
                                                 <button type="button" class="btn btn-teal" data-bs-toggle="modal"
                                                     data-bs-target="#checkinModal">
                                                     <i class="bi bi-box-arrow-in-right"></i> Check-in
                                                 </button>
+                                            </c:if>
+                                            <c:if test="${appointment.status == 'Pending' || appointment.readyForCheckIn}">
                                                 <button type="button"
                                                     class="btn btn-outline-danger d-flex align-items-center gap-1"
                                                     data-bs-toggle="modal" data-bs-target="#cancelModal">
                                                     <i class="bi bi-x-circle"></i> Hủy lịch hẹn
                                                 </button>
                                             </c:if>
-                                            <c:if test="${appointment.status == 'Confirmed'}">
+                                            <c:if test="${appointment.status == 'Confirmed' && not empty appointment.checkinTime}">
                                                 <a href="${pageContext.request.contextPath}/staff/waiting-list"
                                                     class="btn btn-teal-outline">
                                                     <i class="bi bi-people-fill"></i> Xem trong Hàng đợi

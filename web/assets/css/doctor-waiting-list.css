@@ -157,6 +157,7 @@
 .doctor-queue-body { --vc-primary: #0d9488; --vc-primary-dark: #0f766e; --vc-border: #e2e8f0; background: #f1f5f9; }
 .doctor-queue-body .doctor-queue-stats { padding: 0; background: transparent; }
 .doctor-queue-body .doctor-queue-panel { padding: 0; }
+.doctor-queue-panel { overflow: visible; }
 .doctor-queue-page { max-width: 1440px; padding: 30px 24px 70px; color: #0f172a; }
 .doctor-queue-eyebrow { color: var(--vc-primary-dark); }
 .doctor-queue-heading { align-items: end; margin-bottom: 22px; }
@@ -183,6 +184,19 @@
 .doctor-queue-search-field { flex: 1 1 280px; }
 .doctor-queue-filter-button { border-radius: 999px; background: var(--vc-primary); }
 .doctor-queue-filter-button:hover { background: var(--vc-primary-dark); }
+.doctor-queue-sort { position: relative; flex: 0 0 auto; z-index: 5; }
+.doctor-queue-sort summary { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 9px 15px; border: 1px solid var(--vc-border); border-radius: 999px; background: #fff; color: #334155; cursor: pointer; font-size: 13px; font-weight: 700; list-style: none; }
+.doctor-queue-sort summary::-webkit-details-marker { display: none; }
+.doctor-queue-sort summary:hover, .doctor-queue-sort.active summary { border-color: #5eead4; background: #f0fdfa; color: var(--vc-primary-dark); }
+.doctor-queue-sort summary:focus-visible, .doctor-queue-sort-menu input:focus-visible { outline: 3px solid #41c0a8; outline-offset: 2px; }
+.doctor-queue-sort-chevron { font-size: 10px; transition: transform .16s ease; }
+.doctor-queue-sort[open] .doctor-queue-sort-chevron { transform: rotate(180deg); }
+.doctor-queue-sort-menu { position: absolute; top: calc(100% + 8px); right: 0; width: 282px; padding: 14px; border: 1px solid var(--vc-border); border-radius: 12px; background: #fff; box-shadow: 0 12px 28px rgba(15, 23, 42, .12); }
+.doctor-queue-sort-menu fieldset { display: grid; gap: 3px; margin: 0; padding: 0; border: 0; }
+.doctor-queue-sort-menu legend { float: none; width: auto; margin: 0 0 7px; color: #64748b; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
+.doctor-queue-sort-menu label { display: flex; align-items: center; gap: 9px; min-height: 38px; padding: 6px 8px; border-radius: 8px; color: #334155; cursor: pointer; font-size: 12px; line-height: 1.35; }
+.doctor-queue-sort-menu label:hover { background: #f0fdfa; }
+.doctor-queue-sort-menu input { flex: 0 0 auto; margin: 0; accent-color: var(--vc-primary); }
 .doctor-queue-tabs { border-bottom-color: var(--vc-border); }
 .doctor-queue-tabs a { border-radius: 999px; background: #f8fafc; color: #475569; }
 .doctor-queue-tabs a.active { border-color: #99f6e4; background: #ccfbf1; color: #115e59; }
@@ -205,4 +219,52 @@
 @media (max-width: 560px) {
     .doctor-queue-date-controls { flex-wrap: wrap; }
     .doctor-queue-search-field { flex-basis: 100%; }
+    .doctor-queue-sort { flex-basis: 100%; }
+    .doctor-queue-sort-menu { position: static; width: 100%; margin-top: 8px; box-shadow: none; }
 }
+
+/* The five summary cards are the status filters for the appointment table. */
+.doctor-queue-stat { color: inherit; text-decoration: none; transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
+.doctor-queue-stat:hover { border-color: #5eead4; box-shadow: 0 8px 24px rgba(13, 148, 136, .12); color: inherit; transform: translateY(-2px); }
+.doctor-queue-stat.active { border-color: #0d9488; background: #f0fdfa; box-shadow: 0 0 0 2px rgba(13, 148, 136, .12); }
+.doctor-queue-stat.active strong { color: #0f766e; }
+.doctor-queue-stat:focus-visible { outline: 3px solid #41c0a8; outline-offset: 2px; }
+
+/* Staff appointment table styling, scoped to the doctor queue. */
+.doctor-queue-table-wrap { overflow-x: auto; border-top: 1px solid #e2e8f0; }
+.doctor-queue-table { width: 100%; min-width: 1220px; margin: 0; table-layout: fixed; border-collapse: collapse; }
+.doctor-queue-table th { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; font-size: 12px; font-weight: 600; letter-spacing: .5px; text-align: left; text-transform: uppercase; white-space: nowrap; vertical-align: middle; }
+.doctor-queue-table td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; color: #334155; font-size: 13.5px; vertical-align: middle; }
+.doctor-queue-table tbody tr { transition: background-color .15s ease; }
+.doctor-queue-table tbody tr:hover { background: #f8fafc; }
+.doctor-queue-table .doctor-queue-link:hover { color: #0f766e !important; }
+.doctor-queue-table td:first-child .badge { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 13px; letter-spacing: .3px; }
+.doctor-queue-time { font-size: 13px; }
+.doctor-queue-room { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; overflow: hidden; font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
+.doctor-queue-room .bi { flex: none; }
+.doctor-queue-room > span { min-width: 0; }
+.doctor-queue-table .doctor-queue-actions { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: nowrap; padding: 0; border: 0; }
+.doctor-queue-table .doctor-queue-actions form { margin: 0; flex: none; }
+.doctor-queue-table .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 0; border: 1px solid transparent; border-radius: 6px; font-size: 13.5px; line-height: 1; text-decoration: none; cursor: pointer; transition: all .18s ease; }
+.doctor-queue-table .action-btn:hover { transform: translateY(-2px); }
+.doctor-queue-table .action-btn:not(.checkin):not(.warning):not(.delete):not(.complete):not([disabled]) { color: #18a05e; border-color: #bbf7d0; background: #f0fdf4; }
+.doctor-queue-table .action-btn:not(.checkin):not(.warning):not(.delete):not(.complete):not([disabled]):hover { color: #fff; border-color: #18a05e; background: #18a05e; box-shadow: 0 2px 6px rgba(24, 160, 94, .25); }
+.doctor-queue-table .action-btn.checkin, .doctor-queue-table .action-btn.complete { color: #16a34a; border-color: #bbf7d0; background: #f0fdf4; }
+.doctor-queue-table .action-btn.checkin:hover, .doctor-queue-table .action-btn.complete:hover { color: #fff; border-color: #16a34a; background: #16a34a; box-shadow: 0 2px 6px rgba(22, 163, 74, .25); }
+.doctor-queue-table .action-btn.warning { color: #d97706; border-color: #fde68a; background: #fffbeb; }
+.doctor-queue-table .action-btn.warning:hover { color: #fff; border-color: #d97706; background: #d97706; }
+.doctor-queue-table .action-btn.delete { color: #dc2626; border-color: #fecaca; background: #fef2f2; }
+.doctor-queue-table .action-btn.delete:hover { color: #fff; border-color: #dc2626; background: #dc2626; }
+.doctor-queue-table .action-btn[disabled] { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; border-color: #e2e8f0; background: #f8fafc; color: #94a3b8; }
+.doctor-queue-table .badge-status { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 12.5px; font-weight: 600; line-height: 1.4; white-space: nowrap; }
+.doctor-queue-table .badge-status::before { content: ''; display: inline-block; flex: none; width: 6px; height: 6px; border-radius: 50%; }
+.doctor-queue-table .badge-confirmed { color: #0369a1; border: 1px solid #bae6fd; background: #e0f2fe; }
+.doctor-queue-table .badge-confirmed::before { background: #0ea5e9; }
+.doctor-queue-table .badge-in-progress { color: #6d28d9; border: 1px solid #ddd6fe; background: #ede9fe; }
+.doctor-queue-table .badge-in-progress::before { background: #8b5cf6; }
+.doctor-queue-table .badge-completed { color: #15803d; border: 1px solid #bbf7d0; background: #dcfce7; }
+.doctor-queue-table .badge-completed::before { background: #16a34a; }
+.doctor-queue-table .badge-canceled { color: #b91c1c; border: 1px solid #fecaca; background: #fee2e2; }
+.doctor-queue-table .badge-canceled::before { background: #ef4444; }
+.doctor-queue-table .badge-pending { color: #b45309; border: 1px solid #fde68a; background: #fef3c7; }
+.doctor-queue-table .badge-pending::before { background: #f59e0b; }

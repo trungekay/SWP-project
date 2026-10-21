@@ -70,12 +70,15 @@
                                     <i class="bi bi-prescription2" aria-hidden="true"></i> Kê đơn
                                 </a>
                             </c:if>
-                            <c:if test="${appointment.status eq 'In_Progress'}">
+                            <c:if test="${appointment.status eq 'In_Progress' && completionReady}">
                                 <button type="button" class="doctor-detail-button doctor-detail-desktop-action"
                                         onclick="openDoctorCompleteModal()"
                                         style="background: #059669; color: #fff; border-color: #059669; font-weight: 600;">
                                     <i class="bi bi-check2-circle" aria-hidden="true"></i> Hoàn tất ca khám
                                 </button>
+                            </c:if>
+                            <c:if test="${appointment.status eq 'In_Progress' && not completionReady}">
+                                <span class="doctor-detail-desktop-action small text-muted">Lưu kết quả khám, chẩn đoán và kết luận để hoàn tất.</span>
                             </c:if>
                             </div>
                         </c:if>
@@ -273,12 +276,15 @@
                                     <i class="bi bi-prescription2" aria-hidden="true"></i> Kê đơn
                                 </a>
                             </c:if>
-                            <c:if test="${appointment.status eq 'In_Progress'}">
+                            <c:if test="${appointment.status eq 'In_Progress' && completionReady}">
                                 <button type="button" class="doctor-detail-button"
                                         onclick="openDoctorCompleteModal()"
                                         style="background: #059669; color: #fff; border-color: #059669; font-weight: 600;">
                                     <i class="bi bi-check2-circle" aria-hidden="true"></i> Hoàn tất ca khám
                                 </button>
+                            </c:if>
+                            <c:if test="${appointment.status eq 'In_Progress' && not completionReady}">
+                                <span class="small text-muted">Lưu kết quả khám, chẩn đoán và kết luận để hoàn tất.</span>
                             </c:if>
                         </div>
                     </c:if>
@@ -288,7 +294,7 @@
     </main>
 
     <!-- Modal xác nhận hoàn tất ca khám cho Bác sĩ -->
-    <c:if test="${appointment.status eq 'In_Progress'}">
+    <c:if test="${appointment.status eq 'In_Progress' && completionReady}">
         <div class="modal fade" id="doctorCompleteModal" tabindex="-1" aria-labelledby="doctorCompleteModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
                 <div class="modal-content shadow border-0" style="border-radius: 16px; overflow: hidden;">

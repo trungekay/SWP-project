@@ -1,57 +1,6 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
-
-<style>
-    .sidebar-dropdown {
-        position: relative;
-    }
-    .sidebar-dropdown > a {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        cursor: pointer !important;
-        user-select: none !important;
-    }
-    .sidebar-dropdown .sidebar-submenu {
-        display: none !important;
-        list-style: none !important;
-        padding: 4px 0 6px 12px !important;
-        margin: 0 !important;
-        background-color: #fcfcfc !important;
-        border-radius: 0 0 8px 8px !important;
-    }
-    /* Strictly forbid opening on hover under any circumstances */
-    .sidebar-dropdown:hover .sidebar-submenu {
-        display: none !important;
-    }
-    .sidebar-dropdown:hover .sidebar-submenu:not(.show) {
-        display: none !important;
-    }
-    /* Only display when .show class is present */
-    .sidebar-dropdown .sidebar-submenu.show,
-    .sidebar-dropdown:hover .sidebar-submenu.show {
-        display: block !important;
-    }
-    .sidebar-submenu li a {
-        padding: 8px 16px !important;
-        font-size: 13px !important;
-        color: #64748b !important;
-        border-radius: 6px !important;
-        display: flex !important;
-        align-items: center !important;
-        gap: 8px !important;
-        text-decoration: none !important;
-        transition: all 0.2s !important;
-    }
-    .sidebar-submenu li a:hover,
-    .sidebar-submenu li a.active {
-        color: #008b74 !important;
-        background-color: #f0f7f6 !important;
-        font-weight: 600 !important;
-    }
-</style>
-
 <!-- Employee Work Sidebar -->
 <aside class="sidebar">
     <a href="${pageContext.request.contextPath}/employee/schedule" class="sidebar-brand">
@@ -61,7 +10,7 @@
     <ul class="sidebar-menu">
         <c:choose>
             <%-- ==================== GIAO DIỆN DÀNH CHO STAFF / LỄ TÂN ==================== --%>
-            <c:when test="${empty sessionScope.user || fn:toLowerCase(sessionScope.user.role) == 'staff' || sessionScope.user.roleId == 5 || (fn:toLowerCase(sessionScope.user.role) != 'doctor' && fn:toLowerCase(sessionScope.user.role) != 'medical_specialist' && fn:toLowerCase(sessionScope.user.role) != 'specialist' && sessionScope.user.roleId != 3 && sessionScope.user.roleId != 4 && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'refunds' || param.activeNav == 'procedure-payments'))}">
+            <c:when test="${empty sessionScope.user || fn:toLowerCase(sessionScope.user.role) == 'staff' || sessionScope.user.roleId == 5 || (fn:toLowerCase(sessionScope.user.role) != 'doctor' && fn:toLowerCase(sessionScope.user.role) != 'medical_specialist' && fn:toLowerCase(sessionScope.user.role) != 'specialist' && sessionScope.user.roleId != 3 && sessionScope.user.roleId != 4 && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'refunds' || param.activeNav == 'payments'))}">
                 <div class="sidebar-menu-header">Bàn làm việc Nhân viên</div>
 
                 <!-- 1. Màn hình đặt lịch -->
@@ -74,7 +23,7 @@
 
                 <!-- 2. Quản lý Lịch hẹn (Sổ xuống) -->
                 <li class="sidebar-dropdown">
-                    <a href="javascript:void(0);" onclick="toggleSubmenu('appt-sub-emp', this); return false;" class="${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'active' : ''}">
+                    <a href="javascript:void(0);" onclick="toggleSubmenu('appt-sub-emp', this);" class="${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'active' : ''}">
                         <div class="d-flex align-items-center gap-2">
                             <i class="bi bi-calendar2-check"></i>
                             <span>Quản lý Lịch hẹn</span>
@@ -97,11 +46,11 @@
                     </ul>
                 </li>
 
-                <!-- 4. Quản lý yêu cầu hoàn tiền -->
+                <!-- Quản lý thanh toán -->
                 <li>
-                    <a href="${pageContext.request.contextPath}/staff/procedure-payments" class="${param.activeNav == 'procedure-payments' ? 'active' : ''}">
+                    <a href="${pageContext.request.contextPath}/staff/payments" class="${param.activeNav == 'payments' ? 'active' : ''}">
                         <i class="bi bi-credit-card"></i>
-                        <span>Thanh toán phẫu thuật</span>
+                        <span>Quản lý thanh toán</span>
                     </a>
                 </li>
 
@@ -148,7 +97,7 @@
                 </c:if>
 
                 <%-- Fallback cho Admin xem trang Tiếp đón / Lễ tân --%>
-                <c:if test="${fn:toLowerCase(sessionScope.user.role) == 'admin' || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2}">
+                <c:if test="${(fn:toLowerCase(sessionScope.user.role) == 'admin' || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2) && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'refunds' || param.activeNav == 'payments')}">
                     <div class="sidebar-menu-header mt-3">Tiếp đón & Lễ tân</div>
                     <li>
                         <a href="${pageContext.request.contextPath}/employee/schedule" class="${param.activeNav == 'schedule' ? 'active' : ''}">
@@ -157,14 +106,14 @@
                         </a>
                     </li>
                     <li class="sidebar-dropdown">
-                        <a href="javascript:void(0);" onclick="toggleSubmenu('appt-sub-admin', this); return false;" class="${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'active' : ''}">
+                        <a href="javascript:void(0);" onclick="toggleSubmenu('appt-sub-admin', this);" class="active">
                             <div class="d-flex align-items-center gap-2">
                                 <i class="bi bi-calendar2-check"></i>
                                 <span>Quản lý Lịch hẹn</span>
                             </div>
-                            <i class="bi ${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'bi-chevron-up' : 'bi-chevron-down'}" style="font-size: 11px;"></i>
+                            <i class="bi bi-chevron-up" style="font-size: 11px;"></i>
                         </a>
-                        <ul class="sidebar-submenu ${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'show' : ''}" id="appt-sub-admin">
+                        <ul class="sidebar-submenu show" id="appt-sub-admin">
                             <li>
                                 <a href="${pageContext.request.contextPath}/staff/appointments" class="${param.activeNav == 'appointments' ? 'active' : ''}">
                                     <i class="bi bi-list-task"></i>
@@ -180,9 +129,9 @@
                         </ul>
                     </li>
                     <li>
-                        <a href="${pageContext.request.contextPath}/staff/procedure-payments" class="${param.activeNav == 'procedure-payments' ? 'active' : ''}">
+                        <a href="${pageContext.request.contextPath}/staff/payments" class="${param.activeNav == 'payments' ? 'active' : ''}">
                             <i class="bi bi-credit-card"></i>
-                            <span>Thanh toán phẫu thuật</span>
+                            <span>Quản lý thanh toán</span>
                         </a>
                     </li>
                     <li>

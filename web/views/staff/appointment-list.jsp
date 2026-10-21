@@ -325,8 +325,18 @@
                                                                         Đã qua ngày
                                                                     </span>
                                                                 </c:when>
+                                                                <c:when test="${appt.awaitingPayment}">
+                                                                    <span class="badge-status badge-pending" title="Chưa xác nhận thanh toán phí khám">
+                                                                        Chờ thanh toán
+                                                                    </span>
+                                                                </c:when>
                                                                 <c:when test="${appt.status == 'Pending'}">
-                                                                    <span class="badge-status badge-pending" title="Chờ tiếp đón tại quầy lễ tân">
+                                                                    <span class="badge-status badge-pending" title="Lịch hẹn đang chờ xử lý">
+                                                                        Chờ xử lý
+                                                                    </span>
+                                                                </c:when>
+                                                                <c:when test="${appt.status == 'Confirmed' && empty appt.checkinTime}">
+                                                                    <span class="badge-status badge-pending" title="Đã xác nhận lịch, chưa check-in tại quầy lễ tân">
                                                                         Chờ tiếp đón
                                                                     </span>
                                                                 </c:when>
@@ -372,7 +382,7 @@
                                                                 <!-- Các thao tác tiếp đón & hủy: Chỉ hiển thị khi ca khám CHƯA qua ngày -->
                                                                 <c:if test="${!isPastAppt}">
                                                                     <!-- 2. Check-in tiếp đón -->
-                                                                    <c:if test="${appt.status == 'Pending' || (empty appt.checkinTime && appt.status != 'Canceled' && appt.status != 'Completed')}">
+                                                                    <c:if test="${appt.readyForCheckIn}">
                                                                         <button type="button"
                                                                             class="action-btn checkin btn-trigger-checkin"
                                                                             title="Check-in tiếp đón" data-bs-toggle="tooltip"
@@ -386,7 +396,10 @@
                                                                             <i class="bi bi-box-arrow-in-right"></i>
                                                                         </button>
 
-                                                                        <!-- 3. Hủy lịch hẹn -->
+                                                                    </c:if>
+
+                                                                    <!-- 3. Hủy lịch hẹn -->
+                                                                    <c:if test="${appt.status == 'Pending' || appt.readyForCheckIn}">
                                                                         <button type="button"
                                                                             class="action-btn delete btn-trigger-cancel"
                                                                             title="Hủy lịch hẹn" data-bs-toggle="tooltip"
@@ -400,7 +413,7 @@
                                                                     </c:if>
 
                                                                     <!-- 4. Ca Đã tiếp đón / Đang khám hôm nay: Nút sang Hàng đợi phòng khám -->
-                                                                    <c:if test="${appt.status == 'Confirmed' || appt.status == 'In_Progress'}">
+                                                                    <c:if test="${not empty appt.checkinTime && (appt.status == 'Confirmed' || appt.status == 'In_Progress')}">
                                                                         <a href="${pageContext.request.contextPath}/staff/waiting-list"
                                                                             class="action-btn warning"
                                                                             title="Xem trong Hàng đợi phòng khám" data-bs-toggle="tooltip">
