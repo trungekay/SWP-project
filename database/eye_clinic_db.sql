@@ -329,6 +329,27 @@ UNIQUE NONCLUSTERED
 ALTER TABLE [dbo].[Medical_Record] ADD  DEFAULT (sysutcdatetime()) FOR [Created_At]
 GO
 
+-- Structured findings saved by the doctor's examination form.
+CREATE TABLE [dbo].[Examination_Detail](
+    [Record_ID] [int] NOT NULL PRIMARY KEY,
+    [Chief_Complaint] [nvarchar](1000) NULL,
+    [Medical_History] [nvarchar](1000) NULL,
+    [OD_Uncorrected] [nvarchar](20) NULL,
+    [OS_Uncorrected] [nvarchar](20) NULL,
+    [OD_Corrected] [nvarchar](20) NULL,
+    [OS_Corrected] [nvarchar](20) NULL,
+    [OD_IOP] [decimal](4, 1) NULL,
+    [OS_IOP] [decimal](4, 1) NULL,
+    [Anterior_Findings] [nvarchar](2000) NULL,
+    [Posterior_Findings] [nvarchar](2000) NULL,
+    [Follow_Up_Date] [date] NULL,
+    CONSTRAINT [FK_Examination_Detail_Record] FOREIGN KEY ([Record_ID])
+        REFERENCES [dbo].[Medical_Record]([Record_ID]),
+    CONSTRAINT [CHK_Exam_OD_IOP] CHECK ([OD_IOP] IS NULL OR [OD_IOP] BETWEEN 0 AND 80),
+    CONSTRAINT [CHK_Exam_OS_IOP] CHECK ([OS_IOP] IS NULL OR [OS_IOP] BETWEEN 0 AND 80)
+);
+GO
+
 -- -----------------------------------------------------
 -- Table: [Prescription]
 -- -----------------------------------------------------
@@ -383,6 +404,10 @@ CREATE TABLE [dbo].[Prescription_Detail](
 	[Quantity] [int] NOT NULL,
 	[Dosage_Instruction] [nvarchar](max) NULL,
 	[Medicine_Name] [nvarchar](255) NOT NULL,
+	[Morning_Dose] [nvarchar](100) NULL,
+	[Afternoon_Dose] [nvarchar](100) NULL,
+	[Evening_Dose] [nvarchar](100) NULL,
+	[Is_Custom_Medicine] [bit] NOT NULL DEFAULT (0),
 PRIMARY KEY CLUSTERED 
 (
 	[Detail_ID] ASC
@@ -405,6 +430,10 @@ CREATE TABLE [dbo].[Procedure_Order](
 	[Service_ID] [int] NOT NULL,
 	[Actual_Price] [decimal](18, 0) NOT NULL,
 	[Status] [nvarchar](50) NOT NULL,
+	[Result_Text] [nvarchar](max) NULL,
+	[Result_Conclusion] [nvarchar](max) NULL,
+	[Completed_At] [datetime2] NULL,
+	[Referral_Notes] [nvarchar](2000) NULL,
 PRIMARY KEY CLUSTERED 
 (
 	[Order_ID] ASC
@@ -1781,6 +1810,42 @@ INSERT [dbo].[Procedure_Order] ([Order_ID], [Specialist_Employee_ID], [Record_ID
 SET IDENTITY_INSERT [dbo].[Procedure_Order] OFF
 GO
 
+-- Copy legacy specialist results from the shared medical record to completed orders.
+UPDATE po
+SET po.Result_Text = mr.examination_result,
+    po.Result_Conclusion = mr.conclusion
+FROM [dbo].[Procedure_Order] po
+JOIN [dbo].[Medical_Record] mr ON mr.Record_ID = po.Record_ID
+WHERE po.Status = N'Completed'
+  AND po.Result_Text IS NULL
+  AND mr.examination_result LIKE '[[]OD_UCVA:%';
+GO
+
+-- Create payment requests for pending, doctor-referred surgery orders.
+INSERT INTO [dbo].[Procedure_Payment_Request] ([Order_ID], [Amount], [Credit_Amount])
+SELECT po.Order_ID, po.Actual_Price - credit.Credit_Amount, credit.Credit_Amount
+FROM [dbo].[Procedure_Order] po
+JOIN [dbo].[Service_Catalog] s ON s.Service_ID = po.Service_ID
+JOIN [dbo].[Medical_Record] mr ON mr.Record_ID = po.Record_ID
+JOIN [dbo].[Master_Invoice] i ON i.Appointment_ID = mr.Appointment_ID
+OUTER APPLY (
+    SELECT COALESCE(SUM(t.Amount), 0) AS Paid_Amount
+    FROM [dbo].[Payment_Transaction] t
+    WHERE t.Invoice_ID = i.Invoice_ID AND t.Gateway_Status = N'Success'
+) paid
+CROSS APPLY (
+    SELECT CASE WHEN po.Actual_Price < COALESCE(i.Deposit_Amount, 0)
+                AND po.Actual_Price < paid.Paid_Amount THEN po.Actual_Price
+                WHEN COALESCE(i.Deposit_Amount, 0) < paid.Paid_Amount
+                THEN COALESCE(i.Deposit_Amount, 0) ELSE paid.Paid_Amount END AS Credit_Amount
+) credit
+WHERE s.Service_Code LIKE N'PT-%'
+  AND po.Referral_Notes IS NOT NULL
+  AND po.Status = N'Pending'
+  AND po.Actual_Price >= credit.Credit_Amount
+  AND NOT EXISTS (SELECT 1 FROM [dbo].[Procedure_Payment_Request] p WHERE p.Order_ID = po.Order_ID);
+GO
+
 -- -----------------------------------------------------
 -- Data: [Leave_Cancel_Request]
 -- -----------------------------------------------------
@@ -1818,6 +1883,271 @@ GO
 -- Data: [Clinic_Setting]
 -- -----------------------------------------------------
 INSERT [dbo].[Clinic_Setting] ([Setting_Key], [Setting_Value], [Description]) VALUES (N'MIN_WORK_HOURS_PER_WEEK', N'30.0', N'Số giờ làm việc tối thiểu mỗi tuần')
+GO
+
+-- Demo checked-in queue for doctor Tinh on 2026-10-21.
+-- The doctor queue requires a matching work date, doctor and non-NULL check-in time.
+SET XACT_ABORT ON;
+BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @QueueDate date = '2026-10-21';
+    DECLARE @CheckinAt datetime2(7) = '2026-10-21T14:20:00';
+
+    INSERT INTO [dbo].[Work_Schedule]
+        ([Doctor_Employee_ID], [Specialist_Employee_ID], [Staff_Employee_ID],
+         [Work_Date], [Start_Time], [End_Time], [Slot], [Status])
+    SELECT 4, NULL, NULL, @QueueDate, d.Start_Time, d.End_Time, d.Slot, N'Booked'
+    FROM (VALUES
+        (CAST('14:30:00' AS time), CAST('15:00:00' AS time), N'Slot 10'),
+        (CAST('15:00:00' AS time), CAST('15:30:00' AS time), N'Slot 11'),
+        (CAST('15:30:00' AS time), CAST('16:00:00' AS time), N'Slot 12')
+    ) AS d(Start_Time, End_Time, Slot)
+    WHERE NOT EXISTS (
+        SELECT 1 FROM [dbo].[Work_Schedule] ws
+        WHERE ws.Doctor_Employee_ID = 4 AND ws.Work_Date = @QueueDate
+          AND ws.Start_Time = d.Start_Time
+    );
+
+    INSERT INTO [dbo].[Appointment]
+        ([Patient_ID], [Schedule_ID], [Staff_Employee_ID], [Status], [created_at], [checkin_time])
+    SELECT d.Patient_ID, ws.Schedule_ID, 12, N'Confirmed', @CheckinAt, @CheckinAt
+    FROM (VALUES
+        (2, CAST('14:30:00' AS time)),
+        (4, CAST('15:00:00' AS time)),
+        (8, CAST('15:30:00' AS time))
+    ) AS d(Patient_ID, Start_Time)
+    JOIN [dbo].[Work_Schedule] ws
+      ON ws.Doctor_Employee_ID = 4 AND ws.Work_Date = @QueueDate
+     AND ws.Start_Time = d.Start_Time AND ws.Status = N'Booked'
+    WHERE NOT EXISTS (
+        SELECT 1 FROM [dbo].[Appointment] a
+        WHERE a.Schedule_ID = ws.Schedule_ID AND a.Status <> N'Canceled'
+    );
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
+GO
+
+-- Additional demo queue: 10 checked-in appointments on each of 20, 21 and 22 October 2026.
+-- Tomorrow's check-ins are sample data so that the future-date queue can be previewed.
+SET XACT_ABORT ON;
+BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @QueueCases TABLE (
+        Work_Date date NOT NULL,
+        Doctor_Employee_ID int NOT NULL,
+        Patient_ID int NOT NULL,
+        Start_Time time NOT NULL,
+        Status nvarchar(50) NOT NULL,
+        PRIMARY KEY (Work_Date, Doctor_Employee_ID, Start_Time)
+    );
+    INSERT INTO @QueueCases (Work_Date, Doctor_Employee_ID, Patient_ID, Start_Time, Status)
+    VALUES
+        ('2026-10-20', 3, 1, '08:30:00', N'Completed'),
+        ('2026-10-20', 3, 2, '09:00:00', N'Completed'),
+        ('2026-10-20', 4, 3, '08:30:00', N'Completed'),
+        ('2026-10-20', 4, 4, '09:00:00', N'Completed'),
+        ('2026-10-20', 5, 5, '14:30:00', N'Completed'),
+        ('2026-10-20', 5, 6, '15:00:00', N'Completed'),
+        ('2026-10-20', 6, 7, '08:30:00', N'Completed'),
+        ('2026-10-20', 6, 8, '09:00:00', N'Completed'),
+        ('2026-10-20', 7, 9, '08:30:00', N'Completed'),
+        ('2026-10-20', 8, 10, '14:30:00', N'Completed'),
+        ('2026-10-21', 3, 1, '14:30:00', N'Confirmed'),
+        ('2026-10-21', 3, 2, '15:00:00', N'Confirmed'),
+        ('2026-10-21', 4, 3, '08:30:00', N'Completed'),
+        ('2026-10-21', 5, 4, '14:30:00', N'Confirmed'),
+        ('2026-10-21', 5, 5, '15:00:00', N'Confirmed'),
+        ('2026-10-21', 6, 6, '14:30:00', N'Confirmed'),
+        ('2026-10-21', 6, 7, '15:00:00', N'Confirmed'),
+        ('2026-10-21', 7, 8, '08:30:00', N'Completed'),
+        ('2026-10-21', 8, 9, '14:30:00', N'Confirmed'),
+        ('2026-10-21', 8, 10, '15:00:00', N'Confirmed'),
+        ('2026-10-22', 3, 1, '08:30:00', N'Confirmed'),
+        ('2026-10-22', 3, 2, '09:00:00', N'Confirmed'),
+        ('2026-10-22', 4, 3, '08:30:00', N'Confirmed'),
+        ('2026-10-22', 4, 4, '09:00:00', N'Confirmed'),
+        ('2026-10-22', 5, 5, '14:30:00', N'Confirmed'),
+        ('2026-10-22', 5, 6, '15:00:00', N'Confirmed'),
+        ('2026-10-22', 6, 7, '08:30:00', N'Confirmed'),
+        ('2026-10-22', 6, 8, '09:00:00', N'Confirmed'),
+        ('2026-10-22', 7, 9, '08:30:00', N'Confirmed'),
+        ('2026-10-22', 8, 10, '14:30:00', N'Confirmed');
+
+    IF EXISTS (
+        SELECT 1 FROM @QueueCases d
+        LEFT JOIN [dbo].[Work_Schedule] ws
+          ON ws.Work_Date = d.Work_Date
+         AND ws.Doctor_Employee_ID = d.Doctor_Employee_ID
+         AND ws.Start_Time = d.Start_Time
+        WHERE ws.Schedule_ID IS NULL
+           OR EXISTS (SELECT 1 FROM [dbo].[Appointment] a
+                      WHERE a.Schedule_ID = ws.Schedule_ID AND a.Patient_ID <> d.Patient_ID)
+    ) THROW 50002, 'A demo queue slot is missing or belongs to another patient.', 1;
+
+    INSERT INTO [dbo].[Appointment]
+        ([Patient_ID], [Schedule_ID], [Staff_Employee_ID], [Status],
+         [created_at], [checkin_time], [doctor_completed_at])
+    SELECT d.Patient_ID, ws.Schedule_ID, 12, d.Status,
+           DATEADD(day, -1, dt.CheckinAt), dt.CheckinAt,
+           CASE WHEN d.Status = N'Completed' THEN DATEADD(minute, 30, dt.StartsAt) END
+    FROM @QueueCases d
+    JOIN [dbo].[Work_Schedule] ws
+      ON ws.Work_Date = d.Work_Date
+     AND ws.Doctor_Employee_ID = d.Doctor_Employee_ID
+     AND ws.Start_Time = d.Start_Time
+    CROSS APPLY (SELECT CAST(CONCAT(CONVERT(char(10), d.Work_Date, 120), 'T',
+                                    CONVERT(char(8), d.Start_Time, 108)) AS datetime2(7)) AS StartsAt) start_dt
+    CROSS APPLY (SELECT start_dt.StartsAt,
+                        DATEADD(minute, -15, start_dt.StartsAt) AS CheckinAt) dt
+    WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Appointment] a WHERE a.Schedule_ID = ws.Schedule_ID);
+
+    UPDATE ws SET [Status] = N'Booked'
+    FROM [dbo].[Work_Schedule] ws
+    JOIN @QueueCases d
+      ON d.Work_Date = ws.Work_Date
+     AND d.Doctor_Employee_ID = ws.Doctor_Employee_ID
+     AND d.Start_Time = ws.Start_Time
+    WHERE ws.Status = N'Available'
+      AND EXISTS (SELECT 1 FROM [dbo].[Appointment] a
+                  WHERE a.Schedule_ID = ws.Schedule_ID AND a.Status <> N'Canceled');
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
+GO
+
+-- Assign every 21 October afternoon demo appointment to Dr Nguyen Xuan Tinh.
+-- Move the eight other doctors' cases into non-overlapping 30-minute slots.
+SET XACT_ABORT ON;
+BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @TinhAfternoon TABLE (
+        Old_Doctor_ID int NOT NULL,
+        Patient_ID int NOT NULL,
+        Old_Start time NOT NULL,
+        New_Start time NOT NULL,
+        PRIMARY KEY (Old_Doctor_ID, Old_Start)
+    );
+    INSERT INTO @TinhAfternoon (Old_Doctor_ID, Patient_ID, Old_Start, New_Start)
+    VALUES
+        (3, 1, '14:30:00', '13:00:00'),
+        (5, 4, '14:30:00', '13:30:00'),
+        (6, 6, '14:30:00', '14:00:00'),
+        (8, 9, '14:30:00', '16:00:00'),
+        (3, 2, '15:00:00', '16:30:00'),
+        (5, 5, '15:00:00', '17:00:00'),
+        (6, 7, '15:00:00', '17:30:00'),
+        (8, 10, '15:00:00', '18:00:00');
+
+    DECLARE @SourceCount int = (
+        SELECT COUNT(*)
+        FROM @TinhAfternoon m
+        JOIN [dbo].[Work_Schedule] ws
+          ON ws.Work_Date = '2026-10-21'
+         AND ws.Doctor_Employee_ID = m.Old_Doctor_ID
+         AND ws.Start_Time = m.Old_Start
+        JOIN [dbo].[Appointment] a
+          ON a.Schedule_ID = ws.Schedule_ID AND a.Patient_ID = m.Patient_ID
+    );
+    DECLARE @TargetCount int = (
+        SELECT COUNT(*)
+        FROM @TinhAfternoon m
+        JOIN [dbo].[Work_Schedule] ws
+          ON ws.Work_Date = '2026-10-21'
+         AND ws.Doctor_Employee_ID = 4
+         AND ws.Start_Time = m.New_Start
+        JOIN [dbo].[Appointment] a
+          ON a.Schedule_ID = ws.Schedule_ID AND a.Patient_ID = m.Patient_ID
+    );
+
+    IF @SourceCount = 8 AND @TargetCount = 0
+    BEGIN
+        IF EXISTS (
+            SELECT 1 FROM @TinhAfternoon m
+            JOIN [dbo].[Work_Schedule] ws
+              ON ws.Work_Date = '2026-10-21'
+             AND ws.Doctor_Employee_ID = m.Old_Doctor_ID
+             AND ws.Start_Time = m.Old_Start
+            JOIN [dbo].[Appointment] a
+              ON a.Schedule_ID = ws.Schedule_ID
+            WHERE a.Patient_ID <> m.Patient_ID
+        ) THROW 50003, 'An afternoon schedule has another patient.', 1;
+
+        IF EXISTS (
+            SELECT 1 FROM @TinhAfternoon m
+            JOIN [dbo].[Work_Schedule] ws
+              ON ws.Work_Date = '2026-10-21'
+             AND ws.Doctor_Employee_ID = 4
+             AND ws.Start_Time < DATEADD(minute, 30, m.New_Start)
+             AND ws.End_Time > m.New_Start
+        ) THROW 50004, 'Dr Tinh already has an overlapping afternoon slot.', 1;
+
+        UPDATE ws
+           SET ws.Doctor_Employee_ID = 4,
+               ws.Start_Time = m.New_Start,
+               ws.End_Time = DATEADD(minute, 30, m.New_Start)
+        FROM [dbo].[Work_Schedule] ws
+        JOIN @TinhAfternoon m
+          ON ws.Work_Date = '2026-10-21'
+         AND ws.Doctor_Employee_ID = m.Old_Doctor_ID
+         AND ws.Start_Time = m.Old_Start;
+
+        UPDATE a
+           SET a.checkin_time = DATEADD(minute, -15,
+               CAST(CONCAT('2026-10-21T', CONVERT(char(8), m.New_Start, 108)) AS datetime2(7)))
+        FROM [dbo].[Appointment] a
+        JOIN [dbo].[Work_Schedule] ws ON ws.Schedule_ID = a.Schedule_ID
+        JOIN @TinhAfternoon m
+          ON ws.Work_Date = '2026-10-21'
+         AND ws.Doctor_Employee_ID = 4
+         AND ws.Start_Time = m.New_Start
+         AND a.Patient_ID = m.Patient_ID;
+    END
+    ELSE IF @SourceCount <> 0 OR @TargetCount <> 8
+        THROW 50005, 'Afternoon appointments do not match the expected demo cases.', 1;
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
+GO
+
+-- Remove Dr Nguyen Xuan Tinh's waiting patients from 15:30 onward on 21 October.
+-- Keep the patient records; release only the affected appointment slots.
+SET XACT_ABORT ON;
+BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @RemovedTinhSlots TABLE (Schedule_ID int PRIMARY KEY);
+
+    DELETE a
+    OUTPUT DELETED.Schedule_ID INTO @RemovedTinhSlots (Schedule_ID)
+    FROM [dbo].[Appointment] a
+    JOIN [dbo].[Work_Schedule] ws ON ws.Schedule_ID = a.Schedule_ID
+    WHERE ws.Work_Date = '2026-10-21'
+      AND ws.Doctor_Employee_ID = 4
+      AND ws.Start_Time >= '15:30:00'
+      AND a.Status = N'Confirmed'
+      AND a.checkin_time IS NOT NULL;
+
+    UPDATE ws SET ws.Status = N'Available'
+    FROM [dbo].[Work_Schedule] ws
+    JOIN @RemovedTinhSlots removed ON removed.Schedule_ID = ws.Schedule_ID
+    WHERE NOT EXISTS (
+        SELECT 1 FROM [dbo].[Appointment] a WHERE a.Schedule_ID = ws.Schedule_ID
+    );
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
 GO
 
 -- =====================================================
