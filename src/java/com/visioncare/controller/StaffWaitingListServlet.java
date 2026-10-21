@@ -431,6 +431,23 @@ public class StaffWaitingListServlet extends HttpServlet {
                         return;
                     }
 
+                    if (!"Completed".equalsIgnoreCase(checkAppt.getStatus())) {
+                        String notCompletedMsg = "Không thể hoàn tất lịch hẹn (#APPT-" + apptId + ") do Bác sĩ đang khám trong phòng và chưa hoàn tất ca khám!";
+                        if ("1".equals(request.getParameter("ajax"))) {
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("{\"success\":false,\"message\":\"" + escapeJson(notCompletedMsg) + "\"}");
+                            return;
+                        }
+                        session.setAttribute("errorMessage", notCompletedMsg);
+                        String returnUrl = request.getParameter("returnUrl");
+                        if (returnUrl != null && !returnUrl.trim().isEmpty() && !returnUrl.contains(".jsp")) {
+                            response.sendRedirect(returnUrl);
+                        } else {
+                            response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
+                        }
+                        return;
+                    }
+
                     User currentUser = (User) session.getAttribute("user");
                     int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
 
