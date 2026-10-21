@@ -2119,6 +2119,37 @@ BEGIN CATCH
 END CATCH;
 GO
 
+-- Remove Dr Nguyen Xuan Tinh's waiting patients from 15:30 onward on 21 October.
+-- Keep the patient records; release only the affected appointment slots.
+SET XACT_ABORT ON;
+BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @RemovedTinhSlots TABLE (Schedule_ID int PRIMARY KEY);
+
+    DELETE a
+    OUTPUT DELETED.Schedule_ID INTO @RemovedTinhSlots (Schedule_ID)
+    FROM [dbo].[Appointment] a
+    JOIN [dbo].[Work_Schedule] ws ON ws.Schedule_ID = a.Schedule_ID
+    WHERE ws.Work_Date = '2026-10-21'
+      AND ws.Doctor_Employee_ID = 4
+      AND ws.Start_Time >= '15:30:00'
+      AND a.Status = N'Confirmed'
+      AND a.checkin_time IS NOT NULL;
+
+    UPDATE ws SET ws.Status = N'Available'
+    FROM [dbo].[Work_Schedule] ws
+    JOIN @RemovedTinhSlots removed ON removed.Schedule_ID = ws.Schedule_ID
+    WHERE NOT EXISTS (
+        SELECT 1 FROM [dbo].[Appointment] a WHERE a.Schedule_ID = ws.Schedule_ID
+    );
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
+GO
+
 -- =====================================================
 -- FOREIGN KEY CONSTRAINTS
 -- =====================================================
