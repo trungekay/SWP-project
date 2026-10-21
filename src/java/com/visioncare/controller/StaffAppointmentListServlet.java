@@ -249,13 +249,8 @@ public class StaffAppointmentListServlet extends HttpServlet {
                     if (success) {
                         // Lưu medical notes nếu lễ tân nhập luôn trong lúc check-in
                         String notes = request.getParameter("medicalNotes");
-                        String docIdParam = request.getParameter("doctorId");
-                        int doctorId = 0;
-                        if (docIdParam != null && !docIdParam.trim().isEmpty()) {
-                            try { doctorId = Integer.parseInt(docIdParam.trim()); } catch (NumberFormatException ignored) {}
-                        }
                         if (notes != null && !notes.trim().isEmpty()) {
-                            appointmentDAO.saveMedicalNotes(apptId, doctorId, notes.trim());
+                            appointmentDAO.saveMedicalNotes(apptId, notes);
                         }
 
                         ticket = appointmentDAO.getAppointmentById(apptId);

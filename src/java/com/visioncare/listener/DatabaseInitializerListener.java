@@ -77,6 +77,20 @@ public class DatabaseInitializerListener implements ServletContextListener {
                 System.err.println("[VisionCare] Note on Prescription_Detail columns check: " + e.getMessage());
             }
 
+            // Keep reception notes separate from the doctor's clinical diagnosis.
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("IF COL_LENGTH('dbo.Medical_Record', 'Staff_Notes') IS NULL "
+                           + "ALTER TABLE dbo.Medical_Record ADD Staff_Notes NVARCHAR(MAX) NULL");
+                stmt.execute("UPDATE mr SET Staff_Notes = mr.Clinical_Diagnosis "
+                           + "FROM dbo.Medical_Record mr JOIN dbo.Appointment a "
+                           + "ON a.Appointment_ID = mr.Appointment_ID "
+                           + "WHERE a.Status IN ('Pending', 'Confirmed', 'In_Progress') "
+                           + "AND mr.Staff_Notes IS NULL AND mr.Clinical_Diagnosis IS NOT NULL "
+                           + "AND mr.examination_result IS NULL AND mr.conclusion IS NULL");
+            } catch (Exception e) {
+                System.err.println("[VisionCare] Note on Staff_Notes migration: " + e.getMessage());
+            }
+
             System.out.println("[VisionCare] Database check completed successfully!");
             System.out.println("==================================================================");
 

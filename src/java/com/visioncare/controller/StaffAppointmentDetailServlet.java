@@ -71,13 +71,7 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
 
             if ("saveNotes".equalsIgnoreCase(action)) {
                 String notes = request.getParameter("medicalNotes");
-                int doctorId = 0;
-                String docIdParam = request.getParameter("doctorId");
-                if (docIdParam != null && !docIdParam.trim().isEmpty()) {
-                    doctorId = Integer.parseInt(docIdParam.trim());
-                }
-
-                boolean success = appointmentDAO.saveMedicalNotes(apptId, doctorId, notes);
+                boolean success = appointmentDAO.saveMedicalNotes(apptId, notes);
                 if (success) {
                     session.setAttribute("successMessage", "Ghi chú y tế ban đầu đã được lưu thành công vào hồ sơ khám.");
                 } else {

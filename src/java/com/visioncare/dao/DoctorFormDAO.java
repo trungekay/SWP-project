@@ -35,7 +35,7 @@ public class DoctorFormDAO {
 
     public Map<String, String> loadExamination(int appointmentId) throws Exception {
         Map<String, String> values = new HashMap<>();
-        String sql = "SELECT m.Clinical_Diagnosis, m.examination_result, m.conclusion, e.* " +
+        String sql = "SELECT m.Clinical_Diagnosis, m.Staff_Notes, m.examination_result, m.conclusion, e.* " +
                 "FROM Medical_Record m LEFT JOIN Examination_Detail e ON e.Record_ID = m.Record_ID " +
                 "WHERE m.Appointment_ID = ?";
         try (Connection conn = DBContext.getConnection();
@@ -44,6 +44,7 @@ public class DoctorFormDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     put(values, "clinicalDiagnosis", rs.getString("Clinical_Diagnosis"));
+                    put(values, "staffNotes", rs.getString("Staff_Notes"));
                     put(values, "examinationResult", rs.getString("examination_result"));
                     put(values, "conclusion", rs.getString("conclusion"));
                     for (int i = 0; i < EXAM_KEYS.length; i++) {
@@ -53,7 +54,7 @@ public class DoctorFormDAO {
             }
         }
         if (values.getOrDefault("chiefComplaint", "").isBlank()) {
-            String staffNote = values.get("clinicalDiagnosis");
+            String staffNote = values.get("staffNotes");
             if (staffNote != null && !staffNote.isBlank()
                     && values.getOrDefault("examinationResult", "").isBlank()) {
                 values.put("chiefComplaint", staffNote);
@@ -99,6 +100,22 @@ public class DoctorFormDAO {
             }
         }
         return values;
+    }
+
+    public boolean hasSavedExamination(int appointmentId) throws Exception {
+        String sql = "SELECT 1 FROM Medical_Record m "
+                + "JOIN Examination_Detail e ON e.Record_ID = m.Record_ID "
+                + "WHERE m.Appointment_ID = ? "
+                + "AND NULLIF(LTRIM(RTRIM(m.Clinical_Diagnosis)), '') IS NOT NULL "
+                + "AND NULLIF(LTRIM(RTRIM(m.examination_result)), '') IS NOT NULL "
+                + "AND NULLIF(LTRIM(RTRIM(m.conclusion)), '') IS NOT NULL";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, appointmentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
     }
 
     private String latestPatientHistory(int appointmentId) throws Exception {

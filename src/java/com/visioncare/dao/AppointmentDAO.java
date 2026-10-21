@@ -92,11 +92,12 @@ public class AppointmentDAO {
                     diag += (diag.isEmpty() ? "" : " | ") + "Lý do khám: " + a.getReason().trim();
                 }
                 if (!diag.isEmpty()) {
-                    String sqlRecord = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, Created_At) VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
+                    String sqlRecord = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, Staff_Notes, Created_At) VALUES (?, ?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
                     try (PreparedStatement psRec = conn.prepareStatement(sqlRecord)) {
                         psRec.setInt(1, appointmentId);
                         psRec.setInt(2, a.getDoctorId());
                         psRec.setString(3, diag);
+                        psRec.setString(4, diag);
                         psRec.executeUpdate();
                     }
                 }
@@ -550,12 +551,13 @@ public class AppointmentDAO {
             if (diag.isEmpty()) {
                 diag = "Khách vãng lai: Khám mắt tổng quát";
             }
-            String sqlMR = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, Created_At) " +
-                           "VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
+            String sqlMR = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, Staff_Notes, Created_At) " +
+                           "VALUES (?, ?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
             try (PreparedStatement psMR = conn.prepareStatement(sqlMR)) {
                 psMR.setInt(1, appointmentId);
                 psMR.setInt(2, a.getDoctorId());
                 psMR.setString(3, diag);
+                psMR.setString(4, diag);
                 psMR.executeUpdate();
             }
 
@@ -969,7 +971,7 @@ public class AppointmentDAO {
             "doc.Full_Name AS Doctor_Name, doc.Specialty AS Doctor_Specialty, " +
             "rm.Room_Name, " +
             "stf.Full_Name AS Staff_Name, " +
-            "mr.Clinical_Diagnosis AS Medical_Notes, " +
+            "mr.Staff_Notes AS Medical_Notes, " +
             "mr.conclusion AS Cancel_Reason, " +
             "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, " +
             "mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status " +
@@ -1046,7 +1048,7 @@ public class AppointmentDAO {
                      "doc.Full_Name AS Doctor_Name, doc.Specialty AS Doctor_Specialty, " +
                      "rm.Room_Name, " +
                      "stf.Full_Name AS Staff_Name, " +
-                     "mr.Clinical_Diagnosis AS Medical_Notes, " +
+                     "mr.Staff_Notes AS Medical_Notes, " +
                      "mr.conclusion AS Cancel_Reason, " +
                      "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status " +
                      "FROM Appointment a " +
@@ -1342,31 +1344,52 @@ public class AppointmentDAO {
         return 0;
     }
 
-    public boolean saveMedicalNotes(int appointmentId, int doctorId, String notes) throws Exception {
-        String checkSql = "SELECT Record_ID FROM Medical_Record WHERE Appointment_ID = ?";
+    public boolean saveMedicalNotes(int appointmentId, String notes) throws Exception {
         try (Connection conn = DBContext.getConnection()) {
-            boolean exists = false;
-            try (PreparedStatement psCheck = conn.prepareStatement(checkSql)) {
-                psCheck.setInt(1, appointmentId);
-                try (ResultSet rs = psCheck.executeQuery()) {
-                    exists = rs.next();
+            conn.setAutoCommit(false);
+            conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            try {
+                int recordId = 0;
+                int assignedDoctorId;
+                String lookup = "SELECT ws.Doctor_Employee_ID, mr.Record_ID " +
+                        "FROM Appointment a WITH (UPDLOCK, HOLDLOCK) " +
+                        "JOIN Work_Schedule ws ON ws.Schedule_ID = a.Schedule_ID " +
+                        "LEFT JOIN Medical_Record mr ON mr.Appointment_ID = a.Appointment_ID " +
+                        "WHERE a.Appointment_ID = ?";
+                try (PreparedStatement ps = conn.prepareStatement(lookup)) {
+                    ps.setInt(1, appointmentId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (!rs.next()) {
+                            conn.rollback();
+                            return false;
+                        }
+                        assignedDoctorId = rs.getInt("Doctor_Employee_ID");
+                        recordId = rs.getInt("Record_ID");
+                    }
                 }
-            }
-            if (exists) {
-                String updateSql = "UPDATE Medical_Record SET Clinical_Diagnosis = ? WHERE Appointment_ID = ?";
-                try (PreparedStatement psUp = conn.prepareStatement(updateSql)) {
-                    psUp.setString(1, notes);
-                    psUp.setInt(2, appointmentId);
-                    return psUp.executeUpdate() > 0;
+                int updated;
+                if (recordId > 0) {
+                    try (PreparedStatement ps = conn.prepareStatement(
+                            "UPDATE Medical_Record SET Staff_Notes = ? WHERE Record_ID = ?")) {
+                        ps.setNString(1, notes == null ? "" : notes.trim());
+                        ps.setInt(2, recordId);
+                        updated = ps.executeUpdate();
+                    }
+                } else {
+                    try (PreparedStatement ps = conn.prepareStatement(
+                            "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Staff_Notes, Created_At) " +
+                            "VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))")) {
+                        ps.setInt(1, appointmentId);
+                        ps.setInt(2, assignedDoctorId);
+                        ps.setNString(3, notes == null ? "" : notes.trim());
+                        updated = ps.executeUpdate();
+                    }
                 }
-            } else {
-                String insertSql = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, Created_At) VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
-                try (PreparedStatement psIns = conn.prepareStatement(insertSql)) {
-                    psIns.setInt(1, appointmentId);
-                    psIns.setInt(2, doctorId);
-                    psIns.setString(3, notes);
-                    return psIns.executeUpdate() > 0;
-                }
+                conn.commit();
+                return updated == 1;
+            } catch (Exception error) {
+                conn.rollback();
+                throw error;
             }
         }
     }
@@ -1398,7 +1421,7 @@ public class AppointmentDAO {
             "doc.Full_Name AS Doctor_Name, doc.Specialty AS Doctor_Specialty, " +
             "rm.Room_Name, " +
             "stf.Full_Name AS Staff_Name, " +
-            "mr.Clinical_Diagnosis AS Medical_Notes, " +
+            "mr.Staff_Notes AS Medical_Notes, " +
             "mr.conclusion AS Cancel_Reason, " +
             "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status " +
             "FROM Appointment a " +
