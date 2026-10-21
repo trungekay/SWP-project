@@ -219,6 +219,20 @@
           display: inline-block;
         }
 
+        .btn-table-cancel {
+          font-family: inherit;
+          font-size: 12px;
+          font-weight: 500;
+          padding: 4px 10px;
+          border-radius: 6px;
+          line-height: 1.4;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          white-space: nowrap;
+        }
+
         .status-active {
           background-color: #dcfce7;
           color: #166534;
@@ -380,7 +394,7 @@
                                         <span class="badge-status" style="background: #fee2e2; color: #b91c1c;"><i
                                             class="bi bi-x-circle me-1"></i>Đã hủy</span>
                                         <c:if test="${not empty appt.reason}">
-                                          <div class="small text-muted mt-1 text-truncate" style="font-size: 11px; max-width: 180px;" title="${appt.reason}">
+                                          <div class="small text-muted mt-1 text-truncate" style="font-size: 11px; max-width: 220px;" title="${appt.reason}">
                                             <i class="bi bi-info-circle me-1"></i><c:out value="${appt.reason}" />
                                           </div>
                                         </c:if>
@@ -393,28 +407,29 @@
                                   <td class="py-3 text-center">
                                     <c:choose>
                                       <c:when test="${appt.status == 'Confirmed'}">
-                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-table-cancel"
                                           onclick="openCancelModal('${appt.id}', '${appt.appointmentDate} (${appt.timeSlot})', '${appt.fee}')">
                                           <i class="bi bi-x-circle me-1"></i>Hủy lịch hẹn
                                         </button>
                                       </c:when>
                                       <c:when test="${appt.status == 'Pending' and appt.hasRefundRequest}">
                                         <span
-                                          class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">
+                                          class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1"
+                                          style="font-size: 12px; font-weight: 500; font-family: inherit;">
                                           <i class="bi bi-hourglass-split me-1"></i>Chờ nhân viên duyệt
                                         </span>
                                       </c:when>
                                       <c:when test="${appt.status == 'Pending'}">
                                         <div class="d-flex justify-content-center align-items-center gap-2" id="apptActionBox_${appt.id}">
                                           <a href="${pageContext.request.contextPath}/book-appointment?step=payment&id=${appt.id}"
-                                            class="btn btn-sm btn-primary countdown-pay-btn d-inline-flex align-items-center"
+                                            class="btn btn-sm btn-primary countdown-pay-btn d-inline-flex align-items-center btn-table-cancel"
                                             id="payBtn_${appt.id}"
                                             data-appt-id="${appt.id}"
                                             data-remaining="${appt.remainingSeconds}"
-                                            style="background: #0d9488; border-color: #0d9488;">
+                                            style="background: #0d9488; border-color: #0d9488; color: #fff;">
                                             <i class="bi bi-qr-code me-1"></i>Thanh toán <span class="badge bg-white text-dark ms-1 font-monospace" id="countdownBadge_${appt.id}">--:--</span>
                                           </a>
-                                          <button type="button" class="btn btn-sm btn-outline-secondary"
+                                          <button type="button" class="btn btn-sm btn-outline-secondary btn-table-cancel"
                                             onclick="openDirectCancelModal('${appt.id}', '${appt.appointmentDate} (${appt.timeSlot})')">
                                             <i class="bi bi-x me-1"></i>Hủy
                                           </button>

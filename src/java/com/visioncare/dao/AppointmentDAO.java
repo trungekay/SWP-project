@@ -888,6 +888,9 @@ public class AppointmentDAO {
                     String conclusion = rs.getString("conclusion");
                     if ("Canceled".equalsIgnoreCase(appt.getStatus())) {
                         if (conclusion != null && !conclusion.trim().isEmpty()) {
+                            if (conclusion.startsWith("Lễ tân hủy lịch: Hệ thống:") || (conclusion.contains("hết hạn") && conclusion.contains("thanh toán")) || conclusion.contains("Hết hạn thanh toán")) {
+                                conclusion = "Hệ thống: Hết hạn thanh toán";
+                            }
                             appt.setReason(conclusion);
                         }
                     }
@@ -1281,8 +1284,14 @@ public class AppointmentDAO {
             }
 
             String formattedReason = noteReason;
-            if (!formattedReason.startsWith("Báo vắng mặt:") && !formattedReason.startsWith("Lễ tân hủy lịch:") && !formattedReason.startsWith("Hủy lịch:")) {
-                formattedReason = "Lễ tân hủy lịch: " + noteReason;
+            if (formattedReason.startsWith("Hệ thống:") || (formattedReason.toLowerCase().contains("hết hạn") && formattedReason.toLowerCase().contains("thanh toán"))) {
+                formattedReason = "Hệ thống: Hết hạn thanh toán";
+            } else if (!formattedReason.startsWith("Báo vắng mặt:") && !formattedReason.startsWith("Lễ tân hủy lịch:") && !formattedReason.startsWith("Hủy lịch:")) {
+                if ("Lễ tân hủy lịch".equals(noteReason)) {
+                    formattedReason = "Lễ tân hủy lịch";
+                } else {
+                    formattedReason = "Lễ tân hủy lịch: " + noteReason;
+                }
             }
 
             if (exists) {
@@ -1516,7 +1525,11 @@ public class AppointmentDAO {
         a.setCreatedAt(rs.getString("Created_At_Str"));
         a.setMedicalNotes(rs.getString("Medical_Notes"));
         try {
-            a.setReason(rs.getString("Cancel_Reason"));
+            String cancelReason = rs.getString("Cancel_Reason");
+            if (cancelReason != null && (cancelReason.startsWith("Lễ tân hủy lịch: Hệ thống:") || (cancelReason.contains("hết hạn") && cancelReason.contains("thanh toán")) || cancelReason.contains("Hết hạn thanh toán"))) {
+                cancelReason = "Hệ thống: Hết hạn thanh toán";
+            }
+            a.setReason(cancelReason);
         } catch (SQLException ignored) {}
         try {
             long dep = rs.getLong("Invoice_Deposit");
@@ -1822,7 +1835,7 @@ public class AppointmentDAO {
             }
             for (int apptId : apptIds) {
                 try {
-                    cancelAppointment(apptId, "Hệ thống: Hết hạn thời gian thanh toán giữ chỗ (15 phút)");
+                    cancelAppointment(apptId, "Hệ thống: Hết hạn thanh toán");
                     count++;
                 } catch (Exception ignored) {}
             }

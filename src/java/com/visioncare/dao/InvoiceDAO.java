@@ -569,19 +569,29 @@ public class InvoiceDAO {
     }
 
     /**
-     * List of paid invoices for refund selection in patient profile
+     * List of paid invoices for refund selection in patient profile.
+     * Quy định: Người dùng chỉ được tạo yêu cầu hoàn tiền khi đã đăng ký lịch thành công (Confirmed)
+     * hoặc đang chờ duyệt hủy (Pending).
+     * Các trường hợp hủy tự động do hết thời gian thanh toán (Canceled) và trường hợp đã khám hoàn thành (Completed)
+     * thì tuyệt đối KHÔNG được tạo yêu cầu hoàn tiền.
      */
     public List<Map<String, Object>> getPaidInvoicesForPatient(int accountId) {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT i.Invoice_ID, i.Total_Amount, i.Deposit_Amount, i.Close_At, i.Create_At, a.Appointment_ID, " +
+        String sql = "SELECT i.Invoice_ID, i.Total_Amount, i.Deposit_Amount, i.Close_At, i.Create_At, " +
+                     "       a.Appointment_ID, a.Status AS Appointment_Status, " +
+                     "       ws.Work_Date, ws.Start_Time, ws.End_Time, " +
                      "       r.Refund_ID, r.Status AS Refund_Status, " +
                      "       CASE WHEN r.Refund_ID IS NOT NULL THEN 1 ELSE 0 END AS Has_Refund " +
                      "FROM Master_Invoice i " +
                      "JOIN Appointment a ON i.Appointment_ID = a.Appointment_ID " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
+                     "LEFT JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
                      "LEFT JOIN Refund_Request r ON i.Invoice_ID = r.Invoice_ID AND r.Status IN ('Pending', 'Approved', 'Success') " +
-                     "WHERE p.Account_ID = ? AND i.Status = 'Paid' " +
-                     "ORDER BY i.Invoice_ID DESC";
+                     "WHERE p.Account_ID = ? " +
+                     "  AND i.Status IN ('Paid', 'Partial_Paid') " +
+                     "  AND a.Status NOT IN ('Completed', 'Canceled') " +
+                     "  AND a.Status IN ('Confirmed', 'Pending') " +
+                     "ORDER BY a.Appointment_ID DESC, i.Invoice_ID DESC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
@@ -595,6 +605,7 @@ public class InvoiceDAO {
                     boolean hasRefund = rs.getInt("Has_Refund") == 1;
                     String refStatus = rs.getString("Refund_Status");
                     int refId = rs.getInt("Refund_ID");
+                    String apptStatus = rs.getString("Appointment_Status");
 
                     map.put("id", id);
                     map.put("formattedId", String.format("#INV-%05d", id));
@@ -610,6 +621,23 @@ public class InvoiceDAO {
                     map.put("isEligible", !hasRefund);
                     map.put("refundStatus", refStatus != null ? refStatus : "");
                     map.put("refundId", refId);
+                    map.put("apptStatus", apptStatus);
+
+                    java.sql.Date workDate = rs.getDate("Work_Date");
+                    java.sql.Time startTime = rs.getTime("Start_Time");
+                    String apptDateFmt = workDate != null ? dateOnlyFormat.format(workDate) : "";
+                    String apptTimeFmt = startTime != null ? new SimpleDateFormat("HH:mm").format(startTime) : "";
+                    map.put("apptDateFmt", apptDateFmt);
+                    map.put("apptTimeFmt", apptTimeFmt);
+
+                    String apptStatusVn = "Đã xác nhận";
+                    if ("Pending".equalsIgnoreCase(apptStatus)) {
+                        apptStatusVn = "Chờ duyệt hủy";
+                    } else if ("Confirmed".equalsIgnoreCase(apptStatus)) {
+                        apptStatusVn = "Đã đăng ký thành công";
+                    }
+                    map.put("apptStatusVn", apptStatusVn);
+
                     list.add(map);
                 }
             }
@@ -640,11 +668,53 @@ public class InvoiceDAO {
 
     /**
      * Create patient refund request
+     * Quy định: Chỉ tạo được khi lịch hẹn Confirmed hoặc Pending (chờ duyệt hủy).
+     * Tuyệt đối không cho phép tạo hoàn tiền nếu lịch đã Completed hoặc Canceled (tự động hết hạn thanh toán).
      */
     public boolean createRefundRequest(int invoiceId, int accountId, long amount, String reason) {
         // Chặn tạo trùng yêu cầu hoàn tiền nếu hóa đơn đã có yêu cầu đang xử lý hoặc thành công
         if (hasActiveRefundRequest(invoiceId)) {
             System.err.println("Prevent duplicate refund request for invoice #" + invoiceId);
+            return false;
+        }
+
+        // Kiểm tra tính hợp lệ của lịch hẹn và hóa đơn
+        String checkSql = "SELECT a.Appointment_ID, a.Status AS Appt_Status, i.Status AS Inv_Status " +
+                          "FROM Master_Invoice i " +
+                          "JOIN Appointment a ON i.Appointment_ID = a.Appointment_ID " +
+                          "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
+                          "WHERE i.Invoice_ID = ? AND (p.Account_ID = ? OR a.Patient_ID IN (SELECT Patient_ID FROM Patient WHERE Account_ID = ?))";
+        try (Connection connCheck = DBContext.getConnection();
+             PreparedStatement psCheck = connCheck.prepareStatement(checkSql)) {
+            psCheck.setInt(1, invoiceId);
+            psCheck.setInt(2, accountId);
+            psCheck.setInt(3, accountId);
+            try (ResultSet rsCheck = psCheck.executeQuery()) {
+                if (!rsCheck.next()) {
+                    System.err.println("Invoice #" + invoiceId + " not found or unauthorized for account #" + accountId);
+                    return false;
+                }
+                String apptStatus = rsCheck.getString("Appt_Status");
+                String invStatus = rsCheck.getString("Inv_Status");
+                if ("Completed".equalsIgnoreCase(apptStatus)) {
+                    System.err.println("Cannot refund completed appointment for invoice #" + invoiceId);
+                    return false;
+                }
+                if ("Canceled".equalsIgnoreCase(apptStatus)) {
+                    System.err.println("Cannot refund canceled/timeout appointment for invoice #" + invoiceId);
+                    return false;
+                }
+                if (!"Confirmed".equalsIgnoreCase(apptStatus) && !"Pending".equalsIgnoreCase(apptStatus)) {
+                    System.err.println("Cannot refund appointment with status " + apptStatus + " for invoice #" + invoiceId);
+                    return false;
+                }
+                if (!"Paid".equalsIgnoreCase(invStatus) && !"Partial_Paid".equalsIgnoreCase(invStatus)) {
+                    System.err.println("Cannot refund unpaid invoice #" + invoiceId);
+                    return false;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
             return false;
         }
 
@@ -684,27 +754,51 @@ public class InvoiceDAO {
 
     /**
      * Create patient refund request by Appointment ID
+     * Quy định: Chỉ tạo được khi lịch hẹn Confirmed hoặc Pending (chờ duyệt hủy).
+     * Tuyệt đối không cho phép tạo hoàn tiền nếu lịch đã Completed hoặc Canceled (tự động hết hạn thanh toán).
      */
     public boolean createRefundRequestForAppointment(int appointmentId, int accountId, long amount, String reason) {
         int invoiceId = 0;
         int patientId = 0;
         long depositAmount = 0;
-        String sql = "SELECT mi.Invoice_ID, mi.Deposit_Amount, mi.Total_Amount, a.Patient_ID " +
-                     "FROM Master_Invoice mi " +
-                     "JOIN Appointment a ON mi.Appointment_ID = a.Appointment_ID " +
-                     "WHERE a.Appointment_ID = ?";
+
+        // Kiểm tra tính hợp lệ của lịch hẹn
+        String checkSql = "SELECT a.Appointment_ID, a.Status AS Appt_Status, mi.Invoice_ID, mi.Status AS Inv_Status, " +
+                          "       mi.Deposit_Amount, mi.Total_Amount, a.Patient_ID " +
+                          "FROM Appointment a " +
+                          "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
+                          "LEFT JOIN Master_Invoice mi ON a.Appointment_ID = mi.Appointment_ID " +
+                          "WHERE a.Appointment_ID = ? AND (p.Account_ID = ? OR a.Patient_ID IN (SELECT Patient_ID FROM Patient WHERE Account_ID = ?))";
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(checkSql)) {
             ps.setInt(1, appointmentId);
+            ps.setInt(2, accountId);
+            ps.setInt(3, accountId);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    invoiceId = rs.getInt("Invoice_ID");
-                    depositAmount = rs.getLong("Deposit_Amount");
-                    patientId = rs.getInt("Patient_ID");
+                if (!rs.next()) {
+                    System.err.println("Appointment #" + appointmentId + " not found or unauthorized for account #" + accountId);
+                    return false;
                 }
+                String apptStatus = rs.getString("Appt_Status");
+                if ("Completed".equalsIgnoreCase(apptStatus)) {
+                    System.err.println("Cannot refund completed appointment #" + appointmentId);
+                    return false;
+                }
+                if ("Canceled".equalsIgnoreCase(apptStatus)) {
+                    System.err.println("Cannot refund canceled/timeout appointment #" + appointmentId);
+                    return false;
+                }
+                if (!"Confirmed".equalsIgnoreCase(apptStatus) && !"Pending".equalsIgnoreCase(apptStatus)) {
+                    System.err.println("Cannot refund appointment with status " + apptStatus + " #" + appointmentId);
+                    return false;
+                }
+                invoiceId = rs.getInt("Invoice_ID");
+                depositAmount = rs.getLong("Deposit_Amount");
+                patientId = rs.getInt("Patient_ID");
             }
         } catch (Exception e) {
             e.printStackTrace();
+            return false;
         }
 
         if (invoiceId > 0 && hasActiveRefundRequest(invoiceId)) {
