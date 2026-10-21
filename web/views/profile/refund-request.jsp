@@ -431,17 +431,21 @@
                   </div>
                   <hr class="mb-4">
 
-                  <c:if test="${not empty successMessage}">
+                  <c:set var="alertSuccess" value="${not empty successMessage ? successMessage : sessionScope.successMessage}" />
+                  <c:if test="${not empty alertSuccess}">
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
-                      <i class="bi bi-check-circle-fill me-2"></i>${successMessage}
+                      <i class="bi bi-check-circle-fill me-2"></i>${alertSuccess}
                       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
+                    <c:remove var="successMessage" scope="session" />
                   </c:if>
-                  <c:if test="${not empty errorMessage}">
+                  <c:set var="alertError" value="${not empty errorMessage ? errorMessage : sessionScope.errorMessage}" />
+                  <c:if test="${not empty alertError}">
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                      <i class="bi bi-exclamation-triangle-fill me-2"></i>${errorMessage}
+                      <i class="bi bi-exclamation-triangle-fill me-2"></i>${alertError}
                       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
+                    <c:remove var="errorMessage" scope="session" />
                   </c:if>
 
                   <div class="content-card mb-5">
@@ -558,8 +562,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <div class="modal-body pt-3 pb-4">
-                <p class="text-muted mb-3 small">Vui lòng chọn hóa đơn và cung cấp lý do để chúng tôi tiến hành xác minh
-                  và hoàn tiền cho bạn.</p>
+                <div class="alert alert-info py-2 px-3 small mb-3 border-0" style="background-color: #f0fdfa; color: #0f766e; border-left: 3px solid #0d9488 !important;">
+                  <i class="bi bi-info-circle me-1"></i><strong>Quy định:</strong> Chỉ được tạo yêu cầu hoàn tiền khi lịch hẹn <strong>đã đăng ký thành công</strong> hoặc <strong>đang chờ duyệt hủy</strong>. Không áp dụng cho ca khám đã hoàn thành hoặc lịch bị hủy tự động do hết thời gian thanh toán.
+                </div>
 
                 <c:set var="eligibleCount" value="0" />
                 <c:forEach var="pi" items="${paidInvoices}">
@@ -570,44 +575,60 @@
 
                 <c:if test="${eligibleCount == 0}">
                   <div id="noEligibleAlert" class="alert alert-warning py-2 px-3 small mb-3">
-                    <i class="bi bi-info-circle me-1"></i>Hiện không có hóa đơn nào đủ điều kiện yêu cầu hoàn tiền (hóa đơn chưa thanh toán hoặc đã gửi yêu cầu trước đó).
+                    <i class="bi bi-exclamation-triangle me-1"></i>Hiện không có hóa đơn nào đủ điều kiện yêu cầu hoàn tiền (chỉ áp dụng cho lịch đã đăng ký thành công hoặc đang chờ duyệt hủy).
                   </div>
                 </c:if>
 
                 <form action="${pageContext.request.contextPath}/refund/request" method="POST" id="refundRequestForm">
 
                   <div class="mb-3">
-                    <label class="form-label small fw-bold">Chọn hóa đơn đã thanh toán <span
+                    <label class="form-label small fw-bold">Chọn lịch hẹn cần hoàn tiền <span
                         class="text-danger">*</span></label>
                     <select class="form-select" name="invoiceId" id="refundInvoiceSelect"
                       onchange="updateMaxRefundAmount()" required>
-                      <option value="" disabled selected>-- Chọn hóa đơn --</option>
+                      <option value="" disabled selected>-- Chọn lịch hẹn đủ điều kiện hoàn tiền --</option>
                       <c:choose>
                         <c:when test="${eligibleCount > 0}">
                           <c:forEach var="pi" items="${paidInvoices}">
                             <c:if test="${pi.isEligible}">
                               <option value="${pi.id}" 
+                                      data-appt-id="${pi.appointmentId}"
+                                      data-appt-code="${pi.formattedApptId}"
+                                      data-inv-code="${pi.formattedId}"
+                                      data-date="${not empty pi.apptDateFmt ? pi.apptDateFmt.concat(' ').concat(pi.apptTimeFmt) : pi.date}"
+                                      data-status="${pi.apptStatusVn}"
                                       data-amount="${pi.depositAmount != null ? pi.depositAmount : pi.amount}"
                                       data-amount-fmt="${pi.amountFmt}">
-                                ${pi.formattedId} - ${pi.date} - ${pi.amountFmt}
+                                ${pi.formattedApptId} (${not empty pi.apptDateFmt ? pi.apptDateFmt.concat(' ').concat(pi.apptTimeFmt) : pi.date}) - Tiền hoàn: ${pi.amountFmt} [${pi.formattedId}]
                               </option>
                             </c:if>
                           </c:forEach>
                         </c:when>
                         <c:otherwise>
-                          <option value="" disabled>Không có hóa đơn hợp lệ</option>
+                          <option value="" disabled>Không có lịch hẹn hợp lệ</option>
                         </c:otherwise>
                       </c:choose>
                     </select>
+                  </div>
+
+                  <!-- Khung hiển thị chi tiết lịch hẹn đã chọn -->
+                  <div id="selectedApptInfoBox" class="p-3 bg-light rounded-3 mb-3 border d-none" style="border-left: 3px solid #0d9488 !important;">
+                    <div class="row g-2 small">
+                      <div class="col-6"><strong>Mã lịch hẹn:</strong> <span id="selApptCode" class="fw-bold" style="color: #0d9488;"></span></div>
+                      <div class="col-6"><strong>Mã hóa đơn:</strong> <span id="selInvCode" class="text-muted"></span></div>
+                      <div class="col-6"><strong>Thời gian khám:</strong> <span id="selApptTime"></span></div>
+                      <div class="col-6"><strong>Trạng thái:</strong> <span id="selApptStatus" class="badge bg-success-subtle text-success"></span></div>
+                    </div>
                   </div>
 
                   <div class="mb-3">
                     <label class="form-label small fw-bold">Số tiền yêu cầu hoàn (VNĐ) <span
                         class="text-danger">*</span></label>
                     <input type="text" class="form-control bg-light" id="refundAmountDisplay"
-                      placeholder="Tự động cập nhật theo hóa đơn" readonly
+                      placeholder="Tự động cập nhật theo lịch hẹn đã chọn" readonly
                       style="cursor: not-allowed; font-weight: 600; color: #0d9488;">
                     <input type="hidden" name="amount" id="refundAmountInput" required>
+                    <input type="hidden" name="appointmentId" id="refundAppointmentIdInput">
                   </div>
 
                   <div class="mb-3">
@@ -720,18 +741,32 @@
           function updateMaxRefundAmount() {
             const sel = document.getElementById('refundInvoiceSelect');
             const opt = sel.options[sel.selectedIndex];
+            const box = document.getElementById('selectedApptInfoBox');
             if (opt && opt.dataset.amount) {
               const rawAmt = opt.dataset.amount;
               const fmtAmt = opt.dataset.amountFmt || (new Intl.NumberFormat('vi-VN').format(rawAmt) + ' đ');
               const displayInput = document.getElementById('refundAmountDisplay');
               const hiddenInput = document.getElementById('refundAmountInput');
+              const hiddenAppt = document.getElementById('refundAppointmentIdInput');
               if (displayInput) displayInput.value = fmtAmt;
               if (hiddenInput) hiddenInput.value = rawAmt;
+              if (hiddenAppt) hiddenAppt.value = opt.dataset.apptId || '';
+
+              if (box) {
+                box.classList.remove('d-none');
+                document.getElementById('selApptCode').innerText = opt.dataset.apptCode || '--';
+                document.getElementById('selInvCode').innerText = opt.dataset.invCode || '--';
+                document.getElementById('selApptTime').innerText = opt.dataset.date || '--';
+                document.getElementById('selApptStatus').innerText = opt.dataset.status || 'Đã xác nhận';
+              }
             } else {
               const displayInput = document.getElementById('refundAmountDisplay');
               const hiddenInput = document.getElementById('refundAmountInput');
+              const hiddenAppt = document.getElementById('refundAppointmentIdInput');
               if (displayInput) displayInput.value = '';
               if (hiddenInput) hiddenInput.value = '';
+              if (hiddenAppt) hiddenAppt.value = '';
+              if (box) box.classList.add('d-none');
             }
           }
 

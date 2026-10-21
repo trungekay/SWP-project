@@ -261,11 +261,11 @@
                       <table class="custom-table">
                         <thead>
                           <tr>
-                            <th>Ngày khám</th>
-                            <th>Bác sĩ</th>
-                            <th>Dịch vụ</th>
-                            <th>Trạng thái</th>
-                            <th>Thao tác</th>
+                            <th style="width: 120px; white-space: nowrap;">Ngày khám</th>
+                            <th style="width: 180px; white-space: nowrap;">Bác sĩ phụ trách</th>
+                            <th style="white-space: nowrap;">Chẩn đoán lâm sàng</th>
+                            <th style="width: 220px; white-space: nowrap;">Kết luận của Bác sĩ</th>
+                            <th style="width: 140px; white-space: nowrap; text-align: center;">Thao tác</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -273,29 +273,41 @@
                             <c:when test="${not empty records}">
                               <c:forEach var="record" items="${records}">
                                 <tr>
-                                  <td>${record.date}</td>
                                   <td>
-                                    <div class="user-details">
-                                      <p class="name">${record.doctorName}</p>
+                                    <div class="fw-bold text-dark">${record.dateFmt}</div>
+                                    <div class="text-muted small">${record.timeFmt}</div>
+                                  </td>
+                                  <td>
+                                    <div class="fw-semibold text-dark">${record.doctorName}</div>
+                                    <div class="small" style="color: #0d9488;">${record.doctorSpecialty}</div>
+                                  </td>
+                                  <td>
+                                    <div class="text-dark fw-medium" style="line-height: 1.4;">
+                                      <c:out value="${record.clinicalDiagnosis}" default="Khám mắt chuyên khoa" />
                                     </div>
                                   </td>
-                                  <td>${record.serviceName}</td>
-                                  <td><span class="badge-status status-active">Hoàn thành</span></td>
                                   <td>
-                                    <div class="action-btns">
+                                    <div class="text-secondary small" style="line-height: 1.4;">
+                                      <i class="bi bi-check2 text-success me-1"></i><c:out value="${record.conclusion}" default="Đang theo dõi" />
+                                    </div>
+                                  </td>
+                                  <td class="text-center">
+                                    <div class="action-btns justify-content-center">
                                       <a href="${pageContext.request.contextPath}/profile/medical-record?id=${record.id}"
-                                        class="action-btn" title="Xem hồ sơ khám">
-                                        <i class="bi bi-file-earmark-medical"></i>
+                                        class="btn btn-sm btn-outline-teal rounded-pill px-2.5 py-1"
+                                        style="font-size: 12px; font-weight: 600; border: 1px solid #cbece4; color: #008b74; text-decoration: none;"
+                                        title="Xem hồ sơ khám">
+                                        <i class="bi bi-file-earmark-medical me-1"></i>Xem hồ sơ
                                       </a>
                                       <c:choose>
                                         <c:when test="${not empty record.invoiceId && record.invoiceId > 0}">
                                           <a href="${pageContext.request.contextPath}/profile/invoice-detail?id=${record.invoiceId}"
-                                            class="action-btn" title="Xem hóa đơn">
+                                            class="action-btn text-teal" title="Xem hóa đơn" style="color: #008b74;">
                                             <i class="bi bi-receipt"></i>
                                           </a>
                                         </c:when>
                                         <c:otherwise>
-                                          <span class="action-btn text-muted" title="Chưa có hóa đơn" style="opacity: 0.4; cursor: not-allowed;">
+                                          <span class="action-btn text-muted" title="Chưa có hóa đơn" style="opacity: 0.35; cursor: not-allowed;">
                                             <i class="bi bi-receipt"></i>
                                           </span>
                                         </c:otherwise>

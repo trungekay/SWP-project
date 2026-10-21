@@ -15,22 +15,50 @@ public class HistoryDAO {
     // For medical-history.jsp (Lịch sử khám)
     public List<Map<String, Object>> getMedicalRecords(int accountId) throws Exception {
         List<Map<String, Object>> list = new ArrayList<>();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
         String sql = "SELECT m.Record_ID, a.Appointment_ID, a.Status, m.Created_At AS Date, e.Full_Name AS DoctorName, " +
+                     "e.Specialty AS DoctorSpecialty, m.Clinical_Diagnosis, m.examination_result, m.conclusion, " +
+                     "ws.Work_Date, ws.Start_Time, ws.End_Time, " +
                      "i.Invoice_ID, i.Status AS Invoice_Status, i.Total_Amount, " +
                      "(SELECT TOP 1 s.Service_Name FROM Procedure_Order po JOIN Service_Catalog s ON po.Service_ID = s.Service_ID WHERE po.Record_ID = m.Record_ID) AS Dynamic_Service " +
                      "FROM Medical_Record m " +
                      "JOIN Appointment a ON m.Appointment_ID = a.Appointment_ID " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
-                     "JOIN Employee_Profile e ON m.Doctor_Employee_ID = e.Employee_ID " +
+                     "LEFT JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
+                     "LEFT JOIN Employee_Profile e ON COALESCE(m.Doctor_Employee_ID, ws.Doctor_Employee_ID) = e.Employee_ID " +
                      "LEFT JOIN Master_Invoice i ON a.Appointment_ID = i.Appointment_ID " +
-                     "WHERE p.Account_ID = ? ORDER BY m.Created_At DESC";
+                     "WHERE (p.Account_ID = ? OR p.Patient_ID IN (SELECT Patient_ID FROM Patient WHERE Account_ID = ?)) " +
+                     "AND (a.Status = 'Completed' OR (m.examination_result IS NOT NULL AND m.conclusion IS NOT NULL AND m.conclusion NOT LIKE '%hủy%')) " +
+                     "ORDER BY COALESCE(ws.Work_Date, CAST(m.Created_At AS DATE)) DESC, COALESCE(ws.Start_Time, CAST(m.Created_At AS TIME)) DESC, m.Created_At DESC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
+            ps.setInt(2, accountId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Map<String, Object> map = new HashMap<>();
-                    map.put("date", rs.getDate("Date"));
+                    java.sql.Date workDate = rs.getDate("Work_Date");
+                    java.sql.Time startTime = rs.getTime("Start_Time");
+                    java.sql.Timestamp created = rs.getTimestamp("Date");
+
+                    String dateFmt = "N/A";
+                    if (workDate != null) {
+                        dateFmt = dateFormat.format(workDate);
+                    } else if (created != null) {
+                        dateFmt = dateFormat.format(created);
+                    }
+
+                    String timeFmt = "--:--";
+                    if (startTime != null) {
+                        timeFmt = timeFormat.format(startTime);
+                    } else if (created != null) {
+                        timeFmt = timeFormat.format(created);
+                    }
+
+                    map.put("date", workDate != null ? workDate : (created != null ? new java.sql.Date(created.getTime()) : null));
+                    map.put("dateFmt", dateFmt);
+                    map.put("timeFmt", timeFmt);
                     String rawDoc = rs.getString("DoctorName");
                     String docName = rawDoc != null && !rawDoc.trim().isEmpty() ? rawDoc.trim() : "Trần Văn Nam";
                     while (docName.matches("^(?i)(BS\\.?|Bác sĩ|BS:)\\s*(BS\\.?|Bác sĩ)\\s*.*")) {
@@ -49,7 +77,19 @@ public class HistoryDAO {
                         docName = "BS. " + docName.substring(7).trim();
                     }
                     map.put("doctorName", docName);
+                    String specialty = rs.getString("DoctorSpecialty");
+                    map.put("doctorSpecialty", specialty != null && !specialty.trim().isEmpty() ? specialty : "Bác sĩ nhãn khoa");
                     map.put("status", rs.getString("Status"));
+                    map.put("statusVn", "Hoàn thành");
+                    
+                    // Clinical and Examination Details
+                    String diag = rs.getString("Clinical_Diagnosis");
+                    map.put("clinicalDiagnosis", diag != null && !diag.trim().isEmpty() ? diag : "Khám mắt chuyên khoa");
+                    String examResult = rs.getString("examination_result");
+                    map.put("examinationResult", examResult != null && !examResult.trim().isEmpty() ? examResult : "Chưa cập nhật kết quả");
+                    String conclusion = rs.getString("conclusion");
+                    map.put("conclusion", conclusion != null && !conclusion.trim().isEmpty() ? conclusion : "Đang theo dõi");
+
                     int recId = rs.getInt("Record_ID");
                     int apptId = rs.getInt("Appointment_ID");
                     map.put("recordId", recId);
