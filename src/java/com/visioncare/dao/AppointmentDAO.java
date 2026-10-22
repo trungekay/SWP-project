@@ -1007,7 +1007,16 @@ public class AppointmentDAO {
             params.add(kw);
             params.add(kw);
         }
-        sql.append(" ORDER BY ws.Work_Date DESC, ws.Start_Time ASC, a.Appointment_ID DESC");
+        sql.append(" ORDER BY ws.Work_Date DESC, " +
+                   "CASE " +
+                   "  WHEN a.Status = 'In_Progress' THEN 0 " +
+                   "  WHEN a.Status = 'Confirmed' THEN 1 " +
+                   "  WHEN a.Status = 'Pending' THEN 2 " +
+                   "  WHEN a.Status = 'Completed' THEN 3 " +
+                   "  WHEN a.Status = 'Canceled' THEN 4 " +
+                   "  ELSE 5 " +
+                   "END, " +
+                   "a.Appointment_ID ASC");
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
@@ -1447,7 +1456,15 @@ public class AppointmentDAO {
             params.add("%" + cleanKw + "%");
         }
 
-        sql.append(" ORDER BY CASE WHEN a.Status = 'In_Progress' THEN 0 WHEN a.Status = 'Confirmed' THEN 1 ELSE 2 END, ws.Start_Time ASC, a.checkin_time ASC");
+        sql.append(" ORDER BY " +
+                   "CASE " +
+                   "  WHEN a.Status = 'In_Progress' THEN 0 " +
+                   "  WHEN a.Status = 'Confirmed' THEN 1 " +
+                   "  WHEN a.Status = 'Completed' THEN 2 " +
+                   "  WHEN a.Status = 'Canceled' THEN 3 " +
+                   "  ELSE 4 " +
+                   "END, " +
+                   "a.Appointment_ID ASC");
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
@@ -1462,10 +1479,14 @@ public class AppointmentDAO {
                 }
             }
             try (ResultSet rs = ps.executeQuery()) {
-                int qNum = 1;
+                int waitingQNum = 1;
                 while (rs.next()) {
                     Appointment appt = mapStaffAppointment(rs);
-                    appt.setQueueNumber(qNum++);
+                    if ("Confirmed".equalsIgnoreCase(appt.getStatus())) {
+                        appt.setQueueNumber(waitingQNum++);
+                    } else {
+                        appt.setQueueNumber(0);
+                    }
                     list.add(appt);
                 }
             }
