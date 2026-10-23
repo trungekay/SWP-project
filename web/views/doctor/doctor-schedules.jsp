@@ -194,6 +194,9 @@
                                         <c:when test="${slot.booked}">
                                           <span class="badge bg-light text-muted border p-2 text-decoration-line-through" title="Đã có người đặt">${slot.startTime}</span>
                                         </c:when>
+                                        <c:when test="${slot.past}">
+                                          <span class="badge bg-light text-muted border p-2 text-decoration-line-through" title="Khung giờ này đã qua">${slot.startTime}</span>
+                                        </c:when>
                                         <c:otherwise>
                                           <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}&date=${selectedDate}&time=${slot.startTime}"
                                              class="badge bg-white border border-primary text-primary p-2 text-decoration-none time-slot-hover"
@@ -214,7 +217,7 @@
                             <c:if test="${hasAfternoon}">
                               <div class="mb-3">
                                 <small class="text-muted fw-bold d-block mb-1" style="font-size: 0.78rem;">
-                                  <i class="bi bi-sun me-1 text-primary"></i>Ca Chiều (13:30 - 16:30):
+                                  <i class="bi bi-sun me-1 text-primary"></i>Ca Chiều (13:30 - 17:00):
                                 </small>
                                 <div class="d-flex flex-wrap gap-1">
                                   <c:forEach var="slot" items="${doctorSlots[doc.id]}">
@@ -222,6 +225,9 @@
                                       <c:choose>
                                         <c:when test="${slot.booked}">
                                           <span class="badge bg-light text-muted border p-2 text-decoration-line-through" title="Đã có người đặt">${slot.startTime}</span>
+                                        </c:when>
+                                        <c:when test="${slot.past}">
+                                          <span class="badge bg-light text-muted border p-2 text-decoration-line-through" title="Khung giờ này đã qua">${slot.startTime}</span>
                                         </c:when>
                                         <c:otherwise>
                                           <a href="${pageContext.request.contextPath}/book-appointment?doc=${doc.id}&date=${selectedDate}&time=${slot.startTime}"
@@ -299,6 +305,16 @@
         </section>
 
       </main>
+
+      <script>
+        document.addEventListener('DOMContentLoaded', function() {
+          const dateInput = document.getElementById('date');
+          if (dateInput) {
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.setAttribute('min', today);
+          }
+        });
+      </script>
 
       <%-- Include Footer --%>
         <jsp:include page="/views/common/footer.jsp" />
