@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 
-@WebFilter(urlPatterns = {"/my-appointments", "/profile/*", "/views/profile/*", "/book-appointment", "/admin/*", "/staff/*", "/employee/*", "/specialist/*", "/doctor/*"})
+@WebFilter(urlPatterns = {"/my-appointments", "/profile/*", "/views/profile/*", "/book-appointment", "/admin/*", "/director/*", "/staff/*", "/employee/*", "/specialist/*", "/doctor/*"})
 public class AuthenticationFilter implements Filter {
 
     @Override
@@ -31,6 +31,14 @@ public class AuthenticationFilter implements Filter {
                     com.visioncare.model.User sessionUser = (com.visioncare.model.User) session.getAttribute("user");
                     if (sessionUser.getRoleId() != 1 && sessionUser.getRoleId() != 2) {
                         httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập trang này.");
+                        return;
+                    }
+                }
+
+                if (uri.startsWith(httpRequest.getContextPath() + "/director/")) {
+                    com.visioncare.model.User sessionUser = (com.visioncare.model.User) session.getAttribute("user");
+                    if (sessionUser == null || (sessionUser.getRoleId() != 2 && sessionUser.getRoleId() != 1 && !"director".equalsIgnoreCase(sessionUser.getRole()))) {
+                        httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập trang Giám đốc.");
                         return;
                     }
                 }

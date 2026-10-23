@@ -150,8 +150,16 @@
                           <li><a href="${pageContext.request.contextPath}/staff/appointments"><i class="bi bi-calendar-check me-2" style="font-size: 16px;"></i> Xem danh sách lịch hẹn</a></li>
                           <li><a href="${pageContext.request.contextPath}/staff/waiting-list"><i class="bi bi-people me-2" style="font-size: 16px;"></i> Hàng đợi phòng khám</a></li>
                         </c:if>
+                        <c:if test="${sessionScope.user.role == 'director'}">
+                          <li><a href="${pageContext.request.contextPath}/director/dashboard"><i class="bi bi-speedometer2 me-2" style="font-size: 16px;"></i> Bàn làm việc Giám đốc</a></li>
+                          <li><a href="${pageContext.request.contextPath}/director/doctors"><i class="bi bi-person-badge me-2" style="font-size: 16px;"></i> Bác sĩ & Lịch trực</a></li>
+                          <li><a href="${pageContext.request.contextPath}/director/specialists"><i class="bi bi-clipboard2-pulse me-2" style="font-size: 16px;"></i> KTV / Chuyên viên & Lịch</a></li>
+                          <li><a href="${pageContext.request.contextPath}/director/staffs"><i class="bi bi-people me-2" style="font-size: 16px;"></i> Nhân viên & Lịch làm việc</a></li>
+                          <li><a href="${pageContext.request.contextPath}/director/leave-requests"><i class="bi bi-calendar-x me-2" style="font-size: 16px;"></i> Duyệt hủy lịch trực</a></li>
+                          <li><a href="${pageContext.request.contextPath}/director/refunds"><i class="bi bi-cash-coin me-2" style="font-size: 16px;"></i> Duyệt hoàn tiền</a></li>
+                        </c:if>
                         <c:if test="${sessionScope.user.role == 'doctor' || sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist' || sessionScope.user.role == 'staff' || sessionScope.user.role == 'director'}">
-                          <li><a href="${pageContext.request.contextPath}/employee/schedule"><i class="bi bi-calendar-week me-2" style="font-size: 16px;"></i> Lịch làm việc</a></li>
+                          <li><a href="${pageContext.request.contextPath}/employee/schedule"><i class="bi bi-calendar-week me-2" style="font-size: 16px;"></i> Lịch trực cá nhân</a></li>
                           <li><a href="${pageContext.request.contextPath}/employee/register-schedule"><i class="bi bi-calendar-plus me-2" style="font-size: 16px;"></i> Đăng ký lịch</a></li>
                         </c:if>
                         <c:if test="${sessionScope.user.role == 'doctor'}">

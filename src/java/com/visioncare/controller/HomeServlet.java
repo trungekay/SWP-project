@@ -25,7 +25,10 @@ public class HomeServlet extends HttpServlet {
             if ("admin".equals(role)) {
                 response.sendRedirect(request.getContextPath() + "/admin/users");
                 return;
-            } else if ("director".equals(role) || "staff".equals(role) || "doctor".equals(role) || "specialist".equals(role) || "medical_specialist".equals(role)) {
+            } else if ("director".equals(role)) {
+                response.sendRedirect(request.getContextPath() + "/director/dashboard");
+                return;
+            } else if ("staff".equals(role) || "doctor".equals(role) || "specialist".equals(role) || "medical_specialist".equals(role)) {
                 response.sendRedirect(request.getContextPath() + "/employee/schedule");
                 return;
             }

@@ -8,28 +8,33 @@ public class WorkScheduleDAO {
     public Map<String, ScheduleCellDTO> getScheduleMatrix(int actorId, String role, String startDate, String endDate) {
         Map<String, ScheduleCellDTO> matrix = new HashMap<>();
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT ws.Schedule_ID, ws.Doctor_Employee_ID, ws.Specialist_Employee_ID, ")
+        sql.append("SELECT ws.Schedule_ID, ws.Doctor_Employee_ID, ws.Specialist_Employee_ID, ws.Staff_Employee_ID, ")
            .append("       ws.Work_Date, ws.Slot, ws.Start_Time, ws.End_Time, ws.Status, ")
            .append("       rm.Room_Name, ")
            .append("       ap.Appointment_ID, ap.Patient_ID, ap.Status AS Appointment_Status, ")
            .append("       p.Full_Name AS Patient_Name, p.Phone AS Patient_Phone ")
            .append("FROM Work_Schedule ws ")
-           .append("LEFT JOIN Employee_Profile e ON (ws.Doctor_Employee_ID = e.Employee_ID OR ws.Specialist_Employee_ID = e.Employee_ID) ")
+           .append("LEFT JOIN Employee_Profile e ON (ws.Doctor_Employee_ID = e.Employee_ID OR ws.Specialist_Employee_ID = e.Employee_ID OR ws.Staff_Employee_ID = e.Employee_ID) ")
            .append("LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID ")
            .append("LEFT JOIN Appointment ap ON ws.Schedule_ID = ap.Schedule_ID AND ap.Status != 'Canceled' ")
            .append("LEFT JOIN Patient p ON ap.Patient_ID = p.Patient_ID ")
            .append("WHERE ws.Work_Date BETWEEN ? AND ? ");
         if ("doctor".equalsIgnoreCase(role)) {
             sql.append("AND ws.Doctor_Employee_ID = ? ");
-        } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
+        } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
             sql.append("AND ws.Specialist_Employee_ID = ? ");
+        } else if ("staff".equalsIgnoreCase(role)) {
+            sql.append("AND (ws.Staff_Employee_ID = ? OR ws.Specialist_Employee_ID = ?) ");
         }
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             ps.setString(1, startDate);
             ps.setString(2, endDate);
-            if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
+            if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
                 ps.setInt(3, actorId);
+            } else if ("staff".equalsIgnoreCase(role)) {
+                ps.setInt(3, actorId);
+                ps.setInt(4, actorId);
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -199,6 +204,52 @@ public class WorkScheduleDAO {
                 u.setSpecialty(rs.getString("Specialty"));
                 u.setRoomName(rs.getString("Room_Name"));
                 list.add(u);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public List<User> getEmployeesByRoleType(String roleType) {
+        List<User> list = new ArrayList<>();
+        String targetRole = "Doctor";
+        if ("medical_specialist".equalsIgnoreCase(roleType) || "specialist".equalsIgnoreCase(roleType)) {
+            targetRole = "Medical_Specialist";
+        } else if ("staff".equalsIgnoreCase(roleType)) {
+            targetRole = "Staff";
+        }
+        String sql = "SELECT LOWER(r.Role_Name) AS Role_Type, r.Role_Name, e.Employee_ID AS Actor_ID, a.Account_ID, " +
+                     "e.Full_Name, a.Email, COALESCE(e.Phone, N'Chưa có') AS Phone, COALESCE(e.Specialty, N'Chung') AS Specialty, " +
+                     "CASE WHEN LOWER(r.Role_Name) = 'staff' THEN NULL ELSE COALESCE(rm.Room_Name, N'Chưa xếp phòng') END AS Room_Name, " +
+                     "e.License_Number, a.Account_Status, e.DOB, e.Address " +
+                     "FROM Employee_Profile e " +
+                     "JOIN Account a ON e.Account_ID = a.Account_ID " +
+                     "JOIN Role r ON a.Role_ID = r.Role_ID " +
+                     "LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID " +
+                     "WHERE r.Role_Name = ? AND a.Account_Status != 'Deleted' " +
+                     "ORDER BY e.Employee_ID ASC";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, targetRole);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    User u = new User();
+                    u.setRole(rs.getString("Role_Type"));
+                    u.setActorId(rs.getInt("Actor_ID"));
+                    u.setId(rs.getInt("Account_ID"));
+                    u.setFullName(rs.getString("Full_Name"));
+                    u.setEmail(rs.getString("Email"));
+                    u.setPhone(rs.getString("Phone"));
+                    u.setSpecialty(rs.getString("Specialty"));
+                    u.setRoomName(rs.getString("Room_Name"));
+                    u.setLicenseNumber(rs.getString("License_Number"));
+                    u.setStatus(rs.getString("Account_Status"));
+                    java.sql.Date dob = rs.getDate("DOB");
+                    u.setDob(dob != null ? dob.toString() : null);
+                    u.setAddress(rs.getString("Address"));
+                    list.add(u);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
