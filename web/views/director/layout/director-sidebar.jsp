@@ -58,25 +58,17 @@
             </a>
         </li>
 
-        <div class="sidebar-menu-header mt-3">LỊCH TRỰC CỦA TÔI</div>
-        <li>
-            <a href="${pageContext.request.contextPath}/employee/schedule" class="${param.activeNav == 'my-schedule' ? 'active' : ''}">
-                <i class="bi bi-calendar-week"></i>
-                <span>Lịch trực cá nhân</span>
-            </a>
-        </li>
-        <li>
-            <a href="${pageContext.request.contextPath}/employee/register-schedule" class="${param.activeNav == 'register-schedule' ? 'active' : ''}">
-                <i class="bi bi-calendar-plus"></i>
-                <span>Đăng ký ca làm việc</span>
-            </a>
-        </li>
-
         <div class="sidebar-menu-header mt-3">HỆ THỐNG</div>
         <li>
             <a href="${pageContext.request.contextPath}/home">
                 <i class="bi bi-house-door"></i>
                 <span>Xem trang chủ</span>
+            </a>
+        </li>
+        <li>
+            <a href="${pageContext.request.contextPath}/logout" class="text-danger">
+                <i class="bi bi-box-arrow-right text-danger"></i>
+                <span class="text-danger">Đăng xuất</span>
             </a>
         </li>
     </ul>
