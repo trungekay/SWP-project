@@ -324,4 +324,15 @@ public class Appointment {
     public boolean getDoctorCompleted() {
         return isDoctorCompleted();
     }
+    private boolean cancellationRequested;
+
+    public void setCancellationRequested(boolean cancellationRequested) {
+        this.cancellationRequested = cancellationRequested;
+    }
+
+    public boolean isCancellationRequested() {
+        return "Pending".equalsIgnoreCase(status) && (checkinTime == null || checkinTime.isEmpty())
+                && (cancellationRequested || (reason != null
+                && reason.startsWith(com.visioncare.dao.RefundPolicy.REQUESTED)));
+    }
 }

@@ -31,7 +31,7 @@
 
         <header class="doctor-form-heading">
             <div>
-                <span class="doctor-form-eyebrow">CA KHÁM #APPT-<c:out value="${appointment.id}" /></span>
+                <span class="doctor-form-eyebrow">CA KHÁM #APT-<c:out value="${appointment.id}" /></span>
                 <h1>Phiếu kê đơn</h1>
                 <p>Kê thuốc và thông số kính theo kết quả khám của bệnh nhân.</p>
             </div>

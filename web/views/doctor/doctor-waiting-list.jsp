@@ -138,7 +138,7 @@
                             <c:forEach var="item" items="${appointments}">
                                 <c:set var="startWindowState" value="${startWindowStates[item.id]}" />
                                 <tr>
-                                    <td class="text-center text-nowrap"><a class="badge bg-light text-dark border px-2 py-1 fw-bold text-decoration-none doctor-queue-link" href="${pageContext.request.contextPath}/doctor/patient-detail?id=${item.id}">#APPT-<c:out value="${item.id}" /></a></td>
+                                    <td class="text-center text-nowrap"><a class="badge bg-light text-dark border px-2 py-1 fw-bold text-decoration-none doctor-queue-link" href="${pageContext.request.contextPath}/doctor/patient-detail?id=${item.id}">#APT-<c:out value="${item.id}" /></a></td>
                                     <td class="text-nowrap text-truncate">
                                         <a class="fw-semibold text-dark text-decoration-none doctor-queue-link" href="${pageContext.request.contextPath}/doctor/patient-detail?id=${item.id}" title="<c:out value='${item.patientName}' />"><c:out value="${item.patientName}" default="Chưa có tên" /></a>
                                     </td>
@@ -267,7 +267,7 @@
             <div class="modal-body">
                 <div class="modal-icon-danger"><i class="bi bi-x-circle" aria-hidden="true"></i></div>
                 <h3 class="modal-title-custom" id="cancelExamModalTitle">Xác nhận hủy khám?</h3>
-                <p class="modal-text">Ca khám <strong id="cancelExamCode">#APPT-</strong> của
+                <p class="modal-text">Ca khám <strong id="cancelExamCode">#APT-</strong> của
                     <strong id="cancelExamPatient">bệnh nhân</strong> <span id="cancelExamDescription"></span>
                     Ca này sẽ được lưu với trạng thái <strong>Đã hủy</strong>; thông tin khám đã ghi vẫn được giữ lại.</p>
                 <form action="${pageContext.request.contextPath}/doctor/waiting-list" method="post" class="m-0">
@@ -327,7 +327,7 @@
         var active = trigger.getAttribute('data-exam-status') === 'In_Progress';
         var patient = trigger.closest('.doctor-queue-item').querySelector('.doctor-queue-patient-copy h3').textContent.trim();
         document.getElementById('cancelExamAppointmentId').value = id;
-        document.getElementById('cancelExamCode').textContent = '#APPT-' + id;
+        document.getElementById('cancelExamCode').textContent = '#APT-' + id;
         document.getElementById('cancelExamPatient').textContent = patient;
         document.getElementById('cancelExamModalTitle').textContent = active ? 'Xác nhận dừng ca đang khám?' : 'Xác nhận hủy ca quá giờ?';
         document.getElementById('cancelExamDescription').textContent = active

@@ -368,9 +368,12 @@
                                     <c:choose>
                                       <c:when test="${appt.status == 'Pending'}">
                                         <c:choose>
-                                          <c:when test="${appt.hasRefundRequest}">
+                                          <c:when test="${appt.cancellationRequested}">
                                             <span class="badge-status" style="background: #fef3c7; color: #b45309;"><i
                                                 class="bi bi-clock-history me-1"></i>Chờ duyệt hủy</span>
+                                          </c:when>
+                                          <c:when test="${appt.depositPaid}">
+                                            <span class="badge-status" style="background: #e0f2fe; color: #0369a1;">Đã thanh toán · Chờ xử lý</span>
                                           </c:when>
                                           <c:otherwise>
                                             <span class="badge-status" style="background: #fff7ed; color: #c2410c;"><i
@@ -378,10 +381,11 @@
                                           </c:otherwise>
                                         </c:choose>
                                       </c:when>
-                                      <c:when test="${appt.status == 'Confirmed'}">
+                                      <c:when test="${appt.status == 'Confirmed' && empty appt.checkinTime}">
                                         <span class="badge-status" style="background: #e0f2fe; color: #0369a1;"><i
                                             class="bi bi-check-circle me-1"></i>Đã xác nhận</span>
                                       </c:when>
+                                      <c:when test="${appt.status == 'Confirmed' && not empty appt.checkinTime}"><span class="badge-status">Chờ khám</span></c:when>
                                       <c:when test="${appt.status == 'In_Progress'}">
                                         <span class="badge-status" style="background: #f3e8ff; color: #6b21a8;"><i
                                             class="bi bi-activity me-1"></i>Đang khám</span>
@@ -406,20 +410,20 @@
                                   </td>
                                   <td class="py-3 text-center">
                                     <c:choose>
-                                      <c:when test="${appt.status == 'Confirmed'}">
+                                      <c:when test="${appt.status == 'Confirmed' && empty appt.checkinTime}">
                                         <button type="button" class="btn btn-sm btn-outline-danger btn-table-cancel"
                                           onclick="openCancelModal('${appt.id}', '${appt.appointmentDate} (${appt.timeSlot})', '${appt.fee}')">
                                           <i class="bi bi-x-circle me-1"></i>Hủy lịch hẹn
                                         </button>
                                       </c:when>
-                                      <c:when test="${appt.status == 'Pending' and appt.hasRefundRequest}">
+                                      <c:when test="${appt.cancellationRequested}">
                                         <span
                                           class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1"
                                           style="font-size: 12px; font-weight: 500; font-family: inherit;">
                                           <i class="bi bi-hourglass-split me-1"></i>Chờ nhân viên duyệt
                                         </span>
                                       </c:when>
-                                      <c:when test="${appt.status == 'Pending'}">
+                                      <c:when test="${appt.awaitingPayment}">
                                         <div class="d-flex justify-content-center align-items-center gap-2" id="apptActionBox_${appt.id}">
                                           <a href="${pageContext.request.contextPath}/book-appointment?step=payment&id=${appt.id}"
                                             class="btn btn-sm btn-primary countdown-pay-btn d-inline-flex align-items-center btn-table-cancel"
@@ -466,7 +470,7 @@
             <div class="modal-content" style="border-radius: 12px; border: none; padding: 10px;">
               <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title fw-bold" id="cancelModalLabel" style="color: #ef4444;"><i
-                    class="bi bi-exclamation-triangle me-2"></i>Yêu cầu hủy lịch & hoàn tiền cọc</h5>
+                    class="bi bi-exclamation-triangle me-2"></i>Yêu cầu hủy lịch hẹn</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <div class="modal-body pt-3 pb-4">
@@ -485,8 +489,7 @@
                     </div>
                     <div class="text-muted small" style="font-size: 0.825rem; line-height: 1.5;">
                       Sau khi bạn gửi, trạng thái lịch hẹn sẽ chuyển sang <strong>Chờ duyệt hủy</strong> và được gửi tới
-                      Nhân viên (Staff). Khi nhân viên đồng ý, lịch hẹn sẽ được hủy chính thức và tiền cọc sẽ được hoàn
-                      trả theo quy định phòng khám.
+                      Nhân viên (Staff). Khi nhân viên đồng ý, lịch hẹn sẽ được hủy chính thức. Sau đó bạn mới có thể tạo yêu cầu hoàn tiền.
                     </div>
                   </div>
                   <div class="d-flex justify-content-end gap-2 mt-4">

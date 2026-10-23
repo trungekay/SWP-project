@@ -8,7 +8,7 @@
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Chi tiết Lịch hẹn #APPT-${appointment.id} - VisionCare</title>
+                <title>Chi tiết Lịch hẹn #APT-${appointment.id} - VisionCare</title>
                 <!-- Google Fonts -->
                 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
                     rel="stylesheet">
@@ -73,7 +73,7 @@
                                             href="${pageContext.request.contextPath}/staff/appointments"
                                             class="text-decoration-none text-muted">Lịch hẹn</a></li>
                                     <li class="breadcrumb-item active fw-semibold text-dark" aria-current="page">Chi
-                                        tiết #APPT-${appointment.id}</li>
+                                        tiết #APT-${appointment.id}</li>
                                 </ol>
                             </nav>
                         </div>
@@ -94,7 +94,7 @@
                                     <div>
                                         <div class="d-flex align-items-center gap-2 flex-wrap">
                                             <h3 class="mb-0 fw-bold text-dark">${appointment.patientName}</h3>
-                                            <span class="badge bg-light text-dark border">#APPT-${appointment.id}</span>
+                                            <span class="badge bg-light text-dark border">#APT-${appointment.id}</span>
                                             <c:choose>
                                                 <c:when test="${appointment.awaitingPayment}">
                                                     <span class="badge-status badge-pending" title="Chưa xác nhận thanh toán phí khám">Chờ thanh toán</span>
@@ -752,7 +752,7 @@
                                 <h3 class="modal-title-custom">Xác nhận hủy lịch hẹn?</h3>
                                 <p class="modal-text mb-3">
                                     Lịch khám của bệnh nhân <strong
-                                        class="text-dark">${appointment.patientName}</strong> (#APPT-${appointment.id})
+                                        class="text-dark">${appointment.patientName}</strong> (#APT-${appointment.id})
                                     sẽ được hủy và giải phóng ca làm việc cho bác sĩ.
                                 </p>
                                 <form action="${pageContext.request.contextPath}/staff/appointment-detail" method="post"
@@ -775,7 +775,8 @@
                                                 cầu khám nữa</option>
                                             <option value="Bệnh nhân đặt trùng / sai thông tin">Bệnh nhân đặt trùng /
                                                 sai thông tin</option>
-                                            <option value="other">Lý do khác (Nhập ghi chú)...</option>
+                                            <option value="Bác sĩ đổi lịch, không thể sắp xếp lịch khám khác cho bệnh nhân">Bác sĩ đổi lịch, không thể sắp xếp lịch khám khác cho bệnh nhân</option>
+<option value="other">Lý do khác (Nhập ghi chú)...</option>
                                         </select>
                                         <textarea name="cancelReasonCustom" id="cancelReasonCustom"
                                             class="form-control form-control-sm shadow-none d-none" rows="2"
@@ -810,7 +811,7 @@
                                 </div>
                                 <h3 class="modal-title-custom">Xác nhận báo vắng mặt?</h3>
                                 <p class="modal-text mb-3">
-                                    Bệnh nhân <strong class="text-dark">${appointment.patientName}</strong> (#APPT-${appointment.id}) sẽ được ghi nhận vắng mặt trong ca khám và gỡ khỏi hàng đợi hôm nay.
+                                    Bệnh nhân <strong class="text-dark">${appointment.patientName}</strong> (#APT-${appointment.id}) sẽ được ghi nhận vắng mặt trong ca khám và gỡ khỏi hàng đợi hôm nay.
                                 </p>
                                 <form action="${pageContext.request.contextPath}/staff/appointment-detail" method="post"
                                     class="m-0 text-start">
@@ -828,7 +829,8 @@
                                             <option value="Gọi tên nhiều lần không có mặt / Không vào phòng khám">Gọi tên nhiều lần không có mặt / Không vào phòng khám</option>
                                             <option value="Bệnh nhân tự ý bỏ về trước khi đến lượt khám">Bệnh nhân tự ý bỏ về trước khi đến lượt khám</option>
                                             <option value="Bệnh nhân báo bận đột xuất, xin dời sang ngày khác">Bệnh nhân báo bận đột xuất, xin dời sang ngày khác</option>
-                                            <option value="other">Lý do khác (Nhập ghi chú)...</option>
+                                            <option value="Bác sĩ đổi lịch, không thể sắp xếp lịch khám khác cho bệnh nhân">Bác sĩ đổi lịch, không thể sắp xếp lịch khám khác cho bệnh nhân</option>
+<option value="other">Lý do khác (Nhập ghi chú)...</option>
                                         </select>
                                         <textarea name="cancelReasonCustom" id="absentDetailReasonCustom"
                                             class="form-control form-control-sm shadow-none d-none" rows="2"
@@ -863,7 +865,7 @@
                                 </div>
                                 <h3 class="modal-title-custom">Bỏ qua lượt khám?</h3>
                                 <p class="modal-text mb-3">
-                                    Bệnh nhân <strong class="text-dark">${appointment.patientName}</strong> (#APPT-${appointment.id}) sẽ <strong>chuyển đổi ca khám với lượt tiếp theo sau mình</strong> để nhường lượt cho bệnh nhân kế tiếp vào phòng khám.
+                                    Bệnh nhân <strong class="text-dark">${appointment.patientName}</strong> (#APT-${appointment.id}) sẽ <strong>chuyển đổi ca khám với lượt tiếp theo sau mình</strong> để nhường lượt cho bệnh nhân kế tiếp vào phòng khám.
                                 </p>
                                 <form action="${pageContext.request.contextPath}/staff/appointment-detail" method="post"
                                     class="m-0">

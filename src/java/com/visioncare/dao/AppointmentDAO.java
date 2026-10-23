@@ -181,10 +181,14 @@ public class AppointmentDAO {
 
             // 3. Update Appointment status to Confirmed
             String sqlAppt = "UPDATE Appointment SET Status = 'Confirmed' "
-                    + "WHERE Appointment_ID = ? AND Status IN ('Pending', 'Confirmed')";
+                    + "WHERE Appointment_ID = ? AND Status IN ('Pending', 'Confirmed') "
+                    + "AND NOT (" + RefundPolicy.CANCELLATION_REQUESTED.replace("a.", "Appointment.") + ")";
             try (PreparedStatement psAppt = conn.prepareStatement(sqlAppt)) {
                 psAppt.setInt(1, appointmentId);
-                psAppt.executeUpdate();
+                if (psAppt.executeUpdate() != 1) {
+                    conn.rollback();
+                    return false;
+                }
             }
 
             // 4. Update Work_Schedule status to Booked
@@ -389,7 +393,7 @@ public class AppointmentDAO {
                         String docName = rs.getString("Doctor_Name") != null ? rs.getString("Doctor_Name") : "Bác sĩ";
                         String bookedPatient = rs.getString("Full_Name");
                         int existingApptId = rs.getInt("Appointment_ID");
-                        throw new Exception("Khung giờ " + timeSlotPrefix + " của " + docName + " đã có bệnh nhân (" + bookedPatient + " - #APPT-" + existingApptId + ") đặt lịch! Vui lòng chọn khung giờ trống khác hoặc chọn bác sĩ khác.");
+                        throw new Exception("Khung giờ " + timeSlotPrefix + " của " + docName + " đã có bệnh nhân (" + bookedPatient + " - #APT-" + existingApptId + ") đặt lịch! Vui lòng chọn khung giờ trống khác hoặc chọn bác sĩ khác.");
                     }
                 }
             }
@@ -421,9 +425,9 @@ public class AppointmentDAO {
                                     String docName = rsAppt.getString("Doctor_Name") != null ? rsAppt.getString("Doctor_Name") : "Bác sĩ";
 
                                     if ("Pending".equalsIgnoreCase(exStatus)) {
-                                        throw new Exception("Bệnh nhân " + existingName + " (SĐT: " + a.getPhone() + ") đã có lịch hẹn trước (#APPT-" + exApptId + ") lúc " + exTime + " hôm nay với " + docName + "! Vui lòng tìm kiếm trên Danh sách Lịch hẹn và bấm Check-in tiếp đón thay vì tạo mới.");
+                                        throw new Exception("Bệnh nhân " + existingName + " (SĐT: " + a.getPhone() + ") đã có lịch hẹn trước (#APT-" + exApptId + ") lúc " + exTime + " hôm nay với " + docName + "! Vui lòng tìm kiếm trên Danh sách Lịch hẹn và bấm Check-in tiếp đón thay vì tạo mới.");
                                     } else if ("Confirmed".equalsIgnoreCase(exStatus) || "In_Progress".equalsIgnoreCase(exStatus)) {
-                                        throw new Exception("Bệnh nhân " + existingName + " (SĐT: " + a.getPhone() + ") hiện đã được tiếp đón và đang nằm trong Hàng đợi khám (#APPT-" + exApptId + ") với " + docName + "!");
+                                        throw new Exception("Bệnh nhân " + existingName + " (SĐT: " + a.getPhone() + ") hiện đã được tiếp đón và đang nằm trong Hàng đợi khám (#APT-" + exApptId + ") với " + docName + "!");
                                     }
                                 }
                             }
@@ -625,12 +629,16 @@ public class AppointmentDAO {
             // 3. Cập nhật Appointment Confirmed và checkin_time
             String sqlAppt = "UPDATE Appointment SET Status = 'Confirmed', checkin_time = COALESCE(checkin_time, DATEADD(HOUR, 7, SYSUTCDATETIME())), " +
                              "Staff_Employee_ID = CASE WHEN ? > 0 THEN ? ELSE Staff_Employee_ID END "
-                             + "WHERE Appointment_ID = ? AND Status IN ('Pending', 'Confirmed')";
+                             + "WHERE Appointment_ID = ? AND Status IN ('Pending', 'Confirmed') "
+                    + "AND NOT (" + RefundPolicy.CANCELLATION_REQUESTED.replace("a.", "Appointment.") + ")";
             try (PreparedStatement psAppt = conn.prepareStatement(sqlAppt)) {
                 psAppt.setInt(1, staffEmployeeId);
                 psAppt.setInt(2, staffEmployeeId);
                 psAppt.setInt(3, appointmentId);
-                psAppt.executeUpdate();
+                if (psAppt.executeUpdate() != 1) {
+                    conn.rollback();
+                    return false;
+                }
             }
 
             // 4. Cập nhật Work_Schedule thành Booked
@@ -844,11 +852,11 @@ public class AppointmentDAO {
     public List<Appointment> getByUserId(int userId) throws Exception {
         autoCancelExpiredPendingAppointments();
         List<Appointment> list = new ArrayList<>();
-        String sql = "SELECT a.Appointment_ID, a.Status, a.created_at, " +
+        String sql = "SELECT a.Appointment_ID, a.Status, a.created_at, CONVERT(VARCHAR(19), a.checkin_time, 120) AS Patient_Checkin, " +
                      "       DATEDIFF(SECOND, a.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) AS Elapsed_Sec, " +
                      "       p.Full_Name, p.Phone, p.DOB, ws.Start_Time, ws.Doctor_Employee_ID, p.Account_ID, ws.Work_Date, e.Full_Name AS Doctor_Name, " +
                      "       i.Invoice_ID, i.Deposit_Amount, i.Total_Amount, i.Balance_Due, i.Status AS Invoice_Status, " +
-                     "       mr.Clinical_Diagnosis, mr.conclusion, " +
+                     "       mr.Clinical_Diagnosis, mr.conclusion, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
                      "       CASE WHEN EXISTS (SELECT 1 FROM Refund_Request r WHERE r.Invoice_ID = i.Invoice_ID AND r.Status IN ('Pending', 'Approved')) THEN 1 ELSE 0 END AS Has_Refund_Request " +
                      "FROM Appointment a " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
@@ -865,6 +873,8 @@ public class AppointmentDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Appointment appt = mapRow(rs);
+                    appt.setCheckinTime(rs.getString("Patient_Checkin"));
+                    appt.setCancellationRequested(rs.getBoolean("Cancellation_Requested"));
                     appt.setAppointmentDate(rs.getDate("Work_Date"));
                     appt.setInvoiceId(rs.getInt("Invoice_ID"));
                     long totalAmt = rs.getLong("Total_Amount");
@@ -886,7 +896,7 @@ public class AppointmentDAO {
                     }
 
                     String conclusion = rs.getString("conclusion");
-                    if ("Canceled".equalsIgnoreCase(appt.getStatus())) {
+                    if ("Canceled".equalsIgnoreCase(appt.getStatus()) || "Pending".equalsIgnoreCase(appt.getStatus())) {
                         if (conclusion != null && !conclusion.trim().isEmpty()) {
                             if (conclusion.startsWith("Lễ tân hủy lịch: Hệ thống:") || (conclusion.contains("hết hạn") && conclusion.contains("thanh toán")) || conclusion.contains("Hết hạn thanh toán")) {
                                 conclusion = "Hệ thống: Hết hạn thanh toán";
@@ -973,7 +983,7 @@ public class AppointmentDAO {
             "rm.Room_Name, " +
             "stf.Full_Name AS Staff_Name, " +
             "mr.Clinical_Diagnosis AS Medical_Notes, " +
-            "mr.conclusion AS Cancel_Reason, " +
+            "mr.conclusion AS Cancel_Reason, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
             "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, " +
             "mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status " +
             "FROM Appointment a " +
@@ -994,7 +1004,7 @@ public class AppointmentDAO {
         }
         if (status != null && !status.trim().isEmpty() && !"all".equalsIgnoreCase(status)) {
             if ("Pending".equalsIgnoreCase(status) || "not_checked_in".equalsIgnoreCase(status)) {
-                sql.append(" AND a.checkin_time IS NULL AND a.Status = 'Confirmed' AND mi.Status IN ('Paid', 'Partial_Paid')");
+                sql.append(" AND a.checkin_time IS NULL AND a.Status IN ('Confirmed', 'Pending') AND mi.Status IN ('Paid', 'Partial_Paid')");
             } else if ("CheckedIn".equalsIgnoreCase(status)) {
                 sql.append(" AND a.checkin_time IS NOT NULL AND a.Status NOT IN ('Canceled')");
             } else {
@@ -1050,7 +1060,7 @@ public class AppointmentDAO {
                      "rm.Room_Name, " +
                      "stf.Full_Name AS Staff_Name, " +
                      "mr.Clinical_Diagnosis AS Medical_Notes, " +
-                     "mr.conclusion AS Cancel_Reason, " +
+                     "mr.conclusion AS Cancel_Reason, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
                      "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status " +
                      "FROM Appointment a " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
@@ -1239,7 +1249,10 @@ public class AppointmentDAO {
             // The conditional update is the authority for every staff cancellation path.
             // It also resolves a race with the doctor's start action on the same row.
             String sqlAppt = "UPDATE Appointment SET Status = 'Canceled' "
-                    + "WHERE Appointment_ID = ? AND Status IN ('Pending', 'Confirmed')";
+                    + "WHERE Appointment_ID = ? AND Status IN ('Pending', 'Confirmed') AND checkin_time IS NULL";
+            if (reason != null && reason.startsWith("Đã duyệt yêu cầu hủy lịch")) {
+                sqlAppt += " AND (" + RefundPolicy.CANCELLATION_REQUESTED.replace("a.", "Appointment.") + ")";
+            }
             try (PreparedStatement psAppt = conn.prepareStatement(sqlAppt)) {
                 psAppt.setInt(1, appointmentId);
                 int affected = psAppt.executeUpdate();
@@ -1283,8 +1296,14 @@ public class AppointmentDAO {
                 }
             }
 
+            boolean refundableCancellation = noteReason.startsWith("Đã duyệt yêu cầu hủy lịch")
+                    || noteReason.equals(RefundPolicy.DOCTOR_UNAVAILABLE)
+                    || noteReason.equals("Liên hệ nhưng bệnh nhân báo bận không đến khám")
+                    || noteReason.equals("Bệnh nhân không có nhu cầu khám nữa");
             String formattedReason = noteReason;
-            if (formattedReason.startsWith("Hệ thống:") || (formattedReason.toLowerCase().contains("hết hạn") && formattedReason.toLowerCase().contains("thanh toán"))) {
+            if (refundableCancellation) {
+                formattedReason = RefundPolicy.APPROVED + noteReason;
+            } else if (formattedReason.startsWith("Hệ thống:") || (formattedReason.toLowerCase().contains("hết hạn") && formattedReason.toLowerCase().contains("thanh toán"))) {
                 formattedReason = "Hệ thống: Hết hạn thanh toán";
             } else if (!formattedReason.startsWith("Báo vắng mặt:") && !formattedReason.startsWith("Lễ tân hủy lịch:") && !formattedReason.startsWith("Hủy lịch:")) {
                 if ("Lễ tân hủy lịch".equals(noteReason)) {
@@ -1295,13 +1314,15 @@ public class AppointmentDAO {
             }
 
             if (exists) {
-                String sqlUpdateMR = "UPDATE Medical_Record SET conclusion = CASE "
-                        + "WHEN conclusion IS NULL OR LTRIM(RTRIM(conclusion)) = '' THEN ? "
+                String sqlUpdateMR = "UPDATE Medical_Record SET conclusion = CASE WHEN ? = 1 "
+                        + "THEN ? WHEN conclusion IS NULL OR LTRIM(RTRIM(conclusion)) = '' THEN ? "
                         + "ELSE CONCAT(conclusion, CHAR(10), ?) END WHERE Appointment_ID = ?";
                 try (PreparedStatement psUpMR = conn.prepareStatement(sqlUpdateMR)) {
-                    psUpMR.setString(1, formattedReason);
+                    psUpMR.setInt(1, refundableCancellation ? 1 : 0);
                     psUpMR.setString(2, formattedReason);
-                    psUpMR.setInt(3, appointmentId);
+                    psUpMR.setString(3, formattedReason);
+                    psUpMR.setString(4, formattedReason);
+                    psUpMR.setInt(5, appointmentId);
                     psUpMR.executeUpdate();
                 }
             } else {
@@ -1408,7 +1429,7 @@ public class AppointmentDAO {
             "rm.Room_Name, " +
             "stf.Full_Name AS Staff_Name, " +
             "mr.Clinical_Diagnosis AS Medical_Notes, " +
-            "mr.conclusion AS Cancel_Reason, " +
+            "mr.conclusion AS Cancel_Reason, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
             "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status " +
             "FROM Appointment a " +
             "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
@@ -1452,11 +1473,8 @@ public class AppointmentDAO {
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             String cleanKw = keyword.trim();
-            if (cleanKw.toUpperCase().startsWith("#APPT-")) {
-                cleanKw = cleanKw.substring(6);
-            } else if (cleanKw.toUpperCase().startsWith("APPT-")) {
-                cleanKw = cleanKw.substring(5);
-            } else if (cleanKw.startsWith("#")) {
+            cleanKw = cleanKw.replaceFirst("(?i)^#?APP?T-", "");
+            if (cleanKw.startsWith("#")) {
                 cleanKw = cleanKw.substring(1);
             }
             sql.append(" AND (p.Full_Name LIKE ? OR p.Phone LIKE ? OR CAST(a.Appointment_ID AS VARCHAR) LIKE ?)");
@@ -1522,6 +1540,7 @@ public class AppointmentDAO {
         a.setStaffEmployeeId(rs.getInt("Staff_Employee_ID"));
         a.setStaffName(rs.getString("Staff_Name"));
         a.setCheckinTime(rs.getString("Checkin_Time_Str"));
+        a.setCancellationRequested(rs.getBoolean("Cancellation_Requested"));
         a.setCreatedAt(rs.getString("Created_At_Str"));
         a.setMedicalNotes(rs.getString("Medical_Notes"));
         try {
@@ -1711,35 +1730,36 @@ public class AppointmentDAO {
      * Doctor's schedule remains 'Booked' until Staff approves.
      */
     public boolean requestCancelAppointment(int appointmentId, int userId, String reason) throws Exception {
-        String sql = "UPDATE a SET a.Status = 'Pending' " +
-                     "FROM Appointment a " +
-                     "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
-                     "WHERE a.Appointment_ID = ? AND (p.Account_ID = ? OR a.Patient_ID IN (SELECT Patient_ID FROM Patient WHERE Account_ID = ?)) AND a.Status = 'Confirmed'";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, appointmentId);
-            ps.setInt(2, userId);
-            ps.setInt(3, userId);
-            return ps.executeUpdate() > 0;
+        if (reason == null || reason.trim().isEmpty()) return false;
+        try (Connection conn = DBContext.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                String sql = "UPDATE a SET a.Status = 'Pending' FROM Appointment a JOIN Patient p ON p.Patient_ID = a.Patient_ID "
+                    + "WHERE a.Appointment_ID = ? AND p.Account_ID = ? AND a.Status = 'Confirmed' AND a.checkin_time IS NULL "
+                    + "AND EXISTS (SELECT 1 FROM Master_Invoice i WHERE i.Appointment_ID = a.Appointment_ID AND i.Status IN ('Paid', 'Partial_Paid'))";
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setInt(1, appointmentId); ps.setInt(2, userId);
+                    if (ps.executeUpdate() != 1) { conn.rollback(); return false; }
+                }
+                String note = RefundPolicy.REQUESTED + reason.trim();
+                try (PreparedStatement ps = conn.prepareStatement("UPDATE Medical_Record SET conclusion = ? WHERE Appointment_ID = ?")) {
+                    ps.setString(1, note); ps.setInt(2, appointmentId);
+                    if (ps.executeUpdate() == 0) {
+                        try (PreparedStatement ins = conn.prepareStatement("INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, conclusion, Created_At) SELECT a.Appointment_ID, ws.Doctor_Employee_ID, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()) FROM Appointment a JOIN Work_Schedule ws ON ws.Schedule_ID = a.Schedule_ID WHERE a.Appointment_ID = ?")) {
+                            ins.setString(1, note); ins.setInt(2, appointmentId); ins.executeUpdate();
+                        }
+                    }
+                }
+                conn.commit(); return true;
+            } catch (Exception e) { conn.rollback(); throw e; }
         }
     }
 
     public boolean requestCancelByInvoice(int invoiceId, int userId, String reason) {
-        String sql = "UPDATE a SET a.Status = 'Pending' " +
-                     "FROM Appointment a " +
-                     "JOIN Master_Invoice i ON a.Appointment_ID = i.Appointment_ID " +
-                     "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
-                     "WHERE i.Invoice_ID = ? AND (p.Account_ID = ? OR a.Patient_ID IN (SELECT Patient_ID FROM Patient WHERE Account_ID = ?)) AND a.Status = 'Confirmed'";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getConnection(); PreparedStatement ps = conn.prepareStatement("SELECT Appointment_ID FROM Master_Invoice WHERE Invoice_ID = ?")) {
             ps.setInt(1, invoiceId);
-            ps.setInt(2, userId);
-            ps.setInt(3, userId);
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+            try (ResultSet rs = ps.executeQuery()) { return rs.next() && requestCancelAppointment(rs.getInt(1), userId, reason); }
+        } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
     public boolean cancelAppointment(int appointmentId, int userId, String reason) throws Exception {

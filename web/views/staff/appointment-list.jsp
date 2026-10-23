@@ -253,7 +253,7 @@
                                                             <a href="${pageContext.request.contextPath}/staff/appointment-detail?id=${appt.id}"
                                                                 class="badge bg-light text-dark border px-2 py-1 fw-bold text-decoration-none hover-teal"
                                                                 style="font-size: 13px; font-family: 'SFMono-Regular', Consolas, monospace; letter-spacing: 0.3px;">
-                                                                #APPT-${appt.id}
+                                                                #APT-${appt.id}
                                                             </a>
                                                         </td>
 
@@ -320,11 +320,12 @@
                                                         <!-- Trạng Thái (Thống nhất tiếng Việt & màu sắc) -->
                                                         <td class="text-center text-nowrap">
                                                             <c:choose>
-                                                                <c:when test="${appt.status == 'Pending' && isPastAppt}">
-                                                                    <span class="badge-status badge-canceled" title="Đã qua ngày khám - Bệnh nhân không đến tiếp đón">
-                                                                        Đã qua ngày
+                                                                <c:when test="${appt.cancellationRequested}">
+                                                                    <span class="badge-status badge-canceled" title="${fn:escapeXml(appt.reason)}">
+                                                                        Chờ duyệt hủy
                                                                     </span>
                                                                 </c:when>
+                                                                <c:when test="${appt.status == 'Pending' && isPastAppt}"><span class="badge-status badge-canceled">Đã qua ngày</span></c:when>
                                                                 <c:when test="${appt.awaitingPayment}">
                                                                     <span class="badge-status badge-pending" title="Chưa xác nhận thanh toán phí khám">
                                                                         Chờ thanh toán
@@ -379,6 +380,13 @@
                                                                     <i class="bi bi-pencil"></i>
                                                                 </a>
 
+<c:if test="${refundEligible[appt.id]}"><button type="button" class="action-btn" title="Tạo yêu cầu hoàn tiền" aria-label="Tạo yêu cầu hoàn tiền" data-bs-toggle="modal" data-bs-target="#createRefundModal" data-appointment-id="${appt.id}"><i class="bi bi-cash-coin"></i></button></c:if>
+<c:if test="${appt.cancellationRequested}">
+<form action="${pageContext.request.contextPath}/staff/appointments" method="post" class="d-inline">
+<input type="hidden" name="action" value="approveCancellation"><input type="hidden" name="appointmentId" value="${appt.id}">
+<button type="submit" class="action-btn" title="Duyệt yêu cầu hủy lịch" aria-label="Duyệt yêu cầu hủy lịch"><i class="bi bi-check2-circle"></i></button>
+</form></c:if>
+
                                                                 <!-- Các thao tác tiếp đón & hủy: Chỉ hiển thị khi ca khám CHƯA qua ngày -->
                                                                 <c:if test="${!isPastAppt}">
                                                                     <!-- 2. Check-in tiếp đón -->
@@ -399,7 +407,7 @@
                                                                     </c:if>
 
                                                                     <!-- 3. Hủy lịch hẹn -->
-                                                                    <c:if test="${appt.status == 'Pending' || appt.readyForCheckIn}">
+                                                                    <c:if test="${!appt.cancellationRequested && (appt.status == 'Pending' || appt.readyForCheckIn)}">
                                                                         <button type="button"
                                                                             class="action-btn delete btn-trigger-cancel"
                                                                             title="Hủy lịch hẹn" data-bs-toggle="tooltip"
@@ -517,7 +525,7 @@
                                 <h3 class="modal-title-custom">Xác nhận hủy lịch hẹn?</h3>
                                 <p class="modal-text mb-3">
                                     Bệnh nhân <strong id="modalCancelPatientName" class="text-dark">---</strong> (<span
-                                        id="modalCancelApptCode" class="fw-bold text-secondary">#APPT-0</span>) sẽ được
+                                        id="modalCancelApptCode" class="fw-bold text-secondary">#APT-0</span>) sẽ được
                                     hủy lịch khám và giải phóng ca cho bác sĩ.
                                 </p>
                                 <form action="${pageContext.request.contextPath}/staff/appointments" method="post"
@@ -542,7 +550,8 @@
                                                 cầu khám nữa</option>
                                             <option value="Bệnh nhân đặt trùng / sai thông tin">Bệnh nhân đặt trùng /
                                                 sai thông tin</option>
-                                            <option value="other">Lý do khác (Nhập ghi chú)...</option>
+                                            <option value="Bác sĩ đổi lịch, không thể sắp xếp lịch khám khác cho bệnh nhân">Bác sĩ đổi lịch, không thể sắp xếp lịch khám khác cho bệnh nhân</option>
+<option value="other">Lý do khác (Nhập ghi chú)...</option>
                                         </select>
                                         <textarea name="cancelReasonCustom" id="cancelReasonCustom"
                                             class="form-control form-control-sm shadow-none d-none" rows="2"
@@ -1263,7 +1272,7 @@
                                             var isPending = data.apptStatus === 'Pending';
                                             feedback.innerHTML = '<div class="alert alert-warning py-1 px-2 mb-0 mt-1 d-flex align-items-center justify-content-between" style="font-size: 11.5px; border-radius: 6px;">' +
                                                 '<div><i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>' +
-                                                'Đã có hẹn <strong>#APPT-' + data.apptId + '</strong> (' + (data.apptTime || '') + ' - ' + (data.doctorName || '') + ' - ' + statusLabel + ')</div>' +
+                                                'Đã có hẹn <strong>#APT-' + data.apptId + '</strong> (' + (data.apptTime || '') + ' - ' + (data.doctorName || '') + ' - ' + statusLabel + ')</div>' +
                                                 (isPending ? '<button type="button" class="btn btn-warning py-0 px-2 fw-semibold ms-2 text-nowrap" style="font-size: 11px;" onclick="quickCheckinFromWalkin(' + data.apptId + ', \'' + (data.name || '').replace(/'/g, "\\'") + '\')">Check-in ngay</button>' : '') +
                                                 '</div>';
                                             if (submitBtn) submitBtn.disabled = true;
@@ -2050,7 +2059,7 @@
                             if (nameElem) nameElem.textContent = name || 'này';
 
                             var codeElem = document.getElementById('modalCancelApptCode');
-                            if (codeElem) codeElem.textContent = '#APPT-' + id;
+                            if (codeElem) codeElem.textContent = '#APT-' + id;
 
                             var selectElem = document.getElementById('cancelReasonSelect');
                             if (selectElem) selectElem.value = 'Bệnh nhân báo bận, yêu cầu đổi lịch sang ngày khác';
@@ -2146,5 +2155,6 @@
                 .qr-toast-close:hover { color: #fff; }
             </style>
 
-            </body>
+            <jsp:include page="/views/staff/refund-create-modal.jsp" />
+</body>
             </html>

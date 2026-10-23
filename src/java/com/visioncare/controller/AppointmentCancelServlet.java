@@ -1,7 +1,6 @@
 package com.visioncare.controller;
 
 import com.visioncare.dao.AppointmentDAO;
-import com.visioncare.dao.InvoiceDAO;
 import com.visioncare.model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -15,7 +14,6 @@ import java.io.IOException;
 public class AppointmentCancelServlet extends HttpServlet {
 
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
-    private final InvoiceDAO invoiceDAO = new InvoiceDAO();
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -46,18 +44,10 @@ public class AppointmentCancelServlet extends HttpServlet {
                         session.setAttribute("errorMessage", "Không thể hủy lịch hẹn #" + appointmentId + ".");
                     }
                 } else {
-                    // Lịch đã xác nhận (đã thanh toán cọc) -> Gửi yêu cầu duyệt hủy và hoàn tiền cọc
+                    // Lịch đã xác nhận (đã thanh toán cọc) -> Gửi yêu cầu duyệt hủy, chưa tạo yêu cầu hoàn tiền
                     boolean requested = appointmentDAO.requestCancelAppointment(appointmentId, currentUser.getId(), reason);
                     if (requested) {
-                        long refundFee = (appt != null && appt.getFee() > 0) ? appt.getFee() : 200000;
-                        invoiceDAO.createRefundRequestForAppointment(
-                            appointmentId, 
-                            currentUser.getId(), 
-                            refundFee, 
-                            "Hủy lịch hẹn #" + appointmentId + ": " + (reason != null && !reason.trim().isEmpty() ? reason : "Bận việc đột xuất")
-                        );
-                        String feeFormatted = String.format("%,d ₫", refundFee);
-                        session.setAttribute("successMessage", "Yêu cầu hủy lịch hẹn #" + appointmentId + " và hoàn tiền cọc (" + feeFormatted + ") đã được gửi tới nhân viên tiếp nhận. Trạng thái lịch chuyển sang 'Chờ duyệt', sau khi nhân viên duyệt thì lịch hẹn sẽ được hủy!");
+                        session.setAttribute("successMessage", "Đã gửi yêu cầu hủy lịch #APT-" + appointmentId + ". Sau khi staff duyệt hủy, bạn mới có thể tạo yêu cầu hoàn tiền.");
                     } else {
                         session.setAttribute("errorMessage", "Không thể gửi yêu cầu hủy lịch hẹn #" + appointmentId + " (Lịch không ở trạng thái 'Đã xác nhận' hoặc không thuộc tài khoản của bạn).");
                     }

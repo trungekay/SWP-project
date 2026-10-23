@@ -1,6 +1,13 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<style>
+#request-submenu { display: none; list-style: none; margin: 0; padding: 4px 0 6px 16px; }
+#request-submenu.show { display: block; }
+#request-submenu a { display: flex; align-items: center; gap: 8px; padding: 10px 12px; font-size: 13px; border-radius: 8px; text-decoration: none; color: #64748b; }
+#request-submenu a.active, #request-submenu a:hover { color: #008b74; background: #f0f7f6; }
+.sidebar-dropdown:has(#request-submenu) > a { display: flex; justify-content: space-between; align-items: center; }
+</style>
 <!-- Employee Work Sidebar -->
 <aside class="sidebar">
     <a href="${pageContext.request.contextPath}/employee/schedule" class="sidebar-brand">
@@ -10,7 +17,7 @@
     <ul class="sidebar-menu">
         <c:choose>
             <%-- ==================== GIAO DIỆN DÀNH CHO STAFF / LỄ TÂN ==================== --%>
-            <c:when test="${empty sessionScope.user || fn:toLowerCase(sessionScope.user.role) == 'staff' || sessionScope.user.roleId == 5 || (fn:toLowerCase(sessionScope.user.role) != 'doctor' && fn:toLowerCase(sessionScope.user.role) != 'medical_specialist' && fn:toLowerCase(sessionScope.user.role) != 'specialist' && sessionScope.user.roleId != 3 && sessionScope.user.roleId != 4 && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'refunds' || param.activeNav == 'payments'))}">
+            <c:when test="${empty sessionScope.user || fn:toLowerCase(sessionScope.user.role) == 'staff' || sessionScope.user.roleId == 5 || (fn:toLowerCase(sessionScope.user.role) != 'doctor' && fn:toLowerCase(sessionScope.user.role) != 'medical_specialist' && fn:toLowerCase(sessionScope.user.role) != 'specialist' && sessionScope.user.roleId != 3 && sessionScope.user.roleId != 4 && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'payments'))}">
                 <div class="sidebar-menu-header">Bàn làm việc Nhân viên</div>
 
                 <!-- 1. Màn hình đặt lịch -->
@@ -55,12 +62,6 @@
                 </li>
 
                 <!-- 4. Quản lý yêu cầu hoàn tiền -->
-                <li>
-                    <a href="${pageContext.request.contextPath}/staff/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}">
-                        <i class="bi bi-cash-coin"></i>
-                        <span>Quản lý yêu cầu hoàn tiền</span>
-                    </a>
-                </li>
             </c:when>
 
             <%-- ==================== GIAO DIỆN DÀNH CHO BÁC SĨ & CHUYÊN VIÊN ==================== --%>
@@ -97,7 +98,7 @@
                 </c:if>
 
                 <%-- Fallback cho Admin xem trang Tiếp đón / Lễ tân --%>
-                <c:if test="${(fn:toLowerCase(sessionScope.user.role) == 'admin' || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2) && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'refunds' || param.activeNav == 'payments')}">
+                <c:if test="${(fn:toLowerCase(sessionScope.user.role) == 'admin' || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2) && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'payments')}">
                     <div class="sidebar-menu-header mt-3">Tiếp đón & Lễ tân</div>
                     <li>
                         <a href="${pageContext.request.contextPath}/employee/schedule" class="${param.activeNav == 'schedule' ? 'active' : ''}">
@@ -134,15 +135,16 @@
                             <span>Quản lý thanh toán</span>
                         </a>
                     </li>
-                    <li>
-                        <a href="${pageContext.request.contextPath}/staff/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}">
-                            <i class="bi bi-cash-coin"></i>
-                            <span>Quản lý yêu cầu hoàn tiền</span>
-                        </a>
-                    </li>
                 </c:if>
             </c:otherwise>
         </c:choose>
+<c:if test="${sessionScope.user.roleId == 2 || fn:toLowerCase(sessionScope.user.role) == 'director'}">
+<li class="sidebar-dropdown">
+<a href="javascript:void(0);" onclick="toggleSubmenu('request-submenu', this);" class="${param.activeNav == 'refunds' || param.activeNav == 'reschedule-requests' ? 'active' : ''}"><div class="d-flex align-items-center gap-2"><i class="bi bi-inbox"></i><span>Quản lý yêu cầu</span></div><i class="bi bi-chevron-down"></i></a>
+<ul id="request-submenu" class="sidebar-submenu ${param.activeNav == 'refunds' || param.activeNav == 'reschedule-requests' ? 'show' : ''}">
+<li><a href="${pageContext.request.contextPath}/admin/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}"><i class="bi bi-cash-coin"></i><span>Quản lý yêu cầu hoàn tiền</span></a></li>
+<li><a href="${pageContext.request.contextPath}/admin/reschedule-requests" class="${param.activeNav == 'reschedule-requests' ? 'active' : ''}"><i class="bi bi-calendar2-week"></i><span>Quản lý yêu cầu đổi lịch</span></a></li>
+</ul></li></c:if>
     </ul>
 </aside>
 

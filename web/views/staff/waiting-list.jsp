@@ -263,7 +263,7 @@
 
                                                         <!-- Mã Hẹn -->
                                                         <td class="text-center text-nowrap">
-                                                            <span class="fw-bold text-dark">#APPT-${appt.id}</span>
+                                                            <span class="fw-bold text-dark">#APT-${appt.id}</span>
                                                         </td>
 
                                                         <!-- Bệnh Nhân -->
@@ -495,7 +495,7 @@
                                 </div>
                                 <h3 class="modal-title-custom">Xác nhận báo vắng mặt?</h3>
                                 <p class="modal-text mb-3">
-                                    Bệnh nhân <strong id="absentModalPatientName" class="text-dark">---</strong> (<span id="absentModalApptCode" class="fw-bold text-secondary">#APPT-0</span>) sẽ được ghi nhận vắng mặt và gỡ khỏi hàng đợi hôm nay.
+                                    Bệnh nhân <strong id="absentModalPatientName" class="text-dark">---</strong> (<span id="absentModalApptCode" class="fw-bold text-secondary">#APT-0</span>) sẽ được ghi nhận vắng mặt và gỡ khỏi hàng đợi hôm nay.
                                 </p>
                                 <form action="${pageContext.request.contextPath}/staff/waiting-list" method="post" id="absentForm" class="m-0 text-start">
                                     <input type="hidden" name="action" value="absent">
@@ -541,7 +541,7 @@
                                 </div>
                                 <h3 class="modal-title-custom">Bỏ qua lượt khám?</h3>
                                 <p class="modal-text mb-3">
-                                    Bệnh nhân <strong id="skipModalPatientName" class="text-dark">---</strong> (<span id="skipModalApptCode" class="fw-bold text-secondary">#APPT-0</span>) sẽ <strong>chuyển đổi ca khám với lượt tiếp theo sau mình</strong> để nhường lượt cho bệnh nhân kế tiếp vào phòng khám.
+                                    Bệnh nhân <strong id="skipModalPatientName" class="text-dark">---</strong> (<span id="skipModalApptCode" class="fw-bold text-secondary">#APT-0</span>) sẽ <strong>chuyển đổi ca khám với lượt tiếp theo sau mình</strong> để nhường lượt cho bệnh nhân kế tiếp vào phòng khám.
                                 </p>
                                 <form action="${pageContext.request.contextPath}/staff/waiting-list" method="post" id="skipForm" class="m-0">
                                     <input type="hidden" name="action" value="skip">
@@ -780,7 +780,7 @@
                         var nameElem = document.getElementById('absentModalPatientName');
                         if (nameElem) nameElem.textContent = name || 'này';
                         var codeElem = document.getElementById('absentModalApptCode');
-                        if (codeElem) codeElem.textContent = '#APPT-' + id;
+                        if (codeElem) codeElem.textContent = '#APT-' + id;
                         var selectElem = document.getElementById('absentReasonSelect');
                         if (selectElem) selectElem.value = 'Gọi tên nhiều lần không có mặt / Không vào phòng khám';
                         var customElem = document.getElementById('absentReasonCustom');
@@ -801,7 +801,7 @@
                         var nameElem = document.getElementById('skipModalPatientName');
                         if (nameElem) nameElem.textContent = name || 'này';
                         var codeElem = document.getElementById('skipModalApptCode');
-                        if (codeElem) codeElem.textContent = '#APPT-' + id;
+                        if (codeElem) codeElem.textContent = '#APT-' + id;
                         var modalElem = document.getElementById('skipModal');
                         if (modalElem) {
                             var modal = bootstrap.Modal.getInstance(modalElem) || new bootstrap.Modal(modalElem);
@@ -813,7 +813,7 @@
                     function openPostExamModal(id, name) {
                         currentPostExamId = id;
                         var subElem = document.getElementById('postExamSubtitle');
-                        if (subElem) subElem.textContent = 'Bệnh nhân: ' + (name || '---') + ' (#APPT-' + id + ')';
+                        if (subElem) subElem.textContent = 'Bệnh nhân: ' + (name || '---') + ' (#APT-' + id + ')';
 
                         var alertBox = document.getElementById('postExamAlertBox');
                         if (alertBox) {
@@ -1083,7 +1083,7 @@
                         if (!currentPostExamId) return;
                         var data = window._currentPostExamData;
                         if (data && data.status !== 'Completed') {
-                            showPostExamAlert('Không thể hoàn tất lịch hẹn (#APPT-' + currentPostExamId + ') do Bác sĩ đang khám trong phòng và chưa kết thúc ca khám!', 'danger');
+                            showPostExamAlert('Không thể hoàn tất lịch hẹn (#APT-' + currentPostExamId + ') do Bác sĩ đang khám trong phòng và chưa kết thúc ca khám!', 'danger');
                             showToast('Không thể hoàn tất lịch hẹn: Ca khám đang diễn ra trong phòng bác sĩ!', 'danger');
                             return;
                         }
