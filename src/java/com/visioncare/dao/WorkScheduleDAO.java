@@ -256,7 +256,11 @@ public class WorkScheduleDAO {
                      "       END AS Is_Past " +
                      "FROM Work_Schedule ws " +
                      "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? " +
-                     "  AND CAST(ws.Start_Time AS TIME) < '17:30:00' " + // Bỏ toàn bộ ca tối
+                     "  AND ( " +
+                     "        (CAST(ws.Start_Time AS TIME) >= '08:00:00' AND CAST(ws.Start_Time AS TIME) < '11:00:00') " + // Ca sáng: slot cuối 10:30 (10:30-11:00), 11:00-11:30 làm backup
+                     "        OR " +
+                     "        (CAST(ws.Start_Time AS TIME) >= '13:30:00' AND CAST(ws.Start_Time AS TIME) < '17:00:00') " + // Ca chiều: từ 13:30 đến 17:00, slot cuối 16:30 (16:30-17:00)
+                     "      ) " +
                      "  AND ws.Status NOT IN ('Canceled', 'On_Leave', 'Inactive', 'Disabled', 'Closed') " +
                      "ORDER BY ws.Start_Time ASC";
         try (Connection conn = DBContext.getConnection();
@@ -315,7 +319,7 @@ public class WorkScheduleDAO {
     public void ensureRealisticDoctorSchedules() {
         try (Connection conn = DBContext.getConnection()) {
             // Kiểm tra xem đã có slot ban ngày cho các bác sĩ trong tháng hiện tại chưa
-            String checkSql = "SELECT COUNT(*) FROM Work_Schedule WHERE Work_Date >= CAST(GETDATE() AS DATE) AND CAST(Start_Time AS TIME) < '17:30:00'";
+            String checkSql = "SELECT COUNT(*) FROM Work_Schedule WHERE Work_Date >= CAST(GETDATE() AS DATE) AND CAST(Start_Time AS TIME) < '17:00:00'";
             try (Statement st = conn.createStatement();
                  ResultSet rs = st.executeQuery(checkSql)) {
                 if (rs.next() && rs.getInt(1) >= 30) {
@@ -323,16 +327,16 @@ public class WorkScheduleDAO {
                 }
             }
 
-            // Mẫu slot ca sáng và ca chiều
+            // Mẫu slot ca sáng (08:00 - 11:30, slot pick đến 10:30, 11:00-11:30 backup)
             String[][] morningSlots = {
                 {"Slot 1", "08:00:00", "08:30:00"},
                 {"Slot 2", "08:30:00", "09:00:00"},
                 {"Slot 3", "09:00:00", "09:30:00"},
                 {"Slot 4", "09:30:00", "10:00:00"},
                 {"Slot 5", "10:00:00", "10:30:00"},
-                {"Slot 6", "10:30:00", "11:00:00"},
-                {"Slot 7", "11:00:00", "11:30:00"}
+                {"Slot 6", "10:30:00", "11:00:00"}
             };
+            // Mẫu slot ca chiều (13:30 - 17:00, slot pick đến 16:30)
             String[][] afternoonSlots = {
                 {"Slot 8", "13:30:00", "14:00:00"},
                 {"Slot 9", "14:00:00", "14:30:00"},
@@ -340,8 +344,7 @@ public class WorkScheduleDAO {
                 {"Slot 11", "15:00:00", "15:30:00"},
                 {"Slot 12", "15:30:00", "16:00:00"},
                 {"Slot 13", "16:00:00", "16:30:00"},
-                {"Slot 14", "16:30:00", "17:00:00"},
-                {"Slot 15", "17:00:00", "17:30:00"}
+                {"Slot 14", "16:30:00", "17:00:00"}
             };
 
             // Gán ca làm việc chân thực cho 6 bác sĩ (ID 3 đến 8) trong 14 ngày tới:
