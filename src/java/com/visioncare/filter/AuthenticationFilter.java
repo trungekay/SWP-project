@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 
-@WebFilter(urlPatterns = {"/my-appointments", "/profile/*", "/views/profile/*", "/book-appointment", "/admin/*", "/director/*", "/staff/*", "/employee/*", "/specialist/*", "/doctor/*"})
+@WebFilter(urlPatterns = {"/my-appointments", "/profile/*", "/views/profile/*", "/book-appointment", "/admin/*", "/director", "/director/*", "/staff/*", "/employee/*", "/specialist/*", "/doctor/*"})
 public class AuthenticationFilter implements Filter {
 
     @Override
@@ -35,7 +35,7 @@ public class AuthenticationFilter implements Filter {
                     }
                 }
 
-                if (uri.startsWith(httpRequest.getContextPath() + "/director/")) {
+                if (uri.equals(httpRequest.getContextPath() + "/director") || uri.startsWith(httpRequest.getContextPath() + "/director/")) {
                     com.visioncare.model.User sessionUser = (com.visioncare.model.User) session.getAttribute("user");
                     if (sessionUser == null || (sessionUser.getRoleId() != 2 && sessionUser.getRoleId() != 1 && !"director".equalsIgnoreCase(sessionUser.getRole()))) {
                         httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập trang Giám đốc.");

@@ -52,7 +52,19 @@ public class LoginServlet extends HttpServlet {
                     session.removeAttribute("redirectAfterLogin");
                     response.sendRedirect(redirect);
                 } else {
-                    response.sendRedirect(request.getContextPath() + "/home");
+                    int roleId = user.getRoleId();
+                    String role = user.getRole();
+                    if (roleId == 1 || "admin".equalsIgnoreCase(role)) {
+                        response.sendRedirect(request.getContextPath() + "/admin/users");
+                    } else if (roleId == 2 || "director".equalsIgnoreCase(role)) {
+                        response.sendRedirect(request.getContextPath() + "/director/dashboard");
+                    } else if (roleId == 3 || "doctor".equalsIgnoreCase(role)
+                            || roleId == 4 || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)
+                            || roleId == 5 || "staff".equalsIgnoreCase(role)) {
+                        response.sendRedirect(request.getContextPath() + "/employee/schedule");
+                    } else {
+                        response.sendRedirect(request.getContextPath() + "/home");
+                    }
                 }
             } else {
                 request.setAttribute("error", "Email hoặc mật khẩu không đúng.");

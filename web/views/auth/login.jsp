@@ -142,7 +142,36 @@
               </button>
             </form>
 
-            <div class="text-center mt-4">
+            <div class="mt-4 p-3 rounded-3 bg-light border">
+              <div class="small fw-bold text-muted mb-2"><i class="bi bi-key-fill me-1 text-teal"></i>Tài khoản đăng nhập mẫu:</div>
+              <div class="d-flex flex-wrap gap-1">
+                <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill font-monospace" style="font-size: 11px;"
+                        onclick="fillLogin('director@eyeclinic.com', '123')">
+                  👑 Giám đốc (Director)
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill font-monospace" style="font-size: 11px;"
+                        onclick="fillLogin('admin@eyeclinic.com', '123')">
+                  ⚙️ Admin
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill font-monospace" style="font-size: 11px;"
+                        onclick="fillLogin('doctor1@eyeclinic.com', '123')">
+                  🩺 Bác sĩ
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-info py-0 px-2 rounded-pill font-monospace" style="font-size: 11px;"
+                        onclick="fillLogin('staff1@eyeclinic.com', '123')">
+                  💼 Nhân viên
+                </button>
+              </div>
+            </div>
+
+            <script>
+              function fillLogin(email, pwd) {
+                document.getElementById('email').value = email;
+                document.getElementById('password').value = pwd;
+              }
+            </script>
+
+            <div class="text-center mt-3">
               <p class="text-muted small mb-0">Chưa có tài khoản? <a href="${pageContext.request.contextPath}/register" style="color: #0d9488; font-weight: 600;">Đăng ký ngay</a></p>
             </div>
 
