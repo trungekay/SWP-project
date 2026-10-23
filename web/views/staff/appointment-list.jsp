@@ -247,7 +247,7 @@
                                         <c:choose>
                                             <c:when test="${not empty appointments}">
                                                 <c:forEach var="appt" items="${appointments}">
-                                                    <tr>
+                                                    <tr class="${appt.status == 'In_Progress' ? 'row-examining' : ''}">
                                                         <!-- Mã Hẹn -->
                                                         <td class="text-center text-nowrap">
                                                             <a href="${pageContext.request.contextPath}/staff/appointment-detail?id=${appt.id}"
