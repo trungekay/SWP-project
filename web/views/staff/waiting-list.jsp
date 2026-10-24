@@ -850,6 +850,17 @@
                 <!-- Bootstrap 5 JS -->
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
                 <script>
+                    function toggleAbsentReason(selectElem) {
+                        var customText = document.getElementById('absentReasonCustom');
+                        if (!customText) return;
+                        if (selectElem.value === 'other') {
+                            customText.classList.remove('d-none');
+                            customText.focus();
+                        } else {
+                            customText.classList.add('d-none');
+                            customText.value = '';
+                        }
+                    }
 
                     function openAbsentModal(id, name) {
                         var idInput = document.getElementById('absentModalAppointmentId');
