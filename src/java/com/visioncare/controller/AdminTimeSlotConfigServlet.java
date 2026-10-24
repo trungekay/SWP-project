@@ -19,23 +19,17 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
                 String startTime = request.getParameter("startTime");
                 String endTime = request.getParameter("endTime");
 
-                if (!timeSlotDAO.isStartTimeValid(startTime)) {
-                    request.getSession().setAttribute("errorMsg", "Không thể thêm ca. Ca mới phải bắt đầu sau khi các ca hiện tại kết thúc!");
-                    response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=slots");
-                    return;
-                }
-
                 timeSlotDAO.addTimeSlot(slotName, startTime, endTime);
             } else if ("edit".equals(action)) {
-                String oldSlotName = request.getParameter("oldSlotName");
+                int slotId = Integer.parseInt(request.getParameter("slotId"));
                 String newSlotName = request.getParameter("slotName");
                 String startTime = request.getParameter("startTime");
                 String endTime = request.getParameter("endTime");
                 String status = request.getParameter("status");
-                timeSlotDAO.updateTimeSlotConfig(oldSlotName, newSlotName, startTime, endTime, status);
+                timeSlotDAO.updateTimeSlotConfig(slotId, newSlotName, startTime, endTime, status);
             } else if ("delete".equals(action)) {
-                int scheduleId = Integer.parseInt(request.getParameter("scheduleId"));
-                boolean success = timeSlotDAO.deleteTimeSlot(scheduleId);
+                int slotId = Integer.parseInt(request.getParameter("slotId"));
+                boolean success = timeSlotDAO.deleteTimeSlot(slotId);
                 if (!success) {
                     request.getSession().setAttribute("errorMsg", "Không thể xóa Slot này vì đã có bệnh nhân đặt hoặc dữ liệu không tồn tại!");
                 }
