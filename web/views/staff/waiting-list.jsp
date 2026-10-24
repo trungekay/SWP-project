@@ -238,7 +238,11 @@
                                     <thead>
                                         <tr>
                                             <th class="text-center text-nowrap" style="width: 55px;">STT</th>
-                                            <th class="text-center text-nowrap" style="width: 105px;">Mã Hẹn</th>
+                                            <th class="text-center text-nowrap" style="width: 105px;" data-appointment-id-sort aria-sort="none">
+                                                <button type="button" class="btn btn-link p-0 text-reset text-decoration-none fw-semibold text-nowrap" style="font: inherit;" title="Sắp xếp theo mã hẹn">
+                                                    Mã Hẹn <i class="bi bi-arrow-down-up" aria-hidden="true"></i>
+                                                </button>
+                                            </th>
                                             <th class="text-nowrap" style="width: 17%;">Bệnh Nhân</th>
                                             <th class="text-nowrap" style="width: 13%;">Ca Khám</th>
                                             <th class="text-nowrap" style="width: 16%;">Bác Sĩ</th>
@@ -257,7 +261,7 @@
                                                     <c:set var="apptDateStr">${appt.appointmentDate}</c:set>
                                                     <c:set var="isPastAppt"
                                                         value="${not empty apptDateStr && apptDateStr < currentDateStr}" />
-                                                    <tr class="${appt.status == 'In_Progress' ? 'row-examining' : ''}">
+                                                    <tr data-appointment-id="${appt.id}" class="${appt.status == 'In_Progress' ? 'row-examining' : ''}">
                                                         <!-- STT / Queue Number -->
                                                         <td class="text-center">
                                                             <div
@@ -849,6 +853,7 @@
 
                 <!-- Bootstrap 5 JS -->
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                <script src="${pageContext.request.contextPath}/assets/js/appointment-id-sort.js"></script>
                 <script>
                     function toggleAbsentReason(selectElem) {
                         var customText = document.getElementById('absentReasonCustom');

@@ -234,7 +234,11 @@
                                     </colgroup>
                                     <thead>
                                         <tr>
-                                            <th class="text-center text-nowrap" style="width: 8%;">Mã Hẹn</th>
+                                            <th class="text-center text-nowrap" style="width: 8%;" data-appointment-id-sort aria-sort="none">
+                                                <button type="button" class="btn btn-link p-0 text-reset text-decoration-none fw-semibold text-nowrap" style="font: inherit;" title="Sắp xếp theo mã hẹn">
+                                                    Mã Hẹn <i class="bi bi-arrow-down-up" aria-hidden="true"></i>
+                                                </button>
+                                            </th>
                                             <th class="text-nowrap" style="width: 15%;">Bệnh Nhân</th>
                                             <th class="text-nowrap" style="width: 13%;">Khung Giờ & Ngày</th>
                                             <th class="text-nowrap" style="width: 15%;">Bác Sĩ Phụ Trách</th>
@@ -247,7 +251,7 @@
                                         <c:choose>
                                             <c:when test="${not empty appointments}">
                                                 <c:forEach var="appt" items="${appointments}">
-                                                    <tr class="${appt.status == 'In_Progress' ? 'row-examining' : ''}">
+                                                    <tr data-appointment-id="${appt.id}" class="${appt.status == 'In_Progress' ? 'row-examining' : ''}">
                                                         <!-- Mã Hẹn -->
                                                         <td class="text-center text-nowrap">
                                                             <a href="${pageContext.request.contextPath}/staff/appointment-detail?id=${appt.id}"
@@ -991,6 +995,7 @@
 
                 <!-- Bootstrap 5 JS -->
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                <script src="${pageContext.request.contextPath}/assets/js/appointment-id-sort.js"></script>
                 <script>
                     function validateWalkinName() {
                         var nameInput = document.getElementById('walkinPatientName');
