@@ -64,7 +64,7 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
 
             Appointment targetAppt = appointmentDAO.getAppointmentById(apptId);
             if (targetAppt != null && targetAppt.isPast()) {
-                session.setAttribute("errorMessage", "Lịch hẹn (#APPT-" + apptId + ") đã qua ngày khám (" + targetAppt.getAppointmentDate() + "). Hệ thống chỉ cho phép xem thông tin và ghi chú y tế, không thể thực hiện thao tác khác!");
+                session.setAttribute("errorMessage", "Lịch hẹn (#APT-" + apptId + ") đã qua ngày khám (" + targetAppt.getAppointmentDate() + "). Hệ thống chỉ cho phép xem thông tin và ghi chú y tế, không thể thực hiện thao tác khác!");
                 response.sendRedirect(request.getContextPath() + "/staff/appointment-detail?id=" + apptId);
                 return;
             }
@@ -91,7 +91,7 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
                 if (success) {
                     Appointment appt = appointmentDAO.getAppointmentById(apptId);
                     String patientName = (appt != null && appt.getPatientName() != null) ? appt.getPatientName() : "bệnh nhân";
-                    session.setAttribute("successMessage", "Đã tiếp đón " + patientName + " (#APPT-" + apptId + ") thành công! Đã chuyển vào hàng đợi phòng khám.");
+                    session.setAttribute("successMessage", "Đã tiếp đón " + patientName + " (#APT-" + apptId + ") thành công! Đã chuyển vào hàng đợi phòng khám.");
                     response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
                     return;
                 } else {
@@ -121,7 +121,7 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
 
                 boolean success = appointmentDAO.cancelAppointment(apptId, "Báo vắng mặt: " + reason.trim());
                 if (success) {
-                    session.setAttribute("successMessage", "Đã ghi nhận bệnh nhân (#APPT-" + apptId + ") vắng mặt và gỡ khỏi hàng đợi khám.");
+                    session.setAttribute("successMessage", "Đã ghi nhận bệnh nhân (#APT-" + apptId + ") vắng mặt và gỡ khỏi hàng đợi khám.");
                 } else {
                     session.setAttribute("errorMessage", "Không thể ghi nhận vắng mặt cho ca khám #" + apptId + ". Ca có thể đã được bác sĩ gọi vào khám; vui lòng tải lại trang.");
                 }
@@ -149,7 +149,7 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
 
                 boolean success = appointmentDAO.cancelAppointment(apptId, reason.trim());
                 if (success) {
-                    session.setAttribute("successMessage", "Lịch hẹn (#APPT-" + apptId + ") đã được hủy thành công. Ca khám của bác sĩ đã được giải phóng.");
+                    session.setAttribute("successMessage", "Lịch hẹn (#APT-" + apptId + ") đã được hủy thành công. Ca khám của bác sĩ đã được giải phóng.");
                 } else {
                     session.setAttribute("errorMessage", "Không thể hủy lịch hẹn #" + apptId + ". Ca có thể đã được bác sĩ gọi vào khám hoặc đã hoàn tất; vui lòng tải lại trang.");
                 }

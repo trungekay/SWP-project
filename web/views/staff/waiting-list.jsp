@@ -268,7 +268,7 @@
 
                                                         <!-- Mã Hẹn -->
                                                         <td class="text-center text-nowrap">
-                                                            <span class="fw-bold text-dark">#APPT-${appt.id}</span>
+                                                            <span class="fw-bold text-dark">#APT-${appt.id}</span>
                                                         </td>
 
                                                         <!-- Bệnh Nhân -->
@@ -508,6 +508,39 @@
                 </main>
 
 
+                <!-- Modal Báo Vắng Mặt / Hủy ca khỏi hàng đợi -->
+                <div class="modal fade" id="absentModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="modal-icon-danger">
+                                    <i class="bi bi-person-x"></i>
+                                </div>
+                                <h3 class="modal-title-custom">Xác nhận báo vắng mặt?</h3>
+                                <p class="modal-text mb-3">
+                                    Bệnh nhân <strong id="absentModalPatientName" class="text-dark">---</strong> (<span id="absentModalApptCode" class="fw-bold text-secondary">#APT-0</span>) sẽ được ghi nhận vắng mặt và gỡ khỏi hàng đợi hôm nay.
+                                </p>
+                                <form action="${pageContext.request.contextPath}/staff/waiting-list" method="post" id="absentForm" class="m-0 text-start">
+                                    <input type="hidden" name="action" value="absent">
+                                    <input type="hidden" name="appointmentId" id="absentModalAppointmentId">
+                                    <input type="hidden" name="returnUrl" value="${pageContext.request.contextPath}/staff/waiting-list${not empty pageContext.request.queryString ? '?'.concat(pageContext.request.queryString) : ''}">
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-semibold text-dark mb-1.5">
+                                            Lý do vắng mặt <span class="text-danger">*</span>
+                                        </label>
+                                        <select name="cancelReasonSelect" id="absentReasonSelect" class="form-select form-select-sm shadow-none mb-2" style="border-radius: 8px; font-size: 13.5px;" onchange="toggleAbsentReason(this)">
+                                            <option value="Gọi tên nhiều lần không có mặt / Không vào phòng khám">Gọi tên nhiều lần không có mặt / Không vào phòng khám</option>
+                                            <option value="Bệnh nhân tự ý bỏ về trước khi đến lượt khám">Bệnh nhân tự ý bỏ về trước khi đến lượt khám</option>
+                                            <option value="Bệnh nhân báo bận đột xuất, xin dời sang ngày khác">Bệnh nhân báo bận đột xuất, xin dời sang ngày khác</option>
+                                            <option value="other">Lý do khác (Nhập ghi chú)...</option>
+                                        </select>
+                                        <textarea name="cancelReasonCustom" id="absentReasonCustom" class="form-control form-control-sm shadow-none d-none" rows="2" placeholder="Nhập lý do chi tiết..." style="border-radius: 8px; font-size: 13px;"></textarea>
+                                    </div>
 
 
                 <!-- Modal Bỏ Qua Lượt / Đổi lượt với ca tiếp theo sau mình -->
@@ -524,10 +557,7 @@
                                 </div>
                                 <h3 class="modal-title-custom">Bỏ qua lượt khám?</h3>
                                 <p class="modal-text mb-3">
-                                    Bệnh nhân <strong id="skipModalPatientName" class="text-dark">---</strong> (<span
-                                        id="skipModalApptCode" class="fw-bold text-secondary">#APPT-0</span>) sẽ
-                                    <strong>chuyển đổi ca khám với lượt tiếp theo sau mình</strong> để nhường lượt cho
-                                    bệnh nhân kế tiếp vào phòng khám.
+                                    Bệnh nhân <strong id="skipModalPatientName" class="text-dark">---</strong> (<span id="skipModalApptCode" class="fw-bold text-secondary">#APT-0</span>) sẽ <strong>chuyển đổi ca khám với lượt tiếp theo sau mình</strong> để nhường lượt cho bệnh nhân kế tiếp vào phòng khám.
                                 </p>
                                 <form action="${pageContext.request.contextPath}/staff/waiting-list" method="post"
                                     id="skipForm" class="m-0">
@@ -820,7 +850,38 @@
                 <!-- Bootstrap 5 JS -->
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
                 <script>
+                    function toggleAbsentReason(selectElem) {
+                        var customText = document.getElementById('absentReasonCustom');
+                        if (!customText) return;
+                        if (selectElem.value === 'other') {
+                            customText.classList.remove('d-none');
+                            customText.focus();
+                        } else {
+                            customText.classList.add('d-none');
+                            customText.value = '';
+                        }
+                    }
 
+                    function openAbsentModal(id, name) {
+                        var idInput = document.getElementById('absentModalAppointmentId');
+                        if (idInput) idInput.value = id;
+                        var nameElem = document.getElementById('absentModalPatientName');
+                        if (nameElem) nameElem.textContent = name || 'này';
+                        var codeElem = document.getElementById('absentModalApptCode');
+                        if (codeElem) codeElem.textContent = '#APT-' + id;
+                        var selectElem = document.getElementById('absentReasonSelect');
+                        if (selectElem) selectElem.value = 'Gọi tên nhiều lần không có mặt / Không vào phòng khám';
+                        var customElem = document.getElementById('absentReasonCustom');
+                        if (customElem) {
+                            customElem.classList.add('d-none');
+                            customElem.value = '';
+                        }
+                        var modalElem = document.getElementById('absentModal');
+                        if (modalElem) {
+                            var modal = bootstrap.Modal.getInstance(modalElem) || new bootstrap.Modal(modalElem);
+                            modal.show();
+                        }
+                    }
 
                     function openSkipModal(id, name) {
                         var idInput = document.getElementById('skipModalAppointmentId');
@@ -828,7 +889,7 @@
                         var nameElem = document.getElementById('skipModalPatientName');
                         if (nameElem) nameElem.textContent = name || 'này';
                         var codeElem = document.getElementById('skipModalApptCode');
-                        if (codeElem) codeElem.textContent = '#APPT-' + id;
+                        if (codeElem) codeElem.textContent = '#APT-' + id;
                         var modalElem = document.getElementById('skipModal');
                         if (modalElem) {
                             var modal = bootstrap.Modal.getInstance(modalElem) || new bootstrap.Modal(modalElem);
@@ -840,7 +901,7 @@
                     function openPostExamModal(id, name) {
                         currentPostExamId = id;
                         var subElem = document.getElementById('postExamSubtitle');
-                        if (subElem) subElem.textContent = 'Bệnh nhân: ' + (name || '---') + ' (#APPT-' + id + ')';
+                        if (subElem) subElem.textContent = 'Bệnh nhân: ' + (name || '---') + ' (#APT-' + id + ')';
 
                         var alertBox = document.getElementById('postExamAlertBox');
                         if (alertBox) {
@@ -1110,7 +1171,7 @@
                         if (!currentPostExamId) return;
                         var data = window._currentPostExamData;
                         if (data && data.status !== 'Completed') {
-                            showPostExamAlert('Không thể hoàn tất lịch hẹn (#APPT-' + currentPostExamId + ') do Bác sĩ đang khám trong phòng và chưa kết thúc ca khám!', 'danger');
+                            showPostExamAlert('Không thể hoàn tất lịch hẹn (#APT-' + currentPostExamId + ') do Bác sĩ đang khám trong phòng và chưa kết thúc ca khám!', 'danger');
                             showToast('Không thể hoàn tất lịch hẹn: Ca khám đang diễn ra trong phòng bác sĩ!', 'danger');
                             return;
                         }

@@ -251,7 +251,7 @@
                         <tbody>
                             <c:forEach var="item" items="${procedureRequests}">
                                 <tr>
-                                    <td><strong>#CD-${item.orderId}</strong><div class="small text-muted">#APPT-${item.appointmentId}</div></td>
+                                    <td><strong>#CD-${item.orderId}</strong><div class="small text-muted">#APT-${item.appointmentId}</div></td>
                                     <td><c:out value="${item.patientName}" /></td>
                                     <td><c:out value="${item.serviceName}" /></td>
                                     <td><fmt:formatNumber value="${item.price}" pattern="#,###" /> đ</td>

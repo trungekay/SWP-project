@@ -120,6 +120,11 @@ public class StaffAppointmentListServlet extends HttpServlet {
             response.getWriter().write(json.toString());
             return;
         }
+        java.util.List<java.util.Map<String, Object>> refundInvoices = new com.visioncare.dao.RefundDAO().getInvoicesForStaffRefundSelection();
+        request.setAttribute("availableInvoices", refundInvoices);
+        java.util.Map<Integer, Boolean> refundEligible = new java.util.HashMap<>();
+        for (java.util.Map<String, Object> invoice : refundInvoices) refundEligible.put((Integer) invoice.get("appointmentId"), true);
+        request.setAttribute("refundEligible", refundEligible);
         try {
             String dateParam = request.getParameter("date");
             String statusParam = request.getParameter("status");
@@ -169,7 +174,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
             // Lấy toàn bộ lịch hẹn trong ngày để tính chỉ số KPI tiếp đón
             List<Appointment> allDayAppointments = appointmentDAO.getStaffAppointments(queryDate, "all", doctorId, null);
             int totalCount = allDayAppointments.size();
-            long pendingCount = allDayAppointments.stream().filter(Appointment::isReadyForCheckIn).count();
+            long pendingCount = allDayAppointments.stream().filter(a -> a.isReadyForCheckIn() || a.isCancellationRequested()).count();
             long checkedInCount = allDayAppointments.stream().filter(a -> a.getCheckinTime() != null && !"Canceled".equalsIgnoreCase(a.getStatus())).count();
             long completedCount = allDayAppointments.stream().filter(a -> "Completed".equalsIgnoreCase(a.getStatus())).count();
             long canceledCount = allDayAppointments.stream().filter(a -> "Canceled".equalsIgnoreCase(a.getStatus())).count();
@@ -229,6 +234,20 @@ public class StaffAppointmentListServlet extends HttpServlet {
         String action = request.getParameter("action");
         HttpSession session = request.getSession();
 
+        if ("approveCancellation".equals(action)) {
+            try {
+                int id = Integer.parseInt(request.getParameter("appointmentId"));
+                Appointment appt = appointmentDAO.getAppointmentById(id);
+                boolean ok = appt != null && appt.isCancellationRequested()
+                    && appointmentDAO.cancelAppointment(id, "Đã duyệt yêu cầu hủy lịch của bệnh nhân: " + (appt.getReason() != null && appt.getReason().startsWith(com.visioncare.dao.RefundPolicy.REQUESTED)
+                        ? appt.getReason().substring(com.visioncare.dao.RefundPolicy.REQUESTED.length()) : "Yêu cầu hủy lịch từ luồng trước"));
+                session.setAttribute(ok ? "successMessage" : "errorMessage", ok
+                    ? "Đã duyệt hủy lịch #APT-" + id + ". Có thể tạo yêu cầu hoàn tiền."
+                    : "Yêu cầu hủy không hợp lệ hoặc bệnh nhân đã check-in.");
+            } catch (Exception e) { session.setAttribute("errorMessage", "Không thể duyệt yêu cầu hủy lịch."); }
+            response.sendRedirect(request.getContextPath() + "/staff/appointments?date=all");
+            return;
+        }
         if ("checkin".equalsIgnoreCase(action)) {
             String apptIdParam = request.getParameter("appointmentId");
             if (apptIdParam != null && !apptIdParam.trim().isEmpty()) {
@@ -236,7 +255,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                     int apptId = Integer.parseInt(apptIdParam.trim());
                     Appointment ticket = appointmentDAO.getAppointmentById(apptId);
                     if (ticket != null && ticket.isPast()) {
-                        session.setAttribute("errorMessage", "Lịch hẹn (#APPT-" + apptId + ") đã qua ngày khám (" + ticket.getAppointmentDate() + "). Chỉ có thể xem thông tin và ghi chú y tế, không thể thực hiện tiếp đón!");
+                        session.setAttribute("errorMessage", "Lịch hẹn (#APT-" + apptId + ") đã qua ngày khám (" + ticket.getAppointmentDate() + "). Chỉ có thể xem thông tin và ghi chú y tế, không thể thực hiện tiếp đón!");
                         String returnUrl = request.getParameter("returnUrl");
                         response.sendRedirect(returnUrl != null && !returnUrl.isEmpty() ? returnUrl : (request.getContextPath() + "/staff/appointments"));
                         return;
@@ -260,7 +279,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
 
                         ticket = appointmentDAO.getAppointmentById(apptId);
                         String patientName = (ticket != null && ticket.getPatientName() != null) ? ticket.getPatientName() : "bệnh nhân";
-                        session.setAttribute("successMessage", "Tiếp đón " + patientName + " (#APPT-" + apptId + ") thành công! Đã chuyển vào danh sách chờ khám.");
+                        session.setAttribute("successMessage", "Tiếp đón " + patientName + " (#APT-" + apptId + ") thành công! Đã chuyển vào danh sách chờ khám.");
                         response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
                         return;
                     } else {
@@ -285,7 +304,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                     int apptId = Integer.parseInt(apptIdParam.trim());
                     Appointment targetAppt = appointmentDAO.getAppointmentById(apptId);
                     if (targetAppt != null && targetAppt.isPast()) {
-                        session.setAttribute("errorMessage", "Lịch hẹn (#APPT-" + apptId + ") đã qua ngày khám (" + targetAppt.getAppointmentDate() + "), không thể thực hiện hủy lịch!");
+                        session.setAttribute("errorMessage", "Lịch hẹn (#APT-" + apptId + ") đã qua ngày khám (" + targetAppt.getAppointmentDate() + "), không thể thực hiện hủy lịch!");
                         String returnUrl = request.getParameter("returnUrl");
                         response.sendRedirect(returnUrl != null && !returnUrl.isEmpty() ? returnUrl : (request.getContextPath() + "/staff/appointments"));
                         return;
@@ -293,7 +312,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
 
                     boolean success = appointmentDAO.cancelAppointment(apptId, reason.trim());
                     if (success) {
-                        session.setAttribute("successMessage", "Đã hủy lịch hẹn (#APPT-" + apptId + ") thành công! Ca khám của bác sĩ đã được giải phóng.");
+                        session.setAttribute("successMessage", "Đã hủy lịch hẹn (#APT-" + apptId + ") thành công! Ca khám của bác sĩ đã được giải phóng.");
                     } else {
                         session.setAttribute("errorMessage", "Không thể hủy lịch hẹn #" + apptId + ". Ca có thể đã được bác sĩ gọi vào khám hoặc đã hoàn tất; vui lòng tải lại danh sách.");
                     }
@@ -609,7 +628,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                             }
                         }
 
-                        session.setAttribute("successMessage", "Tiếp đón khách vãng lai: " + patientName.trim() + " (#APPT-" + newApptId + ") thành công! Bệnh nhân đã được đưa vào danh sách chờ khám.");
+                        session.setAttribute("successMessage", "Tiếp đón khách vãng lai: " + patientName.trim() + " (#APT-" + newApptId + ") thành công! Bệnh nhân đã được đưa vào danh sách chờ khám.");
                         response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
                         return;
                     } else {

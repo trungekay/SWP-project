@@ -16,7 +16,7 @@ import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet(name = "StaffRefundServlet", urlPatterns = {"/staff/refunds", "/admin/refunds"})
+@WebServlet(name = "StaffRefundServlet", urlPatterns = {"/staff/refunds", "/admin/refunds", "/admin/reschedule-requests"})
 public class StaffRefundServlet extends HttpServlet {
 
     private final RefundDAO refundDAO = new RefundDAO();
@@ -32,12 +32,18 @@ public class StaffRefundServlet extends HttpServlet {
             return;
         }
 
-        String role = currentUser.getRole() != null ? currentUser.getRole().toLowerCase() : "";
-        if (!"staff".equals(role) && !"admin".equals(role) && !"manager".equals(role)) {
-            response.sendRedirect(request.getContextPath() + "/views/profile/refund-request.jsp");
+        if ("/staff/refunds".equals(request.getServletPath())) {
+            response.sendRedirect(request.getContextPath() + "/staff/appointments");
             return;
         }
-
+        if (currentUser.getRoleId() != 1 && currentUser.getRoleId() != 2) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
+        if ("/admin/reschedule-requests".equals(request.getServletPath())) {
+            request.getRequestDispatcher("/views/employee/reschedule-requests.jsp").forward(request, response);
+            return;
+        }
         String statusFilter = request.getParameter("status");
         if (statusFilter == null || statusFilter.isEmpty()) {
             statusFilter = "all";
@@ -77,8 +83,16 @@ public class StaffRefundServlet extends HttpServlet {
             return;
         }
 
-        int employeeId = getEmployeeId(currentUser.getId());
         String action = request.getParameter("action");
+        boolean creating = "create".equalsIgnoreCase(action);
+        boolean management = currentUser.getRoleId() == 1 || currentUser.getRoleId() == 2;
+        if ((creating && currentUser.getRoleId() != 5 && !management) || (!creating && !management)
+                || (creating && !"/staff/refunds".equals(request.getServletPath()))
+                || (!creating && !"/admin/refunds".equals(request.getServletPath()))) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
+        int employeeId = getEmployeeId(currentUser.getId());
 
         try {
             if ("approve".equalsIgnoreCase(action)) {
@@ -87,7 +101,7 @@ public class StaffRefundServlet extends HttpServlet {
                 if (ok) {
                     session.setAttribute("successMessage", "Đã duyệt và xác nhận hoàn tiền cho yêu cầu #REF-" + refundId + " thành công!");
                 } else {
-                    session.setAttribute("errorMessage", "Không thể duyệt hoàn tiền cho yêu cầu #REF-" + refundId + ". Nếu ca đang khám, hãy đợi bác sĩ kết thúc hoặc dừng ca trước.");
+                    session.setAttribute("errorMessage", "Không thể duyệt hoàn tiền cho yêu cầu #REF-" + refundId + ". Lịch phải được duyệt hủy trước check-in và hóa đơn chưa hoàn tiền.");
                 }
             } else if ("reject".equalsIgnoreCase(action)) {
                 int refundId = Integer.parseInt(request.getParameter("refundId"));
@@ -103,13 +117,13 @@ public class StaffRefundServlet extends HttpServlet {
                 int patientId = Integer.parseInt(request.getParameter("patientId"));
                 long amount = Long.parseLong(request.getParameter("amount").replaceAll("[^0-9]", ""));
                 String reason = request.getParameter("reason");
-                String initialStatus = request.getParameter("initialStatus");
+                String initialStatus = "Pending";
 
                 boolean ok = refundDAO.createRefundByStaff(invoiceId, employeeId, patientId, amount, reason, initialStatus);
                 if (ok) {
                     session.setAttribute("successMessage", "Tạo yêu cầu hoàn tiền cho hóa đơn #" + invoiceId + " thành công!");
                 } else {
-                    session.setAttribute("errorMessage", "Không thể tạo yêu cầu hoàn tiền.");
+                    session.setAttribute("errorMessage", "Không thể tạo yêu cầu hoàn tiền: lịch phải được duyệt hủy trước check-in, đã thanh toán, số tiền hợp lệ và chưa có yêu cầu đang xử lý.");
                 }
             }
         } catch (Exception e) {
@@ -117,7 +131,7 @@ public class StaffRefundServlet extends HttpServlet {
             session.setAttribute("errorMessage", "Lỗi: " + e.getMessage());
         }
 
-        response.sendRedirect(request.getContextPath() + "/staff/refunds");
+        response.sendRedirect(request.getContextPath() + (creating ? "/staff/appointments" : "/admin/refunds"));
     }
 
     private int getEmployeeId(int accountId) {

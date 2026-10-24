@@ -107,12 +107,6 @@
                 </li>
 
                 <!-- 3. Quản lý yêu cầu hoàn tiền (Không cần sổ xuống vì chỉ có 1 nội dung) -->
-                <li>
-                    <a href="${pageContext.request.contextPath}/staff/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}">
-                        <i class="bi bi-cash-coin"></i>
-                        <span>Quản lý yêu cầu hoàn tiền</span>
-                    </a>
-                </li>
             </c:when>
 
             <%-- ==================== GIAO DIỆN DÀNH CHO ADMIN ==================== --%>
@@ -153,12 +147,6 @@
                     <a href="${pageContext.request.contextPath}/admin/billing" class="${param.activeNav == 'billing' ? 'active' : ''}">
                         <i class="bi bi-receipt"></i>
                         Hóa đơn và Thanh toán
-                    </a>
-                </li>
-                <li>
-                    <a href="${pageContext.request.contextPath}/staff/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}">
-                        <i class="bi bi-cash-coin"></i>
-                        Quản lý Hoàn tiền
                     </a>
                 </li>
 

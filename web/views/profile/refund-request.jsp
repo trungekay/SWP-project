@@ -563,7 +563,7 @@
               </div>
               <div class="modal-body pt-3 pb-4">
                 <div class="alert alert-info py-2 px-3 small mb-3 border-0" style="background-color: #f0fdfa; color: #0f766e; border-left: 3px solid #0d9488 !important;">
-                  <i class="bi bi-info-circle me-1"></i><strong>Quy định:</strong> Chỉ được tạo yêu cầu hoàn tiền khi lịch hẹn <strong>đã đăng ký thành công</strong> hoặc <strong>đang chờ duyệt hủy</strong>. Không áp dụng cho ca khám đã hoàn thành hoặc lịch bị hủy tự động do hết thời gian thanh toán.
+                  <i class="bi bi-info-circle me-1"></i><strong>Quy định:</strong> Chỉ được tạo yêu cầu hoàn tiền khi lịch hẹn <strong>đã được staff duyệt hủy trước check-in</strong> và đã thanh toán. Không áp dụng cho lịch chờ khám, đang khám, hoàn thành, vắng mặt hoặc hủy tự động.
                 </div>
 
                 <c:set var="eligibleCount" value="0" />
@@ -575,7 +575,7 @@
 
                 <c:if test="${eligibleCount == 0}">
                   <div id="noEligibleAlert" class="alert alert-warning py-2 px-3 small mb-3">
-                    <i class="bi bi-exclamation-triangle me-1"></i>Hiện không có hóa đơn nào đủ điều kiện yêu cầu hoàn tiền (chỉ áp dụng cho lịch đã đăng ký thành công hoặc đang chờ duyệt hủy).
+                    <i class="bi bi-exclamation-triangle me-1"></i>Hiện không có hóa đơn nào đủ điều kiện yêu cầu hoàn tiền (chỉ áp dụng cho lịch đã được staff duyệt hủy trước check-in và đã thanh toán).
                   </div>
                 </c:if>
 
