@@ -55,11 +55,12 @@
                     <p class="name">${not empty sessionScope.user.fullName ? sessionScope.user.fullName : 'Lễ Tân Phạm Thị Lan'}</p>
                     <p class="role">
                         <c:choose>
-                            <c:when test="${sessionScope.user.role == 'admin'}">Quản trị viên (Admin)</c:when>
-                            <c:when test="${sessionScope.user.role == 'staff'}">Nhân viên (Staff)</c:when>
-                            <c:when test="${sessionScope.user.role == 'doctor'}">Bác sĩ (Doctor)</c:when>
-                            <c:when test="${sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist'}">Kỹ thuật viên (Specialist)</c:when>
-                            <c:otherwise>Nhân viên (Staff)</c:otherwise>
+                            <c:when test="${sessionScope.user.role == 'admin' || sessionScope.user.roleId == 1}">Quản trị viên (Admin)</c:when>
+                            <c:when test="${sessionScope.user.role == 'director' || sessionScope.user.roleId == 2}">Giám đốc Điều hành (Director)</c:when>
+                            <c:when test="${sessionScope.user.role == 'doctor' || sessionScope.user.roleId == 3}">Bác sĩ (Doctor)</c:when>
+                            <c:when test="${sessionScope.user.role == 'medical_specialist' || sessionScope.user.role == 'specialist' || sessionScope.user.roleId == 4}">Kỹ thuật viên / Chuyên viên (Specialist)</c:when>
+                            <c:when test="${sessionScope.user.role == 'staff' || sessionScope.user.roleId == 5}">Nhân viên (Staff)</c:when>
+                            <c:otherwise>Giám đốc Điều hành (Director)</c:otherwise>
                         </c:choose>
                     </p>
                 </div>

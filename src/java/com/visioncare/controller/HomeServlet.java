@@ -22,10 +22,16 @@ public class HomeServlet extends HttpServlet {
         com.visioncare.model.User user = (com.visioncare.model.User) request.getSession().getAttribute("user");
         if (user != null) {
             String role = user.getRole();
-            if ("admin".equals(role)) {
+            int roleId = user.getRoleId();
+            if (roleId == 1 || "admin".equalsIgnoreCase(role)) {
                 response.sendRedirect(request.getContextPath() + "/admin/users");
                 return;
-            } else if ("director".equals(role) || "staff".equals(role) || "doctor".equals(role) || "specialist".equals(role) || "medical_specialist".equals(role)) {
+            } else if (roleId == 2 || "director".equalsIgnoreCase(role)) {
+                response.sendRedirect(request.getContextPath() + "/director/dashboard");
+                return;
+            } else if (roleId == 3 || "doctor".equalsIgnoreCase(role)
+                    || roleId == 4 || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)
+                    || roleId == 5 || "staff".equalsIgnoreCase(role)) {
                 response.sendRedirect(request.getContextPath() + "/employee/schedule");
                 return;
             }
