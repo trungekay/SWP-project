@@ -82,6 +82,35 @@
     .badge-soft-warning { background-color: #fef3c7; color: #d97706; }
     .badge-soft-danger { background-color: #fee2e2; color: #dc2626; }
     .badge-soft-teal { background-color: #ccfbf1; color: #0d9488; }
+    .btn-review-action {
+      background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+      color: #ffffff !important;
+      border: none;
+      padding: 5px 14px;
+      border-radius: 50px;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      text-decoration: none;
+    }
+    .btn-review-action:hover {
+      background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(13, 148, 136, 0.35);
+    }
+    .btn-review-warning {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #ffffff !important;
+      box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25);
+    }
+    .btn-review-warning:hover {
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+      box-shadow: 0 4px 10px rgba(217, 119, 6, 0.35);
+    }
   </style>
 </head>
 <body>
@@ -111,13 +140,76 @@
               Hệ thống quản lý nhân sự y tế, theo dõi lịch trực và trung tâm phê duyệt điều hành phòng khám.
             </p>
           </div>
-          <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
-            <div class="d-inline-flex gap-2">
-              <a href="${pageContext.request.contextPath}/director/leave-requests" class="btn btn-light fw-bold text-teal px-3 py-2 shadow-sm rounded-3">
-                <i class="bi bi-calendar-x me-1"></i> Duyệt nghỉ phép (${pendingLeaveCount})
+          <div class="col-lg-5 text-lg-end mt-3 mt-lg-0">
+            <div class="d-inline-flex flex-wrap gap-2 justify-content-lg-end">
+              <a href="${pageContext.request.contextPath}/director/revenue" class="btn btn-light fw-bold text-teal px-3 py-2 shadow-sm rounded-3">
+                <i class="bi bi-graph-up me-1"></i> Dashboard Doanh thu
+              </a>
+              <a href="${pageContext.request.contextPath}/director/leave-requests" class="btn btn-outline-light fw-bold px-3 py-2 shadow-sm rounded-3">
+                <i class="bi bi-calendar-x me-1"></i> Nghỉ phép (${pendingLeaveCount})
               </a>
               <a href="${pageContext.request.contextPath}/director/refunds" class="btn btn-warning fw-bold text-dark px-3 py-2 shadow-sm rounded-3">
-                <i class="bi bi-cash-coin me-1"></i> Duyệt hoàn tiền (${pendingRefundCount})
+                <i class="bi bi-cash-coin me-1"></i> Hoàn tiền (${pendingRefundCount})
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Financial / Revenue Overview for Director -->
+      <div class="row g-3 mb-4">
+        <!-- Month Revenue -->
+        <div class="col-md-6 col-xl-4">
+          <div class="kpi-card border-success" style="background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <span class="text-muted small fw-semibold text-uppercase">Doanh thu tháng này</span>
+              <div class="kpi-icon bg-success bg-opacity-10 text-success">
+                <i class="bi bi-cash-stack"></i>
+              </div>
+            </div>
+            <h3 class="fw-bold mb-1 text-success">${revenueStats.monthRevenueFmt != null ? revenueStats.monthRevenueFmt : '0'} ₫</h3>
+            <div class="d-flex align-items-center justify-content-between mt-3">
+              <span class="small text-muted">${revenueStats.monthPaidCount != null ? revenueStats.monthPaidCount : 0} hóa đơn đã thanh toán</span>
+              <a href="${pageContext.request.contextPath}/director/revenue?timeRange=month" class="small fw-bold text-success text-decoration-none">
+                Chi tiết <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today Revenue -->
+        <div class="col-md-6 col-xl-4">
+          <div class="kpi-card" style="background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%);">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <span class="text-muted small fw-semibold text-uppercase">Doanh thu hôm nay</span>
+              <div class="kpi-icon bg-teal bg-opacity-10 text-teal">
+                <i class="bi bi-wallet2"></i>
+              </div>
+            </div>
+            <h3 class="fw-bold mb-1 text-teal">${revenueStats.todayRevenueFmt != null ? revenueStats.todayRevenueFmt : '0'} ₫</h3>
+            <div class="d-flex align-items-center justify-content-between mt-3">
+              <span class="small text-muted">${revenueStats.todayPaidCount != null ? revenueStats.todayPaidCount : 0} lượt khám hôm nay</span>
+              <a href="${pageContext.request.contextPath}/director/revenue?timeRange=today" class="small fw-bold text-teal text-decoration-none">
+                Chi tiết <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- All Time Revenue -->
+        <div class="col-md-6 col-xl-4">
+          <div class="kpi-card" style="background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <span class="text-muted small fw-semibold text-uppercase">Tổng doanh thu toàn thời gian</span>
+              <div class="kpi-icon bg-primary bg-opacity-10 text-primary">
+                <i class="bi bi-trophy"></i>
+              </div>
+            </div>
+            <h3 class="fw-bold mb-1 text-primary">${revenueStats.allTimeRevenueFmt != null ? revenueStats.allTimeRevenueFmt : '0'} ₫</h3>
+            <div class="d-flex align-items-center justify-content-between mt-3">
+              <span class="small text-muted">${revenueStats.allTimePaidCount != null ? revenueStats.allTimePaidCount : 0} tổng hóa đơn thành công</span>
+              <a href="${pageContext.request.contextPath}/director/revenue" class="small fw-bold text-primary text-decoration-none">
+                Xem toàn bộ <i class="bi bi-arrow-right"></i>
               </a>
             </div>
           </div>
@@ -204,32 +296,6 @@
         </div>
       </div>
 
-      <!-- Quick Jump Shortcuts -->
-      <div class="row g-3 mb-4">
-        <div class="col-12">
-          <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
-            <div class="d-flex flex-wrap gap-2 align-items-center">
-              <span class="fw-bold text-dark me-2"><i class="bi bi-compass me-1 text-teal"></i> Lối tắt điều hành:</span>
-              <a href="${pageContext.request.contextPath}/director/doctors" class="btn btn-outline-primary btn-sm rounded-pill px-3">
-                <i class="bi bi-person-badge me-1"></i> Xem danh sách & Lịch bác sĩ
-              </a>
-              <a href="${pageContext.request.contextPath}/director/specialists" class="btn btn-outline-success btn-sm rounded-pill px-3">
-                <i class="bi bi-clipboard2-pulse me-1"></i> Xem danh sách & Lịch KTV
-              </a>
-              <a href="${pageContext.request.contextPath}/director/staffs" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-                <i class="bi bi-people me-1"></i> Xem danh sách & Lịch nhân viên
-              </a>
-              <a href="${pageContext.request.contextPath}/director/leave-requests" class="btn btn-outline-danger btn-sm rounded-pill px-3">
-                <i class="bi bi-calendar-x me-1"></i> Phê duyệt yêu cầu hủy lịch (${pendingLeaveCount})
-              </a>
-              <a href="${pageContext.request.contextPath}/director/refunds" class="btn btn-outline-warning btn-sm rounded-pill px-3 text-dark">
-                <i class="bi bi-cash-coin me-1"></i> Phê duyệt yêu cầu hoàn tiền (${pendingRefundCount})
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- 2 Tables Side-by-Side: Recent Pending Leave & Recent Pending Refunds -->
       <div class="row g-4">
         <!-- 1. Yêu cầu hủy ca làm việc đang chờ duyệt -->
@@ -278,8 +344,8 @@
                             </div>
                           </td>
                           <td class="text-end">
-                            <a href="${pageContext.request.contextPath}/director/leave-requests" class="btn btn-sm btn-primary rounded-pill px-2 py-1" style="font-size: 12px; background-color: #0d9488; border-color: #0d9488;">
-                              Xét duyệt
+                            <a href="${pageContext.request.contextPath}/director/leave-requests" class="btn-review-action">
+                              <i class="bi bi-arrow-right-circle"></i> Xét duyệt
                             </a>
                           </td>
                         </tr>
@@ -344,8 +410,8 @@
                             </div>
                           </td>
                           <td class="text-end">
-                            <a href="${pageContext.request.contextPath}/director/refunds" class="btn btn-sm btn-warning rounded-pill px-2 py-1 text-dark fw-semibold" style="font-size: 12px;">
-                              Xét duyệt
+                            <a href="${pageContext.request.contextPath}/director/refunds" class="btn-review-action btn-review-warning">
+                              <i class="bi bi-arrow-right-circle"></i> Xét duyệt
                             </a>
                           </td>
                         </tr>

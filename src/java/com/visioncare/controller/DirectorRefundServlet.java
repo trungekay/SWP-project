@@ -64,7 +64,7 @@ public class DirectorRefundServlet extends HttpServlet {
         request.setAttribute("currentStatus", statusFilter);
 
         String view = "/director/reschedule-requests".equals(request.getServletPath())
-                ? "/views/employee/reschedule-requests.jsp" : "/views/admin/refund-management.jsp";
+                ? "/views/employee/reschedule-requests.jsp" : "/views/director/refund-requests.jsp";
         request.getRequestDispatcher(view).forward(request, response);
     }
 

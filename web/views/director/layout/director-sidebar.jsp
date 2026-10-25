@@ -24,6 +24,12 @@
                 <span>Tổng quan Giám đốc</span>
             </a>
         </li>
+        <li>
+            <a href="${pageContext.request.contextPath}/director/revenue" class="${param.activeNav == 'revenue' ? 'active' : ''}">
+                <i class="bi bi-graph-up"></i>
+                <span>Dashboard Doanh thu</span>
+            </a>
+        </li>
 
         <div class="sidebar-menu-header mt-3">DANH SÁCH & LỊCH LÀM VIỆC</div>
         <li>
@@ -70,20 +76,6 @@
                     <i class="bi bi-calendar2-week"></i><span>Quản lý yêu cầu đổi lịch</span>
                 </a></li>
             </ul>
-        </li>
-
-        <div class="sidebar-menu-header mt-3">HỆ THỐNG</div>
-        <li>
-            <a href="${pageContext.request.contextPath}/home">
-                <i class="bi bi-house-door"></i>
-                <span>Xem trang chủ</span>
-            </a>
-        </li>
-        <li>
-            <a href="${pageContext.request.contextPath}/logout" class="text-danger">
-                <i class="bi bi-box-arrow-right text-danger"></i>
-                <span class="text-danger">Đăng xuất</span>
-            </a>
         </li>
     </ul>
 </aside>

@@ -174,7 +174,7 @@ PRIMARY KEY CLUSTERED
 ) ON [PRIMARY]
 
 ALTER TABLE [dbo].[Work_Schedule] ADD  DEFAULT (N'Available') FOR [Status]
-ALTER TABLE [dbo].[Work_Schedule]  WITH CHECK ADD  CONSTRAINT [CHK_WS_Has_Employee] CHECK  (([Doctor_Employee_ID] IS NOT NULL OR [Specialist_Employee_ID] IS NOT NULL))
+ALTER TABLE [dbo].[Work_Schedule]  WITH CHECK ADD  CONSTRAINT [CHK_WS_Has_Employee] CHECK  (([Doctor_Employee_ID] IS NOT NULL OR [Specialist_Employee_ID] IS NOT NULL OR [Staff_Employee_ID] IS NOT NULL))
 ALTER TABLE [dbo].[Work_Schedule] CHECK CONSTRAINT [CHK_WS_Has_Employee]
 ALTER TABLE [dbo].[Work_Schedule]  WITH CHECK ADD  CONSTRAINT [CHK_WS_Slot_30Mins] CHECK  ((datediff(minute,[Start_Time],[End_Time])=(30)))
 ALTER TABLE [dbo].[Work_Schedule] CHECK CONSTRAINT [CHK_WS_Slot_30Mins]

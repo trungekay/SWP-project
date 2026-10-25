@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@WebServlet(name = "AdminBillingServlet", urlPatterns = {"/admin/billing", "/admin/dashboard", "/staff/payments"})
+@WebServlet(name = "AdminBillingServlet", urlPatterns = {"/admin/billing", "/admin/dashboard", "/staff/payments", "/director/revenue", "/director/billing"})
 public class AdminBillingServlet extends HttpServlet {
 
     private final InvoiceDAO invoiceDAO = new InvoiceDAO();
@@ -28,8 +28,18 @@ public class AdminBillingServlet extends HttpServlet {
         return request.getServletPath().startsWith("/staff/");
     }
 
+    private boolean isDirectorPage(HttpServletRequest request) {
+        return request.getServletPath().startsWith("/director/");
+    }
+
     private String billingPath(HttpServletRequest request) {
-        return isStaffPage(request) ? "/staff/payments" : "/admin/billing";
+        if (isStaffPage(request)) {
+            return "/staff/payments";
+        }
+        if (isDirectorPage(request)) {
+            return "/director/revenue";
+        }
+        return "/admin/billing";
     }
 
     @Override
@@ -200,6 +210,7 @@ public class AdminBillingServlet extends HttpServlet {
             request.setAttribute("procedureRequests", procedureRequests);
             request.setAttribute("procedurePaymentCsrf", csrf);
             request.setAttribute("staffBilling", isStaffPage(request));
+            request.setAttribute("directorBilling", isDirectorPage(request));
             request.setAttribute("billingPath", billingPath(request));
             request.setAttribute("search", search);
             request.setAttribute("status", status != null ? status : "all");

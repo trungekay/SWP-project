@@ -139,7 +139,7 @@
                                     </div>
                                     <div class="metric-info">
                                         <div class="metric-num">${canceledCount}</div>
-                                        <div class="metric-title text-secondary">Vắng mặt / Đã huỷ</div>
+                                        <div class="metric-title text-secondary">Đã hủy</div>
                                     </div>
                                 </a>
                             </div>
@@ -215,7 +215,7 @@
                                     </a>
                                     <a href="${pageContext.request.contextPath}/staff/appointments?date=${selectedDate}&status=Canceled&doctorId=${selectedDoctorId}&keyword=${param.keyword}"
                                         class="btn btn-sm ${selectedStatus == 'Canceled' ? 'btn-danger fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
-                                        <i class="bi bi-person-x-fill me-1"></i> Vắng mặt / Đã hủy (${canceledCount})
+                                        <i class="bi bi-person-x-fill me-1"></i> Đã hủy (${canceledCount})
                                     </a>
                                     <a href="${pageContext.request.contextPath}/staff/appointments?date=all&amp;status=CancellationRequested"
                                         class="btn btn-sm ${selectedStatus == 'CancellationRequested' ? 'btn-warning text-dark fw-bold' : 'btn-white border text-secondary'} rounded-pill px-3">
@@ -247,7 +247,11 @@
                                     </colgroup>
                                     <thead>
                                         <tr>
-                                            <th class="text-center text-nowrap" style="width: 8%;">Mã Hẹn</th>
+                                            <th class="text-center text-nowrap" style="width: 8%;" data-appointment-id-sort aria-sort="none">
+                                                <button type="button" class="btn btn-link p-0 text-reset text-decoration-none fw-semibold text-nowrap" style="font: inherit;" title="Sắp xếp theo mã hẹn">
+                                                    Mã Hẹn <i class="bi bi-arrow-down-up" aria-hidden="true"></i>
+                                                </button>
+                                            </th>
                                             <th class="text-nowrap" style="width: 15%;">Bệnh Nhân</th>
                                             <th class="text-nowrap" style="width: 13%;">Khung Giờ & Ngày</th>
                                             <th class="text-nowrap" style="width: 15%;">Bác Sĩ Phụ Trách</th>
@@ -260,7 +264,7 @@
                                         <c:choose>
                                             <c:when test="${not empty appointments}">
                                                 <c:forEach var="appt" items="${appointments}">
-                                                    <tr class="${appt.status == 'In_Progress' ? 'row-examining' : ''}">
+                                                    <tr data-appointment-id="${appt.id}" class="${appt.status == 'In_Progress' ? 'row-examining' : ''}">
                                                         <!-- Mã Hẹn -->
                                                         <td class="text-center text-nowrap">
                                                             <a href="${pageContext.request.contextPath}/staff/appointment-detail?id=${appt.id}"
@@ -370,7 +374,7 @@
                                                                     </span>
                                                                 </c:when>
                                                                 <c:when test="${appt.status == 'Canceled'}">
-                                                                    <span class="badge-status badge-canceled" title="${fn:escapeXml(appt.reason)}">
+                                                                    <span class="badge-status badge-canceled" title="${fn:escapeXml(not empty appt.reason ? appt.reason : appt.medicalNotes)}">
                                                                         <c:choose>
                                                                             <c:when test="${fn:contains(appt.reason, 'Hết hạn thanh toán')}">Hết hạn thanh toán</c:when>
                                                                             <c:when test="${fn:startsWith(appt.reason, 'Báo vắng mặt:')}">Vắng mặt</c:when>
@@ -468,8 +472,8 @@
                                                             <c:choose>
                                                                 <c:when test="${selectedStatus == 'Canceled'}">
                                                                     <i class="bi bi-check-circle fs-1 d-block mb-2 text-secondary"></i>
-                                                                    <p class="mb-1 fw-semibold text-dark">Không có ca khám nào bị hủy hoặc báo vắng mặt!</p>
-                                                                    <p class="small text-muted">Tất cả bệnh nhân đều đến đúng hẹn hoặc chưa phát sinh vắng mặt.</p>
+                                                                    <p class="mb-1 fw-semibold text-dark">Không có ca khám nào bị hủy!</p>
+                                                                    <p class="small text-muted">Tất cả bệnh nhân đều đến đúng hẹn hoặc chưa phát sinh hủy lịch.</p>
                                                                 </c:when>
                                                                 <c:when test="${selectedStatus == 'CheckedIn'}">
                                                                     <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
@@ -1020,6 +1024,7 @@
 
                 <!-- Bootstrap 5 JS -->
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                <script src="${pageContext.request.contextPath}/assets/js/appointment-id-sort.js"></script>
                 <script>
                     function validateWalkinName() {
                         var nameInput = document.getElementById('walkinPatientName');

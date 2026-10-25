@@ -238,7 +238,11 @@
                                     <thead>
                                         <tr>
                                             <th class="text-center text-nowrap" style="width: 55px;">STT</th>
-                                            <th class="text-center text-nowrap" style="width: 105px;">Mã Hẹn</th>
+                                            <th class="text-center text-nowrap" style="width: 105px;" data-appointment-id-sort aria-sort="none">
+                                                <button type="button" class="btn btn-link p-0 text-reset text-decoration-none fw-semibold text-nowrap" style="font: inherit;" title="Sắp xếp theo mã hẹn">
+                                                    Mã Hẹn <i class="bi bi-arrow-down-up" aria-hidden="true"></i>
+                                                </button>
+                                            </th>
                                             <th class="text-nowrap" style="width: 17%;">Bệnh Nhân</th>
                                             <th class="text-nowrap" style="width: 13%;">Ca Khám</th>
                                             <th class="text-nowrap" style="width: 16%;">Bác Sĩ</th>
@@ -257,7 +261,7 @@
                                                     <c:set var="apptDateStr">${appt.appointmentDate}</c:set>
                                                     <c:set var="isPastAppt"
                                                         value="${not empty apptDateStr && apptDateStr < currentDateStr}" />
-                                                    <tr class="${appt.status == 'In_Progress' ? 'row-examining' : ''}">
+                                                    <tr data-appointment-id="${appt.id}" class="${appt.status == 'In_Progress' ? 'row-examining' : ''}">
                                                         <!-- STT / Queue Number -->
                                                         <td class="text-center">
                                                             <div
@@ -380,8 +384,8 @@
                                                                 </c:when>
                                                                 <c:when test="${appt.status == 'Canceled'}">
                                                                     <span class="badge-status badge-canceled"
-                                                                        title="${not empty appt.reason ? appt.reason : 'Lịch hẹn đã hủy / vắng mặt'}">
-                                                                        Đã hủy / Vắng mặt
+                                                                        title="${not empty appt.reason ? appt.reason : 'Lịch hẹn đã hủy'}">
+                                                                        Đã hủy
                                                                     </span>
                                                                 </c:when>
                                                                 <c:otherwise>
@@ -425,17 +429,6 @@
                                                                         data-name="${appt.patientName}">
                                                                         <i class="bi bi-file-earmark-medical"></i>
                                                                     </button>
-
-                                                                    <!-- Nếu còn nợ viện phí / thuốc / thủ thuật: Nút thu phí nhanh -->
-                                                                    <c:if test="${appt.balanceDue > 0}">
-                                                                        <button type="button"
-                                                                            class="action-btn warning btn-trigger-post-exam"
-                                                                            title="Còn nợ viện phí. Bấm để thu viện phí còn lại & hoàn tất lịch hẹn."
-                                                                            data-bs-toggle="tooltip" data-id="${appt.id}"
-                                                                            data-name="${appt.patientName}">
-                                                                            <i class="bi bi-cash-coin"></i>
-                                                                        </button>
-                                                                    </c:if>
                                                                 </c:if>
                                                             </div>
                                                         </td>
@@ -508,39 +501,6 @@
                 </main>
 
 
-                <!-- Modal Báo Vắng Mặt / Hủy ca khỏi hàng đợi -->
-                <div class="modal fade" id="absentModal" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="modal-icon-danger">
-                                    <i class="bi bi-person-x"></i>
-                                </div>
-                                <h3 class="modal-title-custom">Xác nhận báo vắng mặt?</h3>
-                                <p class="modal-text mb-3">
-                                    Bệnh nhân <strong id="absentModalPatientName" class="text-dark">---</strong> (<span id="absentModalApptCode" class="fw-bold text-secondary">#APT-0</span>) sẽ được ghi nhận vắng mặt và gỡ khỏi hàng đợi hôm nay.
-                                </p>
-                                <form action="${pageContext.request.contextPath}/staff/waiting-list" method="post" id="absentForm" class="m-0 text-start">
-                                    <input type="hidden" name="action" value="absent">
-                                    <input type="hidden" name="appointmentId" id="absentModalAppointmentId">
-                                    <input type="hidden" name="returnUrl" value="${pageContext.request.contextPath}/staff/waiting-list${not empty pageContext.request.queryString ? '?'.concat(pageContext.request.queryString) : ''}">
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label small fw-semibold text-dark mb-1.5">
-                                            Lý do vắng mặt <span class="text-danger">*</span>
-                                        </label>
-                                        <select name="cancelReasonSelect" id="absentReasonSelect" class="form-select form-select-sm shadow-none mb-2" style="border-radius: 8px; font-size: 13.5px;" onchange="toggleAbsentReason(this)">
-                                            <option value="Gọi tên nhiều lần không có mặt / Không vào phòng khám">Gọi tên nhiều lần không có mặt / Không vào phòng khám</option>
-                                            <option value="Bệnh nhân tự ý bỏ về trước khi đến lượt khám">Bệnh nhân tự ý bỏ về trước khi đến lượt khám</option>
-                                            <option value="Bệnh nhân báo bận đột xuất, xin dời sang ngày khác">Bệnh nhân báo bận đột xuất, xin dời sang ngày khác</option>
-                                            <option value="other">Lý do khác (Nhập ghi chú)...</option>
-                                        </select>
-                                        <textarea name="cancelReasonCustom" id="absentReasonCustom" class="form-control form-control-sm shadow-none d-none" rows="2" placeholder="Nhập lý do chi tiết..." style="border-radius: 8px; font-size: 13px;"></textarea>
-                                    </div>
 
 
                 <!-- Modal Bỏ Qua Lượt / Đổi lượt với ca tiếp theo sau mình -->
@@ -776,41 +736,16 @@
                                                 </div>
                                             </div>
 
-                                            <!-- Khung chọn hình thức thanh toán khi Balance Due > 0 -->
+                                            <!-- Khung thông báo khi Balance Due > 0 -->
                                             <div id="postExamPaymentSelectionBox"
                                                 class="p-2.5 rounded-2 border bg-warning-subtle text-dark small d-none"
                                                 style="font-size: 12.5px;">
-                                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                                <div class="d-flex align-items-center justify-content-between">
                                                     <span
                                                         class="fw-bold text-warning-emphasis d-flex align-items-center gap-1">
-                                                        <i class="bi bi-exclamation-triangle-fill text-warning"></i> Cần
-                                                        thu phần còn lại:
+                                                        <i class="bi bi-exclamation-triangle-fill text-warning"></i> Phần viện phí chưa thanh toán:
                                                     </span>
-                                                    <strong class="text-danger fs-6" id="postExamBalanceDueNotice">0
-                                                        ₫</strong>
-                                                </div>
-                                                <div class="text-secondary small mb-2">Chọn phương thức thanh toán tại
-                                                    quầy lễ tân:</div>
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="radio"
-                                                            name="postExamPaymentGateway" id="payMethodCash"
-                                                            value="Cash" checked>
-                                                        <label class="form-check-label fw-semibold" for="payMethodCash">
-                                                            <i class="bi bi-cash-stack text-success me-1"></i> Tiền mặt
-                                                            tại quầy (Cash)
-                                                        </label>
-                                                    </div>
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="radio"
-                                                            name="postExamPaymentGateway" id="payMethodVietQR"
-                                                            value="VietQR_Banking">
-                                                        <label class="form-check-label fw-semibold"
-                                                            for="payMethodVietQR">
-                                                            <i class="bi bi-qr-code text-primary me-1"></i> Quét mã QR
-                                                            (VietQR Banking)
-                                                        </label>
-                                                    </div>
+                                                    <strong class="text-danger fs-6" id="postExamBalanceDueNotice">0 ₫</strong>
                                                 </div>
                                             </div>
 
@@ -829,18 +764,12 @@
                             <div class="modal-footer px-4 py-3 bg-light border-top d-flex justify-content-between">
                                 <div>
                                     <small class="text-muted" style="font-size: 12px;" id="postExamFooterNote">
-                                        <i class="bi bi-info-circle me-1"></i>Lễ tân kiểm tra phiếu khám và xác nhận
-                                        hoàn tất sau khi thu viện phí.
+                                        <i class="bi bi-info-circle me-1"></i>Lễ tân kiểm tra thông tin phiếu khám và kết quả từ bác sĩ.
                                     </small>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
-                                    <button type="button" class="btn btn-light btn-sm px-3.5 py-1.5 border"
+                                    <button type="button" class="btn btn-secondary btn-sm px-4 py-1.5"
                                         data-bs-dismiss="modal">Đóng</button>
-                                    <button type="button"
-                                        class="btn btn-teal btn-sm px-3.5 py-1.5 fw-semibold shadow-sm"
-                                        id="btnCompleteAppointment" onclick="submitCompleteAppointment()">
-                                        <i class="bi bi-check2-circle me-1.5"></i> Hoàn tất lịch hẹn
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -849,39 +778,9 @@
 
                 <!-- Bootstrap 5 JS -->
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                <script src="${pageContext.request.contextPath}/assets/js/appointment-id-sort.js"></script>
                 <script>
-                    function toggleAbsentReason(selectElem) {
-                        var customText = document.getElementById('absentReasonCustom');
-                        if (!customText) return;
-                        if (selectElem.value === 'other') {
-                            customText.classList.remove('d-none');
-                            customText.focus();
-                        } else {
-                            customText.classList.add('d-none');
-                            customText.value = '';
-                        }
-                    }
 
-                    function openAbsentModal(id, name) {
-                        var idInput = document.getElementById('absentModalAppointmentId');
-                        if (idInput) idInput.value = id;
-                        var nameElem = document.getElementById('absentModalPatientName');
-                        if (nameElem) nameElem.textContent = name || 'này';
-                        var codeElem = document.getElementById('absentModalApptCode');
-                        if (codeElem) codeElem.textContent = '#APT-' + id;
-                        var selectElem = document.getElementById('absentReasonSelect');
-                        if (selectElem) selectElem.value = 'Gọi tên nhiều lần không có mặt / Không vào phòng khám';
-                        var customElem = document.getElementById('absentReasonCustom');
-                        if (customElem) {
-                            customElem.classList.add('d-none');
-                            customElem.value = '';
-                        }
-                        var modalElem = document.getElementById('absentModal');
-                        if (modalElem) {
-                            var modal = bootstrap.Modal.getInstance(modalElem) || new bootstrap.Modal(modalElem);
-                            modal.show();
-                        }
-                    }
 
                     function openSkipModal(id, name) {
                         var idInput = document.getElementById('skipModalAppointmentId');
@@ -1061,30 +960,17 @@
                                         }
                                     }
 
-                                    var completeBtn = document.getElementById('btnCompleteAppointment');
                                     var footerNote = document.getElementById('postExamFooterNote');
 
                                     if (data.status === 'In_Progress') {
                                         if (payBox) payBox.classList.add('d-none');
                                         if (noticeBox) noticeBox.classList.add('d-none');
-
-                                        if (completeBtn) {
-                                            completeBtn.disabled = true;
-                                            completeBtn.className = 'btn btn-secondary btn-sm px-3.5 py-1.5 fw-semibold shadow-sm opacity-75';
-                                            completeBtn.innerHTML = '<i class="bi bi-heart-pulse me-1.5"></i> Bác sĩ đang khám (Chưa thể hoàn tất)';
-                                        }
                                         if (footerNote) {
-                                            footerNote.innerHTML = '<i class="bi bi-info-circle text-primary me-1"></i>Bác sĩ đang thực hiện ca khám trong phòng. Sau khi bác sĩ bấm hoàn tất chẩn đoán và đơn thuốc, lễ tân mới có thể thu viện phí và đóng lịch hẹn.';
+                                            footerNote.innerHTML = '<i class="bi bi-info-circle text-primary me-1"></i>Bác sĩ đang thực hiện ca khám trong phòng.';
                                         }
                                     } else if (data.status === 'Confirmed') {
                                         if (payBox) payBox.classList.add('d-none');
                                         if (noticeBox) noticeBox.classList.add('d-none');
-
-                                        if (completeBtn) {
-                                            completeBtn.disabled = true;
-                                            completeBtn.className = 'btn btn-secondary btn-sm px-3.5 py-1.5 fw-semibold shadow-sm opacity-75';
-                                            completeBtn.innerHTML = '<i class="bi bi-clock me-1.5"></i> Chờ bác sĩ tiếp nhận khám';
-                                        }
                                         if (footerNote) {
                                             footerNote.innerHTML = '<i class="bi bi-info-circle text-secondary me-1"></i>Bệnh nhân đang chờ gọi vào phòng khám.';
                                         }
@@ -1093,26 +979,14 @@
                                             if (payBox) payBox.classList.remove('d-none');
                                             if (noticeBox) noticeBox.classList.add('d-none');
                                             if (balNotice) balNotice.textContent = data.balanceDueFmt || (data.balanceDue + ' ₫');
-
-                                            if (completeBtn) {
-                                                completeBtn.disabled = false;
-                                                completeBtn.className = 'btn btn-warning btn-sm px-3.5 py-1.5 fw-semibold shadow-sm text-dark';
-                                                completeBtn.innerHTML = '<i class="bi bi-receipt me-1.5"></i> Đối chiếu & Thanh toán hóa đơn';
-                                            }
                                             if (footerNote) {
-                                                footerNote.innerHTML = '<i class="bi bi-exclamation-circle text-warning me-1"></i>Bác sĩ đã khám xong. Vui lòng thu phần còn lại <strong>' + (data.balanceDueFmt || '') + '</strong> và bấm hoàn tất.';
+                                                footerNote.innerHTML = '<i class="bi bi-exclamation-circle text-warning me-1"></i>Bác sĩ đã khám xong. Phần viện phí chưa thu: <strong>' + (data.balanceDueFmt || '') + '</strong>.';
                                             }
                                         } else {
                                             if (payBox) payBox.classList.add('d-none');
                                             if (noticeBox) noticeBox.classList.remove('d-none');
-
-                                            if (completeBtn) {
-                                                completeBtn.disabled = false;
-                                                completeBtn.className = 'btn btn-success btn-sm px-3.5 py-1.5 fw-semibold shadow-sm';
-                                                completeBtn.innerHTML = '<i class="bi bi-receipt me-1.5"></i> Đối chiếu hóa đơn tổng';
-                                            }
                                             if (footerNote) {
-                                                footerNote.innerHTML = '<i class="bi bi-check-circle text-success me-1"></i>Bác sĩ đã kết thúc khám. Đối chiếu hóa đơn tổng trước khi chốt thanh toán.';
+                                                footerNote.innerHTML = '<i class="bi bi-check-circle text-success me-1"></i>Ca khám đã hoàn tất bởi bác sĩ.';
                                             }
                                         }
                                     }
@@ -1167,71 +1041,6 @@
                         }
                     }
 
-                    function submitCompleteAppointment() {
-                        if (!currentPostExamId) return;
-                        var data = window._currentPostExamData;
-                        if (data && data.status !== 'Completed') {
-                            showPostExamAlert('Không thể hoàn tất lịch hẹn (#APT-' + currentPostExamId + ') do Bác sĩ đang khám trong phòng và chưa kết thúc ca khám!', 'danger');
-                            showToast('Không thể hoàn tất lịch hẹn: Ca khám đang diễn ra trong phòng bác sĩ!', 'danger');
-                            return;
-                        }
-
-                        var balanceDue = (data && data.balanceDue) ? data.balanceDue : 0;
-                        var selectedGateway = 'Cash';
-                        var payRadio = document.querySelector('input[name="postExamPaymentGateway"]:checked');
-                        if (payRadio) {
-                            selectedGateway = payRadio.value;
-                        }
-
-                        var btn = document.getElementById('btnCompleteAppointment');
-                        if (btn) {
-                            btn.disabled = true;
-                            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang xử lý...';
-                        }
-
-                        fetch('${pageContext.request.contextPath}/staff/waiting-list', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: 'action=completeAppointment&appointmentId=' + currentPostExamId + '&paymentGateway=' + encodeURIComponent(selectedGateway) + '&ajax=1'
-                        })
-                            .then(function (res) { return res.json(); })
-                            .then(function (result) {
-                                if (result && result.redirect) { window.location.href = result.redirect; return; }
-                                if (result && result.success) {
-                                    var modalElem = document.getElementById('postExamModal');
-                                    if (modalElem) {
-                                        var modal = bootstrap.Modal.getInstance(modalElem);
-                                        if (modal) modal.hide();
-                                    }
-                                    showToast(result.message || 'Đã hoàn tất lịch hẹn thành công!', 'success');
-                                    setTimeout(function () {
-                                        window.location.reload();
-                                    }, 1200);
-                                } else {
-                                    var msg = (result && result.message) ? result.message : 'Không thể hoàn tất lịch hẹn.';
-                                    if (btn) {
-                                        btn.disabled = false;
-                                        btn.innerHTML = balanceDue > 0
-                                            ? '<i class="bi bi-cash-coin me-1.5"></i> Thu ' + (data.balanceDueFmt || '') + ' & Hoàn tất lịch hẹn'
-                                            : '<i class="bi bi-check2-circle me-1.5"></i> Hoàn tất lịch hẹn';
-                                    }
-                                    showPostExamAlert(msg, 'danger');
-                                    showToast(msg, 'danger');
-                                }
-                            })
-                            .catch(function (err) {
-                                var errMsg = 'Lỗi kết nối khi hoàn tất: ' + err.message;
-                                if (btn) {
-                                    btn.disabled = false;
-                                    btn.innerHTML = balanceDue > 0
-                                        ? '<i class="bi bi-cash-coin me-1.5"></i> Thu ' + (data.balanceDueFmt || '') + ' & Hoàn tất lịch hẹn'
-                                        : '<i class="bi bi-check2-circle me-1.5"></i> Hoàn tất lịch hẹn';
-                                }
-                                showPostExamAlert(errMsg, 'danger');
-                                showToast(errMsg, 'danger');
-                            });
-                    }
-
                     document.addEventListener('click', function (e) {
                         var btnPostExam = e.target.closest('.btn-trigger-post-exam');
                         if (btnPostExam) {
@@ -1248,8 +1057,6 @@
                             openSkipModal(id, name);
                             return;
                         }
-
-
                     });
 
                     // Smart auto-refresh waiting list every 15 seconds when on current day and no modal is active

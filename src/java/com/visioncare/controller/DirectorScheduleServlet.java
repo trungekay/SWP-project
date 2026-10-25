@@ -62,6 +62,9 @@ public class DirectorScheduleServlet extends HttpServlet {
                 employeeType = "staff";
             }
 
+            // Ensure realistic schedules exist for doctors, specialists, and staff
+            workScheduleDAO.ensureRealisticSchedules();
+
             // Get list of employees for selected type
             List<User> employeeList = workScheduleDAO.getEmployeesByRoleType(employeeType);
 
@@ -74,8 +77,19 @@ public class DirectorScheduleServlet extends HttpServlet {
                 } catch (NumberFormatException ignored) {}
             }
 
-            // Fallback to first employee if not specified or not found
-            if (selectedEmpId <= 0 && employeeList != null && !employeeList.isEmpty()) {
+            // Ensure selectedEmpId belongs to the current employeeList (avoid cross-role invalid IDs)
+            boolean idFoundInList = false;
+            if (selectedEmpId > 0 && employeeList != null) {
+                for (User u : employeeList) {
+                    if (u.getActorId() == selectedEmpId) {
+                        idFoundInList = true;
+                        break;
+                    }
+                }
+            }
+
+            // Fallback to first employee if not specified, not found or invalid
+            if (!idFoundInList && employeeList != null && !employeeList.isEmpty()) {
                 selectedEmpId = employeeList.get(0).getActorId();
             }
 
