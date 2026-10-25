@@ -80,6 +80,55 @@
     .badge-soft-teal { background-color: #ccfbf1; color: #0d9488; }
     .badge-soft-primary { background-color: #e0f2fe; color: #0284c7; }
     .badge-soft-success { background-color: #dcfce7; color: #16a34a; }
+    .btn-action-approve {
+      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      color: #ffffff;
+      border: none;
+      padding: 6px 16px;
+      border-radius: 50px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.28);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-action-approve:hover {
+      background: linear-gradient(135deg, #047857 0%, #059669 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.42);
+      transform: translateY(-1.5px);
+    }
+    .btn-action-approve:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+    }
+    .btn-action-reject {
+      background-color: #fff1f2;
+      color: #e11d48;
+      border: 1px solid #fecdd3;
+      padding: 6px 16px;
+      border-radius: 50px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-action-reject:hover {
+      background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+      color: #ffffff;
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(225, 29, 72, 0.35);
+      transform: translateY(-1.5px);
+    }
+    .btn-action-reject:active {
+      transform: translateY(0);
+    }
   </style>
 </head>
 <body>
@@ -252,14 +301,14 @@
                           <c:when test="${r.requestStatus == 'Pending'}">
                             <div class="d-flex justify-content-end gap-2">
                               <!-- Nút Chấp thuận -->
-                              <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold"
+                              <button type="button" class="btn btn-action-approve"
                                       onclick="openApproveModal(${r.requestId}, '${fn:escapeXml(r.requesterName)}', '${r.leaveDate}', '${r.slotName}')">
-                                <i class="bi bi-check-lg me-1"></i>Duyệt
+                                <i class="bi bi-check-circle-fill"></i>Duyệt
                               </button>
                               <!-- Nút Từ chối -->
-                              <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold"
+                              <button type="button" class="btn btn-action-reject"
                                       onclick="openRejectModal(${r.requestId}, '${fn:escapeXml(r.requesterName)}')">
-                                <i class="bi bi-x-lg me-1"></i>Từ chối
+                                <i class="bi bi-x-circle-fill"></i>Từ chối
                               </button>
                             </div>
                           </c:when>
@@ -312,7 +361,9 @@
           </div>
           <div class="modal-footer border-0 pt-0">
             <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Hủy</button>
-            <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">Xác nhận chấp thuận</button>
+            <button type="submit" class="btn btn-action-approve px-4 py-2" style="font-size: 14px;">
+              <i class="bi bi-check-circle-fill"></i> Xác nhận chấp thuận
+            </button>
           </div>
         </form>
       </div>
@@ -342,7 +393,9 @@
           </div>
           <div class="modal-footer border-0 pt-0">
             <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Đóng</button>
-            <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Xác nhận từ chối</button>
+            <button type="submit" class="btn btn-action-reject px-4 py-2" style="font-size: 14px; background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); color: #fff; border: none; box-shadow: 0 4px 12px rgba(225, 29, 72, 0.35);">
+              <i class="bi bi-x-circle-fill"></i> Xác nhận từ chối
+            </button>
           </div>
         </form>
       </div>

@@ -16,12 +16,15 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import com.visioncare.dao.InvoiceDAO;
+
 @WebServlet(name = "DirectorDashboardServlet", urlPatterns = {"/director", "/director/dashboard"})
 public class DirectorDashboardServlet extends HttpServlet {
 
     private final WorkScheduleDAO workScheduleDAO = new WorkScheduleDAO();
     private final LeaveCancelRequestDAO leaveCancelRequestDAO = new LeaveCancelRequestDAO();
     private final RefundDAO refundDAO = new RefundDAO();
+    private final InvoiceDAO invoiceDAO = new InvoiceDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -52,6 +55,7 @@ public class DirectorDashboardServlet extends HttpServlet {
             // Stats
             Map<String, Integer> leaveStats = leaveCancelRequestDAO.getStats();
             Map<String, Object> refundStats = refundDAO.getRefundStats();
+            Map<String, Object> revenueStats = invoiceDAO.getBillingStats(null, null);
 
             // Recent Pending Requests
             List<LeaveCancelRequest> pendingLeaveRequests = leaveCancelRequestDAO.getAllRequests("Pending", "all");
@@ -64,6 +68,7 @@ public class DirectorDashboardServlet extends HttpServlet {
 
             request.setAttribute("leaveStats", leaveStats);
             request.setAttribute("refundStats", refundStats);
+            request.setAttribute("revenueStats", revenueStats);
 
             request.setAttribute("pendingLeaveCount", leaveStats.get("pending"));
             request.setAttribute("pendingRefundCount", refundStats.get("pending"));
