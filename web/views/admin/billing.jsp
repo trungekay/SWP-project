@@ -193,6 +193,11 @@
 
     <!-- Sidebar Include -->
     <c:choose>
+        <c:when test="${directorBilling}">
+            <jsp:include page="/views/director/layout/director-sidebar.jsp">
+                <jsp:param name="activeNav" value="revenue" />
+            </jsp:include>
+        </c:when>
         <c:when test="${staffBilling}">
             <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
                 <jsp:param name="activeNav" value="payments" />
@@ -210,6 +215,7 @@
         
         <!-- Header Include -->
         <c:choose>
+            <c:when test="${directorBilling}"><jsp:include page="/views/employee/layout/employee-header.jsp" /></c:when>
             <c:when test="${staffBilling}"><jsp:include page="/views/employee/layout/employee-header.jsp" /></c:when>
             <c:otherwise><jsp:include page="/views/admin/layout/admin-header.jsp" /></c:otherwise>
         </c:choose>
