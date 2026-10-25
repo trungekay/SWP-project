@@ -53,14 +53,7 @@
                     </ul>
                 </li>
 
-                <li><a href="${pageContext.request.contextPath}/staff/invoices" class="${param.activeNav == 'invoices' ? 'active' : ''}"><i class="bi bi-receipt"></i><span>Danh sách hóa đơn tổng</span></a></li>
-                <!-- Quản lý thanh toán -->
-                <li>
-                    <a href="${pageContext.request.contextPath}/staff/payments" class="${param.activeNav == 'payments' ? 'active' : ''}">
-                        <i class="bi bi-credit-card"></i>
-                        <span>Quản lý thanh toán</span>
-                    </a>
-                </li>
+                <li><a href="${pageContext.request.contextPath}/staff/invoices" class="${param.activeNav == 'invoices' || param.activeNav == 'payments' ? 'active' : ''}"><i class="bi bi-receipt"></i><span>Quản lý hóa đơn &amp; thanh toán</span></a></li>
 
             </c:when>
 
@@ -130,9 +123,9 @@
                         </ul>
                     </li>
                     <li>
-                        <a href="${pageContext.request.contextPath}/staff/payments" class="${param.activeNav == 'payments' ? 'active' : ''}">
+                        <a href="${pageContext.request.contextPath}/staff/invoices" class="${param.activeNav == 'payments' ? 'active' : ''}">
                             <i class="bi bi-credit-card"></i>
-                            <span>Quản lý thanh toán</span>
+                            <span>Quản lý hóa đơn &amp; thanh toán</span>
                         </a>
                     </li>
                 </c:if>

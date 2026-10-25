@@ -3,6 +3,16 @@ import com.visioncare.filter.AuthenticationFilter;
 public class StaffInvoiceAccessTest {
  public static void main(String[]args)throws Exception{
   int checks=0;
+  for(String action:new String[]{null,"detail","checkout"}){
+   RefundAccessTest.Exchange legacy=new RefundAccessTest.Exchange(RefundAccessTest.user(5),"/staff/payments",action);
+   jakarta.servlet.http.HttpServletRequest request=(jakarta.servlet.http.HttpServletRequest)java.lang.reflect.Proxy.newProxyInstance(jakarta.servlet.http.HttpServletRequest.class.getClassLoader(),new Class[]{jakarta.servlet.http.HttpServletRequest.class},(p,m,a)->{
+    if(m.getName().equals("getParameter")&&"id".equals(a[0]))return action==null?null:"13";
+    try{return m.invoke(legacy.request,a);}catch(java.lang.reflect.InvocationTargetException error){throw error.getCause();}
+   });
+   java.lang.reflect.Method method=com.visioncare.controller.AdminBillingServlet.class.getDeclaredMethod("doGet",jakarta.servlet.http.HttpServletRequest.class,jakarta.servlet.http.HttpServletResponse.class);method.setAccessible(true);method.invoke(new com.visioncare.controller.AdminBillingServlet(),request,legacy.response);
+   String target=action==null?"/SWP-project/staff/invoices":"/SWP-project/staff/invoices/"+("checkout".equals(action)?"checkout":"detail")+"?id=13";
+   RefundAccessTest.require(target.equals(legacy.redirect),"Legacy payment link preserves invoice destination");checks++;
+  }
   for(String path:new String[]{"/staff/invoices","/staff/invoices/detail","/staff/invoices/checkout","/staff/invoices/export"}){
    for(int role:new int[]{3,4,6}){RefundAccessTest.Exchange e=new RefundAccessTest.Exchange(RefundAccessTest.user(role),path,null);RefundAccessTest.invoke(new StaffInvoiceServlet(),"doGet",e);RefundAccessTest.require(e.status==403,"Non-cashier cannot read invoices");checks++;}
    RefundAccessTest.Exchange anonymous=new RefundAccessTest.Exchange(null,path,null);RefundAccessTest.invoke(new StaffInvoiceServlet(),"doGet",anonymous);RefundAccessTest.require(anonymous.redirect.endsWith("/login"),"Anonymous login redirect");checks++;

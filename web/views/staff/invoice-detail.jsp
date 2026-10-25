@@ -11,7 +11,7 @@
 </head><body><jsp:include page="/views/employee/layout/employee-sidebar.jsp"><jsp:param name="activeNav" value="invoices" /></jsp:include>
 <main class="main-wrapper"><jsp:include page="/views/admin/layout/admin-header.jsp" /><div class="invoice-workspace">
 
-<a class="invoice-back" href="${pageContext.request.contextPath}/staff/invoices"><i class="bi bi-arrow-left"></i> Danh sách hóa đơn</a>
+<a class="invoice-back" href="${pageContext.request.contextPath}/staff/invoices"><i class="bi bi-arrow-left"></i> Quản lý hóa đơn &amp; thanh toán</a>
 <div class="invoice-heading"><div><div class="eyebrow">MASTER INVOICE · #APT-${invoice.appointmentId}</div><h2>${checkout ? 'Thanh toán hóa đơn' : 'Chi tiết hóa đơn tổng'}</h2><p><c:out value="${invoice.patientName}" /> · <c:out value="${invoice.phone}" /> · <c:out value="${invoice.date}" /></p></div><span class="invoice-pill invoice-status-${invoice.progressColor}"><c:out value="${invoice.paymentLabel}" /></span></div>
 <ol class="invoice-steps"><li class="active">1. Đối chiếu hóa đơn</li><li class="${checkout ? 'active' : ''}">2. Chọn phương thức &amp; thanh toán</li><li class="${invoice.finalized ? 'active' : ''}">3. Xuất hóa đơn</li></ol>
 <c:if test="${not empty sessionScope.invoiceSuccess}"><div class="alert alert-success"><c:out value="${sessionScope.invoiceSuccess}" /></div><c:remove var="invoiceSuccess" scope="session" /></c:if>

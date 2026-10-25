@@ -13,7 +13,7 @@ public class StaffInvoiceDAO {
  public StaffInvoiceDAO(){this(DBContext::getConnection);}
  public StaffInvoiceDAO(Connections connections){this.connections=connections;}
  public List<Map<String,Object>> list(String search,String status,String date) throws Exception {
-  String sql="SELECT a.Appointment_ID,p.Full_Name,p.Phone,ws.Work_Date,a.Status AS Appointment_Status,i.Invoice_ID,i.Status,i.Total_Amount,i.Balance_Due,co.Finalized_At,CASE WHEN EXISTS(SELECT 1 FROM Payment_Transaction pt WHERE pt.Invoice_ID=i.Invoice_ID AND pt.Gateway_Status='Success' AND pt.Amount>0) OR co.Opening_Paid>0 THEN 1 ELSE 0 END AS Has_Payment "
+  String sql="SELECT a.Appointment_ID,p.Full_Name,p.Phone,ws.Work_Date,a.Status AS Appointment_Status,i.Invoice_ID,i.Status,i.Total_Amount,i.Balance_Due,co.Finalized_At,CASE WHEN EXISTS(SELECT 1 FROM Refund_Request rr WHERE rr.Invoice_ID=i.Invoice_ID AND rr.Status IN ('Pending','Approved')) THEN 1 ELSE 0 END AS Has_Refund,CASE WHEN EXISTS(SELECT 1 FROM Payment_Transaction pt WHERE pt.Invoice_ID=i.Invoice_ID AND pt.Gateway_Status='Success' AND pt.Amount>0) OR co.Opening_Paid>0 THEN 1 ELSE 0 END AS Has_Payment "
    +"FROM Appointment a JOIN Patient p ON p.Patient_ID=a.Patient_ID JOIN Work_Schedule ws ON ws.Schedule_ID=a.Schedule_ID "
    +"LEFT JOIN Master_Invoice i ON i.Appointment_ID=a.Appointment_ID LEFT JOIN Invoice_Checkout co ON co.Invoice_ID=i.Invoice_ID WHERE 1=1 ";
   List<Object> params=new ArrayList<>();
@@ -27,6 +27,7 @@ public class StaffInvoiceDAO {
    boolean collected="Paid".equals(financial)||"Partial_Paid".equals(financial)||r.getBoolean("Has_Payment");
    InvoiceProgress progress=InvoiceProgress.resolve(r.getInt("Invoice_ID")>0,r.getString("Appointment_Status"),financial,r.getTimestamp("Finalized_At")!=null,collected);
    m.put("progress",progress.name());m.put("progressLabel",progress.getLabel());m.put("progressColor",progress.getColor());
+   m.put("canOpenCheckout",progress==InvoiceProgress.Examined && !r.getBoolean("Has_Refund"));
    if(status==null||status.isBlank()||"all".equals(status)||progress.name().equals(status))rows.add(m);
   }}}return rows;
  }
