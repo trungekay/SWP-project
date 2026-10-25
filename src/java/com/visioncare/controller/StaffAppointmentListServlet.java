@@ -125,6 +125,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
         java.util.Map<Integer, Boolean> refundEligible = new java.util.HashMap<>();
         for (java.util.Map<String, Object> invoice : refundInvoices) refundEligible.put((Integer) invoice.get("appointmentId"), true);
         request.setAttribute("refundEligible", refundEligible);
+        request.setAttribute("activeAppointmentRefunds", new com.visioncare.dao.RefundDAO().getActiveRefundsForStaffAppointments());
         try {
             String dateParam = request.getParameter("date");
             String statusParam = request.getParameter("status");
@@ -178,6 +179,8 @@ public class StaffAppointmentListServlet extends HttpServlet {
             long checkedInCount = allDayAppointments.stream().filter(a -> a.getCheckinTime() != null && !"Canceled".equalsIgnoreCase(a.getStatus())).count();
             long completedCount = allDayAppointments.stream().filter(a -> "Completed".equalsIgnoreCase(a.getStatus())).count();
             long canceledCount = allDayAppointments.stream().filter(a -> "Canceled".equalsIgnoreCase(a.getStatus())).count();
+            request.setAttribute("cancellationRequestedCount", appointmentDAO.getStaffAppointments(null, "CancellationRequested", null, null).size());
+            request.setAttribute("refundEligibleCount", refundInvoices.size());
 
             // Lấy danh sách lịch hẹn theo trạng thái đang chọn (Mặc định: Pending - Chờ tiếp đón)
             List<Appointment> appointments = appointmentDAO.getStaffAppointments(queryDate, filterStatus, doctorId, keyword);
@@ -231,6 +234,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
         String action = request.getParameter("action");
         HttpSession session = request.getSession();
 
@@ -245,7 +249,9 @@ public class StaffAppointmentListServlet extends HttpServlet {
                     ? "Đã duyệt hủy lịch #APT-" + id + ". Có thể tạo yêu cầu hoàn tiền."
                     : "Yêu cầu hủy không hợp lệ hoặc bệnh nhân đã check-in.");
             } catch (Exception e) { session.setAttribute("errorMessage", "Không thể duyệt yêu cầu hủy lịch."); }
-            response.sendRedirect(request.getContextPath() + "/staff/appointments?date=all");
+            String idFilter = request.getParameter("appointmentId");
+            String keyword = idFilter != null && idFilter.matches("[0-9]+") ? idFilter : "";
+            response.sendRedirect(request.getContextPath() + "/staff/appointments?date=all&status=all&keyword=" + keyword);
             return;
         }
         if ("checkin".equalsIgnoreCase(action)) {
@@ -313,6 +319,8 @@ public class StaffAppointmentListServlet extends HttpServlet {
                     boolean success = appointmentDAO.cancelAppointment(apptId, reason.trim());
                     if (success) {
                         session.setAttribute("successMessage", "Đã hủy lịch hẹn (#APT-" + apptId + ") thành công! Ca khám của bác sĩ đã được giải phóng.");
+                        response.sendRedirect(request.getContextPath() + "/staff/appointments?date=all&status=Canceled&keyword=" + apptId);
+                        return;
                     } else {
                         session.setAttribute("errorMessage", "Không thể hủy lịch hẹn #" + apptId + ". Ca có thể đã được bác sĩ gọi vào khám hoặc đã hoàn tất; vui lòng tải lại danh sách.");
                     }

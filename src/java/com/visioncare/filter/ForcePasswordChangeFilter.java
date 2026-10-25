@@ -39,7 +39,9 @@ public class ForcePasswordChangeFilter implements Filter {
             
             if (!isChangePasswordUrl) {
                 // Redirect to change password page if they try to access anything else
-                httpResponse.sendRedirect(contextPath + "/views/profile/change-password.jsp?force=true");
+                if (com.visioncare.util.InvoicePollingResponse.isRequested(httpRequest))
+                    com.visioncare.util.InvoicePollingResponse.send(httpResponse,403,"Forbidden","Tài khoản cần hoàn tất đổi mật khẩu trước khi tiếp tục.");
+                else httpResponse.sendRedirect(contextPath + "/views/profile/change-password.jsp?force=true");
                 return;
             }
         }

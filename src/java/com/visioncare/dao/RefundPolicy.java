@@ -6,6 +6,15 @@ public final class RefundPolicy {
     public static final String APPROVED = "Đã duyệt hủy trước tiếp đón: ";
     public static final String REQUESTED = "Yêu cầu hủy lịch: ";
     public static final String DOCTOR_UNAVAILABLE = "Bác sĩ đổi lịch, không thể sắp xếp lịch khám khác cho bệnh nhân";
+    public static final String PATIENT_AT_COUNTER = "Bệnh nhân yêu cầu hủy trực tiếp tại quầy trước check-in";
+    public static boolean isRefundableCancellationReason(String reason) {
+        if (reason == null) return false;
+        String value = reason.trim();
+        return value.startsWith("Đã duyệt yêu cầu hủy lịch") || value.equals(DOCTOR_UNAVAILABLE)
+                || value.equals(PATIENT_AT_COUNTER)
+                || value.equals("Liên hệ nhưng bệnh nhân báo bận không đến khám")
+                || value.equals("Bệnh nhân không có nhu cầu khám nữa");
+    }
     /** Recognize cancellation requests from both the current and the previous workflow. */
     public static final String CANCELLATION_REQUESTED = "a.Status = 'Pending' AND a.checkin_time IS NULL AND ("
         + "EXISTS (SELECT 1 FROM Medical_Record cm WHERE cm.Appointment_ID = a.Appointment_ID "

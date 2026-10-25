@@ -448,25 +448,13 @@ public class StaffWaitingListServlet extends HttpServlet {
                         return;
                     }
 
-                    User currentUser = (User) session.getAttribute("user");
-                    int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
-
-                    boolean success = appointmentDAO.completeAppointmentByStaff(apptId, staffEmployeeId, paymentGateway);
-                    if (success) {
-                        if ("1".equals(request.getParameter("ajax"))) {
-                            response.setContentType("application/json;charset=UTF-8");
-                            response.getWriter().write("{\"success\":true,\"message\":\"Đã thanh toán phần còn lại và hoàn tất lịch hẹn (#APT-" + apptId + ") thành công!\"}");
-                            return;
-                        }
-                        session.setAttribute("successMessage", "Đã thanh toán và hoàn tất lịch hẹn cho bệnh nhân (#APT-" + apptId + ").");
-                    } else {
-                        if ("1".equals(request.getParameter("ajax"))) {
-                            response.setContentType("application/json;charset=UTF-8");
-                            response.getWriter().write("{\"success\":false,\"message\":\"Không thể hoàn tất lịch hẹn #APT-" + apptId + "\"}");
-                            return;
-                        }
-                        session.setAttribute("errorMessage", "Không thể hoàn tất lịch hẹn: #APT-" + apptId);
-                    }
+                    int invoiceId = new com.visioncare.dao.StaffInvoiceDAO().invoiceForAppointment(apptId);
+                    String target = request.getContextPath() + "/staff/invoices/checkout?id=" + invoiceId;
+                    if ("1".equals(request.getParameter("ajax"))) {
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.getWriter().write("{\"success\":true,\"redirect\":\"" + escapeJson(target) + "\"}");
+                    } else response.sendRedirect(target);
+                    return;
                 } catch (Exception e) {
                     e.printStackTrace();
                     if ("1".equals(request.getParameter("ajax"))) {

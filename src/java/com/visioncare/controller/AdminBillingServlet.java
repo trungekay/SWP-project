@@ -269,6 +269,11 @@ public class AdminBillingServlet extends HttpServlet {
             return;
         }
 
+        if (isStaffPage(request) && "update-status".equalsIgnoreCase(action) && idParam != null) {
+            try { response.sendRedirect(request.getContextPath() + "/staff/invoices/checkout?id=" + Integer.parseInt(idParam)); }
+            catch (NumberFormatException error) { response.sendError(400); }
+            return;
+        }
         if ("update-status".equalsIgnoreCase(action) && idParam != null) {
             try {
                 int invoiceId = Integer.parseInt(idParam);

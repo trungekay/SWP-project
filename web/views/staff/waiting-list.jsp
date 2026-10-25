@@ -1097,7 +1097,7 @@
                                             if (completeBtn) {
                                                 completeBtn.disabled = false;
                                                 completeBtn.className = 'btn btn-warning btn-sm px-3.5 py-1.5 fw-semibold shadow-sm text-dark';
-                                                completeBtn.innerHTML = '<i class="bi bi-cash-coin me-1.5"></i> Thu ' + (data.balanceDueFmt || '') + ' & Hoàn tất lịch hẹn';
+                                                completeBtn.innerHTML = '<i class="bi bi-receipt me-1.5"></i> Đối chiếu & Thanh toán hóa đơn';
                                             }
                                             if (footerNote) {
                                                 footerNote.innerHTML = '<i class="bi bi-exclamation-circle text-warning me-1"></i>Bác sĩ đã khám xong. Vui lòng thu phần còn lại <strong>' + (data.balanceDueFmt || '') + '</strong> và bấm hoàn tất.';
@@ -1107,12 +1107,12 @@
                                             if (noticeBox) noticeBox.classList.remove('d-none');
 
                                             if (completeBtn) {
-                                                completeBtn.disabled = true;
+                                                completeBtn.disabled = false;
                                                 completeBtn.className = 'btn btn-success btn-sm px-3.5 py-1.5 fw-semibold shadow-sm';
-                                                completeBtn.innerHTML = '<i class="bi bi-check2-circle me-1.5"></i> Lịch hẹn đã hoàn tất';
+                                                completeBtn.innerHTML = '<i class="bi bi-receipt me-1.5"></i> Đối chiếu hóa đơn tổng';
                                             }
                                             if (footerNote) {
-                                                footerNote.innerHTML = '<i class="bi bi-check-circle text-success me-1"></i>Ca khám và viện phí đã hoàn tất toàn bộ.';
+                                                footerNote.innerHTML = '<i class="bi bi-check-circle text-success me-1"></i>Bác sĩ đã kết thúc khám. Đối chiếu hóa đơn tổng trước khi chốt thanh toán.';
                                             }
                                         }
                                     }
@@ -1196,6 +1196,7 @@
                         })
                             .then(function (res) { return res.json(); })
                             .then(function (result) {
+                                if (result && result.redirect) { window.location.href = result.redirect; return; }
                                 if (result && result.success) {
                                     var modalElem = document.getElementById('postExamModal');
                                     if (modalElem) {
