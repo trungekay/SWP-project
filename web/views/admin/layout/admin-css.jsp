@@ -113,10 +113,15 @@
         gap: 8px;
         font-family: 'Inter', sans-serif;
     }
-    .sidebar-submenu li a:hover, .sidebar-submenu li a.active {
+    .sidebar-submenu li a.active {
         color: var(--primary-color);
         background-color: #f0f7f6;
         font-weight: 600;
+    }
+    .sidebar-submenu li a:hover:not(.active) {
+        color: var(--text-muted) !important;
+        background-color: transparent !important;
+        font-weight: normal !important;
     }
 
     /* --- Main Content --- */

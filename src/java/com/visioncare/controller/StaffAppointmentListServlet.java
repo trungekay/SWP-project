@@ -176,7 +176,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
             int totalCount = allDayAppointments.size();
             long pendingCount = allDayAppointments.stream().filter(a -> a.isReadyForCheckIn() || a.isCancellationRequested()).count();
             long checkedInCount = allDayAppointments.stream().filter(a -> a.getCheckinTime() != null && !"Canceled".equalsIgnoreCase(a.getStatus())).count();
-            long completedCount = allDayAppointments.stream().filter(a -> "Completed".equalsIgnoreCase(a.getStatus())).count();
+            long completedCount = allDayAppointments.stream().filter(a -> "Completed".equalsIgnoreCase(a.getEffectiveStatus())).count();
             long canceledCount = allDayAppointments.stream().filter(a -> "Canceled".equalsIgnoreCase(a.getStatus())).count();
 
             // Lấy danh sách lịch hẹn theo trạng thái đang chọn (Mặc định: Pending - Chờ tiếp đón)
@@ -248,6 +248,48 @@ public class StaffAppointmentListServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/staff/appointments?date=all");
             return;
         }
+
+        if ("confirmHandover".equalsIgnoreCase(action) || "completeAppointment".equalsIgnoreCase(action)) {
+            String apptIdParam = request.getParameter("appointmentId");
+            String paymentGateway = request.getParameter("paymentGateway");
+            if (paymentGateway == null || paymentGateway.trim().isEmpty()) {
+                paymentGateway = "Cash";
+            }
+
+            if (apptIdParam != null && !apptIdParam.trim().isEmpty()) {
+                try {
+                    int apptId = Integer.parseInt(apptIdParam.trim());
+                    Appointment checkAppt = appointmentDAO.getAppointmentById(apptId);
+                    if (checkAppt == null) {
+                        session.setAttribute("errorMessage", "Không tìm thấy lịch hẹn #APT-" + apptId);
+                        String returnUrl = request.getParameter("returnUrl");
+                        response.sendRedirect(returnUrl != null && !returnUrl.trim().isEmpty() && !returnUrl.contains(".jsp") ? returnUrl : (request.getContextPath() + "/staff/appointments"));
+                        return;
+                    }
+
+                    User currentUser = (User) session.getAttribute("user");
+                    int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
+
+                    boolean success = appointmentDAO.completeAppointmentByStaff(apptId, staffEmployeeId, paymentGateway);
+                    if (success) {
+                        session.setAttribute("successMessage", "Đã xác nhận thanh toán thành công và cập nhật hoàn thành cho bệnh nhân (#APT-" + apptId + ").");
+                    } else {
+                        session.setAttribute("errorMessage", "Không thể xác nhận hoàn tất cho ca khám #APT-" + apptId);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    session.setAttribute("errorMessage", "Lỗi xác nhận hoàn tất: " + e.getMessage());
+                }
+            }
+            String returnUrl = request.getParameter("returnUrl");
+            if (returnUrl != null && !returnUrl.trim().isEmpty() && !returnUrl.contains(".jsp")) {
+                response.sendRedirect(returnUrl);
+            } else {
+                response.sendRedirect(request.getContextPath() + "/staff/appointments");
+            }
+            return;
+        }
+
         if ("checkin".equalsIgnoreCase(action)) {
             String apptIdParam = request.getParameter("appointmentId");
             if (apptIdParam != null && !apptIdParam.trim().isEmpty()) {
