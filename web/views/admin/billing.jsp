@@ -271,8 +271,8 @@
                                                 <input type="hidden" name="orderId" value="${item.orderId}">
                                                 <input type="hidden" name="csrfToken" value="<c:out value='${procedurePaymentCsrf}' />">
                                                 <select name="paymentMethod" class="form-select form-select-sm" aria-label="Phương thức thanh toán">
-                                                    <option value="Cash_At_Counter">Tiền mặt</option>
-                                                    <option value="Bank_Transfer">Chuyển khoản</option>
+                                                    <option value="Cash">Tiền mặt</option>
+                                                    <option value="QR_Banking">Chuyển khoản</option>
                                                 </select>
                                                 <button class="btn btn-success btn-sm text-nowrap" type="submit">Xác nhận đã thu</button>
                                             </form>
@@ -595,7 +595,7 @@
                             <label class="form-label small fw-bold text-dark">Phương thức thanh toán</label>
                             <select class="form-select" name="paymentMethod" required>
                                 <option value="Cash">Tiền mặt (Cash)</option>
-                                <option value="VNPay">Cổng VNPay</option>
+                                <option value="QR_Banking">Chuyển khoản QR</option>
                                 <option value="Bank Transfer">Chuyển khoản ngân hàng</option>
                                 <option value="Credit Card">Thẻ tín dụng (POS)</option>
                             </select>
