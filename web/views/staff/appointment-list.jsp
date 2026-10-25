@@ -139,7 +139,7 @@
                                     </div>
                                     <div class="metric-info">
                                         <div class="metric-num">${canceledCount}</div>
-                                        <div class="metric-title text-secondary">Vắng mặt / Đã huỷ</div>
+                                        <div class="metric-title text-secondary">Đã hủy</div>
                                     </div>
                                 </a>
                             </div>
@@ -215,7 +215,7 @@
                                     </a>
                                     <a href="${pageContext.request.contextPath}/staff/appointments?date=${selectedDate}&status=Canceled&doctorId=${selectedDoctorId}&keyword=${param.keyword}"
                                         class="btn btn-sm ${selectedStatus == 'Canceled' ? 'btn-danger fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
-                                        <i class="bi bi-person-x-fill me-1"></i> Vắng mặt / Đã hủy (${canceledCount})
+                                        <i class="bi bi-person-x-fill me-1"></i> Đã hủy (${canceledCount})
                                     </a>
                                 </div>
                             </div>
@@ -362,8 +362,8 @@
                                                                 </c:when>
                                                                 <c:when test="${appt.status == 'Canceled'}">
                                                                     <span class="badge-status badge-canceled"
-                                                                        title="${not empty appt.medicalNotes ? appt.medicalNotes : 'Lịch hẹn đã hủy / vắng mặt'}">
-                                                                        Đã hủy / Vắng mặt
+                                                                        title="${not empty appt.medicalNotes ? appt.medicalNotes : 'Lịch hẹn đã hủy'}">
+                                                                        Đã hủy
                                                                     </span>
                                                                 </c:when>
                                                                 <c:otherwise>
@@ -445,8 +445,8 @@
                                                             <c:choose>
                                                                 <c:when test="${selectedStatus == 'Canceled'}">
                                                                     <i class="bi bi-check-circle fs-1 d-block mb-2 text-secondary"></i>
-                                                                    <p class="mb-1 fw-semibold text-dark">Không có ca khám nào bị hủy hoặc báo vắng mặt!</p>
-                                                                    <p class="small text-muted">Tất cả bệnh nhân đều đến đúng hẹn hoặc chưa phát sinh vắng mặt.</p>
+                                                                    <p class="mb-1 fw-semibold text-dark">Không có ca khám nào bị hủy!</p>
+                                                                    <p class="small text-muted">Tất cả bệnh nhân đều đến đúng hẹn hoặc chưa phát sinh hủy lịch.</p>
                                                                 </c:when>
                                                                 <c:when test="${selectedStatus == 'CheckedIn'}">
                                                                     <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
