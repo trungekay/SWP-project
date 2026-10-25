@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Yêu cầu Hoàn tiền - VisionCare Staff</title>
+    <title>Quản lý Yêu cầu Hoàn tiền - VisionCare</title>
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -237,7 +237,7 @@
 <body>
 
     <!-- Sidebar Include -->
-    <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
+    <jsp:include page="/views/director/layout/director-sidebar.jsp">
         <jsp:param name="activeNav" value="refunds" />
     </jsp:include>
 
@@ -252,7 +252,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
                 <div>
                     <h3 class="fw-bold mb-1" style="color: #0f172a;"><i class="bi bi-cash-coin me-2 text-teal"></i>Quản lý Yêu cầu Hoàn tiền</h3>
-                    <p class="text-muted small mb-0">Theo dõi, duyệt yêu cầu hoàn tiền từ bệnh nhân </p>
+                    <p class="text-muted small mb-0">Theo dõi, duyệt yêu cầu hoàn tiền từ bệnh nhân và nhân viên</p>
                 </div>
 
             </div>
@@ -332,10 +332,10 @@
                 <!-- Filters & Search -->
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-3 border-bottom">
                     <div class="d-flex gap-2 flex-wrap">
-                        <a href="${pageContext.request.contextPath}/admin/refunds?status=all" class="filter-tab ${currentStatus == 'all' ? 'active' : ''}">Tất cả</a>
-                        <a href="${pageContext.request.contextPath}/admin/refunds?status=Pending" class="filter-tab ${currentStatus == 'Pending' ? 'active' : ''}">Chờ duyệt (${stats.pending})</a>
-                        <a href="${pageContext.request.contextPath}/admin/refunds?status=Approved" class="filter-tab ${currentStatus == 'Approved' ? 'active' : ''}">Đã xác nhận (${stats.approved})</a>
-                        <a href="${pageContext.request.contextPath}/admin/refunds?status=Rejected" class="filter-tab ${currentStatus == 'Rejected' ? 'active' : ''}">Đã từ chối (${stats.rejected})</a>
+                        <a href="${pageContext.request.contextPath}/director/refunds?status=all" class="filter-tab ${currentStatus == 'all' ? 'active' : ''}">Tất cả</a>
+                        <a href="${pageContext.request.contextPath}/director/refunds?status=Pending" class="filter-tab ${currentStatus == 'Pending' ? 'active' : ''}">Chờ duyệt (${stats.pending})</a>
+                        <a href="${pageContext.request.contextPath}/director/refunds?status=Approved" class="filter-tab ${currentStatus == 'Approved' ? 'active' : ''}">Đã xác nhận (${stats.approved})</a>
+                        <a href="${pageContext.request.contextPath}/director/refunds?status=Rejected" class="filter-tab ${currentStatus == 'Rejected' ? 'active' : ''}">Đã từ chối (${stats.rejected})</a>
                     </div>
                     <div class="text-muted small">
                         Hiển thị <strong>${refunds.size()}</strong> yêu cầu
@@ -513,7 +513,7 @@
                     <h5 class="modal-title fw-bold text-success"><i class="bi bi-check-circle me-2"></i>Xác nhận duyệt hoàn tiền</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form action="${pageContext.request.contextPath}/admin/refunds" method="POST">
+                <form action="${pageContext.request.contextPath}/director/refunds" method="POST">
                     <input type="hidden" name="action" value="approve">
                     <input type="hidden" name="refundId" id="approveRefundId">
                     <div class="modal-body p-4">
@@ -556,7 +556,7 @@
                     <h5 class="modal-title fw-bold text-danger"><i class="bi bi-x-circle me-2"></i>Từ chối yêu cầu hoàn tiền</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form action="${pageContext.request.contextPath}/admin/refunds" method="POST">
+                <form action="${pageContext.request.contextPath}/director/refunds" method="POST">
                     <input type="hidden" name="action" value="reject">
                     <input type="hidden" name="refundId" id="rejectRefundId">
                     <div class="modal-body p-4">

@@ -211,6 +211,31 @@ public class PayOSUtil {
         return "UNKNOWN";
     }
 
+    public static class VerifiedReceipt {
+        public String status = "UNKNOWN";
+        public long orderCode, amount, amountPaid;
+    }
+
+    /** Read receipt only from the configured PayOS server; never trust browser return parameters. */
+    public static VerifiedReceipt getVerifiedReceipt(long orderCode) {
+        VerifiedReceipt result = new VerifiedReceipt();
+        if (CLIENT_ID.isEmpty() || API_KEY.isEmpty()) return result;
+        try {
+            HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(6)).build();
+            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(ENDPOINT + "/v2/payment-requests/" + orderCode))
+                    .header("x-client-id", CLIENT_ID).header("x-api-key", API_KEY).timeout(Duration.ofSeconds(10)).GET().build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            String json = response.body();
+            if (response.statusCode() != 200 || !"00".equals(extractJsonField(json, "code"))) return result;
+            result.orderCode = Long.parseLong(extractJsonField(json, "orderCode"));
+            result.amount = Long.parseLong(extractJsonField(json, "amount"));
+            String paid = extractJsonField(json, "amountPaid");
+            result.amountPaid = paid == null ? 0 : Long.parseLong(paid);
+            if (result.orderCode == orderCode) result.status = extractJsonField(json, "status");
+        } catch (Exception e) { System.err.println("Không xác minh được biên nhận checkout PayOS."); }
+        return result;
+    }
+
     private static String escapeJson(String raw) {
         if (raw == null) return "";
         return raw.replace("\\", "\\\\").replace("\"", "\\\"");

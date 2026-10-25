@@ -194,7 +194,9 @@ public class Appointment {
     }
 
     public boolean isAwaitingPayment() {
-        return "Pending".equalsIgnoreCase(status) && !isDepositPaid();
+        return "Pending".equalsIgnoreCase(status) && !isCancellationRequested()
+                && (invoiceStatus == null || invoiceStatus.isEmpty()
+                || "Pending_Deposit".equalsIgnoreCase(invoiceStatus) || "Unpaid".equalsIgnoreCase(invoiceStatus));
     }
 
     public boolean isReadyForCheckIn() {

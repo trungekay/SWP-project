@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@WebServlet(name = "AdminBillingServlet", urlPatterns = {"/admin/billing", "/admin/dashboard", "/staff/payments"})
+@WebServlet(name = "AdminBillingServlet", urlPatterns = {"/admin/billing", "/admin/dashboard", "/staff/payments", "/director/revenue", "/director/billing"})
 public class AdminBillingServlet extends HttpServlet {
 
     private final InvoiceDAO invoiceDAO = new InvoiceDAO();
@@ -28,8 +28,18 @@ public class AdminBillingServlet extends HttpServlet {
         return request.getServletPath().startsWith("/staff/");
     }
 
+    private boolean isDirectorPage(HttpServletRequest request) {
+        return request.getServletPath().startsWith("/director/");
+    }
+
     private String billingPath(HttpServletRequest request) {
-        return isStaffPage(request) ? "/staff/payments" : "/admin/billing";
+        if (isStaffPage(request)) {
+            return "/staff/payments";
+        }
+        if (isDirectorPage(request)) {
+            return "/director/revenue";
+        }
+        return "/admin/billing";
     }
 
     @Override
@@ -50,6 +60,16 @@ public class AdminBillingServlet extends HttpServlet {
 
         String action = request.getParameter("action");
         String format = request.getParameter("format");
+
+        if (isStaffPage(request)) {
+            String id = request.getParameter("id");
+            String target = "/staff/invoices";
+            if (id != null && id.matches("[1-9][0-9]*")) {
+                target += ("checkout".equalsIgnoreCase(action) ? "/checkout" : "/detail") + "?id=" + id;
+            }
+            response.sendRedirect(request.getContextPath() + target);
+            return;
+        }
 
         // AJAX API to get detail as JSON
         if ("detail".equalsIgnoreCase(action) && "json".equalsIgnoreCase(format)) {
@@ -200,6 +220,7 @@ public class AdminBillingServlet extends HttpServlet {
             request.setAttribute("procedureRequests", procedureRequests);
             request.setAttribute("procedurePaymentCsrf", csrf);
             request.setAttribute("staffBilling", isStaffPage(request));
+            request.setAttribute("directorBilling", isDirectorPage(request));
             request.setAttribute("billingPath", billingPath(request));
             request.setAttribute("search", search);
             request.setAttribute("status", status != null ? status : "all");
@@ -269,6 +290,11 @@ public class AdminBillingServlet extends HttpServlet {
             return;
         }
 
+        if (isStaffPage(request) && "update-status".equalsIgnoreCase(action) && idParam != null) {
+            try { response.sendRedirect(request.getContextPath() + "/staff/invoices/checkout?id=" + Integer.parseInt(idParam)); }
+            catch (NumberFormatException error) { response.sendError(400); }
+            return;
+        }
         if ("update-status".equalsIgnoreCase(action) && idParam != null) {
             try {
                 int invoiceId = Integer.parseInt(idParam);

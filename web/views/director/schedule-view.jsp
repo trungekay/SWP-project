@@ -166,7 +166,7 @@
                   <c:forEach var="emp" items="${employeeList}">
                     <a href="${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?empId=${emp.actorId}&year=${selectedYear}&week=${selectedWeek}&session=${sessionFilter}"
                        class="emp-item-card ${emp.actorId == selectedEmpId ? 'active' : ''}"
-                       data-search="${emp.fullName.toLowerCase()} ${emp.specialty.toLowerCase()} ${emp.phone}">
+                       data-search="${not empty emp.fullName ? fn:toLowerCase(emp.fullName) : ''} ${not empty emp.specialty ? fn:toLowerCase(emp.specialty) : ''} ${not empty emp.phone ? emp.phone : ''}">
                       <div class="d-flex align-items-start gap-2">
                         <div class="avatar-badge" style="width: 42px; height: 42px; min-width: 42px; font-size: 15px;">
                           ${fn:substring(emp.fullName, 0, 1)}
@@ -312,7 +312,7 @@
                         <c:forEach var="day" items="${weekDays}">
                           <th class="day-header ${day.today ? 'today-header' : ''}">
                             <div class="day-name fw-bold">${day.dayName}</div>
-                            <div class="day-date">${day.date}</div>
+                            <div class="day-date">${day.dateStr}</div>
                             <div class="badge bg-light text-muted fw-normal mt-1" style="font-size: 10px;">
                               ${day.totalSlotsCount} ca trực
                             </div>

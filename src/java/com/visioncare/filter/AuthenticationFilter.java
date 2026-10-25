@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 
-@WebFilter(urlPatterns = {"/my-appointments", "/profile/*", "/views/profile/*", "/book-appointment", "/admin/*", "/director", "/director/*", "/staff/*", "/employee/*", "/specialist/*", "/doctor/*"})
+@WebFilter(urlPatterns = {"/my-appointments", "/profile/*", "/views/profile/*", "/book-appointment", "/admin/*", "/director", "/director/*", "/views/director/*", "/views/staff/invoice-list.jsp", "/views/staff/invoice-detail.jsp", "/views/staff/invoice-export.jsp", "/views/admin/refund-management.jsp", "/views/employee/reschedule-requests.jsp", "/staff/*", "/employee/*", "/specialist/*", "/doctor/*"})
 public class AuthenticationFilter implements Filter {
 
     @Override
@@ -27,6 +27,12 @@ public class AuthenticationFilter implements Filter {
                 
                 // 2. Fix Authorization Bypass for Admin
                 String uri = httpRequest.getRequestURI();
+                if (java.util.Set.of("/views/staff/invoice-list.jsp", "/views/staff/invoice-detail.jsp", "/views/staff/invoice-export.jsp")
+                        .contains(uri.substring(httpRequest.getContextPath().length()))) {
+                    httpResponse.sendRedirect(httpRequest.getContextPath() + "/staff/invoices");
+                    return;
+                }
+
                 if (uri.startsWith(httpRequest.getContextPath() + "/admin/")) {
                     com.visioncare.model.User sessionUser = (com.visioncare.model.User) session.getAttribute("user");
                     if (sessionUser.getRoleId() != 1 && sessionUser.getRoleId() != 2) {
@@ -35,7 +41,10 @@ public class AuthenticationFilter implements Filter {
                     }
                 }
 
-                if (uri.equals(httpRequest.getContextPath() + "/director") || uri.startsWith(httpRequest.getContextPath() + "/director/")) {
+                if (uri.equals(httpRequest.getContextPath() + "/director") || uri.startsWith(httpRequest.getContextPath() + "/director/")
+                        || uri.startsWith(httpRequest.getContextPath() + "/views/director/")
+                        || uri.equals(httpRequest.getContextPath() + "/views/admin/refund-management.jsp")
+                        || uri.equals(httpRequest.getContextPath() + "/views/employee/reschedule-requests.jsp")) {
                     com.visioncare.model.User sessionUser = (com.visioncare.model.User) session.getAttribute("user");
                     if (sessionUser == null || (sessionUser.getRoleId() != 2 && sessionUser.getRoleId() != 1 && !"director".equalsIgnoreCase(sessionUser.getRole()))) {
                         httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập trang Giám đốc.");
@@ -46,7 +55,9 @@ public class AuthenticationFilter implements Filter {
                 if (uri.startsWith(httpRequest.getContextPath() + "/staff/")) {
                     com.visioncare.model.User sessionUser = (com.visioncare.model.User) session.getAttribute("user");
                     if (sessionUser.getRoleId() != 5 && sessionUser.getRoleId() != 1 && sessionUser.getRoleId() != 2) {
-                        httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập trang này.");
+                        if (com.visioncare.util.InvoicePollingResponse.isRequested(httpRequest))
+                            com.visioncare.util.InvoicePollingResponse.send(httpResponse,403,"Forbidden","Bạn không có quyền xem hóa đơn.");
+                        else httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập trang này.");
                         return;
                     }
                 }
@@ -70,8 +81,13 @@ public class AuthenticationFilter implements Filter {
                 
                 chain.doFilter(request, response);
         } else {
+            if (com.visioncare.util.InvoicePollingResponse.isRequested(httpRequest)) {
+                com.visioncare.util.InvoicePollingResponse.send(httpResponse,401,"Unauthenticated","Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                return;
+            }
             String requestURI = httpRequest.getRequestURI();
-            httpRequest.getSession().setAttribute("redirectAfterLogin", requestURI);
+            String query = httpRequest.getQueryString();
+            httpRequest.getSession().setAttribute("redirectAfterLogin", requestURI + (query == null || query.isEmpty() ? "" : "?" + query));
             httpResponse.sendRedirect(httpRequest.getContextPath() + "/login");
         }
     }

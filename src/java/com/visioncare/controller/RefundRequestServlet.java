@@ -35,7 +35,7 @@ public class RefundRequestServlet extends HttpServlet {
 
         if (amountParam != null && !amountParam.trim().isEmpty()) {
             try {
-                long amount = Long.parseLong(amountParam.replaceAll("[^0-9]", ""));
+                long amount = Long.parseLong(amountParam.trim());
                 boolean ok = false;
                 if (appointmentIdParam != null && !appointmentIdParam.trim().isEmpty()) {
                     int apptId = Integer.parseInt(appointmentIdParam.replaceAll("[^0-9]", ""));

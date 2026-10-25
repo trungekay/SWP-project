@@ -45,6 +45,14 @@ public class CancellationRequestTest {
         if (!paidPending.isCancellationRequested()) throw new AssertionError("Legacy cancellation must show waiting for cancellation approval");
         paidPending.setCheckinTime("2026-10-19 08:00:00");
         if (paidPending.isCancellationRequested()) throw new AssertionError("Cannot request cancellation after check-in");
+        for (String invoice : new String[]{"Paid", "Partial_Paid", "Refunded", "Canceled"}) {
+            Appointment booking = new Appointment(); booking.setStatus("Pending"); booking.setInvoiceStatus(invoice);
+            if (booking.isAwaitingPayment()) throw new AssertionError("No payment button for invoice " + invoice);
+        }
+        for (String invoice : new String[]{"Pending_Deposit", "Unpaid"}) {
+            Appointment booking = new Appointment(); booking.setStatus("Pending"); booking.setInvoiceStatus(invoice);
+            if (!booking.isAwaitingPayment()) throw new AssertionError("Unpaid deposit should offer payment");
+        }
         System.out.println("PASS: 12 cancellation SQL fixtures and paid-booking display states.");
     }
 }

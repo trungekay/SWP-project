@@ -327,6 +327,34 @@ public class RefundDAO {
         return list;
     }
 
+    /** Existing requests are visible to reception without permitting a duplicate refund. */
+    public Map<Integer, Map<String, Object>> getActiveRefundsForStaffAppointments() {
+        Map<Integer, Map<String, Object>> results = new HashMap<>();
+        String sql = "SELECT i.Appointment_ID, i.Invoice_ID, r.Refund_ID, r.Status, r.Refund_Amount, r.Reason "
+                + "FROM Refund_Request r JOIN Master_Invoice i ON i.Invoice_ID = r.Invoice_ID "
+                + "JOIN Appointment a ON a.Appointment_ID = i.Appointment_ID "
+                + "WHERE a.Status = 'Canceled' AND a.checkin_time IS NULL "
+                + "AND r.Status IN ('Pending', 'Approved') ORDER BY r.Refund_ID DESC";
+        try (Connection conn = DBContext.getConnection(); PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                int appointmentId = rs.getInt("Appointment_ID");
+                if (results.containsKey(appointmentId)) continue;
+                Map<String, Object> refund = new HashMap<>();
+                refund.put("id", rs.getInt("Refund_ID"));
+                refund.put("code", String.format("#REF-%03d", rs.getInt("Refund_ID")));
+                refund.put("invoiceCode", String.format("#INV-%05d", rs.getInt("Invoice_ID")));
+                refund.put("status", rs.getString("Status"));
+                refund.put("statusLabel", "Pending".equals(rs.getString("Status")) ? "Chờ giám đốc duyệt" : "Đã duyệt hoàn tiền");
+                refund.put("amount", rs.getLong("Refund_Amount"));
+                refund.put("amountLabel", String.format("%,d đ", rs.getLong("Refund_Amount")));
+                refund.put("reason", rs.getString("Reason"));
+                results.put(appointmentId, refund);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return results;
+    }
+
     private String getStatusVn(String st) {
         if ("Pending".equalsIgnoreCase(st)) return "Chờ duyệt";
         if ("Approved".equalsIgnoreCase(st)) return "Đã xác nhận";

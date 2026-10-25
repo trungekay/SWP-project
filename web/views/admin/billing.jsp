@@ -193,6 +193,11 @@
 
     <!-- Sidebar Include -->
     <c:choose>
+        <c:when test="${directorBilling}">
+            <jsp:include page="/views/director/layout/director-sidebar.jsp">
+                <jsp:param name="activeNav" value="revenue" />
+            </jsp:include>
+        </c:when>
         <c:when test="${staffBilling}">
             <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
                 <jsp:param name="activeNav" value="payments" />
@@ -210,6 +215,7 @@
         
         <!-- Header Include -->
         <c:choose>
+            <c:when test="${directorBilling}"><jsp:include page="/views/employee/layout/employee-header.jsp" /></c:when>
             <c:when test="${staffBilling}"><jsp:include page="/views/employee/layout/employee-header.jsp" /></c:when>
             <c:otherwise><jsp:include page="/views/admin/layout/admin-header.jsp" /></c:otherwise>
         </c:choose>
@@ -502,6 +508,10 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="d-inline-flex gap-1">
+                                                    <c:choose><c:when test="${billingPath == '/staff/payments'}">
+                                                        <a class="action-icon-btn" href="${pageContext.request.contextPath}/staff/invoices/detail?id=${inv.id}" title="Xem hóa đơn tổng"><i class="bi bi-receipt"></i></a>
+                                                        <c:if test="${inv.status != 'Refunded' && inv.status != 'Canceled'}"><a class="action-icon-btn text-success" href="${pageContext.request.contextPath}/staff/invoices/checkout?id=${inv.id}" title="Đối chiếu và thanh toán"><i class="bi bi-credit-card"></i></a></c:if>
+                                                    </c:when><c:otherwise>
                                                     <button type="button" class="action-icon-btn" onclick="openInvoiceDetail(${inv.id})" title="Xem chi tiết hóa đơn">
                                                         <i class="bi bi-eye"></i>
                                                     </button>
@@ -510,6 +520,7 @@
                                                             <i class="bi bi-check2-circle"></i>
                                                         </button>
                                                     </c:if>
+                                                    </c:otherwise></c:choose>
                                                 </div>
                                             </td>
                                         </tr>

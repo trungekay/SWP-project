@@ -96,6 +96,9 @@
                                             <h3 class="mb-0 fw-bold text-dark">${appointment.patientName}</h3>
                                             <span class="badge bg-light text-dark border">#APT-${appointment.id}</span>
                                             <c:choose>
+                                                <c:when test="${appointment.cancellationRequested}">
+                                                    <span class="badge-status badge-pending">Chờ duyệt hủy</span>
+                                                </c:when>
                                                 <c:when test="${appointment.awaitingPayment}">
                                                     <span class="badge-status badge-pending" title="Chưa xác nhận thanh toán phí khám">Chờ thanh toán</span>
                                                 </c:when>
@@ -111,7 +114,7 @@
                                                 <c:when test="${appointment.status == 'In_Progress'}">
                                                     <span class="badge-status badge-in-progress" title="Bác sĩ đang thực hiện khám">Đang khám</span>
                                                 </c:when>
-                                                <c:when test="${appointment.status == 'Completed'}">
+                                        <c:when test="${appointment.status == 'Completed'}">
                                                     <span class="badge-status badge-completed" title="Ca khám đã hoàn thành">Đã khám xong</span>
                                                 </c:when>
                                                 <c:when test="${appointment.status == 'Canceled'}">
@@ -138,6 +141,13 @@
                                 <c:set var="isPastAppt" value="${not empty apptDateStr && apptDateStr < currentDateStr}" />
                                 <div class="d-flex align-items-center gap-2">
                                     <c:choose>
+                                                <c:when test="${appointment.cancellationRequested}">
+                                            <form action="${pageContext.request.contextPath}/staff/appointments" method="post">
+                                                <input type="hidden" name="action" value="approveCancellation">
+                                                <input type="hidden" name="appointmentId" value="${appointment.id}">
+                                                <button type="submit" class="btn btn-teal"><i class="bi bi-check2-circle me-1"></i>Duyệt yêu cầu hủy lịch</button>
+                                            </form>
+                                        </c:when>
                                         <c:when test="${appointment.status == 'Completed'}">
                                             <a href="${pageContext.request.contextPath}/profile/medical-record?id=${appointment.id}"
                                                 class="btn btn-teal shadow-sm" target="_blank" title="Xem chi tiết phiếu kết quả khám bệnh">
@@ -764,11 +774,13 @@
                                         <label class="form-label small fw-semibold text-dark mb-1.5">
                                             Lý do hủy lịch <span class="text-danger">*</span>
                                         </label>
-                                        <select name="cancelReasonSelect" id="cancelReasonSelect"
+                                        <select name="cancelReasonSelect" id="cancelReasonSelect" required
                                             class="form-select form-select-sm shadow-none mb-2"
                                             style="border-radius: 8px; font-size: 13.5px;"
                                             onchange="toggleCustomReason(this)">
-                                            <option value="Liên hệ nhưng bệnh nhân báo bận không đến khám">Liên hệ nhưng bệnh nhân báo bận không đến khám</option>
+                                            <option value="" disabled selected>-- Chọn lý do hủy lịch --</option>
+                                            <option value="Bệnh nhân yêu cầu hủy trực tiếp tại quầy trước check-in">Bệnh nhân yêu cầu hủy trực tiếp tại quầy trước check-in (Staff xác nhận)</option>
+                                            <option value="Liên hệ nhưng bệnh nhân báo bận không đến khám">Bệnh nhân hủy đột xuất trước check-in (Staff xác nhận)</option>
                                             <option value="Bệnh nhân báo bận, yêu cầu đổi lịch sang ngày khác">Bệnh nhân
                                                 báo bận, yêu cầu đổi lịch sang ngày khác</option>
                                             <option value="Bệnh nhân không có nhu cầu khám nữa">Bệnh nhân không có nhu
