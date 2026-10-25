@@ -35,7 +35,9 @@ public class GlobalSessionFilter implements Filter {
                 if (dbUser == null || "Inactive".equalsIgnoreCase(dbUser.getStatus()) || "Deleted".equalsIgnoreCase(dbUser.getStatus())) {
                     session.invalidate();
                     HttpServletResponse httpResponse = (HttpServletResponse) response;
-                    httpResponse.sendRedirect(httpRequest.getContextPath() + "/login?error=locked");
+                    if (com.visioncare.util.InvoicePollingResponse.isRequested(httpRequest))
+                        com.visioncare.util.InvoicePollingResponse.send(httpResponse,401,"Unauthenticated","Phiên đăng nhập không còn hiệu lực.");
+                    else httpResponse.sendRedirect(httpRequest.getContextPath() + "/login?error=locked");
                     return;
                 } else {
                     session.setAttribute("user", dbUser);

@@ -13,8 +13,6 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.List;
-import java.util.Map;
 
 @WebServlet(name = "StaffRefundServlet", urlPatterns = {"/staff/refunds", "/admin/refunds", "/admin/reschedule-requests"})
 public class StaffRefundServlet extends HttpServlet {
@@ -40,35 +38,11 @@ public class StaffRefundServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
-        if ("/admin/reschedule-requests".equals(request.getServletPath())) {
-            request.getRequestDispatcher("/views/employee/reschedule-requests.jsp").forward(request, response);
-            return;
-        }
-        String statusFilter = request.getParameter("status");
-        if (statusFilter == null || statusFilter.isEmpty()) {
-            statusFilter = "all";
-        }
-
-        List<Map<String, Object>> refunds = refundDAO.getAllRefundRequests(statusFilter);
-        Map<String, Object> stats = refundDAO.getRefundStats();
-        List<Map<String, Object>> availableInvoices = refundDAO.getInvoicesForStaffRefundSelection();
-
-        request.setAttribute("refunds", refunds);
-        request.setAttribute("stats", stats);
-        request.setAttribute("availableInvoices", availableInvoices);
-        request.setAttribute("currentStatus", statusFilter);
-
-        // Flash messages
-        if (session.getAttribute("successMessage") != null) {
-            request.setAttribute("successMessage", session.getAttribute("successMessage"));
-            session.removeAttribute("successMessage");
-        }
-        if (session.getAttribute("errorMessage") != null) {
-            request.setAttribute("errorMessage", session.getAttribute("errorMessage"));
-            session.removeAttribute("errorMessage");
-        }
-
-        request.getRequestDispatcher("/views/admin/refund-management.jsp").forward(request, response);
+        String destination = "/admin/reschedule-requests".equals(request.getServletPath())
+                ? "/director/reschedule-requests" : "/director/refunds";
+        String status = request.getParameter("status");
+        if (status != null) destination += "?status=" + java.net.URLEncoder.encode(status, java.nio.charset.StandardCharsets.UTF_8);
+        response.sendRedirect(request.getContextPath() + destination);
     }
 
     @Override
@@ -93,6 +67,10 @@ public class StaffRefundServlet extends HttpServlet {
             return;
         }
         int employeeId = getEmployeeId(currentUser.getId());
+        if (employeeId <= 0) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Tài khoản chưa có hồ sơ nhân viên.");
+            return;
+        }
 
         try {
             if ("approve".equalsIgnoreCase(action)) {
@@ -115,7 +93,7 @@ public class StaffRefundServlet extends HttpServlet {
             } else if ("create".equalsIgnoreCase(action)) {
                 int invoiceId = Integer.parseInt(request.getParameter("invoiceId"));
                 int patientId = Integer.parseInt(request.getParameter("patientId"));
-                long amount = Long.parseLong(request.getParameter("amount").replaceAll("[^0-9]", ""));
+                long amount = Long.parseLong(request.getParameter("amount").trim());
                 String reason = request.getParameter("reason");
                 String initialStatus = "Pending";
 
@@ -131,7 +109,7 @@ public class StaffRefundServlet extends HttpServlet {
             session.setAttribute("errorMessage", "Lỗi: " + e.getMessage());
         }
 
-        response.sendRedirect(request.getContextPath() + (creating ? "/staff/appointments" : "/admin/refunds"));
+        response.sendRedirect(request.getContextPath() + (creating ? "/staff/appointments" : "/director/refunds"));
     }
 
     private int getEmployeeId(int accountId) {
@@ -143,6 +121,6 @@ public class StaffRefundServlet extends HttpServlet {
                 if (rs.next()) return rs.getInt(1);
             }
         } catch (Exception ignored) {}
-        return 1;
+        return 0;
     }
 }

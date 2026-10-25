@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet(name = "DirectorRefundServlet", urlPatterns = {"/director/refunds"})
+@WebServlet(name = "DirectorRefundServlet", urlPatterns = {"/director/refunds", "/director/reschedule-requests"})
 public class DirectorRefundServlet extends HttpServlet {
 
     private final RefundDAO refundDAO = new RefundDAO();
@@ -63,7 +63,9 @@ public class DirectorRefundServlet extends HttpServlet {
         request.setAttribute("stats", stats);
         request.setAttribute("currentStatus", statusFilter);
 
-        request.getRequestDispatcher("/views/director/refund-requests.jsp").forward(request, response);
+        String view = "/director/reschedule-requests".equals(request.getServletPath())
+                ? "/views/employee/reschedule-requests.jsp" : "/views/director/refund-requests.jsp";
+        request.getRequestDispatcher(view).forward(request, response);
     }
 
     @Override
@@ -83,7 +85,15 @@ public class DirectorRefundServlet extends HttpServlet {
             return;
         }
 
-        int directorEmployeeId = currentUser.getActorId() > 0 ? currentUser.getActorId() : 2;
+        if (!"/director/refunds".equals(request.getServletPath())) {
+            response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            return;
+        }
+        int directorEmployeeId = getEmployeeId(currentUser.getId());
+        if (directorEmployeeId <= 0) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Tài khoản chưa có hồ sơ nhân viên để duyệt yêu cầu.");
+            return;
+        }
         String action = request.getParameter("action");
 
         try {
@@ -111,5 +121,12 @@ public class DirectorRefundServlet extends HttpServlet {
         }
 
         response.sendRedirect(request.getContextPath() + "/director/refunds");
+    }
+    private int getEmployeeId(int accountId) {
+        try (java.sql.Connection conn = com.visioncare.dao.DBContext.getConnection();
+             java.sql.PreparedStatement ps = conn.prepareStatement("SELECT Employee_ID FROM Employee_Profile WHERE Account_ID = ?")) {
+            ps.setInt(1, accountId);
+            try (java.sql.ResultSet rs = ps.executeQuery()) { return rs.next() ? rs.getInt(1) : 0; }
+        } catch (Exception e) { log("Cannot resolve refund approver", e); return 0; }
     }
 }

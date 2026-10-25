@@ -246,6 +246,8 @@ public class InvoiceDAO {
      * Get full detailed invoice with items, patient, doctor and transactions
      */
     public Map<String, Object> getInvoiceDetail(int invoiceId) {
+        Map<String, Object> finalized = getFinalizedCheckoutDetail(invoiceId);
+        if (finalized != null) return finalized;
         Map<String, Object> invoice = null;
 
         String sqlInv = "SELECT i.Invoice_ID, i.Appointment_ID, i.Total_Amount, i.Deposit_Amount, i.Balance_Due, i.Status, i.Create_At, i.Close_At, " +
@@ -512,6 +514,31 @@ public class InvoiceDAO {
         return invoice;
     }
 
+    private Map<String, Object> getFinalizedCheckoutDetail(int id) {
+        String sql = "SELECT p.Account_ID,p.Patient_ID,p.DOB,p.Address,acc.Email,e.Full_Name,co.Finalized_At,co.Payment_Method "
+                + "FROM Invoice_Checkout co JOIN Master_Invoice i ON i.Invoice_ID=co.Invoice_ID "
+                + "JOIN Appointment a ON a.Appointment_ID=i.Appointment_ID JOIN Patient p ON p.Patient_ID=a.Patient_ID "
+                + "LEFT JOIN Account acc ON acc.Account_ID=p.Account_ID JOIN Work_Schedule ws ON ws.Schedule_ID=a.Schedule_ID "
+                + "LEFT JOIN Employee_Profile e ON e.Employee_ID=ws.Doctor_Employee_ID WHERE co.Invoice_ID=? AND co.Finalized_At IS NOT NULL";
+        try (Connection c=DBContext.getConnection(); PreparedStatement ps=c.prepareStatement(sql)) {
+            ps.setInt(1,id);
+            try (ResultSet r=ps.executeQuery()) {
+                if(!r.next()) return null;
+                com.visioncare.model.StaffInvoice bill=new StaffInvoiceDAO().get(id);
+                Map<String,Object> out=new HashMap<>();
+                out.put("id",id);out.put("formattedId",String.format("#INV-%05d",id));out.put("appointmentId",bill.appointmentId);
+                out.put("accountId",r.getInt("Account_ID"));out.put("patientId",r.getInt("Patient_ID"));out.put("patientName",bill.patientName);out.put("patientPhone",bill.phone);
+                out.put("patientDob",r.getDate("DOB")!=null?dateOnlyFormat.format(r.getDate("DOB")):"");out.put("patientAddress",r.getString("Address"));out.put("patientEmail",r.getString("Email"));out.put("doctorName",r.getString("Full_Name"));
+                out.put("totalAmount",bill.getTotal());out.put("totalAmountFmt",formatVND(bill.getTotal()));out.put("depositAmount",bill.paid);out.put("depositAmountFmt",formatVND(bill.paid));out.put("balanceDue",bill.getDue());out.put("balanceDueFmt",formatVND(bill.getDue()));
+                out.put("status",bill.invoiceStatus);out.put("statusVn",getStatusVn(bill.invoiceStatus));out.put("badgeClass",getBadgeClass(bill.invoiceStatus));out.put("closeDate",dateFormat.format(r.getTimestamp("Finalized_At")));out.put("createDate",bill.date);out.put("paymentMethod",r.getString("Payment_Method"));
+                List<Map<String,Object>> lines=new ArrayList<>();int index=1;
+                for(com.visioncare.model.StaffInvoice.Item item:bill.items) if(!item.declined) {Map<String,Object> line=new HashMap<>();line.put("stt",index++);line.put("name",item.name);line.put("type",item.type);line.put("quantity",item.quantity);line.put("unitPrice",item.unitPrice);line.put("unitPriceFmt",formatVND(item.unitPrice));line.put("totalPrice",item.getAmount());line.put("totalPriceFmt",formatVND(item.getAmount()));lines.add(line);}
+                out.put("items",lines);List<Map<String,Object>> txs=new ArrayList<>();
+                for(Map<String,Object> entry:bill.transactions){Map<String,Object> tx=new HashMap<>(entry);tx.put("gateway",entry.get("method"));tx.put("amountFmt",formatVND((Long)entry.get("amount")));txs.add(tx);}out.put("transactions",txs);return out;
+            }
+        } catch(Exception error) {throw new IllegalStateException("Không đọc được bản hóa đơn đã chốt.",error);}
+    }
+
     /**
      * Get invoice detail for patient with security check (must belong to their account)
      */
@@ -537,6 +564,10 @@ public class InvoiceDAO {
         try {
             conn = DBContext.getConnection();
             conn.setAutoCommit(false);
+            try (PreparedStatement guard = conn.prepareStatement("SELECT Invoice_ID FROM Invoice_Checkout WITH(UPDLOCK,HOLDLOCK) WHERE Invoice_ID=?")) {
+                guard.setInt(1,invoiceId);
+                try(ResultSet row=guard.executeQuery()){if(row.next()){conn.rollback();return false;}}
+            }
 
             try (PreparedStatement ps = conn.prepareStatement(updateInv)) {
                 ps.setString(1, newStatus);

@@ -61,6 +61,16 @@ public class AdminBillingServlet extends HttpServlet {
         String action = request.getParameter("action");
         String format = request.getParameter("format");
 
+        if (isStaffPage(request)) {
+            String id = request.getParameter("id");
+            String target = "/staff/invoices";
+            if (id != null && id.matches("[1-9][0-9]*")) {
+                target += ("checkout".equalsIgnoreCase(action) ? "/checkout" : "/detail") + "?id=" + id;
+            }
+            response.sendRedirect(request.getContextPath() + target);
+            return;
+        }
+
         // AJAX API to get detail as JSON
         if ("detail".equalsIgnoreCase(action) && "json".equalsIgnoreCase(format)) {
             response.setContentType("application/json;charset=UTF-8");
@@ -280,6 +290,11 @@ public class AdminBillingServlet extends HttpServlet {
             return;
         }
 
+        if (isStaffPage(request) && "update-status".equalsIgnoreCase(action) && idParam != null) {
+            try { response.sendRedirect(request.getContextPath() + "/staff/invoices/checkout?id=" + Integer.parseInt(idParam)); }
+            catch (NumberFormatException error) { response.sendError(400); }
+            return;
+        }
         if ("update-status".equalsIgnoreCase(action) && idParam != null) {
             try {
                 int invoiceId = Integer.parseInt(idParam);

@@ -17,7 +17,7 @@
     <ul class="sidebar-menu">
         <c:choose>
             <%-- ==================== GIAO DIỆN DÀNH CHO STAFF / LỄ TÂN ==================== --%>
-            <c:when test="${empty sessionScope.user || fn:toLowerCase(sessionScope.user.role) == 'staff' || sessionScope.user.roleId == 5 || (fn:toLowerCase(sessionScope.user.role) != 'doctor' && fn:toLowerCase(sessionScope.user.role) != 'medical_specialist' && fn:toLowerCase(sessionScope.user.role) != 'specialist' && sessionScope.user.roleId != 3 && sessionScope.user.roleId != 4 && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'payments'))}">
+            <c:when test="${empty sessionScope.user || fn:toLowerCase(sessionScope.user.role) == 'staff' || sessionScope.user.roleId == 5 || (fn:toLowerCase(sessionScope.user.role) != 'doctor' && fn:toLowerCase(sessionScope.user.role) != 'medical_specialist' && fn:toLowerCase(sessionScope.user.role) != 'specialist' && sessionScope.user.roleId != 3 && sessionScope.user.roleId != 4 && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'payments' || param.activeNav == 'invoices'))}">
                 <div class="sidebar-menu-header">Bàn làm việc Nhân viên</div>
 
                 <!-- 1. Màn hình đặt lịch -->
@@ -53,15 +53,8 @@
                     </ul>
                 </li>
 
-                <!-- Quản lý thanh toán -->
-                <li>
-                    <a href="${pageContext.request.contextPath}/staff/payments" class="${param.activeNav == 'payments' ? 'active' : ''}">
-                        <i class="bi bi-credit-card"></i>
-                        <span>Quản lý thanh toán</span>
-                    </a>
-                </li>
+                <li><a href="${pageContext.request.contextPath}/staff/invoices" class="${param.activeNav == 'invoices' || param.activeNav == 'payments' ? 'active' : ''}"><i class="bi bi-receipt"></i><span>Quản lý hóa đơn &amp; thanh toán</span></a></li>
 
-                <!-- 4. Quản lý yêu cầu hoàn tiền -->
             </c:when>
 
             <%-- ==================== GIAO DIỆN DÀNH CHO BÁC SĨ & CHUYÊN VIÊN ==================== --%>
@@ -98,7 +91,7 @@
                 </c:if>
 
                 <%-- Fallback cho Admin xem trang Tiếp đón / Lễ tân --%>
-                <c:if test="${(fn:toLowerCase(sessionScope.user.role) == 'admin' || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2) && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'payments')}">
+                <c:if test="${(fn:toLowerCase(sessionScope.user.role) == 'admin' || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2) && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'payments' || param.activeNav == 'invoices')}">
                     <div class="sidebar-menu-header mt-3">Tiếp đón & Lễ tân</div>
                     <li>
                         <a href="${pageContext.request.contextPath}/employee/schedule" class="${param.activeNav == 'schedule' ? 'active' : ''}">
@@ -130,9 +123,9 @@
                         </ul>
                     </li>
                     <li>
-                        <a href="${pageContext.request.contextPath}/staff/payments" class="${param.activeNav == 'payments' ? 'active' : ''}">
+                        <a href="${pageContext.request.contextPath}/staff/invoices" class="${param.activeNav == 'payments' ? 'active' : ''}">
                             <i class="bi bi-credit-card"></i>
-                            <span>Quản lý thanh toán</span>
+                            <span>Quản lý hóa đơn &amp; thanh toán</span>
                         </a>
                     </li>
                 </c:if>
@@ -142,8 +135,8 @@
 <li class="sidebar-dropdown">
 <a href="javascript:void(0);" onclick="toggleSubmenu('request-submenu', this);" class="${param.activeNav == 'refunds' || param.activeNav == 'reschedule-requests' ? 'active' : ''}"><div class="d-flex align-items-center gap-2"><i class="bi bi-inbox"></i><span>Quản lý yêu cầu</span></div><i class="bi bi-chevron-down"></i></a>
 <ul id="request-submenu" class="sidebar-submenu ${param.activeNav == 'refunds' || param.activeNav == 'reschedule-requests' ? 'show' : ''}">
-<li><a href="${pageContext.request.contextPath}/admin/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}"><i class="bi bi-cash-coin"></i><span>Quản lý yêu cầu hoàn tiền</span></a></li>
-<li><a href="${pageContext.request.contextPath}/admin/reschedule-requests" class="${param.activeNav == 'reschedule-requests' ? 'active' : ''}"><i class="bi bi-calendar2-week"></i><span>Quản lý yêu cầu đổi lịch</span></a></li>
+<li><a href="${pageContext.request.contextPath}/director/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}"><i class="bi bi-cash-coin"></i><span>Quản lý yêu cầu hoàn tiền</span></a></li>
+<li><a href="${pageContext.request.contextPath}/director/reschedule-requests" class="${param.activeNav == 'reschedule-requests' ? 'active' : ''}"><i class="bi bi-calendar2-week"></i><span>Quản lý yêu cầu đổi lịch</span></a></li>
 </ul></li></c:if>
     </ul>
 </aside>

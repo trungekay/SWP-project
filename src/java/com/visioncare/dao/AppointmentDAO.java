@@ -215,12 +215,12 @@ public class AppointmentDAO {
     }
 
     public Appointment getAppointmentDetailById(int appointmentId) throws Exception {
-        String sql = "SELECT a.Appointment_ID, a.Status AS Appt_Status, a.Patient_ID, a.Schedule_ID, a.created_at, " +
+        String sql = "SELECT a.Appointment_ID, a.Status AS Appt_Status, a.Patient_ID, a.Schedule_ID, a.created_at, CONVERT(VARCHAR(19), a.checkin_time, 120) AS Detail_Checkin, " +
                      "       p.Full_Name AS Patient_Name, p.Phone AS Patient_Phone, p.DOB, p.Account_ID, " +
                      "       acc.Email AS Patient_Email, " +
                      "       ws.Work_Date, ws.Start_Time, ws.End_Time, ws.Slot, " +
                      "       e.Employee_ID, e.Full_Name AS Doctor_Name, e.Specialty, " +
-                     "       mr.Clinical_Diagnosis, " +
+                     "       mr.Clinical_Diagnosis, mr.conclusion AS Detail_Cancel_Reason, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
                      "       mi.Invoice_ID, mi.Total_Amount, mi.Deposit_Amount, mi.Balance_Due, mi.Status AS Invoice_Status " +
                      "FROM Appointment a " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
@@ -238,6 +238,8 @@ public class AppointmentDAO {
                     Appointment appt = new Appointment();
                     appt.setId(rs.getInt("Appointment_ID"));
                     appt.setStatus(rs.getString("Appt_Status"));
+                    appt.setCheckinTime(rs.getString("Detail_Checkin"));
+                    appt.setCancellationRequested(rs.getBoolean("Cancellation_Requested"));
                     appt.setPatientName(rs.getString("Patient_Name"));
                     appt.setPhone(rs.getString("Patient_Phone"));
                     appt.setDob(rs.getDate("DOB"));
@@ -250,7 +252,8 @@ public class AppointmentDAO {
                     appt.setTimeSlot(st != null ? st.toString().substring(0, 5) : "");
                     appt.setSlotName(rs.getString("Slot"));
                     appt.setScheduleId(rs.getInt("Schedule_ID"));
-                    appt.setReason(rs.getString("Clinical_Diagnosis"));
+                    appt.setReason((appt.isCancellationRequested() || "Canceled".equalsIgnoreCase(appt.getStatus()))
+                            && rs.getString("Detail_Cancel_Reason") != null ? rs.getString("Detail_Cancel_Reason") : rs.getString("Clinical_Diagnosis"));
                     appt.setInvoiceId(rs.getInt("Invoice_ID"));
                     long totalAmt = rs.getLong("Total_Amount");
                     long depAmt = rs.getLong("Deposit_Amount");
@@ -1005,6 +1008,11 @@ public class AppointmentDAO {
         if (status != null && !status.trim().isEmpty() && !"all".equalsIgnoreCase(status)) {
             if ("Pending".equalsIgnoreCase(status) || "not_checked_in".equalsIgnoreCase(status)) {
                 sql.append(" AND a.checkin_time IS NULL AND a.Status IN ('Confirmed', 'Pending') AND mi.Status IN ('Paid', 'Partial_Paid')");
+            } else if ("CancellationRequested".equalsIgnoreCase(status)) {
+                sql.append(" AND (" + RefundPolicy.CANCELLATION_REQUESTED + ")");
+            } else if ("RefundEligible".equalsIgnoreCase(status)) {
+                sql.append(" AND " + RefundPolicy.ELIGIBLE.replace("i.", "mi.")
+                        + " AND " + RefundPolicy.NO_ACTIVE_REQUEST.replace("i.", "mi."));
             } else if ("CheckedIn".equalsIgnoreCase(status)) {
                 sql.append(" AND a.checkin_time IS NOT NULL AND a.Status NOT IN ('Canceled')");
             } else {
@@ -1296,10 +1304,7 @@ public class AppointmentDAO {
                 }
             }
 
-            boolean refundableCancellation = noteReason.startsWith("Đã duyệt yêu cầu hủy lịch")
-                    || noteReason.equals(RefundPolicy.DOCTOR_UNAVAILABLE)
-                    || noteReason.equals("Liên hệ nhưng bệnh nhân báo bận không đến khám")
-                    || noteReason.equals("Bệnh nhân không có nhu cầu khám nữa");
+            boolean refundableCancellation = RefundPolicy.isRefundableCancellationReason(noteReason);
             String formattedReason = noteReason;
             if (refundableCancellation) {
                 formattedReason = RefundPolicy.APPROVED + noteReason;

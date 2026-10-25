@@ -217,9 +217,22 @@
                                         class="btn btn-sm ${selectedStatus == 'Canceled' ? 'btn-danger fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
                                         <i class="bi bi-person-x-fill me-1"></i> Đã hủy (${canceledCount})
                                     </a>
+                                    <a href="${pageContext.request.contextPath}/staff/appointments?date=all&amp;status=CancellationRequested"
+                                        class="btn btn-sm ${selectedStatus == 'CancellationRequested' ? 'btn-warning text-dark fw-bold' : 'btn-white border text-secondary'} rounded-pill px-3">
+                                        <i class="bi bi-calendar-x me-1"></i> Chờ duyệt hủy · Tất cả ngày (${cancellationRequestedCount})
+                                    </a>
+                                    <a href="${pageContext.request.contextPath}/staff/appointments?date=all&amp;status=RefundEligible"
+                                        class="btn btn-sm ${selectedStatus == 'RefundEligible' ? 'btn-success fw-bold' : 'btn-white border text-secondary'} rounded-pill px-3">
+                                        <i class="bi bi-cash-coin me-1"></i> Đủ điều kiện hoàn tiền · Tất cả ngày (${refundEligibleCount})
+                                    </a>
                                 </div>
                             </div>
 
+                            <div class="px-3 py-2 small text-muted border-bottom">
+                                <i class="bi bi-info-circle me-1"></i>Bệnh nhân gửi yêu cầu hủy → Staff duyệt hủy → Tạo yêu cầu hoàn tiền.
+                                Lịch phải chưa check-in, đã thanh toán và chưa có yêu cầu hoàn tiền đang xử lý.
+                                Nếu bác sĩ đổi lịch và không bố trí được lịch khác, chọn đúng lý do trong thao tác hủy lịch.
+                            </div>
                             <!-- Table: Danh sách bệnh nhân -->
                             <div class="table-container">
                                 <table class="custom-table" style="table-layout: fixed; width: 100%;">
@@ -361,10 +374,15 @@
                                                                     </span>
                                                                 </c:when>
                                                                 <c:when test="${appt.status == 'Canceled'}">
-                                                                    <span class="badge-status badge-canceled"
-                                                                        title="${not empty appt.medicalNotes ? appt.medicalNotes : 'Lịch hẹn đã hủy'}">
-                                                                        Đã hủy
+                                                                    <span class="badge-status badge-canceled" title="${fn:escapeXml(not empty appt.reason ? appt.reason : appt.medicalNotes)}">
+                                                                        <c:choose>
+                                                                            <c:when test="${fn:contains(appt.reason, 'Hết hạn thanh toán')}">Hết hạn thanh toán</c:when>
+                                                                            <c:when test="${fn:startsWith(appt.reason, 'Báo vắng mặt:')}">Vắng mặt</c:when>
+                                                                            <c:otherwise>Đã hủy</c:otherwise>
+                                                                        </c:choose>
                                                                     </span>
+                                                                    <c:if test="${not empty activeAppointmentRefunds[appt.id]}"><div class="small text-muted mt-1"><c:out value="${activeAppointmentRefunds[appt.id].code}" /> · <c:out value="${activeAppointmentRefunds[appt.id].statusLabel}" /></div></c:if>
+                                                                    <c:if test="${fn:contains(appt.reason, 'Hết hạn thanh toán')}"><div class="small text-muted mt-1">Hủy tự động · Không đủ điều kiện hoàn tiền</div></c:if>
                                                                 </c:when>
                                                                 <c:otherwise>
                                                                     <span class="badge-status badge-pending">
@@ -385,6 +403,15 @@
                                                                 </a>
 
 <c:if test="${refundEligible[appt.id]}"><button type="button" class="action-btn" title="Tạo yêu cầu hoàn tiền" aria-label="Tạo yêu cầu hoàn tiền" data-bs-toggle="modal" data-bs-target="#createRefundModal" data-appointment-id="${appt.id}"><i class="bi bi-cash-coin"></i></button></c:if>
+<c:if test="${not empty activeAppointmentRefunds[appt.id]}">
+    <c:set var="existingRefund" value="${activeAppointmentRefunds[appt.id]}" />
+    <button type="button" class="action-btn" title="${existingRefund.code}: ${existingRefund.statusLabel}" aria-label="Xem yêu cầu hoàn tiền hiện có"
+        data-bs-toggle="modal" data-bs-target="#existingRefundModal" data-refund-code="${existingRefund.code}"
+        data-invoice-code="${existingRefund.invoiceCode}" data-status="${existingRefund.statusLabel}"
+        data-amount="${existingRefund.amountLabel}" data-reason="${fn:escapeXml(existingRefund.reason)}">
+        <i class="bi bi-receipt"></i>
+    </button>
+</c:if>
 <c:if test="${appt.cancellationRequested}">
 <form action="${pageContext.request.contextPath}/staff/appointments" method="post" class="d-inline">
 <input type="hidden" name="action" value="approveCancellation"><input type="hidden" name="appointmentId" value="${appt.id}">
@@ -543,11 +570,13 @@
                                         <label class="form-label small fw-semibold text-dark mb-1.5">
                                             Lý do hủy lịch <span class="text-danger">*</span>
                                         </label>
-                                        <select name="cancelReasonSelect" id="cancelReasonSelect"
+                                        <select name="cancelReasonSelect" id="cancelReasonSelect" required
                                             class="form-select form-select-sm shadow-none mb-2"
                                             style="border-radius: 8px; font-size: 13.5px;"
                                             onchange="toggleCustomReason(this)">
-                                            <option value="Liên hệ nhưng bệnh nhân báo bận không đến khám">Liên hệ nhưng bệnh nhân báo bận không đến khám</option>
+                                            <option value="" disabled selected>-- Chọn lý do hủy lịch --</option>
+                                            <option value="Bệnh nhân yêu cầu hủy trực tiếp tại quầy trước check-in">Bệnh nhân yêu cầu hủy trực tiếp tại quầy trước check-in (Staff xác nhận)</option>
+                                            <option value="Liên hệ nhưng bệnh nhân báo bận không đến khám">Bệnh nhân hủy đột xuất trước check-in (Staff xác nhận)</option>
                                             <option value="Bệnh nhân báo bận, yêu cầu đổi lịch sang ngày khác">Bệnh nhân
                                                 báo bận, yêu cầu đổi lịch sang ngày khác</option>
                                             <option value="Bệnh nhân không có nhu cầu khám nữa">Bệnh nhân không có nhu
@@ -2067,7 +2096,7 @@
                             if (codeElem) codeElem.textContent = '#APT-' + id;
 
                             var selectElem = document.getElementById('cancelReasonSelect');
-                            if (selectElem) selectElem.value = 'Bệnh nhân báo bận, yêu cầu đổi lịch sang ngày khác';
+                            if (selectElem) selectElem.value = '';
 
                             var customElem = document.getElementById('cancelReasonCustom');
                             if (customElem) {
@@ -2161,5 +2190,6 @@
             </style>
 
             <jsp:include page="/views/staff/refund-create-modal.jsp" />
+            <jsp:include page="/views/staff/refund-status-modal.jsp" />
 </body>
             </html>

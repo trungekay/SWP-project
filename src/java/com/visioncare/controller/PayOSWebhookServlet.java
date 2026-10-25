@@ -39,6 +39,13 @@ public class PayOSWebhookServlet extends HttpServlet {
 
             if (orderCodeStr != null && !orderCodeStr.isEmpty()) {
                 long orderCode = Long.parseLong(orderCodeStr);
+                if (orderCode >= 900000000000000L) {
+                    String state = com.visioncare.util.StaffCheckoutPayments.refresh(orderCode, 0);
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    response.getWriter().write("{\"success\":true,\"checkout\":true}");
+                    return;
+                }
+
                 int appointmentId = (int) (orderCode > 1000000L ? (orderCode / 1000000L) : orderCode);
 
                 // Cập nhật trạng thái thành Confirmed & Paid
