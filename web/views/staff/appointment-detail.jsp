@@ -115,7 +115,7 @@
                                                     <span class="badge-status badge-completed" title="Ca khám đã hoàn thành">Đã khám xong</span>
                                                 </c:when>
                                                 <c:when test="${appointment.status == 'Canceled'}">
-                                                    <span class="badge-status badge-canceled" title="Lịch hẹn đã hủy / vắng mặt">Đã hủy / Vắng mặt</span>
+                                                    <span class="badge-status badge-canceled" title="Lịch hẹn đã hủy">Đã hủy</span>
                                                 </c:when>
                                                 <c:otherwise>
                                                     <span class="badge-status badge-pending">${appointment.status}</span>
@@ -526,19 +526,19 @@
                                         </div>
                                     </c:when>
                                     <c:when test="${appointment.status == 'Canceled'}">
-                                        <!-- Khi đã hủy / vắng mặt: Hiển thị Thẻ thông tin Hủy & Ghi chú cũ dạng Read-only -->
+                                        <!-- Khi đã hủy: Hiển thị Thẻ thông tin Hủy & Ghi chú cũ dạng Read-only -->
                                         <div class="content-card p-4">
                                             <div class="detail-section-title text-danger">
                                                 <i class="bi bi-clipboard2-x text-danger"></i>
-                                                Thông tin Hủy lịch & Vắng mặt
+                                                Thông tin Hủy lịch
                                             </div>
                                             <p class="text-muted small mb-3">
-                                                Ca khám này đã được xác nhận kết thúc do bệnh nhân vắng mặt hoặc yêu cầu hủy lịch.
+                                                Ca khám này đã được xác nhận hủy lịch hẹn.
                                             </p>
 
                                             <div class="p-3 rounded-3 border mb-3" style="background-color: #fef2f2; border-color: #fecaca !important;">
                                                 <label class="info-label text-danger fw-bold d-block mb-1">
-                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Lý do vắng mặt đã xác nhận:
+                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Lý do hủy đã xác nhận:
                                                 </label>
                                                 <p class="fw-semibold text-dark mb-0 ps-2" style="font-size: 14px;">
                                                     <c:choose>
