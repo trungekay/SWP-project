@@ -388,7 +388,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 
-ALTER TABLE [dbo].[Medical_Supply]  WITH CHECK ADD  CONSTRAINT [CHK_Medical_Supply_Category] CHECK  (([Category]=N'Khác' OR [Category]=N'Vật tư y tế tiêu hao' OR [Category]=N'Kính & Phụ kiện' OR [Category]=N'Thuốc & Dung dịch'))
+ALTER TABLE [dbo].[Medical_Supply]  WITH CHECK ADD  CONSTRAINT [CHK_Medical_Supply_Category] CHECK  ([Category] IN (N'Khác', N'Vật tư y tế tiêu hao', N'Kính & Phụ kiện', N'Kính gọng & tròng kính', N'Kính áp tròng', N'Phụ kiện & sản phẩm hỗ trợ', N'Thuốc & dung dịch'))
 ALTER TABLE [dbo].[Medical_Supply] CHECK CONSTRAINT [CHK_Medical_Supply_Category]
 ALTER TABLE [dbo].[Medical_Supply]  WITH CHECK ADD  CONSTRAINT [CHK_Medical_Supply_Price] CHECK  (([Price]>=(0)))
 ALTER TABLE [dbo].[Medical_Supply] CHECK CONSTRAINT [CHK_Medical_Supply_Price]

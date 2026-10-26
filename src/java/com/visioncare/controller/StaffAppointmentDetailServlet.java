@@ -71,7 +71,7 @@ public class StaffAppointmentDetailServlet extends HttpServlet {
 
             if ("saveNotes".equalsIgnoreCase(action)) {
                 String notes = request.getParameter("medicalNotes");
-                boolean success = appointmentDAO.saveMedicalNotes(apptId, notes);
+                boolean success = appointmentDAO.saveMedicalNotes(apptId, targetAppt.getDoctorId(), notes);
                 if (success) {
                     session.setAttribute("successMessage", "Ghi chú y tế ban đầu đã được lưu thành công vào hồ sơ khám.");
                 } else {
