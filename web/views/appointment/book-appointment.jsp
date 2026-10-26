@@ -440,7 +440,7 @@
                                                 <span class="text-muted small fw-semibold">
                                                   <i class="bi bi-stopwatch text-danger me-1"></i>Thời gian giữ chỗ:
                                                 </span>
-                                                <span class="fs-5 fw-bold text-danger font-monospace" id="paymentCountdownTimer">15:00</span>
+                                                <span class="fs-5 fw-bold text-danger font-monospace" id="paymentCountdownTimer">${not empty pendingHoldMinutes ? (pendingHoldMinutes < 10 ? '0' : '') : ''}${not empty pendingHoldMinutes ? pendingHoldMinutes : 15}:00</span>
                                               </div>
                                               <div class="progress" style="height: 6px; border-radius: 6px; background-color: #f1f5f9;">
                                                 <div id="countdownProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-danger"
@@ -481,7 +481,7 @@
                                               <div class="col-6 text-muted">Thời hạn thanh toán:</div>
                                               <div class="col-6 fw-bold text-end">
                                                 <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle font-monospace px-2 py-1" id="ticketCountdownBadge">
-                                                  <i class="bi bi-stopwatch me-1"></i>15:00
+                                                  <i class="bi bi-stopwatch me-1"></i>${not empty pendingHoldMinutes ? (pendingHoldMinutes < 10 ? '0' : '') : ''}${not empty pendingHoldMinutes ? pendingHoldMinutes : 15}:00
                                                 </span>
                                               </div>
 
@@ -548,7 +548,7 @@
                                                   class="btn btn-success btn-lg py-3 rounded-3 shadow-sm fw-bold">
                                                   <i class="bi bi-shield-check me-2"></i>Tôi đã chuyển khoản (Kiểm tra thanh toán)
                                                 </button>
-                                                <a href="${pageContext.request.contextPath}/book-appointment"
+                                                <a href="${pageContext.request.contextPath}/book-appointment?action=cancelPending&id=${appointment.id != null ? appointment.id : appointmentId}"
                                                   class="btn btn-link text-muted text-center mt-2">
                                                   <i class="bi bi-arrow-left me-1"></i>Hủy và chọn lại lịch khác
                                                 </a>
@@ -559,12 +559,12 @@
                                           <div id="paymentExpiredArea" class="d-none text-center">
                                             <div class="alert alert-danger rounded-4 p-4 shadow-sm mb-3">
                                               <i class="bi bi-exclamation-octagon-fill text-danger fs-1 d-block mb-2"></i>
-                                              <h5 class="fw-bold text-danger mb-1">Mã QR đã hết hạn thanh toán (Quá 15 phút)</h5>
+                                              <h5 class="fw-bold text-danger mb-1">Mã QR đã hết hạn thanh toán (Quá ${not empty pendingHoldMinutes ? pendingHoldMinutes : 15} phút)</h5>
                                               <p class="text-muted small mb-0">
                                                 Khung giờ này đã tạm hết thời gian giữ chỗ ưu tiên. Quý khách vui lòng tạo lại lịch hẹn mới để hoàn tất đặt chỗ.
                                               </p>
                                             </div>
-                                            <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-primary btn-lg py-3 rounded-pill shadow-sm fw-bold w-100" style="background:#0d9488; border-color:#0d9488;">
+                                            <a href="${pageContext.request.contextPath}/book-appointment?action=cancelPending&id=${appointment.id != null ? appointment.id : appointmentId}" class="btn btn-primary btn-lg py-3 rounded-pill shadow-sm fw-bold w-100" style="background:#0d9488; border-color:#0d9488;">
                                               <i class="bi bi-arrow-repeat me-2"></i>Đặt lại lịch hẹn mới
                                             </a>
                                           </div>
@@ -1899,12 +1899,14 @@
                 let pollAttempts = 0;
                 let checkInterval = null;
 
-                // Khởi tạo thời hạn thanh toán 15 phút (900s) lưu trong sessionStorage để không bị reset khi F5
+                // Khởi tạo thời hạn thanh toán dynamic theo cấu hình hệ thống (mặc định 15 phút) lưu trong sessionStorage để không bị reset khi F5
+                const totalHoldMinutes = parseInt('${not empty pendingHoldMinutes ? pendingHoldMinutes : 15}');
+                const totalHoldSeconds = totalHoldMinutes * 60;
                 const storageKey = 'vc_pay_expire_' + currentApptId;
                 let expireTimestamp = sessionStorage.getItem(storageKey);
                 const now = Date.now();
                 if (!expireTimestamp || isNaN(expireTimestamp) || parseInt(expireTimestamp) < now) {
-                  expireTimestamp = now + (15 * 60 * 1000); // 15 phút
+                  expireTimestamp = now + (totalHoldSeconds * 1000);
                   sessionStorage.setItem(storageKey, expireTimestamp);
                 } else {
                   expireTimestamp = parseInt(expireTimestamp);
@@ -1925,7 +1927,7 @@
                   if (timerEl) timerEl.textContent = formatted;
                   if (ticketEl) ticketEl.innerHTML = '<i class="bi bi-stopwatch me-1"></i>' + formatted;
 
-                  const percent = Math.min(100, Math.max(0, (remainingSec / 900) * 100));
+                  const percent = Math.min(100, Math.max(0, (remainingSec / totalHoldSeconds) * 100));
                   if (barEl) barEl.style.width = percent + '%';
 
                   // Đổi màu trực quan theo thời gian còn lại
@@ -1948,6 +1950,12 @@
                     if (checkInterval) clearInterval(checkInterval);
                     sessionStorage.removeItem(storageKey);
 
+                    // Giải phóng slot ngay lập tức trên DB khi hết giờ
+                    if (currentApptId) {
+                      fetch('${pageContext.request.contextPath}/book-appointment?action=cancelPending&format=json&id=' + encodeURIComponent(currentApptId))
+                        .catch(err => console.log('Auto cancelled expired slot...', err));
+                    }
+
                     if (timerEl) timerEl.textContent = '00:00 (Hết hạn)';
                     if (statusEl) { statusEl.textContent = 'Đã hết hạn'; statusEl.className = 'text-danger fw-bold'; }
                     if (barEl) { barEl.style.width = '0%'; }
@@ -1965,7 +1973,8 @@
                 if (currentApptId) {
                   checkInterval = setInterval(function () {
                     pollAttempts++;
-                    if (pollAttempts > 360) { // Tối đa 15 phút (mỗi 2.5s)
+                    const maxPollAttempts = Math.ceil(totalHoldSeconds / 2.5);
+                    if (pollAttempts > maxPollAttempts) { // Tối đa theo thời gian giữ chỗ (mỗi 2.5s)
                       clearInterval(checkInterval);
                       return;
                     }

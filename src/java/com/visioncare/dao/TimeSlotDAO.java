@@ -26,10 +26,59 @@ public class TimeSlotDAO {
                     + "); "
                     + "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
                     + "VALUES ('MIN_WORK_HOURS_PER_WEEK', '30.0', N'Số giờ làm việc tối thiểu mỗi tuần'); "
+                    + "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
+                    + "VALUES ('BOOKING_PENDING_HOLD_MINUTES', '15', N'Thời gian giữ chỗ tối đa cho lịch hẹn Pending chờ thanh toán (phút)'); "
+                    + "END "
+                    + "ELSE IF NOT EXISTS (SELECT 1 FROM Clinic_Setting WHERE Setting_Key = 'BOOKING_PENDING_HOLD_MINUTES') "
+                    + "BEGIN "
+                    + "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
+                    + "VALUES ('BOOKING_PENDING_HOLD_MINUTES', '15', N'Thời gian giữ chỗ tối đa cho lịch hẹn Pending chờ thanh toán (phút)'); "
                     + "END";
             st.execute(createTableSql);
         } catch (Exception e) {
             System.err.println("Error ensuring Clinic_Setting table: " + e.getMessage());
+        }
+    }
+
+    public static int getPendingHoldMinutes() {
+        int minutes = 15;
+        String sql = "SELECT Setting_Value FROM Clinic_Setting WHERE Setting_Key = 'BOOKING_PENDING_HOLD_MINUTES'";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                String val = rs.getString("Setting_Value");
+                if (val != null && !val.trim().isEmpty()) {
+                    minutes = Integer.parseInt(val.trim());
+                }
+            }
+        } catch (Exception e) {
+            // Default 15 if table or row not yet ready
+            minutes = 15;
+        }
+        return minutes > 0 ? minutes : 15;
+    }
+
+    public boolean updatePendingHoldMinutes(int minutes) {
+        if (minutes <= 0) return false;
+        ensureSettingTable();
+        String sql = "UPDATE Clinic_Setting SET Setting_Value = ? WHERE Setting_Key = 'BOOKING_PENDING_HOLD_MINUTES'";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, String.valueOf(minutes));
+            int rows = ps.executeUpdate();
+            if (rows == 0) {
+                String insertSql = "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
+                        + "VALUES ('BOOKING_PENDING_HOLD_MINUTES', ?, N'Thời gian giữ chỗ tối đa cho lịch hẹn Pending chờ thanh toán (phút)')";
+                try (PreparedStatement psIns = conn.prepareStatement(insertSql)) {
+                    psIns.setString(1, String.valueOf(minutes));
+                    return psIns.executeUpdate() > 0;
+                }
+            }
+            return rows > 0;
+        } catch (Exception e) {
+            System.err.println("Error updatePendingHoldMinutes: " + e.getMessage());
+            return false;
         }
     }
 
