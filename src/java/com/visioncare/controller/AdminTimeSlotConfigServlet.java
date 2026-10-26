@@ -59,13 +59,32 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
                         request.getSession().setAttribute("errorMsg", "Vui lòng nhập định dạng số hợp lệ cho số giờ làm việc!");
                     }
                 }
+            } else if ("update_pending_hold_minutes".equals(action)) {
+                String minutesStr = request.getParameter("pendingHoldMinutes");
+                if (minutesStr != null && !minutesStr.trim().isEmpty()) {
+                    try {
+                        int minutes = Integer.parseInt(minutesStr.trim());
+                        if (minutes < 1 || minutes > 120) {
+                            request.getSession().setAttribute("errorMsg", "Thời gian giữ chỗ phải từ 1 đến 120 phút!");
+                        } else {
+                            boolean success = timeSlotDAO.updatePendingHoldMinutes(minutes);
+                            if (success) {
+                                request.getSession().setAttribute("successMsg", "Đã cập nhật thời gian giữ chỗ thành công (" + minutes + " phút)!");
+                            } else {
+                                request.getSession().setAttribute("errorMsg", "Không thể cập nhật thời gian giữ chỗ!");
+                            }
+                        }
+                    } catch (NumberFormatException e) {
+                        request.getSession().setAttribute("errorMsg", "Vui lòng nhập định dạng số nguyên hợp lệ cho thời gian giữ chỗ!");
+                    }
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
-            request.getSession().setAttribute("errorMsg", "Lỗi cấu hình Slot: " + e.getMessage());
+            request.getSession().setAttribute("errorMsg", "Lỗi cấu hình: " + e.getMessage());
         }
 
-        if ("update_min_hours".equals(action)) {
+        if ("update_min_hours".equals(action) || "update_pending_hold_minutes".equals(action)) {
             response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=rules");
             return;
         }

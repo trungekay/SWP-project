@@ -211,6 +211,9 @@ public class BookAppointmentServlet extends HttpServlet {
                             qrUrl = "https://img.vietqr.io/image/MB-0877757889-compact2.png?amount=" + fee + "&addInfo=" + URLEncoder.encode(payosDesc + " " + phoneSafe, StandardCharsets.UTF_8) + "&accountName=NGUYEN%20DINH%20TRUNG";
                         }
 
+                        int pendingHoldMinutes = com.visioncare.dao.TimeSlotDAO.getPendingHoldMinutes();
+                        request.setAttribute("pendingHoldMinutes", pendingHoldMinutes);
+                        request.setAttribute("pendingHoldSeconds", pendingHoldMinutes * 60);
                         request.setAttribute("step", "payment");
                         request.setAttribute("appointment", pendingAppt);
                         request.setAttribute("appointmentId", apptId);
@@ -660,6 +663,9 @@ public class BookAppointmentServlet extends HttpServlet {
                 fullAppt.setEmail(appointment.getEmail());
             }
 
+            int pendingHoldMinutes = com.visioncare.dao.TimeSlotDAO.getPendingHoldMinutes();
+            request.setAttribute("pendingHoldMinutes", pendingHoldMinutes);
+            request.setAttribute("pendingHoldSeconds", pendingHoldMinutes * 60);
             request.setAttribute("step", "payment");
             request.setAttribute("appointment", fullAppt != null ? fullAppt : appointment);
             request.setAttribute("appointmentId", newId);

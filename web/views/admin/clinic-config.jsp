@@ -516,6 +516,52 @@
                     </div>
                   </form>
                 </div>
+
+                <!-- Online Booking Hold Time Card -->
+                <div class="admin-card mt-4">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                      <h5 class="mb-1 fw-bold"><i class="bi bi-stopwatch me-2 text-danger"></i>Quy định Thời gian Giữ chỗ Đặt lịch (Pending Hold Time)</h5>
+                      <p class="text-muted small mb-0">Thiết lập thời gian tối đa giữ chỗ cho lịch hẹn trực tuyến khi bệnh nhân đang chờ thanh toán qua mã QR (mặc định 15 phút).</p>
+                    </div>
+                  </div>
+                  <form action="${pageContext.request.contextPath}/admin/timeslot-config" method="post" class="row g-3 align-items-end">
+                    <input type="hidden" name="action" value="update_pending_hold_minutes">
+                    <div class="col-md-5 col-lg-4">
+                      <label class="form-label fw-semibold small text-secondary">
+                        Thời gian giữ chỗ thanh toán
+                        <span class="text-muted fw-normal">(1 - 120 phút)</span>
+                      </label>
+                      <div class="input-group">
+                        <span class="input-group-text bg-light text-danger"><i class="bi bi-hourglass-split"></i></span>
+                        <input type="number" step="1" min="1" max="120" name="pendingHoldMinutes" id="pendingHoldMinutesInput"
+                          class="form-control fw-bold text-danger"
+                          value="${not empty pendingHoldMinutes ? pendingHoldMinutes : 15}" required>
+                        <span class="input-group-text bg-light text-muted">phút</span>
+                      </div>
+                    </div>
+                    <div class="col-md-4 col-lg-4">
+                      <label class="form-label fw-semibold small text-secondary d-block">Chọn nhanh:</label>
+                      <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('pendingHoldMinutesInput').value=5;">5p</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('pendingHoldMinutesInput').value=10;">10p</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('pendingHoldMinutesInput').value=15;">15p</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('pendingHoldMinutesInput').value=30;">30p</button>
+                      </div>
+                    </div>
+                    <div class="col-md-3 col-lg-4 text-md-end">
+                      <button type="submit" class="btn btn-danger px-4 rounded-pill">
+                        <i class="bi bi-check-circle me-1"></i> Lưu thời gian giữ chỗ
+                      </button>
+                    </div>
+                    <div class="col-12 mt-2">
+                      <div class="small text-muted">
+                        <i class="bi bi-info-circle me-1 text-danger"></i>
+                        Khi bệnh nhân chọn giờ và nhận mã QR, slot này sẽ bị khóa tạm thời <strong>đúng ${not empty pendingHoldMinutes ? pendingHoldMinutes : 15} phút</strong>. Quá thời gian này hoặc khi bệnh nhân bấm hủy, hệ thống sẽ tự động giải phóng slot cho người khác.
+                      </div>
+                    </div>
+                  </form>
+                </div>
               </div>
             </c:if>
 
