@@ -612,7 +612,7 @@
                               <div class="modal-content">
                                 <form action="${pageContext.request.contextPath}/admin/timeslot-config" method="post">
                                   <input type="hidden" name="action" value="edit">
-                                  <input type="hidden" name="oldSlotName" value="${slot.slotName}">
+                                  <input type="hidden" name="slotId" value="${slot.slotId}">
                                   <div class="modal-header border-0 pb-0">
                                     <h5 class="modal-title fw-bold text-primary">Sửa Khung Giờ Khám</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
