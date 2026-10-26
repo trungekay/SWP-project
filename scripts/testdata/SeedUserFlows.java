@@ -55,7 +55,7 @@ public class SeedUserFlows {
  }
  public static void main(String[]args)throws Exception{
  if(args.length!=1||!"--seed-local".equals(args[0]))throw new IllegalArgumentException("Use --seed-local to create named local fixtures");
- List<String> rows=new ArrayList<>();int account,patient,staff,specialist;int created=0;
+ Map<String,Integer> registry=new LinkedHashMap<>();List<String> rows=new ArrayList<>();int account,patient,staff,specialist;int created=0;
  try(Connection c=DBContext.getConnection()){
  if(!"eye_clinic_db".equalsIgnoreCase(c.getCatalog()))throw new Exception("Unexpected database; refusing seed");
  c.setAutoCommit(false);c.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
@@ -67,8 +67,8 @@ public class SeedUserFlows {
  if(account==0)throw new Exception("Existing active Nguyen Van An account not found; no new account will be created");
  patient=id(c,"SELECT Patient_ID FROM Patient WHERE Account_ID=?",account);
  removeOldTest(c);
- for(String[]def:CASES){String code=def[0],mark=marker(code);
- int appointment=id(c,"SELECT a.Appointment_ID FROM Appointment a JOIN Medical_Record mr ON mr.Appointment_ID=a.Appointment_ID WHERE a.Patient_ID=? AND mr.Clinical_Diagnosis LIKE ?",patient,mark.replace("[","[[]")+"%");
+ for(String[]def:CASES){String code=def[0];
+ int appointment=FixtureRegistry.find(c,code,patient);
  int invoice;
  if(appointment==0){
   boolean clinical=code.startsWith("EXAM_DONE")||code.equals("PAID_FINAL");boolean cancelled=Set.of("REFUND_ELIGIBLE","DOCTOR_CANCEL","REFUND_PENDING","EXPIRED").contains(code);
@@ -81,22 +81,24 @@ public class SeedUserFlows {
   boolean extras=code.equals("EXAM_DONE_EXTRAS");boolean unpaid=code.equals("EXPIRED");long total=extras?545000:200000;
   invoice=add(c,"INSERT INTO Master_Invoice(Appointment_ID,Total_Amount,Deposit_Amount,Balance_Due,Status,Create_At) VALUES(?, ?,200000,?,?,DATEADD(HOUR,7,SYSUTCDATETIME()))",appointment,total,unpaid?200000:total-200000,unpaid?"Canceled":extras?"Partial_Paid":"Paid");
   if(!unpaid)add(c,"INSERT INTO Payment_Transaction(Invoice_ID,Amount,Gateway_Status,Payment_Gateway,Trans_Date) VALUES(?,200000,'Success','QR_Banking',DATEADD(HOUR,7,SYSUTCDATETIME()))",invoice);
-  String note=code.equals("CANCEL_PENDING")?RefundPolicy.REQUESTED+"Bận việc cá nhân (ca kiểm thử)":Set.of("REFUND_ELIGIBLE","REFUND_PENDING").contains(code)?RefundPolicy.APPROVED+RefundPolicy.PATIENT_AT_COUNTER:code.equals("DOCTOR_CANCEL")?RefundPolicy.APPROVED+RefundPolicy.DOCTOR_UNAVAILABLE:clinical?"Kết thúc khám mẫu; đối chiếu hóa đơn tại quầy":code.equals("EXPIRED")?"Hệ thống: Hết hạn thanh toán (ca kiểm thử)":null;
-  int record=add(c,"INSERT INTO Medical_Record(Appointment_ID,Doctor_Employee_ID,Clinical_Diagnosis,examination_result,conclusion,Created_At) VALUES(?,?,?,?,?,DATEADD(HOUR,7,SYSUTCDATETIME()))",appointment,doctor,mark+" Dữ liệu mẫu kiểm thử",clinical?"Đã lưu kết quả khám mẫu để kiểm tra lịch sử bệnh án":null,note);
-  if(clinical)update(c,"INSERT INTO Examination_Detail(Record_ID,Chief_Complaint,Medical_History) VALUES(?,N'Ca mô phỏng kiểm thử hóa đơn',N'Dữ liệu mẫu, không phải chỉ định điều trị thực tế')",record);
-  if(extras){int order=add(c,"INSERT INTO Procedure_Order(Specialist_Employee_ID,Record_ID,Service_ID,Actual_Price,Status,Referral_Notes,Result_Text,Result_Conclusion,Completed_At) VALUES(?,?,14,250000,'Completed',N'Ca mẫu: tiểu phẫu đã thực hiện',N'Kết quả mô phỏng',N'Hoàn tất tiểu phẫu mẫu',DATEADD(HOUR,7,SYSUTCDATETIME()))",specialist,record);
-   int prescription=add(c,"INSERT INTO Prescription(Record_ID,Doctor_Notes,created_at) VALUES(?,N'Đơn mẫu kiểm thử mua thuốc tại quầy',DATEADD(HOUR,7,SYSUTCDATETIME()))",record);
-   update(c,"INSERT INTO Prescription_Detail(Prescription_ID,Quantity,Medicine_Name,Is_Custom_Medicine,Dosage_Instruction) SELECT ?,1,Supply_Name,0,N'Dữ liệu mẫu kiểm thử; không dùng hướng dẫn điều trị' FROM Medical_Supply WHERE Supply_ID=1 AND Price=95000",prescription);
+  String note=code.equals("CANCEL_PENDING")?RefundPolicy.REQUESTED+"Bận việc cá nhân, không thể đến khám theo lịch đã đặt":Set.of("REFUND_ELIGIBLE","REFUND_PENDING").contains(code)?RefundPolicy.APPROVED+RefundPolicy.PATIENT_AT_COUNTER:code.equals("DOCTOR_CANCEL")?RefundPolicy.APPROVED+RefundPolicy.DOCTOR_UNAVAILABLE:clinical?ClinicalFixtureText.conclusion(code):code.equals("EXPIRED")?"Hệ thống: Hết hạn thanh toán":null;
+  int record=add(c,"INSERT INTO Medical_Record(Appointment_ID,Doctor_Employee_ID,Clinical_Diagnosis,examination_result,conclusion,Created_At) VALUES(?,?,?,?,?,DATEADD(HOUR,7,SYSUTCDATETIME()))",appointment,doctor,ClinicalFixtureText.diagnosis(code),ClinicalFixtureText.result(code),note);
+  if(clinical)update(c,"INSERT INTO Examination_Detail(Record_ID,Chief_Complaint,Medical_History) VALUES(?,?,NULL)",record,ClinicalFixtureText.complaint(code));
+  if(extras){int order=add(c,"INSERT INTO Procedure_Order(Specialist_Employee_ID,Record_ID,Service_ID,Actual_Price,Status,Referral_Notes,Result_Text,Result_Conclusion,Completed_At) VALUES(?,?,14,250000,'Completed',N'Chỉ định chích rạch chắp lẹo mi mắt',N'Đã thực hiện chích rạch chắp lẹo mi mắt',N'Hoàn tất thủ thuật theo chỉ định',DATEADD(HOUR,7,SYSUTCDATETIME()))",specialist,record);
+   int prescription=add(c,"INSERT INTO Prescription(Record_ID,Doctor_Notes,created_at) VALUES(?,N'Dùng thuốc theo đơn và tái khám theo hướng dẫn của bác sĩ',DATEADD(HOUR,7,SYSUTCDATETIME()))",record);
+   update(c,"INSERT INTO Prescription_Detail(Prescription_ID,Quantity,Medicine_Name,Is_Custom_Medicine,Dosage_Instruction) SELECT ?,1,Supply_Name,0,N'Dùng theo hướng dẫn trong đơn thuốc' FROM Medical_Supply WHERE Supply_ID=1 AND Price=95000",prescription);
   }
-  if(code.equals("REFUND_PENDING"))add(c,"INSERT INTO Refund_Request(Invoice_ID,created_by_employee_id,Patient_ID,Refund_Amount,Reason,Status,Created_At,Update_At) VALUES(?,?,?,200000,?,'Pending',SYSUTCDATETIME(),SYSUTCDATETIME())",invoice,staff,patient,mark+" Hoàn phí khám sau khi staff duyệt hủy");
+  if(code.equals("REFUND_PENDING"))add(c,"INSERT INTO Refund_Request(Invoice_ID,created_by_employee_id,Patient_ID,Refund_Amount,Reason,Status,Created_At,Update_At) VALUES(?,?,?,200000,?,'Pending',SYSUTCDATETIME(),SYSUTCDATETIME())",invoice,staff,patient,"Đề nghị hoàn phí khám sau khi yêu cầu hủy lịch đã được duyệt trước check-in");
   if(!cancelled)update(c,"UPDATE Work_Schedule SET Status='Booked' WHERE Schedule_ID=?",schedule);
   if(code.equals("PAID_FINAL")){StaffInvoiceDAO dao=new StaffInvoiceDAO(()->borrowed(c));StaffInvoice inv=dao.get(invoice);dao.cash(invoice,staff,inv.fingerprint());}
   created++;
  }else invoice=id(c,"SELECT Invoice_ID FROM Master_Invoice WHERE Appointment_ID=?",appointment);
+ registry.put(code,appointment);
  rows.add("| "+code+" | APT-"+appointment+" | INV-"+String.format("%05d",invoice)+" | "+def[1]+" |");
  }
  // Assert monetary integrity and correct link ownership before commit. No gateway calls.
- if(id(c,"SELECT COUNT(*) FROM Appointment a JOIN Medical_Record mr ON mr.Appointment_ID=a.Appointment_ID WHERE a.Patient_ID=? AND mr.Clinical_Diagnosis LIKE ?",patient,"[[]"+TAG+":%")!=CASES.length)throw new Exception("Fixture count mismatch");
+ if(registry.size()!=CASES.length)throw new Exception("Fixture count mismatch");
+ FixtureRegistry.save(c,registry);
  c.commit();
  }catch(Exception e){c.rollback();throw e;}
  }

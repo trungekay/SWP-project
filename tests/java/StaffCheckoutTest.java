@@ -93,6 +93,13 @@ public class StaffCheckoutTest {
     dao.cash(legacy.invoice,employee,old.fingerprint());old=dao.get(legacy.invoice);
     check(old.finalized&&old.paid==old.getTotal()&&old.priorPaid==200000,"Legacy paid amount persists after checkout");
     check(scalar(real,"SELECT COUNT(*) FROM Payment_Transaction WHERE Invoice_ID=?",legacy.invoice)==1,"Only new outstanding balance is collected on a legacy paid invoice");
+    Fixture refundPending=fixture(real);
+    int refundPatient=scalar(real,"SELECT Patient_ID FROM Appointment WHERE Appointment_ID=?",refundPending.appointment);
+    insert(real,"INSERT INTO Refund_Request(Invoice_ID,created_by_employee_id,Patient_ID,Refund_Amount,Reason,Status,Created_At,Update_At) VALUES(?,?,?,200000,N'Legacy pending refund regression','Pending',SYSUTCDATETIME(),SYSUTCDATETIME())",refundPending.invoice,employee,refundPatient);
+    StaffInvoice held=dao.get(refundPending.invoice);
+    check(held.getTotal()==330000+2*refundPending.medicinePrice,"Pending refund does not hide existing procedure and medicine costs");
+    check(held.getOutstanding()==130000+2*refundPending.medicinePrice,"Financial balance remains visible when collection is blocked");
+    check(held.getDue()==0&&!held.isCanCheckout(),"Pending refund blocks collection without implying full payment");
     Fixture blocked=fixture(real);
     try(PreparedStatement ps=real.prepareStatement("UPDATE Appointment SET Status='Canceled' WHERE Appointment_ID=?")){ps.setInt(1,blocked.appointment);ps.executeUpdate();}
     check(dao.get(blocked.invoice).isBlocked(),"Canceled appointment cannot collect new payment");

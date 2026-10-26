@@ -48,7 +48,7 @@ public class StaffInvoiceDAO {
   Map<String,Item> saved=new LinkedHashMap<>();
   try(PreparedStatement ps=c.prepareStatement("SELECT * FROM Invoice_Checkout_Item WHERE Invoice_ID=? ORDER BY Item_Key")){ps.setInt(1,id);try(ResultSet r=ps.executeQuery()){while(r.next()){Item item=new Item(r.getString("Item_Key"),r.getString("Item_Name"),r.getString("Item_Type"),r.getInt("Quantity"),r.getLong("Unit_Price"),r.getBoolean("Removable"),r.getBoolean("Unpriced"),false);item.declined=r.getBoolean("Declined");saved.put(item.key,item);}}}
   if(inv.finalized)inv.items.addAll(saved.values());
-  else if(inv.isBlocked())inv.items.add(new Item("RECORDED","Giá trị hóa đơn đã ghi nhận","Hóa đơn hủy / Hoàn tiền",1,inv.recordedTotal,false,false,false));
+  else if("Canceled".equals(inv.appointmentStatus)||"Canceled".equals(inv.invoiceStatus)||"Refunded".equals(inv.invoiceStatus))inv.items.add(new Item("RECORDED","Giá trị hóa đơn đã ghi nhận","Hóa đơn hủy / Hoàn tiền",1,inv.recordedTotal,false,false,false));
   else {
    inv.items.add(new Item("CONSULT","Phí khám / đăng ký khám","Khám bệnh",1,inv.baseAmount,false,false,false));
    sql="SELECT po.Order_ID,s.Service_Name,po.Actual_Price,po.Status,pr.Status AS Request_Status,COALESCE(pr.Credit_Amount,0) AS Credit_Amount FROM Procedure_Order po JOIN Medical_Record mr ON mr.Record_ID=po.Record_ID JOIN Service_Catalog s ON s.Service_ID=po.Service_ID LEFT JOIN Procedure_Payment_Request pr ON pr.Order_ID=po.Order_ID WHERE mr.Appointment_ID=? AND po.Status<>'Cancelled' AND s.Service_ID<>1 AND s.Service_Name<>N'Khám mắt tổng quát' ORDER BY po.Order_ID";

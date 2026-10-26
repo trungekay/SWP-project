@@ -12,7 +12,7 @@ public class VerifyUserFlows {
   ok(scalar(c,"SELECT COUNT(*) FROM Account WHERE Email='nam.flow.test@example.test'")==0,"Old test email removed");
   ok(scalar(c,"SELECT COUNT(*) FROM Appointment WHERE Appointment_ID BETWEEN 97 AND 105")==0,"Nine old appointments removed");
   int patient=scalar(c,"SELECT Patient_ID FROM Patient WHERE Account_ID=?",user.getId());
-  for(String[]def:SeedUserFlows.CASES){String code=def[0];int inv=scalar(c,"SELECT i.Invoice_ID FROM Master_Invoice i JOIN Appointment a ON a.Appointment_ID=i.Appointment_ID JOIN Medical_Record mr ON mr.Appointment_ID=a.Appointment_ID WHERE a.Patient_ID=? AND mr.Clinical_Diagnosis LIKE ?",patient,SeedUserFlows.marker(code).replace("[","[[]")+"%");StaffInvoice bill=dao.get(inv);
+  for(String[]def:SeedUserFlows.CASES){String code=def[0];int appointment=FixtureRegistry.find(c,code,patient);int inv=scalar(c,"SELECT Invoice_ID FROM Master_Invoice WHERE Appointment_ID=?",appointment);StaffInvoice bill=dao.get(inv);
    ok(bill.getTotal()==(code.equals("EXAM_DONE_EXTRAS")?545000:200000),code+" total");
    ok(bill.paid==(code.equals("EXPIRED")?0:200000),code+" recorded paid");
    String expected=code.equals("EXPIRED")?"Unpaid":code.equals("PAID_FINAL")?"Completed":code.startsWith("EXAM_DONE")?"Examined":Set.of("REFUND_ELIGIBLE","DOCTOR_CANCEL","REFUND_PENDING").contains(code)?"Canceled":"Partial_Paid";
@@ -24,7 +24,7 @@ public class VerifyUserFlows {
    Map<String,Object> patientInvoice=new InvoiceDAO().getInvoiceDetailForPatient(inv,user.getId());
    ok(patientInvoice!=null,code+" patient invoice access");
    ok(((Number)patientInvoice.get("totalAmount")).longValue()==bill.getTotal(),code+" same patient/staff total");
-   ok(((Number)patientInvoice.get("balanceDue")).longValue()==bill.getDue(),code+" same patient/staff balance");
+   ok(((Number)patientInvoice.get("balanceDue")).longValue()==bill.getOutstanding(),code+" same patient/staff balance");
    ok(((Number)patientInvoice.get("depositAmount")).longValue()==bill.baseAmount,code+" base fee never counted twice");
    if(code.startsWith("EXAM_DONE"))ok(bill.isCanCheckout(),code+" staff can close");
    if(code.equals("EXAM_DONE_EXTRAS")){

@@ -257,7 +257,7 @@ public class InvoiceDAO {
                         "JOIN Appointment a ON i.Appointment_ID = a.Appointment_ID " +
                         "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
                         "LEFT JOIN Account acc ON p.Account_ID = acc.Account_ID " +
-                        "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
+                        "LEFT JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
                         "LEFT JOIN Employee_Profile e ON ws.Doctor_Employee_ID = e.Employee_ID " +
                         "LEFT JOIN Medical_Record m ON a.Appointment_ID = m.Appointment_ID " +
                         "WHERE i.Invoice_ID = ?";
@@ -335,146 +335,41 @@ public class InvoiceDAO {
 
         if (invoice == null) return null;
 
-        // Fetch line items according to clinic billing rules:
-        // 1. Phí khám theo bác sĩ (Tiền cọc đã thanh toán khi đặt hẹn)
-        // 2. Thuốc kê đơn phát sinh từ hồ sơ khám (nếu có thì cộng vào tổng)
-        // 3. Thủ thuật / Cận lâm sàng phát sinh ngoài phí khám (nếu có)
-        List<Map<String, Object>> items = new ArrayList<>();
-        int stt = 1;
-
-        long depositAmount = (long) invoice.get("depositAmount");
-        if (depositAmount <= 0) {
-            depositAmount = 250000;
-            invoice.put("depositAmount", depositAmount);
-            invoice.put("depositAmountFmt", formatVND(depositAmount));
-        }
-
-        String docName = (String) invoice.get("doctorName");
-        Map<String, Object> consultItem = new HashMap<>();
-        consultItem.put("stt", stt++);
-        consultItem.put("name", "Phí đăng ký khám chuyên khoa (Bác sĩ: " + (docName != null ? docName : "BS. Khám") + ")");
-        consultItem.put("type", "Khám bệnh (Tiền cọc)");
-        consultItem.put("quantity", 1);
-        consultItem.put("unitPrice", depositAmount);
-        consultItem.put("unitPriceFmt", formatVND(depositAmount));
-        consultItem.put("totalPrice", depositAmount);
-        consultItem.put("totalPriceFmt", formatVND(depositAmount));
-        items.add(consultItem);
-
-        // Fetch additional procedures (if any, excluding base examination already covered by consultation deposit)
-        long totalProcedureCost = 0;
-        String sqlProcedures = "SELECT po.Order_ID, s.Service_ID, s.Service_Name, po.Actual_Price, " +
-                              "COALESCE(pr.Credit_Amount, 0) AS Credit_Amount, po.Status " +
-                              "FROM Procedure_Order po " +
-                              "LEFT JOIN Procedure_Payment_Request pr ON pr.Order_ID = po.Order_ID " +
-                              "JOIN Service_Catalog s ON po.Service_ID = s.Service_ID " +
-                              "JOIN Medical_Record m ON po.Record_ID = m.Record_ID " +
-                              "JOIN Master_Invoice i ON m.Appointment_ID = i.Appointment_ID " +
-                              "WHERE i.Invoice_ID = ? AND (po.Referral_Notes IS NULL OR po.Status = 'Completed' OR pr.Status = 'Paid')";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sqlProcedures)) {
-            ps.setInt(1, invoiceId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    int svcId = rs.getInt("Service_ID");
-                    String svcName = rs.getString("Service_Name");
-                    // Service_ID = 1 ("Khám mắt tổng quát") đã được bao gồm trong Phí khám theo bác sĩ ở Mục 1
-                    if (svcId == 1 || (svcName != null && svcName.equalsIgnoreCase("Khám mắt tổng quát"))) {
-                        continue;
-                    }
-                    Map<String, Object> item = new HashMap<>();
-                    long credit = rs.getLong("Credit_Amount");
-                    long price = rs.getLong("Actual_Price") - credit;
-                    if (credit > 0) item.put("name", svcName + " (đã trừ phí khám tiền phẫu)");
-                    item.put("stt", stt++);
-                    item.put("name", svcName);
-                    item.put("type", "Cận lâm sàng / Thủ thuật");
-                    item.put("quantity", 1);
-                    item.put("unitPrice", price);
-                    item.put("unitPriceFmt", formatVND(price));
-                    item.put("totalPrice", price);
-                    item.put("totalPriceFmt", formatVND(price));
-                    items.add(item);
-                    totalProcedureCost += price;
-                }
+        // Paid on a legacy booking can mean only the consultation fee was collected.
+        // Share the staff calculation and final snapshot instead of guessing that Paid means zero balance.
+        try {
+            com.visioncare.model.StaffInvoice bill = new StaffInvoiceDAO().get(invoiceId);
+            List<Map<String, Object>> items = new ArrayList<>();
+            long medAmount=0, procedureAmount=0;
+            int sequence=1;
+            for (com.visioncare.model.StaffInvoice.Item source : bill.items) {
+                if (source.declined) continue;
+                Map<String,Object> item=new HashMap<>();
+                item.put("stt",sequence++);item.put("name",source.name);item.put("type",source.type);
+                item.put("quantity",source.quantity);item.put("unitPrice",source.unitPrice);
+                item.put("unitPriceFmt",source.unpriced?"Chưa định giá":formatVND(source.unitPrice));
+                item.put("totalPrice",source.getAmount());
+                item.put("totalPriceFmt",source.unpriced?"Chưa định giá":formatVND(source.getAmount()));
+                items.add(item);
+                if(source.key.startsWith("MEDICINE:"))medAmount+=source.getAmount();
+                if(source.key.startsWith("PROCEDURE:"))procedureAmount+=source.getAmount();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+            invoice.put("items",items);
+            invoice.put("depositAmount",bill.baseAmount);invoice.put("depositAmountFmt",formatVND(bill.baseAmount));
+            invoice.put("paidAmount",bill.paid);invoice.put("paidAmountFmt",formatVND(bill.paid));
+            invoice.put("medAmount",medAmount);invoice.put("medAmountFmt",formatVND(medAmount));
+            invoice.put("procedureAmount",procedureAmount);invoice.put("procedureAmountFmt",formatVND(procedureAmount));
+            invoice.put("totalAmount",bill.getTotal());invoice.put("totalAmountFmt",formatVND(bill.getTotal()));
+            invoice.put("balanceDue",bill.getOutstanding());invoice.put("balanceDueFmt",formatVND(bill.getOutstanding()));
+            invoice.put("collectionBlocked",bill.isBlocked());
+            invoice.put("finalized",bill.finalized);
+            invoice.put("settled",bill.finalized&&!bill.isBlocked()&&bill.getOutstanding()==0);
+            invoice.put("closeDate",bill.finalizedAt!=null?bill.finalizedAt:"");
+            invoice.put("statusVn",bill.getPaymentLabel());
+        } catch(Exception error) {
+            error.printStackTrace();
+            return null;
         }
-
-        // Fetch Prescriptions (Thuốc kê đơn)
-        long totalMedCost = 0;
-        String sqlMeds = "SELECT pd.Medicine_Name, pd.Quantity, pd.Dosage_Instruction, pd.Is_Custom_Medicine, " +
-                         "CASE WHEN pd.Is_Custom_Medicine = 1 THEN 0 ELSE COALESCE(ms.Price, 50000) END AS Unit_Price " +
-                         "FROM Prescription_Detail pd " +
-                         "JOIN Prescription p ON pd.Prescription_ID = p.Prescription_ID " +
-                         "JOIN Medical_Record m ON p.Record_ID = m.Record_ID " +
-                         "JOIN Master_Invoice i ON m.Appointment_ID = i.Appointment_ID " +
-                         "LEFT JOIN Medical_Supply ms ON pd.Is_Custom_Medicine = 0 AND ms.Category = N'Thuốc & dung dịch' AND (pd.Medicine_Name LIKE '%' + ms.Supply_Name + '%' OR ms.Supply_Name LIKE '%' + pd.Medicine_Name + '%') " +
-                         "WHERE i.Invoice_ID = ?";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sqlMeds)) {
-            ps.setInt(1, invoiceId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Map<String, Object> item = new HashMap<>();
-                    String medName = rs.getString("Medicine_Name");
-                    String dosage = rs.getString("Dosage_Instruction");
-                    int qty = rs.getInt("Quantity");
-                    if (qty <= 0) qty = 1;
-                    boolean customMedicine = rs.getBoolean("Is_Custom_Medicine");
-                    long unitPrice = rs.getLong("Unit_Price");
-                    
-                    // Chuẩn hóa đơn giá thuốc thực tế phòng khám
-                    if (!customMedicine && (unitPrice <= 0 || unitPrice == 50000)) {
-                        if (medName != null && medName.toLowerCase().contains("tobradex")) {
-                            unitPrice = 50000;
-                        } else if (medName != null && medName.toLowerCase().contains("sanlein")) {
-                            unitPrice = 25000; // 2 lọ x 25.000 = 50.000đ -> tổng đơn thuốc = 100.000đ
-                        }
-                    }
-                    long linePrice = qty * unitPrice;
-
-                    item.put("stt", stt++);
-                    item.put("name", medName + (dosage != null && !dosage.trim().isEmpty() ? " (" + dosage.trim() + ")" : ""));
-                    item.put("type", customMedicine ? "Thuốc nhập tay (chưa định giá)" : "Thuốc kê đơn");
-                    item.put("quantity", qty);
-                    item.put("unitPrice", unitPrice);
-                    item.put("unitPriceFmt", customMedicine ? "Chưa định giá" : formatVND(unitPrice));
-                    item.put("totalPrice", linePrice);
-                    item.put("totalPriceFmt", customMedicine ? "Chưa định giá" : formatVND(linePrice));
-                    items.add(item);
-                    totalMedCost += linePrice;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        invoice.put("items", items);
-        invoice.put("medAmount", totalMedCost);
-        invoice.put("medAmountFmt", formatVND(totalMedCost));
-        invoice.put("procedureAmount", totalProcedureCost);
-        invoice.put("procedureAmountFmt", formatVND(totalProcedureCost));
-
-        // Tính toán tài chính:
-        // - Tiền cọc = Tiền đăng ký khám theo bác sĩ đã chọn
-        // - Có đơn thuốc / thủ thuật phát sinh thì mới cộng thêm vào tổng
-        // - Không có đơn thuốc thì hóa đơn chỉ gồm tiền cọc = tiền tổng
-        long computedTotal = depositAmount + totalMedCost + totalProcedureCost;
-        invoice.put("totalAmount", computedTotal);
-        invoice.put("totalAmountFmt", formatVND(computedTotal));
-
-        // Số tiền còn lại cần thanh toán (Balance Due)
-        String st = (String) invoice.get("status");
-        long balanceDue = 0;
-        if ("Paid".equalsIgnoreCase(st)) {
-            balanceDue = 0;
-        } else {
-            balanceDue = Math.max(0, computedTotal - depositAmount);
-        }
-        invoice.put("balanceDue", balanceDue);
-        invoice.put("balanceDueFmt", formatVND(balanceDue));
 
         // Fetch payment transactions
         List<Map<String, Object>> transactions = new ArrayList<>();

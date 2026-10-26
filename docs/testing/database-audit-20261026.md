@@ -58,25 +58,25 @@ Database ứng dụng: **eye_clinic_db**. Chỉ đọc database khác để lấ
 | Bảng | Số dòng |
 |---|---:|
 | dbo.Account | 17 |
-| dbo.Appointment | 62 |
+| dbo.Appointment | 71 |
 | dbo.Clinic_Gallery | 8 |
 | dbo.Clinic_Setting | 1 |
 | dbo.Employee_Profile | 12 |
-| dbo.Examination_Detail | 0 |
-| dbo.Invoice_Checkout | 2 |
-| dbo.Invoice_Checkout_Item | 5 |
+| dbo.Examination_Detail | 3 |
+| dbo.Invoice_Checkout | 3 |
+| dbo.Invoice_Checkout_Item | 6 |
 | dbo.Invoice_Checkout_Payment | 1 |
 | dbo.Leave_Cancel_Request | 1 |
-| dbo.Master_Invoice | 34 |
-| dbo.Medical_Record | 35 |
+| dbo.Master_Invoice | 43 |
+| dbo.Medical_Record | 44 |
 | dbo.Medical_Supply | 4 |
 | dbo.Patient | 12 |
-| dbo.Payment_Transaction | 13 |
-| dbo.Prescription | 10 |
-| dbo.Prescription_Detail | 15 |
-| dbo.Procedure_Order | 11 |
+| dbo.Payment_Transaction | 21 |
+| dbo.Prescription | 11 |
+| dbo.Prescription_Detail | 16 |
+| dbo.Procedure_Order | 12 |
 | dbo.Procedure_Payment_Request | 0 |
-| dbo.Refund_Request | 4 |
+| dbo.Refund_Request | 5 |
 | dbo.Role | 6 |
 | dbo.Room | 9 |
 | dbo.Service_Catalog | 16 |
@@ -88,7 +88,7 @@ Database ứng dụng: **eye_clinic_db**. Chỉ đọc database khác để lấ
 |---|---:|
 | Lịch Confirmed thiếu hóa đơn | 15 |
 | Lịch có nhiều hóa đơn tổng | 0 |
-| Hóa đơn đóng đủ tiền nhưng thiếu dấu chốt checkout (bao gồm phí khám) | 16 |
+| Hóa đơn đóng đủ tiền nhưng thiếu dấu chốt checkout (bao gồm phí khám) | 22 |
 | Yêu cầu refund đang chờ nhưng không đủ điều kiện hủy trước checkin | 1 |
 
 ## Cột và khóa ngoại
@@ -216,6 +216,7 @@ Database ứng dụng: **eye_clinic_db**. Chỉ đọc database khác để lấ
 - `examination_result` nvarchar (nullable=YES)
 - `conclusion` nvarchar (nullable=YES)
 - `Created_At` datetime2 (nullable=NO)
+- `Staff_Notes` nvarchar (nullable=YES)
 ### Medical_Supply
 
 - `Supply_ID` int (nullable=NO)
@@ -338,13 +339,15 @@ Database ứng dụng: **eye_clinic_db**. Chỉ đọc database khác để lấ
 
 1 / System_Admin / 
 
-Canceled / 12 / 
+Canceled / 16 / 
 
-Completed / 22 / 
+Completed / 25 / 
 
-Confirmed / 26 / 
+Confirmed / 27 / 
 
 In_Progress / 2 / 
+
+Pending / 1 / 
 
 507 / 6 / 2026-10-26 / 08:00:00 / 
 
@@ -352,15 +355,11 @@ In_Progress / 2 /
 
 529 / 7 / 2026-10-26 / 08:00:00 / 
 
-493 / 3 / 2026-10-26 / 08:30:00 / 
-
 508 / 6 / 2026-10-26 / 08:30:00 / 
 
 523 / 4 / 2026-10-26 / 08:30:00 / 
 
 530 / 7 / 2026-10-26 / 08:30:00 / 
-
-494 / 3 / 2026-10-26 / 09:00:00 / 
 
 509 / 6 / 2026-10-26 / 09:00:00 / 
 
@@ -368,7 +367,11 @@ In_Progress / 2 /
 
 531 / 7 / 2026-10-26 / 09:00:00 / 
 
-495 / 3 / 2026-10-26 / 09:30:00 / 
+510 / 6 / 2026-10-26 / 09:30:00 / 
+
+525 / 4 / 2026-10-26 / 09:30:00 / 
+
+532 / 7 / 2026-10-26 / 09:30:00 / 
 
 1 / Thuốc nhỏ mắt Systane Ultra (10ml) / 95000 / 
 
