@@ -313,6 +313,7 @@ CREATE TABLE [dbo].[Medical_Record](
 	[Appointment_ID] [int] NOT NULL,
 	[Doctor_Employee_ID] [int] NOT NULL,
 	[Clinical_Diagnosis] [nvarchar](max) NULL,
+	[Staff_Notes] [nvarchar](max) NULL,
 	[examination_result] [nvarchar](max) NULL,
 	[conclusion] [nvarchar](max) NULL,
 	[Created_At] [datetime2](7) NOT NULL,
@@ -387,7 +388,7 @@ PRIMARY KEY CLUSTERED
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 
-ALTER TABLE [dbo].[Medical_Supply]  WITH CHECK ADD  CONSTRAINT [CHK_Medical_Supply_Category] CHECK  (([Category]=N'Khác' OR [Category]=N'Vật tư y tế tiêu hao' OR [Category]=N'Kính & Phụ kiện' OR [Category]=N'Thuốc & Dung dịch'))
+ALTER TABLE [dbo].[Medical_Supply]  WITH CHECK ADD  CONSTRAINT [CHK_Medical_Supply_Category] CHECK  ([Category] IN (N'Khác', N'Vật tư y tế tiêu hao', N'Kính & Phụ kiện', N'Kính gọng & tròng kính', N'Kính áp tròng', N'Phụ kiện & sản phẩm hỗ trợ', N'Thuốc & dung dịch'))
 ALTER TABLE [dbo].[Medical_Supply] CHECK CONSTRAINT [CHK_Medical_Supply_Category]
 ALTER TABLE [dbo].[Medical_Supply]  WITH CHECK ADD  CONSTRAINT [CHK_Medical_Supply_Price] CHECK  (([Price]>=(0)))
 ALTER TABLE [dbo].[Medical_Supply] CHECK CONSTRAINT [CHK_Medical_Supply_Price]
@@ -1737,6 +1738,18 @@ INSERT [dbo].[Medical_Record] ([Record_ID], [Appointment_ID], [Doctor_Employee_I
 INSERT [dbo].[Medical_Record] ([Record_ID], [Appointment_ID], [Doctor_Employee_ID], [Clinical_Diagnosis], [examination_result], [conclusion], [Created_At]) VALUES (30, 31, 3, N'Dịch vụ/Bệnh lý: Khám mắt tổng quát & Soi đáy mắt', NULL, NULL, CAST(N'2026-10-18T18:52:53.5743663' AS DateTime2))
 INSERT [dbo].[Medical_Record] ([Record_ID], [Appointment_ID], [Doctor_Employee_ID], [Clinical_Diagnosis], [examination_result], [conclusion], [Created_At]) VALUES (31, 32, 3, N'Dịch vụ/Bệnh lý: Khám mắt tổng quát & Soi đáy mắt', NULL, NULL, CAST(N'2026-10-18T19:00:15.6206274' AS DateTime2))
 SET IDENTITY_INSERT [dbo].[Medical_Record] OFF
+GO
+
+-- Recover reception notes for appointments without a completed examination.
+UPDATE mr
+SET Staff_Notes = mr.Clinical_Diagnosis
+FROM dbo.Medical_Record mr
+JOIN dbo.Appointment a ON a.Appointment_ID = mr.Appointment_ID
+WHERE a.Status IN ('Pending', 'Confirmed', 'In_Progress')
+  AND mr.Staff_Notes IS NULL
+  AND mr.Clinical_Diagnosis IS NOT NULL
+  AND mr.examination_result IS NULL
+  AND mr.conclusion IS NULL;
 GO
 
 -- -----------------------------------------------------

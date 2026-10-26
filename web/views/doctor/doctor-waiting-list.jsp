@@ -242,7 +242,7 @@
                                         <c:if test="${item.status eq 'In_Progress' || (item.status eq 'Confirmed' && startWindowState eq 'late')}">
                                             <button class="action-btn delete" type="button" title="${item.status eq 'In_Progress' ? 'Dừng khám' : 'Hủy khám'}" aria-label="${item.status eq 'In_Progress' ? 'Dừng khám' : 'Hủy khám'}"
                                                     data-bs-toggle="modal" data-bs-target="#cancelExamModal" data-appointment-id="${item.id}"
-                                                    data-exam-status="${item.status}">
+                                                    data-exam-status="${item.status}" data-patient-name="<c:out value='${item.patientName}' />">
                                                 <i class="bi bi-trash" aria-hidden="true"></i>
                                             </button>
                                         </c:if>
@@ -325,7 +325,7 @@
         var trigger = event.relatedTarget;
         var id = trigger.getAttribute('data-appointment-id');
         var active = trigger.getAttribute('data-exam-status') === 'In_Progress';
-        var patient = trigger.closest('.doctor-queue-item').querySelector('.doctor-queue-patient-copy h3').textContent.trim();
+        var patient = trigger.getAttribute('data-patient-name') || 'bệnh nhân';
         document.getElementById('cancelExamAppointmentId').value = id;
         document.getElementById('cancelExamCode').textContent = '#APT-' + id;
         document.getElementById('cancelExamPatient').textContent = patient;

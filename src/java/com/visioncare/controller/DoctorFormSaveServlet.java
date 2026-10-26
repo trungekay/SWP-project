@@ -120,7 +120,9 @@ public class DoctorFormSaveServlet extends HttpServlet {
                 if (!prescription) {
                     Map<String, String> savedContext = formDAO.loadExamination(appointmentId);
                     values.put("previousDiagnoses", savedContext.getOrDefault("previousDiagnoses", ""));
+                    values.put("staffNotes", savedContext.getOrDefault("staffNotes", ""));
                     values.put("surgeryStatus", savedContext.getOrDefault("surgeryStatus", ""));
+                    request.setAttribute("printReady", formDAO.hasSavedExamination(appointmentId));
                 }
                 if (medicines.isEmpty()) medicines.add(new HashMap<>());
                 response.setStatus(422);

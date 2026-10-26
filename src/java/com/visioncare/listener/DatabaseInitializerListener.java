@@ -91,6 +91,41 @@ public class DatabaseInitializerListener implements ServletContextListener {
                 System.err.println("[VisionCare] Note on Prescription_Detail columns check: " + e.getMessage());
             }
 
+            // Keep reception notes separate from the doctor's clinical diagnosis.
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("IF COL_LENGTH('dbo.Medical_Record', 'Staff_Notes') IS NULL "
+                           + "ALTER TABLE dbo.Medical_Record ADD Staff_Notes NVARCHAR(MAX) NULL");
+                stmt.execute("UPDATE mr SET Staff_Notes = mr.Clinical_Diagnosis "
+                           + "FROM dbo.Medical_Record mr JOIN dbo.Appointment a "
+                           + "ON a.Appointment_ID = mr.Appointment_ID "
+                           + "WHERE a.Status IN ('Pending', 'Confirmed', 'In_Progress') "
+                           + "AND mr.Staff_Notes IS NULL AND mr.Clinical_Diagnosis IS NOT NULL "
+                           + "AND mr.examination_result IS NULL AND mr.conclusion IS NULL");
+            } catch (Exception e) {
+                System.err.println("[VisionCare] Note on Staff_Notes migration: " + e.getMessage());
+            }
+
+            // Align the existing supply category constraint with the retail form.
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("SET XACT_ABORT ON; BEGIN TRANSACTION; "
+                           + "IF EXISTS (SELECT 1 FROM sys.check_constraints "
+                           + "WHERE name = 'CHK_Medical_Supply_Category' "
+                           + "AND parent_object_id = OBJECT_ID('dbo.Medical_Supply') "
+                           + "AND definition NOT LIKE N'%Kính áp tròng%') "
+                           + "ALTER TABLE dbo.Medical_Supply DROP CONSTRAINT CHK_Medical_Supply_Category; "
+                           + "IF OBJECT_ID('dbo.Medical_Supply', 'U') IS NOT NULL "
+                           + "AND NOT EXISTS (SELECT 1 FROM sys.check_constraints "
+                           + "WHERE name = 'CHK_Medical_Supply_Category' "
+                           + "AND parent_object_id = OBJECT_ID('dbo.Medical_Supply')) "
+                           + "ALTER TABLE dbo.Medical_Supply WITH CHECK ADD CONSTRAINT CHK_Medical_Supply_Category "
+                           + "CHECK (Category IN (N'Khác', N'Vật tư y tế tiêu hao', N'Kính & Phụ kiện', "
+                           + "N'Kính gọng & tròng kính', N'Kính áp tròng', "
+                           + "N'Phụ kiện & sản phẩm hỗ trợ', N'Thuốc & dung dịch')); "
+                           + "COMMIT TRANSACTION");
+            } catch (Exception e) {
+                System.err.println("[VisionCare] Note on Medical_Supply categories: " + e.getMessage());
+            }
+
             System.out.println("[VisionCare] Database check completed successfully!");
             System.out.println("==================================================================");
 

@@ -10,14 +10,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MedicineDAO {
-    private static final String COLUMNS = "Medicine_ID, Supply_Name, Category, Price, " +
+    private static final String COLUMNS = "Supply_ID, Supply_Name, Category, Price, " +
             "CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image";
+    private static final String RETAIL_FILTER = "Category <> N'Vật tư y tế tiêu hao'";
 
     public List<Medicine> list() throws Exception {
         List<Medicine> items = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "SELECT " + COLUMNS + " FROM Medicine ORDER BY Medicine_ID");
+                     "SELECT " + COLUMNS + " FROM Medical_Supply WHERE " + RETAIL_FILTER + " ORDER BY Supply_ID");
              ResultSet result = statement.executeQuery()) {
             while (result.next()) items.add(read(result));
         }
@@ -29,8 +30,8 @@ public class MedicineDAO {
         List<Medicine> items = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "SELECT " + COLUMNS + " FROM Medicine " +
-                     "WHERE Category = N'Thuốc & dung dịch' ORDER BY Supply_Name, Medicine_ID");
+                     "SELECT " + COLUMNS + " FROM Medical_Supply " +
+                     "WHERE Category = N'Thuốc & dung dịch' ORDER BY Supply_Name, Supply_ID");
              ResultSet result = statement.executeQuery()) {
             while (result.next()) items.add(read(result));
         }
@@ -40,7 +41,7 @@ public class MedicineDAO {
     public Medicine get(int id) throws Exception {
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "SELECT " + COLUMNS + " FROM Medicine WHERE Medicine_ID = ?")) {
+                     "SELECT " + COLUMNS + " FROM Medical_Supply WHERE Supply_ID = ? AND " + RETAIL_FILTER)) {
             statement.setInt(1, id);
             try (ResultSet result = statement.executeQuery()) {
                 return result.next() ? read(result) : null;
@@ -52,9 +53,9 @@ public class MedicineDAO {
                     byte[] imageData, String imageMimeType) throws Exception {
         boolean create = id == 0;
         String sql = create
-                ? "INSERT INTO Medicine (Supply_Name, Category, Price, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?)"
-                : "UPDATE Medicine SET Supply_Name = ?, Category = ?, Price = ?" +
-                  (imageData == null ? "" : ", Image_Data = ?, Image_Mime_Type = ?") + " WHERE Medicine_ID = ?";
+                ? "INSERT INTO Medical_Supply (Supply_Name, Category, Price, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?)"
+                : "UPDATE Medical_Supply SET Supply_Name = ?, Category = ?, Price = ?" +
+                  (imageData == null ? "" : ", Image_Data = ?, Image_Mime_Type = ?") + " WHERE Supply_ID = ? AND " + RETAIL_FILTER;
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, name);
@@ -80,7 +81,7 @@ public class MedicineDAO {
     public boolean delete(int id) throws Exception {
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "DELETE FROM Medicine WHERE Medicine_ID = ?")) {
+                     "DELETE FROM Medical_Supply WHERE Supply_ID = ? AND " + RETAIL_FILTER)) {
             statement.setInt(1, id);
             return statement.executeUpdate() == 1;
         }
@@ -89,7 +90,7 @@ public class MedicineDAO {
     public ImageData getImage(int id) throws Exception {
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "SELECT Image_Data, Image_Mime_Type FROM Medicine WHERE Medicine_ID = ?")) {
+                     "SELECT Image_Data, Image_Mime_Type FROM Medical_Supply WHERE Supply_ID = ? AND " + RETAIL_FILTER)) {
             statement.setInt(1, id);
             try (ResultSet result = statement.executeQuery()) {
                 if (!result.next()) return null;
@@ -100,7 +101,7 @@ public class MedicineDAO {
     }
 
     private Medicine read(ResultSet result) throws Exception {
-        return new Medicine(result.getInt("Medicine_ID"), result.getString("Supply_Name"),
+        return new Medicine(result.getInt("Supply_ID"), result.getString("Supply_Name"),
                 result.getString("Category"), result.getBigDecimal("Price"),
                 result.getBoolean("Has_Image"));
     }
