@@ -52,8 +52,9 @@ public class ProcedurePaymentDAO {
 
     /** Record the receipt once and release the matching surgery order atomically. */
     public boolean confirm(int orderId, int staffEmployeeId, String method) throws Exception {
+        try { method = com.visioncare.util.PaymentMethod.canonical(method); } catch (IllegalArgumentException error) { return false; }
         if (orderId <= 0 || staffEmployeeId <= 0
-                || !("Cash_At_Counter".equals(method) || "Bank_Transfer".equals(method))) {
+                || !("Cash".equals(method) || "QR_Banking".equals(method))) {
             return false;
         }
         try (Connection conn = DBContext.getConnection()) {

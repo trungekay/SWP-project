@@ -172,7 +172,7 @@ public class AppointmentDAO {
 
             // 2. Insert Payment_Transaction
             String sqlTrans = "INSERT INTO Payment_Transaction (Invoice_ID, Amount, Gateway_Status, Trans_Date, Payment_Gateway) " +
-                              "VALUES (?, ?, 'Success', DATEADD(HOUR, 7, SYSUTCDATETIME()), 'VietQR_Banking')";
+                              "VALUES (?, ?, 'Success', DATEADD(HOUR, 7, SYSUTCDATETIME()), 'QR_Banking')";
             try (PreparedStatement psTrans = conn.prepareStatement(sqlTrans)) {
                 psTrans.setInt(1, invoiceId);
                 psTrans.setLong(2, depositAmount);
@@ -532,7 +532,7 @@ public class AppointmentDAO {
 
                 // Ghi nhận giao dịch thanh toán tại quầy vào Payment_Transaction
                 if (invoiceId > 0) {
-                    String gateway = (a.getPayment() != null && !a.getPayment().trim().isEmpty()) ? a.getPayment().trim() : "Cash_At_Counter";
+                    String gateway = (a.getPayment() != null && !a.getPayment().trim().isEmpty()) ? com.visioncare.util.PaymentMethod.canonical(a.getPayment()) : "Cash";
                     String sqlTrans = "INSERT INTO Payment_Transaction (Invoice_ID, Amount, Gateway_Status, Trans_Date, Payment_Gateway) " +
                                       "VALUES (?, ?, 'Success', DATEADD(HOUR, 7, SYSUTCDATETIME()), ?)";
                     try (PreparedStatement psTrans = conn.prepareStatement(sqlTrans)) {
@@ -622,7 +622,7 @@ public class AppointmentDAO {
 
             // 2. Ghi nhận giao dịch thanh toán VietQR vào Payment_Transaction
             String sqlTrans = "INSERT INTO Payment_Transaction (Invoice_ID, Amount, Gateway_Status, Trans_Date, Payment_Gateway) " +
-                              "VALUES (?, ?, 'Success', DATEADD(HOUR, 7, SYSUTCDATETIME()), 'VietQR_Banking')";
+                              "VALUES (?, ?, 'Success', DATEADD(HOUR, 7, SYSUTCDATETIME()), 'QR_Banking')";
             try (PreparedStatement psTrans = conn.prepareStatement(sqlTrans)) {
                 psTrans.setInt(1, invoiceId);
                 psTrans.setLong(2, totalAmount);
@@ -1178,7 +1178,7 @@ public class AppointmentDAO {
                 }
             }
 
-            String gateway = (paymentGateway != null && !paymentGateway.trim().isEmpty()) ? paymentGateway.trim() : "Cash";
+            String gateway = (paymentGateway != null && !paymentGateway.trim().isEmpty()) ? com.visioncare.util.PaymentMethod.canonical(paymentGateway) : "Cash";
 
             if (invoiceId <= 0) {
                 // Nếu chưa có hóa đơn, tạo mới với trạng thái Paid

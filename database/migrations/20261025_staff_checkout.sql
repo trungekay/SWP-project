@@ -6,7 +6,7 @@ CREATE TABLE dbo.Invoice_Checkout (
  Base_Amount decimal(18,0) NOT NULL CHECK (Base_Amount >= 0),
  Opening_Paid decimal(18,0) NOT NULL DEFAULT 0 CHECK (Opening_Paid >= 0),
  Finalized_At datetime2 NULL, Finalized_By int NULL REFERENCES dbo.Employee_Profile(Employee_ID),
- Payment_Method nvarchar(50) NULL
+ Payment_Method nvarchar(50) NULL CONSTRAINT CHK_Checkout_Payment_Method CHECK(Payment_Method IS NULL OR Payment_Method COLLATE Latin1_General_100_BIN2 IN ('Cash','QR_Banking'))
 );
 IF COL_LENGTH('dbo.Invoice_Checkout','Opening_Paid') IS NULL
 ALTER TABLE dbo.Invoice_Checkout ADD Opening_Paid decimal(18,0) NOT NULL DEFAULT 0;
