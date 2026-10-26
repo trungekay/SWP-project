@@ -104,6 +104,24 @@ public class BookAppointmentServlet extends HttpServlet {
             return;
         }
 
+        // Bệnh nhân chủ động hủy để chọn lại lịch khác (hoặc hủy từ cổng PayOS)
+        if ("cancelPending".equalsIgnoreCase(action)) {
+            String apptIdStr = request.getParameter("id");
+            if (apptIdStr != null && !apptIdStr.isEmpty()) {
+                try {
+                    int apptId = Integer.parseInt(apptIdStr);
+                    appointmentDAO.cancelAppointment(apptId, "Bệnh nhân hủy trước khi thanh toán để chọn lịch khác");
+                } catch (Exception ignored) {}
+            }
+            if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With")) || "json".equalsIgnoreCase(request.getParameter("format"))) {
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"success\":true}");
+                return;
+            }
+            response.sendRedirect(request.getContextPath() + "/book-appointment");
+            return;
+        }
+
         // Điều hướng trở về màn hình thành công sau khi thanh toán PayOS
         String stepParam = request.getParameter("step");
         if ("success".equalsIgnoreCase(stepParam)) {
@@ -172,7 +190,7 @@ public class BookAppointmentServlet extends HttpServlet {
                         request.getSession().setAttribute("payos_order_" + apptId, orderCode);
 
                         String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
-                        String cancelUrl = baseUrl + "/book-appointment";
+                        String cancelUrl = baseUrl + "/book-appointment?action=cancelPending&id=" + apptId;
                         String returnUrl = baseUrl + "/book-appointment?step=success&id=" + apptId;
                         com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(orderCode, (int) fee, payosDesc, cancelUrl, returnUrl);
 
@@ -222,6 +240,7 @@ public class BookAppointmentServlet extends HttpServlet {
                     return;
                 }
                 int doctorId = Integer.parseInt(docIdStr);
+                appointmentDAO.autoCancelExpiredPendingAppointments();
                 List<TimeSlot> slots = workScheduleDAO.getDoctorSlotsForDate(doctorId, dateStr);
                 String shift = workScheduleDAO.getDoctorWorkShiftSummary(doctorId, dateStr);
 
@@ -615,7 +634,7 @@ public class BookAppointmentServlet extends HttpServlet {
             request.getSession().setAttribute("payos_order_" + newId, orderCode);
 
             String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
-            String cancelUrl = baseUrl + "/book-appointment";
+            String cancelUrl = baseUrl + "/book-appointment?action=cancelPending&id=" + newId;
             String returnUrl = baseUrl + "/book-appointment?step=success&id=" + newId;
             com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(orderCode, (int) fee, payosDesc, cancelUrl, returnUrl);
 

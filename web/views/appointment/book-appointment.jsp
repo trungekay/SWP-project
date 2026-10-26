@@ -548,7 +548,7 @@
                                                   class="btn btn-success btn-lg py-3 rounded-3 shadow-sm fw-bold">
                                                   <i class="bi bi-shield-check me-2"></i>Tôi đã chuyển khoản (Kiểm tra thanh toán)
                                                 </button>
-                                                <a href="${pageContext.request.contextPath}/book-appointment"
+                                                <a href="${pageContext.request.contextPath}/book-appointment?action=cancelPending&id=${appointment.id != null ? appointment.id : appointmentId}"
                                                   class="btn btn-link text-muted text-center mt-2">
                                                   <i class="bi bi-arrow-left me-1"></i>Hủy và chọn lại lịch khác
                                                 </a>
@@ -564,7 +564,7 @@
                                                 Khung giờ này đã tạm hết thời gian giữ chỗ ưu tiên. Quý khách vui lòng tạo lại lịch hẹn mới để hoàn tất đặt chỗ.
                                               </p>
                                             </div>
-                                            <a href="${pageContext.request.contextPath}/book-appointment" class="btn btn-primary btn-lg py-3 rounded-pill shadow-sm fw-bold w-100" style="background:#0d9488; border-color:#0d9488;">
+                                            <a href="${pageContext.request.contextPath}/book-appointment?action=cancelPending&id=${appointment.id != null ? appointment.id : appointmentId}" class="btn btn-primary btn-lg py-3 rounded-pill shadow-sm fw-bold w-100" style="background:#0d9488; border-color:#0d9488;">
                                               <i class="bi bi-arrow-repeat me-2"></i>Đặt lại lịch hẹn mới
                                             </a>
                                           </div>
@@ -1947,6 +1947,12 @@
                     clearInterval(countdownInterval);
                     if (checkInterval) clearInterval(checkInterval);
                     sessionStorage.removeItem(storageKey);
+
+                    // Giải phóng slot ngay lập tức trên DB khi hết giờ
+                    if (currentApptId) {
+                      fetch('${pageContext.request.contextPath}/book-appointment?action=cancelPending&format=json&id=' + encodeURIComponent(currentApptId))
+                        .catch(err => console.log('Auto cancelled expired slot...', err));
+                    }
 
                     if (timerEl) timerEl.textContent = '00:00 (Hết hạn)';
                     if (statusEl) { statusEl.textContent = 'Đã hết hạn'; statusEl.className = 'text-danger fw-bold'; }
