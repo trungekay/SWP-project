@@ -147,6 +147,14 @@ public class WorkScheduleDAO {
             conn.setAutoCommit(false);
             try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
                 for (ScheduleRegistrationDTO item : list) {
+                    try (PreparedStatement cfg = conn.prepareStatement(
+                            "SELECT 1 FROM Time_Slot_Config WITH (HOLDLOCK) WHERE Slot_Name=? "
+                            + "AND Start_Time=CAST(? AS TIME) AND End_Time=CAST(? AS TIME) AND Status='Available'")) {
+                        cfg.setString(1,item.getSlot()); cfg.setString(2,item.getStartTime()); cfg.setString(3,item.getEndTime());
+                        try (ResultSet valid = cfg.executeQuery()) {
+                            if (!valid.next()) throw new IllegalArgumentException("Ca đã đóng hoặc đã thay đổi.");
+                        }
+                    }
                     int pIndex = 1;
                     ps.setString(pIndex++, item.getWorkDate());
                     ps.setString(pIndex++, item.getSlot());
