@@ -51,6 +51,9 @@ public class StaffWaitingListServlet extends HttpServlet {
         }
 
         try {
+            // Tự động quét và hủy các ca hẹn quá hạn từ hôm qua trở về trước mà bệnh nhân không check-in
+            appointmentDAO.autoCancelExpiredAppointments();
+
             String dateParam = request.getParameter("date");
             String statusParam = request.getParameter("status");
             String doctorIdParam = request.getParameter("doctorId");

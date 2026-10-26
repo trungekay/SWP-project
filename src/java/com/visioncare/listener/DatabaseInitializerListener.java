@@ -91,6 +91,16 @@ public class DatabaseInitializerListener implements ServletContextListener {
                 System.err.println("[VisionCare] Note on Prescription_Detail columns check: " + e.getMessage());
             }
 
+            // 5. Tự động quét và hủy các ca hẹn trong quá khứ mà bệnh nhân không đến (chưa check-in)
+            try {
+                int canceledCount = new com.visioncare.dao.AppointmentDAO().autoCancelExpiredAppointments();
+                if (canceledCount > 0) {
+                    System.out.println("[VisionCare] Auto-canceled " + canceledCount + " past un-checked-in appointments.");
+                }
+            } catch (Exception e) {
+                System.err.println("[VisionCare] Note on auto-cancel past appointments on startup: " + e.getMessage());
+            }
+
             System.out.println("[VisionCare] Database check completed successfully!");
             System.out.println("==================================================================");
 

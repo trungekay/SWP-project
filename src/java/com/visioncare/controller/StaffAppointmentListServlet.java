@@ -57,15 +57,11 @@ public class StaffAppointmentListServlet extends HttpServlet {
                                 HttpSession session = request.getSession();
                                 User currentUser = (User) session.getAttribute("user");
                                 int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
-                                appointmentDAO.confirmAndCheckinWalkin(apptId, staffEmployeeId);
+                                // Thanh toán QR: xác nhận Paid/Confirmed, KHÔNG tự check-in
+                                appointmentDAO.confirmAndCheckinWalkin(apptId, staffEmployeeId, false);
                                 isPaid = true;
                             }
                         }
-                    } else if (appt != null && (appt.getCheckinTime() == null || appt.getCheckinTime().isEmpty())) {
-                        HttpSession session = request.getSession();
-                        User currentUser = (User) session.getAttribute("user");
-                        int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
-                        appointmentDAO.checkInPatient(apptId, staffEmployeeId);
                     }
                 } catch (Exception ignored) {}
             }
@@ -127,6 +123,9 @@ public class StaffAppointmentListServlet extends HttpServlet {
         request.setAttribute("refundEligible", refundEligible);
         request.setAttribute("activeAppointmentRefunds", new com.visioncare.dao.RefundDAO().getActiveRefundsForStaffAppointments());
         try {
+            // Tự động quét và hủy các ca hẹn quá hạn từ hôm qua trở về trước mà bệnh nhân không check-in
+            appointmentDAO.autoCancelExpiredAppointments();
+
             String dateParam = request.getParameter("date");
             String statusParam = request.getParameter("status");
             String doctorIdParam = request.getParameter("doctorId");
@@ -387,13 +386,16 @@ public class StaffAppointmentListServlet extends HttpServlet {
                         try { orderCode2 = Long.parseLong(orderCodeStr2.trim()); } catch (NumberFormatException ignored2) {}
                     }
 
+                    // Thanh toán QR: xác nhận Paid/Confirmed, KHÔNG tự check-in
+                    boolean shouldCheckin = false;
+
                     if (orderCode2 > 0) {
                         String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(orderCode2);
                         if ("PAID".equalsIgnoreCase(payosStatus)) {
                             // PayOS đã nhận được tiền -> xác nhận hợp lệ
                             User currentUser = (User) session.getAttribute("user");
                             int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
-                            success = appointmentDAO.confirmAndCheckinWalkin(apptId, staffEmployeeId);
+                            success = appointmentDAO.confirmAndCheckinWalkin(apptId, staffEmployeeId, shouldCheckin);
                         } else {
                             // Chưa nhận được tiền từ ngân hàng
                             errorMsg = "Chưa nhận được tiền từ ngân hàng (PayOS: " + payosStatus + "). Vui lòng đợi bệnh nhân quét mã và hoàn tất chuyển khoản!";
@@ -404,7 +406,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                         if (apptCheck != null && "Paid".equalsIgnoreCase(apptCheck.getInvoiceStatus())) {
                             User currentUser = (User) session.getAttribute("user");
                             int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
-                            success = appointmentDAO.confirmAndCheckinWalkin(apptId, staffEmployeeId);
+                            success = appointmentDAO.confirmAndCheckinWalkin(apptId, staffEmployeeId, shouldCheckin);
                         } else {
                             errorMsg = "Không thể xác minh trạng thái thanh toán. Vui lòng đợi hệ thống tự động xác nhận sau khi bệnh nhân chuyển khoản!";
                         }
@@ -624,7 +626,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                                 orderCodeFinal = ((long) newApptId * 1000000L) + (System.currentTimeMillis() / 1000L % 1000000L);
                                 String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
                                 String cancelUrl = baseUrl + "/staff/appointments";
-                                String returnUrl = baseUrl + "/staff/waiting-list";
+                                String returnUrl = baseUrl + "/staff/appointments";
                                 com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(orderCodeFinal, (int) fee, "VC" + newApptId, cancelUrl, returnUrl);
                                 if (payosRes != null && payosRes.success && payosRes.qrCode != null && !payosRes.qrCode.isEmpty()) {
                                     qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + URLEncoder.encode(payosRes.qrCode, StandardCharsets.UTF_8);
@@ -678,8 +680,13 @@ public class StaffAppointmentListServlet extends HttpServlet {
                             }
                         }
 
-                        session.setAttribute("successMessage", "Tiếp đón khách vãng lai: " + patientName.trim() + " (#APT-" + newApptId + ") thành công! Bệnh nhân đã được đưa vào danh sách chờ khám.");
-                        response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
+                        if (isPendingPayment) {
+                            session.setAttribute("successMessage", "Tạo lịch tiếp đón cho bệnh nhân: " + patientName.trim() + " (#APT-" + newApptId + ") thành công! Sau khi bệnh nhân thanh toán VietQR, lịch hẹn sẽ lưu ở Danh sách Lịch hẹn (vui lòng bấm Check-in khi bệnh nhân có mặt).");
+                            response.sendRedirect(request.getContextPath() + "/staff/appointments?date=all&keyword=" + newApptId);
+                        } else {
+                            session.setAttribute("successMessage", "Tiếp đón khách vãng lai: " + patientName.trim() + " (#APT-" + newApptId + ") thành công! Bệnh nhân đã được đưa vào danh sách chờ khám.");
+                            response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
+                        }
                         return;
                     } else {
                         if ("1".equals(request.getParameter("ajax"))) {

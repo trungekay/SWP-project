@@ -620,7 +620,7 @@
                                     </div>
                                     <div>
                                         <h5 class="modal-title fw-bold text-dark mb-0" id="walkinModalLabel" style="font-size: 17px;">Tiếp đón Khách vãng lai</h5>
-                                        <small class="text-secondary" style="font-size: 12.5px;">Tạo hồ sơ và chuyển thẳng vào hàng đợi khám hôm nay</small>
+                                        <small class="text-secondary" style="font-size: 12.5px;" id="walkinModalSubtitle">Tạo lịch tiếp đón và thu phí khám ban đầu</small>
                                     </div>
                                 </div>
                                 <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -628,17 +628,9 @@
 
                             <form action="${pageContext.request.contextPath}/staff/appointments" method="post" id="walkinForm" class="m-0">
                                 <input type="hidden" name="action" value="walkin">
-                                <input type="hidden" name="returnUrl" value="${pageContext.request.contextPath}/staff/waiting-list">
+                                <input type="hidden" name="returnUrl" id="walkinReturnUrl" value="${pageContext.request.contextPath}/staff/waiting-list">
 
                                 <div class="modal-body p-4 text-start">
-                                    <!-- Banner hướng dẫn -->
-                                    <div class="p-2.5 px-3 mb-3 rounded-3 d-flex align-items-start gap-2.5" style="background-color: #f0fdfa; border: 1px solid #ccfbf1;">
-                                        <i class="bi bi-info-circle-fill text-teal mt-0.5" style="font-size: 15px;"></i>
-                                        <div style="font-size: 13px; color: #0f766e; line-height: 1.45;">
-                                            Bệnh nhân đến trực tiếp quầy tiếp đón chưa đặt trước sẽ được tạo lịch, tự động check-in và cấp số thứ tự vào phòng khám ngay.
-                                        </div>
-                                    </div>
-
                                     <div class="row g-3">
                                         <!-- Họ và tên -->
                                         <div class="col-md-7">
@@ -784,12 +776,12 @@
                                                     <!-- Chọn hình thức thanh toán -->
                                                     <div class="btn-group p-0.5 rounded-3 bg-white border" role="group">
                                                         <input type="radio" class="btn-check" name="paymentMethod" id="payMethodCash" value="Cash_At_Counter" checked onchange="toggleWalkinPayMode('Cash_At_Counter')">
-                                                        <label class="btn btn-sm btn-outline-success border-0 px-2.5 py-1 fw-semibold" for="payMethodCash" style="font-size: 12px; border-radius: 6px;">
+                                                        <label class="btn btn-sm btn-outline-success border-0 px-2.5 py-1 fw-semibold" id="payMethodCashLabel" for="payMethodCash" style="font-size: 12px; border-radius: 6px;">
                                                             <i class="bi bi-cash me-1"></i>Tiền mặt tại quầy
                                                         </label>
 
                                                         <input type="radio" class="btn-check" name="paymentMethod" id="payMethodQR" value="VietQR_Banking" onchange="toggleWalkinPayMode('VietQR_Banking')">
-                                                        <label class="btn btn-sm btn-outline-primary border-0 px-2.5 py-1 fw-semibold" for="payMethodQR" style="font-size: 12px; border-radius: 6px;">
+                                                        <label class="btn btn-sm btn-outline-primary border-0 px-2.5 py-1 fw-semibold" id="payMethodQRLabel" for="payMethodQR" style="font-size: 12px; border-radius: 6px;">
                                                             <i class="bi bi-qr-code-scan me-1"></i>Chuyển khoản VietQR
                                                         </label>
                                                     </div>
@@ -797,12 +789,12 @@
 
                                                 <!-- Ghi chú động theo hình thức đã chọn -->
                                                 <div id="walkinPayCashNotice" class="d-flex align-items-center justify-content-between small text-success pt-1 border-top" style="font-size: 11px;">
-                                                    <span><i class="bi bi-check2-circle me-1"></i>Thu tiền mặt trực tiếp tại quầy lễ tân (Hóa đơn Paid tự động)</span>
+                                                    <span><i class="bi bi-check2-circle me-1"></i>Thu tiền mặt trực tiếp tại quầy lễ tân (Hóa đơn Paid &amp; Check-in ngay)</span>
                                                     <span class="badge bg-success-subtle text-success border border-success-subtle py-0.5">Vào thẳng hàng đợi</span>
                                                 </div>
                                                 <div id="walkinPayQRNotice" class="d-none align-items-center justify-content-between small text-primary pt-1 border-top" style="font-size: 11px;">
-                                                    <span><i class="bi bi-qr-code me-1"></i>Bệnh nhân quét mã VietQR MB Bank theo đúng giá dịch vụ đã chọn</span>
-                                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-0.5">Cần thanh toán QR</span>
+                                                    <span><i class="bi bi-qr-code me-1"></i>Quét mã VietQR MB Bank. Thanh toán xong lưu Danh sách Lịch hẹn (Check-in khi bệnh nhân đến)</span>
+                                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-0.5">Check-in khi có mặt</span>
                                                 </div>
                                             </div>
                                             <span id="walkinSvcTag" class="d-none"></span>
@@ -1541,6 +1533,8 @@
                                 }
                                 onWalkinDoctorChange(docSelect.value, true);
                             }
+                            var curPay = document.querySelector('input[name="paymentMethod"]:checked');
+                            toggleWalkinPayMode(curPay ? curPay.value : 'Cash_At_Counter');
                         });
                     }
 
@@ -1718,11 +1712,15 @@
                         if (statusText) {
                             statusText.textContent = 'Đã nhận thanh toán VietQR thành công!';
                         }
+                        var overlaySub = overlay ? overlay.querySelector('small') : null;
+                        if (overlaySub) {
+                            overlaySub.textContent = 'Lịch hẹn đã lưu vào Danh sách Lịch hẹn (Lễ tân bấm "Check-in" khi bệnh nhân có mặt)';
+                        }
                         var btnConfirm = document.getElementById('btnManualConfirmQR');
                         if (btnConfirm) btnConfirm.disabled = true;
 
                         setTimeout(function() {
-                            window.location.href = '${pageContext.request.contextPath}/staff/waiting-list';
+                            window.location.href = '${pageContext.request.contextPath}/staff/appointments?date=all&keyword=' + (currentWalkinApptId || '');
                         }, 1500);
                     }
 
