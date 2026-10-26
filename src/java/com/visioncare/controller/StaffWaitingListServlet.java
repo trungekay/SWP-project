@@ -104,8 +104,8 @@ public class StaffWaitingListServlet extends HttpServlet {
             // Lấy tất cả ca đã check-in trong ngày để tính chỉ số KPI hàng đợi ổn định
             List<Appointment> allDayQueue = appointmentDAO.getWaitingList(queryDate, "all_day", doctorId, roomId, null);
             long totalWaiting = allDayQueue.stream().filter(a -> "Confirmed".equalsIgnoreCase(a.getStatus())).count();
-            long totalExamining = allDayQueue.stream().filter(a -> "In_Progress".equalsIgnoreCase(a.getStatus())).count();
-            long totalCompleted = allDayQueue.stream().filter(a -> "Completed".equalsIgnoreCase(a.getStatus())).count();
+            long totalExamining = allDayQueue.stream().filter(a -> "In_Progress".equalsIgnoreCase(a.getEffectiveStatus())).count();
+            long totalCompleted = allDayQueue.stream().filter(a -> "Completed".equalsIgnoreCase(a.getEffectiveStatus())).count();
             long totalQueue = totalWaiting + totalExamining + totalCompleted;
 
             // Danh sách các bác sĩ hiện đang có bệnh nhân trong phòng khám (In_Progress)

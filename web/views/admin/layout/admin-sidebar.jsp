@@ -51,12 +51,15 @@
         gap: 8px;
         text-decoration: none;
         transition: all 0.2s;
-    }
-    .sidebar-submenu li a:hover,
     .sidebar-submenu li a.active {
         color: #008b74 !important;
         background-color: #f0f7f6 !important;
         font-weight: 600;
+    }
+    .sidebar-submenu li a:hover:not(.active) {
+        color: #64748b !important;
+        background-color: transparent !important;
+        font-weight: normal !important;
     }
 </style>
 

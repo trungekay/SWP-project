@@ -213,6 +213,10 @@
                                         class="btn btn-sm ${selectedStatus == 'CheckedIn' ? 'btn-primary fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
                                         <i class="bi bi-person-check-fill me-1"></i> Đã tiếp đón (${checkedInCount})
                                     </a>
+                                    <a href="${pageContext.request.contextPath}/staff/appointments?date=${selectedDate}&status=Completed&doctorId=${selectedDoctorId}&keyword=${param.keyword}"
+                                        class="btn btn-sm ${selectedStatus == 'Completed' ? 'btn-success fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
+                                        <i class="bi bi-check2-circle me-1"></i> Hoàn thành (${completedCount})
+                                    </a>
                                     <a href="${pageContext.request.contextPath}/staff/appointments?date=${selectedDate}&status=Canceled&doctorId=${selectedDoctorId}&keyword=${param.keyword}"
                                         class="btn btn-sm ${selectedStatus == 'Canceled' ? 'btn-danger fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
                                         <i class="bi bi-person-x-fill me-1"></i> Đã hủy (${canceledCount})
@@ -363,14 +367,14 @@
                                                                         Chờ khám
                                                                     </span>
                                                                 </c:when>
-                                                                <c:when test="${appt.status == 'In_Progress'}">
-                                                                    <span class="badge-status badge-in-progress" title="Bác sĩ đang thực hiện khám">
+                                                                <c:when test="${appt.status == 'In_Progress' || (appt.status == 'Completed' && appt.hasSurgery && !appt.surgeryPaid)}">
+                                                                    <span class="badge-status badge-in-progress" title="${appt.status == 'Completed' ? 'Được chỉ định phẫu thuật - Đang chờ xác nhận thanh toán tại Quản lý thanh toán' : 'Bác sĩ đang thực hiện khám'}">
                                                                         Đang khám
                                                                     </span>
                                                                 </c:when>
                                                                 <c:when test="${appt.status == 'Completed'}">
                                                                     <span class="badge-status badge-completed" title="Ca khám đã hoàn thành">
-                                                                        Đã khám xong
+                                                                        <i class="bi bi-check2-circle me-1"></i>Hoàn thành
                                                                     </span>
                                                                 </c:when>
                                                                 <c:when test="${appt.status == 'Canceled'}">

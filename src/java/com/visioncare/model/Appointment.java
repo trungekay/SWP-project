@@ -337,4 +337,97 @@ public class Appointment {
                 && (cancellationRequested || (reason != null
                 && reason.startsWith(com.visioncare.dao.RefundPolicy.REQUESTED)));
     }
+
+    private String procedurePaymentStatus;
+    private int procedureOrderId;
+    private String procedureServiceName;
+    private long procedureAmount;
+
+    public String getProcedurePaymentStatus() {
+        return procedurePaymentStatus;
+    }
+
+    public void setProcedurePaymentStatus(String procedurePaymentStatus) {
+        this.procedurePaymentStatus = procedurePaymentStatus;
+    }
+
+    public int getProcedureOrderId() {
+        return procedureOrderId;
+    }
+
+    public void setProcedureOrderId(int procedureOrderId) {
+        this.procedureOrderId = procedureOrderId;
+    }
+
+    public String getProcedureServiceName() {
+        return procedureServiceName;
+    }
+
+    public void setProcedureServiceName(String procedureServiceName) {
+        this.procedureServiceName = procedureServiceName;
+    }
+
+    public long getProcedureAmount() {
+        return procedureAmount;
+    }
+
+    public void setProcedureAmount(long procedureAmount) {
+        this.procedureAmount = procedureAmount;
+    }
+
+    public boolean isHasSurgery() {
+        return procedureOrderId > 0 
+                || (procedureServiceName != null && !procedureServiceName.trim().isEmpty()) 
+                || (procedurePaymentStatus != null && !procedurePaymentStatus.trim().isEmpty());
+    }
+
+    public boolean getHasSurgery() {
+        return isHasSurgery();
+    }
+
+    public boolean isHasPendingSurgeryPayment() {
+        if ("Pending".equalsIgnoreCase(procedurePaymentStatus)) {
+            return true;
+        }
+        if (balanceDue > 0 && !"Paid".equalsIgnoreCase(invoiceStatus)) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean getHasPendingSurgeryPayment() {
+        return isHasPendingSurgeryPayment();
+    }
+
+    public boolean isSurgeryPaid() {
+        if (!isHasSurgery()) {
+            return true;
+        }
+        return "Paid".equalsIgnoreCase(procedurePaymentStatus) 
+                || (balanceDue <= 0 && "Paid".equalsIgnoreCase(invoiceStatus));
+    }
+
+    public boolean getSurgeryPaid() {
+        return isSurgeryPaid();
+    }
+
+    public boolean isFullyCompleted() {
+        return "Completed".equalsIgnoreCase(status) && !isHasPendingSurgeryPayment();
+    }
+
+    public boolean getFullyCompleted() {
+        return isFullyCompleted();
+    }
+
+    public String getEffectiveStatus() {
+        if ("Completed".equalsIgnoreCase(status)) {
+            if (isHasSurgery() && !isSurgeryPaid()) {
+                return "In_Progress";
+            }
+            return "Completed";
+        }
+        return status != null ? status : "Pending";
+    }
 }
+
+

@@ -988,7 +988,11 @@ public class AppointmentDAO {
             "mr.Clinical_Diagnosis AS Medical_Notes, " +
             "mr.conclusion AS Cancel_Reason, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
             "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, " +
-            "mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status " +
+            "mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status, " +
+            "(SELECT TOP 1 pr.Status FROM Procedure_Order po JOIN Procedure_Payment_Request pr ON po.Order_ID = pr.Order_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC) AS Procedure_Payment_Status, " +
+            "(SELECT TOP 1 po.Order_ID FROM Procedure_Order po WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC) AS Procedure_Order_ID, " +
+            "(SELECT TOP 1 s.Service_Name FROM Procedure_Order po JOIN Service_Catalog s ON po.Service_ID = s.Service_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC) AS Procedure_Service_Name, " +
+            "(SELECT TOP 1 CAST(pr.Amount AS BIGINT) FROM Procedure_Order po JOIN Procedure_Payment_Request pr ON po.Order_ID = pr.Order_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC) AS Procedure_Amount " +
             "FROM Appointment a " +
             "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
             "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
@@ -1015,6 +1019,10 @@ public class AppointmentDAO {
                         + " AND " + RefundPolicy.NO_ACTIVE_REQUEST.replace("i.", "mi."));
             } else if ("CheckedIn".equalsIgnoreCase(status)) {
                 sql.append(" AND a.checkin_time IS NOT NULL AND a.Status NOT IN ('Canceled')");
+            } else if ("In_Progress".equalsIgnoreCase(status)) {
+                sql.append(" AND (a.Status = 'In_Progress' OR (a.Status = 'Completed' AND EXISTS (SELECT 1 FROM Procedure_Order po JOIN Procedure_Payment_Request pr ON po.Order_ID = pr.Order_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' AND pr.Status = 'Pending')))");
+            } else if ("Completed".equalsIgnoreCase(status)) {
+                sql.append(" AND (a.Status = 'Completed' AND NOT EXISTS (SELECT 1 FROM Procedure_Order po JOIN Procedure_Payment_Request pr ON po.Order_ID = pr.Order_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' AND pr.Status = 'Pending'))");
             } else {
                 sql.append(" AND a.Status = ?");
                 params.add(status.trim());
@@ -1069,7 +1077,11 @@ public class AppointmentDAO {
                      "stf.Full_Name AS Staff_Name, " +
                      "mr.Clinical_Diagnosis AS Medical_Notes, " +
                      "mr.conclusion AS Cancel_Reason, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
-                     "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status " +
+                     "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status, " +
+                     "(SELECT TOP 1 pr.Status FROM Procedure_Order po JOIN Procedure_Payment_Request pr ON po.Order_ID = pr.Order_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC) AS Procedure_Payment_Status, " +
+                     "(SELECT TOP 1 po.Order_ID FROM Procedure_Order po WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC) AS Procedure_Order_ID, " +
+                     "(SELECT TOP 1 s.Service_Name FROM Procedure_Order po JOIN Service_Catalog s ON po.Service_ID = s.Service_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC) AS Procedure_Service_Name, " +
+                     "(SELECT TOP 1 CAST(pr.Amount AS BIGINT) FROM Procedure_Order po JOIN Procedure_Payment_Request pr ON po.Order_ID = pr.Order_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC) AS Procedure_Amount " +
                      "FROM Appointment a " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
                      "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
@@ -1219,6 +1231,22 @@ public class AppointmentDAO {
                     psUpd.setInt(1, invoiceId);
                     psUpd.executeUpdate();
                 }
+            }
+
+            // Đồng bộ cập nhật Procedure_Payment_Request nếu có chỉ định tiểu phẫu phát sinh
+            String sqlUpdPr = "UPDATE pr SET pr.Status = 'Paid', pr.Confirmed_At = SYSUTCDATETIME(), " +
+                              "pr.Confirmed_By_Employee_ID = CASE WHEN ? > 0 THEN ? ELSE pr.Confirmed_By_Employee_ID END, " +
+                              "pr.Payment_Method = ? " +
+                              "FROM Procedure_Payment_Request pr " +
+                              "JOIN Procedure_Order po ON po.Order_ID = pr.Order_ID " +
+                              "JOIN Medical_Record mr ON mr.Record_ID = po.Record_ID " +
+                              "WHERE mr.Appointment_ID = ? AND pr.Status = 'Pending'";
+            try (PreparedStatement psUpdPr = conn.prepareStatement(sqlUpdPr)) {
+                psUpdPr.setInt(1, staffEmployeeId);
+                psUpdPr.setInt(2, staffEmployeeId);
+                psUpdPr.setString(3, gateway);
+                psUpdPr.setInt(4, appointmentId);
+                psUpdPr.executeUpdate();
             }
 
             // 3. Cập nhật Appointment thành Completed và lưu Staff phụ trách
@@ -1435,7 +1463,11 @@ public class AppointmentDAO {
             "stf.Full_Name AS Staff_Name, " +
             "mr.Clinical_Diagnosis AS Medical_Notes, " +
             "mr.conclusion AS Cancel_Reason, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
-            "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status " +
+            "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status, " +
+            "(SELECT TOP 1 pr.Status FROM Procedure_Order po JOIN Procedure_Payment_Request pr ON po.Order_ID = pr.Order_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC) AS Procedure_Payment_Status, " +
+            "(SELECT TOP 1 po.Order_ID FROM Procedure_Order po WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC) AS Procedure_Order_ID, " +
+            "(SELECT TOP 1 s.Service_Name FROM Procedure_Order po JOIN Service_Catalog s ON po.Service_ID = s.Service_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC) AS Procedure_Service_Name, " +
+            "(SELECT TOP 1 CAST(pr.Amount AS BIGINT) FROM Procedure_Order po JOIN Procedure_Payment_Request pr ON po.Order_ID = pr.Order_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC) AS Procedure_Amount " +
             "FROM Appointment a " +
             "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
             "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
@@ -1458,6 +1490,10 @@ public class AppointmentDAO {
                 sql.append(" AND a.Status IN ('Confirmed', 'In_Progress', 'Completed', 'Canceled')");
             } else if ("all_day".equalsIgnoreCase(status)) {
                 sql.append(" AND a.Status IN ('Confirmed', 'In_Progress', 'Completed')");
+            } else if ("In_Progress".equalsIgnoreCase(status)) {
+                sql.append(" AND (a.Status = 'In_Progress' OR (a.Status = 'Completed' AND EXISTS (SELECT 1 FROM Procedure_Order po JOIN Procedure_Payment_Request pr ON po.Order_ID = pr.Order_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' AND pr.Status = 'Pending')))");
+            } else if ("Completed".equalsIgnoreCase(status)) {
+                sql.append(" AND (a.Status = 'Completed' AND NOT EXISTS (SELECT 1 FROM Procedure_Order po JOIN Procedure_Payment_Request pr ON po.Order_ID = pr.Order_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' AND pr.Status = 'Pending'))");
             } else {
                 sql.append(" AND a.Status = ?");
                 params.add(status.trim());
@@ -1563,6 +1599,12 @@ public class AppointmentDAO {
             a.setBalanceDue(bal);
             a.setFee(dep > 0 ? dep : (tot > 0 ? tot : 200000));
             a.setInvoiceStatus(rs.getString("Invoice_Status"));
+        } catch (SQLException ignored) {}
+        try {
+            a.setProcedurePaymentStatus(rs.getString("Procedure_Payment_Status"));
+            a.setProcedureOrderId(rs.getInt("Procedure_Order_ID"));
+            a.setProcedureServiceName(rs.getString("Procedure_Service_Name"));
+            a.setProcedureAmount(rs.getLong("Procedure_Amount"));
         } catch (SQLException ignored) {}
         String notes = a.getMedicalNotes();
         if (notes != null && !notes.isEmpty()) {
