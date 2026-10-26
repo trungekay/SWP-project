@@ -142,7 +142,8 @@
               </button>
             </form>
 
-            <div class="text-center mt-4">
+
+            <div class="text-center mt-3">
               <p class="text-muted small mb-0">Chưa có tài khoản? <a href="${pageContext.request.contextPath}/register" style="color: #0d9488; font-weight: 600;">Đăng ký ngay</a></p>
             </div>
 

@@ -1,0 +1,5 @@
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Quản lý yêu cầu đổi lịch - VisionCare</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"><jsp:include page="/views/admin/layout/admin-css.jsp" /></head><body>
+<jsp:include page="/views/director/layout/director-sidebar.jsp"><jsp:param name="activeNav" value="reschedule-requests" /></jsp:include>
+<main class="main-wrapper"><jsp:include page="/views/admin/layout/admin-header.jsp" /><div class="page-content p-4"><h3>Quản lý yêu cầu đổi lịch</h3><div class="card border-0 shadow-sm mt-4"><div class="card-body text-center text-muted py-5">Chức năng xử lý yêu cầu đổi lịch chưa được triển khai.</div></div></div></main></body></html>

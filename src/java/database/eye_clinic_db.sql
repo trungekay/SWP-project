@@ -174,7 +174,7 @@ PRIMARY KEY CLUSTERED
 ) ON [PRIMARY]
 
 ALTER TABLE [dbo].[Work_Schedule] ADD  DEFAULT (N'Available') FOR [Status]
-ALTER TABLE [dbo].[Work_Schedule]  WITH CHECK ADD  CONSTRAINT [CHK_WS_Has_Employee] CHECK  (([Doctor_Employee_ID] IS NOT NULL OR [Specialist_Employee_ID] IS NOT NULL))
+ALTER TABLE [dbo].[Work_Schedule]  WITH CHECK ADD  CONSTRAINT [CHK_WS_Has_Employee] CHECK  (([Doctor_Employee_ID] IS NOT NULL OR [Specialist_Employee_ID] IS NOT NULL OR [Staff_Employee_ID] IS NOT NULL))
 ALTER TABLE [dbo].[Work_Schedule] CHECK CONSTRAINT [CHK_WS_Has_Employee]
 ALTER TABLE [dbo].[Work_Schedule]  WITH CHECK ADD  CONSTRAINT [CHK_WS_Slot_30Mins] CHECK  ((datediff(minute,[Start_Time],[End_Time])=(30)))
 ALTER TABLE [dbo].[Work_Schedule] CHECK CONSTRAINT [CHK_WS_Slot_30Mins]
@@ -1689,15 +1689,15 @@ GO
 -- -----------------------------------------------------
 SET IDENTITY_INSERT [dbo].[Payment_Transaction] ON 
 
-INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (1, 1, CAST(100000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T08:19:54.6603658' AS DateTime2), N'VNPay')
+INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (1, 1, CAST(100000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T08:19:54.6603658' AS DateTime2), N'QR_Banking')
 INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (2, 1, CAST(200000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T08:19:54.6603658' AS DateTime2), N'Cash')
-INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (3, 22, CAST(200000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T14:54:18.4000816' AS DateTime2), N'VietQR_Banking')
-INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (4, 22, CAST(200000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T14:54:19.5086844' AS DateTime2), N'VietQR_Banking')
-INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (5, 25, CAST(500000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T15:29:34.0963585' AS DateTime2), N'VietQR_Banking')
-INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (6, 28, CAST(200000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T15:43:01.2868457' AS DateTime2), N'VietQR_Banking')
-INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (7, 30, CAST(200000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T18:55:59.8409327' AS DateTime2), N'VietQR_Banking')
-INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (8, 29, CAST(200000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T18:56:07.0111508' AS DateTime2), N'VietQR_Banking')
-INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (9, 31, CAST(200000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T19:01:04.2879031' AS DateTime2), N'VietQR_Banking')
+INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (3, 22, CAST(200000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T14:54:18.4000816' AS DateTime2), N'QR_Banking')
+INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (4, 22, CAST(200000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T14:54:19.5086844' AS DateTime2), N'QR_Banking')
+INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (5, 25, CAST(500000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T15:29:34.0963585' AS DateTime2), N'QR_Banking')
+INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (6, 28, CAST(200000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T15:43:01.2868457' AS DateTime2), N'QR_Banking')
+INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (7, 30, CAST(200000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T18:55:59.8409327' AS DateTime2), N'QR_Banking')
+INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (8, 29, CAST(200000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T18:56:07.0111508' AS DateTime2), N'QR_Banking')
+INSERT [dbo].[Payment_Transaction] ([Transaction_ID], [Invoice_ID], [Amount], [Gateway_Status], [Trans_Date], [Payment_Gateway]) VALUES (9, 31, CAST(200000 AS Decimal(18, 0)), N'Success', CAST(N'2026-10-18T19:01:04.2879031' AS DateTime2), N'QR_Banking')
 SET IDENTITY_INSERT [dbo].[Payment_Transaction] OFF
 GO
 
@@ -2533,4 +2533,12 @@ GO
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
+GO
+
+GO
+-- Canonical payment methods (apply the checkout migration separately for checkout tables).
+IF NOT EXISTS(SELECT 1 FROM sys.check_constraints WHERE name='CHK_Transaction_Payment_Method')
+ ALTER TABLE dbo.Payment_Transaction WITH CHECK ADD CONSTRAINT CHK_Transaction_Payment_Method CHECK(Payment_Gateway COLLATE Latin1_General_100_BIN2 IN ('Cash','QR_Banking'));
+IF NOT EXISTS(SELECT 1 FROM sys.check_constraints WHERE name='CHK_Procedure_Payment_Method')
+ ALTER TABLE dbo.Procedure_Payment_Request WITH CHECK ADD CONSTRAINT CHK_Procedure_Payment_Method CHECK(Payment_Method IS NULL OR Payment_Method COLLATE Latin1_General_100_BIN2 IN ('Cash','QR_Banking'));
 GO

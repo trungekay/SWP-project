@@ -8,7 +8,7 @@
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Chi tiết Lịch hẹn #APPT-${appointment.id} - VisionCare</title>
+                <title>Chi tiết Lịch hẹn #APT-${appointment.id} - VisionCare</title>
                 <!-- Google Fonts -->
                 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
                     rel="stylesheet">
@@ -73,7 +73,7 @@
                                             href="${pageContext.request.contextPath}/staff/appointments"
                                             class="text-decoration-none text-muted">Lịch hẹn</a></li>
                                     <li class="breadcrumb-item active fw-semibold text-dark" aria-current="page">Chi
-                                        tiết #APPT-${appointment.id}</li>
+                                        tiết #APT-${appointment.id}</li>
                                 </ol>
                             </nav>
                         </div>
@@ -94,8 +94,11 @@
                                     <div>
                                         <div class="d-flex align-items-center gap-2 flex-wrap">
                                             <h3 class="mb-0 fw-bold text-dark">${appointment.patientName}</h3>
-                                            <span class="badge bg-light text-dark border">#APPT-${appointment.id}</span>
+                                            <span class="badge bg-light text-dark border">#APT-${appointment.id}</span>
                                             <c:choose>
+                                                <c:when test="${appointment.cancellationRequested}">
+                                                    <span class="badge-status badge-pending">Chờ duyệt hủy</span>
+                                                </c:when>
                                                 <c:when test="${appointment.awaitingPayment}">
                                                     <span class="badge-status badge-pending" title="Chưa xác nhận thanh toán phí khám">Chờ thanh toán</span>
                                                 </c:when>
@@ -111,11 +114,11 @@
                                                 <c:when test="${appointment.status == 'In_Progress'}">
                                                     <span class="badge-status badge-in-progress" title="Bác sĩ đang thực hiện khám">Đang khám</span>
                                                 </c:when>
-                                                <c:when test="${appointment.status == 'Completed'}">
+                                        <c:when test="${appointment.status == 'Completed'}">
                                                     <span class="badge-status badge-completed" title="Ca khám đã hoàn thành">Đã khám xong</span>
                                                 </c:when>
                                                 <c:when test="${appointment.status == 'Canceled'}">
-                                                    <span class="badge-status badge-canceled" title="Lịch hẹn đã hủy / vắng mặt">Đã hủy / Vắng mặt</span>
+                                                    <span class="badge-status badge-canceled" title="Lịch hẹn đã hủy">Đã hủy</span>
                                                 </c:when>
                                                 <c:otherwise>
                                                     <span class="badge-status badge-pending">${appointment.status}</span>
@@ -138,6 +141,13 @@
                                 <c:set var="isPastAppt" value="${not empty apptDateStr && apptDateStr < currentDateStr}" />
                                 <div class="d-flex align-items-center gap-2">
                                     <c:choose>
+                                                <c:when test="${appointment.cancellationRequested}">
+                                            <form action="${pageContext.request.contextPath}/staff/appointments" method="post">
+                                                <input type="hidden" name="action" value="approveCancellation">
+                                                <input type="hidden" name="appointmentId" value="${appointment.id}">
+                                                <button type="submit" class="btn btn-teal"><i class="bi bi-check2-circle me-1"></i>Duyệt yêu cầu hủy lịch</button>
+                                            </form>
+                                        </c:when>
                                         <c:when test="${appointment.status == 'Completed'}">
                                             <a href="${pageContext.request.contextPath}/profile/medical-record?id=${appointment.id}"
                                                 class="btn btn-teal shadow-sm" target="_blank" title="Xem chi tiết phiếu kết quả khám bệnh">
@@ -526,19 +536,19 @@
                                         </div>
                                     </c:when>
                                     <c:when test="${appointment.status == 'Canceled'}">
-                                        <!-- Khi đã hủy / vắng mặt: Hiển thị Thẻ thông tin Hủy & Ghi chú cũ dạng Read-only -->
+                                        <!-- Khi đã hủy: Hiển thị Thẻ thông tin Hủy & Ghi chú cũ dạng Read-only -->
                                         <div class="content-card p-4">
                                             <div class="detail-section-title text-danger">
                                                 <i class="bi bi-clipboard2-x text-danger"></i>
-                                                Thông tin Hủy lịch & Vắng mặt
+                                                Thông tin Hủy lịch
                                             </div>
                                             <p class="text-muted small mb-3">
-                                                Ca khám này đã được xác nhận kết thúc do bệnh nhân vắng mặt hoặc yêu cầu hủy lịch.
+                                                Ca khám này đã được xác nhận hủy lịch hẹn.
                                             </p>
 
                                             <div class="p-3 rounded-3 border mb-3" style="background-color: #fef2f2; border-color: #fecaca !important;">
                                                 <label class="info-label text-danger fw-bold d-block mb-1">
-                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Lý do vắng mặt đã xác nhận:
+                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Lý do hủy đã xác nhận:
                                                 </label>
                                                 <p class="fw-semibold text-dark mb-0 ps-2" style="font-size: 14px;">
                                                     <c:choose>
@@ -751,7 +761,7 @@
                                 <h3 class="modal-title-custom">Xác nhận hủy lịch hẹn?</h3>
                                 <p class="modal-text mb-3">
                                     Lịch khám của bệnh nhân <strong
-                                        class="text-dark">${appointment.patientName}</strong> (#APPT-${appointment.id})
+                                        class="text-dark">${appointment.patientName}</strong> (#APT-${appointment.id})
                                     sẽ được hủy và giải phóng ca làm việc cho bác sĩ.
                                 </p>
                                 <form action="${pageContext.request.contextPath}/staff/appointment-detail" method="post"
@@ -763,18 +773,21 @@
                                         <label class="form-label small fw-semibold text-dark mb-1.5">
                                             Lý do hủy lịch <span class="text-danger">*</span>
                                         </label>
-                                        <select name="cancelReasonSelect" id="cancelReasonSelect"
+                                        <select name="cancelReasonSelect" id="cancelReasonSelect" required
                                             class="form-select form-select-sm shadow-none mb-2"
                                             style="border-radius: 8px; font-size: 13.5px;"
                                             onchange="toggleCustomReason(this)">
-                                            <option value="Liên hệ nhưng bệnh nhân báo bận không đến khám">Liên hệ nhưng bệnh nhân báo bận không đến khám</option>
+                                            <option value="" disabled selected>-- Chọn lý do hủy lịch --</option>
+                                            <option value="Bệnh nhân yêu cầu hủy trực tiếp tại quầy trước check-in">Bệnh nhân yêu cầu hủy trực tiếp tại quầy trước check-in (Staff xác nhận)</option>
+                                            <option value="Liên hệ nhưng bệnh nhân báo bận không đến khám">Bệnh nhân hủy đột xuất trước check-in (Staff xác nhận)</option>
                                             <option value="Bệnh nhân báo bận, yêu cầu đổi lịch sang ngày khác">Bệnh nhân
                                                 báo bận, yêu cầu đổi lịch sang ngày khác</option>
                                             <option value="Bệnh nhân không có nhu cầu khám nữa">Bệnh nhân không có nhu
                                                 cầu khám nữa</option>
                                             <option value="Bệnh nhân đặt trùng / sai thông tin">Bệnh nhân đặt trùng /
                                                 sai thông tin</option>
-                                            <option value="other">Lý do khác (Nhập ghi chú)...</option>
+                                            <option value="Bác sĩ đổi lịch, không thể sắp xếp lịch khám khác cho bệnh nhân">Bác sĩ đổi lịch, không thể sắp xếp lịch khám khác cho bệnh nhân</option>
+<option value="other">Lý do khác (Nhập ghi chú)...</option>
                                         </select>
                                         <textarea name="cancelReasonCustom" id="cancelReasonCustom"
                                             class="form-control form-control-sm shadow-none d-none" rows="2"
@@ -809,7 +822,7 @@
                                 </div>
                                 <h3 class="modal-title-custom">Xác nhận báo vắng mặt?</h3>
                                 <p class="modal-text mb-3">
-                                    Bệnh nhân <strong class="text-dark">${appointment.patientName}</strong> (#APPT-${appointment.id}) sẽ được ghi nhận vắng mặt trong ca khám và gỡ khỏi hàng đợi hôm nay.
+                                    Bệnh nhân <strong class="text-dark">${appointment.patientName}</strong> (#APT-${appointment.id}) sẽ được ghi nhận vắng mặt trong ca khám và gỡ khỏi hàng đợi hôm nay.
                                 </p>
                                 <form action="${pageContext.request.contextPath}/staff/appointment-detail" method="post"
                                     class="m-0 text-start">
@@ -827,7 +840,8 @@
                                             <option value="Gọi tên nhiều lần không có mặt / Không vào phòng khám">Gọi tên nhiều lần không có mặt / Không vào phòng khám</option>
                                             <option value="Bệnh nhân tự ý bỏ về trước khi đến lượt khám">Bệnh nhân tự ý bỏ về trước khi đến lượt khám</option>
                                             <option value="Bệnh nhân báo bận đột xuất, xin dời sang ngày khác">Bệnh nhân báo bận đột xuất, xin dời sang ngày khác</option>
-                                            <option value="other">Lý do khác (Nhập ghi chú)...</option>
+                                            <option value="Bác sĩ đổi lịch, không thể sắp xếp lịch khám khác cho bệnh nhân">Bác sĩ đổi lịch, không thể sắp xếp lịch khám khác cho bệnh nhân</option>
+<option value="other">Lý do khác (Nhập ghi chú)...</option>
                                         </select>
                                         <textarea name="cancelReasonCustom" id="absentDetailReasonCustom"
                                             class="form-control form-control-sm shadow-none d-none" rows="2"
@@ -862,7 +876,7 @@
                                 </div>
                                 <h3 class="modal-title-custom">Bỏ qua lượt khám?</h3>
                                 <p class="modal-text mb-3">
-                                    Bệnh nhân <strong class="text-dark">${appointment.patientName}</strong> (#APPT-${appointment.id}) sẽ <strong>chuyển đổi ca khám với lượt tiếp theo sau mình</strong> để nhường lượt cho bệnh nhân kế tiếp vào phòng khám.
+                                    Bệnh nhân <strong class="text-dark">${appointment.patientName}</strong> (#APT-${appointment.id}) sẽ <strong>chuyển đổi ca khám với lượt tiếp theo sau mình</strong> để nhường lượt cho bệnh nhân kế tiếp vào phòng khám.
                                 </p>
                                 <form action="${pageContext.request.contextPath}/staff/appointment-detail" method="post"
                                     class="m-0">

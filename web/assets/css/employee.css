@@ -432,6 +432,19 @@ body {
     box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25) !important;
 }
 
+/* Medical Notes / View Exam Record */
+.action-btn.medical-notes {
+    background-color: #f0fdfa !important;
+    color: #0d9488 !important;
+    border: 1px solid #99f6e4 !important;
+}
+.action-btn.medical-notes:hover {
+    background-color: #0d9488 !important;
+    color: #ffffff !important;
+    border-color: #0d9488 !important;
+    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25) !important;
+}
+
 /* 5. Disabled / Busy doctor */
 .action-btn[disabled] {
     opacity: 0.45 !important;

@@ -173,10 +173,10 @@ public class DoctorWaitingListServlet extends HttpServlet {
             if (updated && "start".equals(action)) {
                 response.sendRedirect(request.getContextPath() + "/doctor/patient-detail?id=" + appointmentId);
             } else if (updated && "cancel".equals(action)) {
-                session.setAttribute("doctorQueueMessage", "Đã dừng/hủy ca khám #APPT-" + appointmentId + ".");
+                session.setAttribute("doctorQueueMessage", "Đã dừng/hủy ca khám #APT-" + appointmentId + ".");
                 response.sendRedirect(returnToQueue(request));
             } else if (updated) {
-                session.setAttribute("doctorQueueMessage", "Đã hoàn tất ca khám #APPT-" + appointmentId + ".");
+                session.setAttribute("doctorQueueMessage", "Đã hoàn tất ca khám #APT-" + appointmentId + ".");
                 response.sendRedirect(request.getContextPath() + "/doctor/waiting-list?date="
                         + clinicDate + "&status=Completed&sort=" + validSort(request.getParameter("sort")));
             } else {

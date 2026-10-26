@@ -1,6 +1,5 @@
 package com.visioncare.controller;
 
-import com.visioncare.dao.AppointmentDAO;
 import com.visioncare.dao.InvoiceDAO;
 import com.visioncare.model.User;
 import jakarta.servlet.ServletException;
@@ -15,7 +14,6 @@ import java.io.IOException;
 public class RefundRequestServlet extends HttpServlet {
 
     private final InvoiceDAO invoiceDAO = new InvoiceDAO();
-    private final AppointmentDAO appointmentDAO = new AppointmentDAO();
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -37,17 +35,14 @@ public class RefundRequestServlet extends HttpServlet {
 
         if (amountParam != null && !amountParam.trim().isEmpty()) {
             try {
-                long amount = Long.parseLong(amountParam.replaceAll("[^0-9]", ""));
+                long amount = Long.parseLong(amountParam.trim());
                 boolean ok = false;
                 if (appointmentIdParam != null && !appointmentIdParam.trim().isEmpty()) {
                     int apptId = Integer.parseInt(appointmentIdParam.replaceAll("[^0-9]", ""));
-                    appointmentDAO.requestCancelAppointment(apptId, currentUser.getId(), reason);
                     ok = invoiceDAO.createRefundRequestForAppointment(apptId, currentUser.getId(), amount, reason);
-                    if (ok) {
-                        session.setAttribute("successMessage", "Yêu cầu hoàn tiền và hủy lịch hẹn #APT-" + apptId + " đã được gửi tới nhân viên. Trạng thái lịch chuyển sang 'Chờ duyệt'!");
-                    } else {
-                        session.setAttribute("errorMessage", "Lịch hẹn #APT-" + apptId + " đã có yêu cầu hoàn tiền đang được xử lý hoặc không hợp lệ. Không thể gửi yêu cầu trùng lặp!");
-                    }
+                    session.setAttribute(ok ? "successMessage" : "errorMessage", ok
+                        ? "Đã gửi yêu cầu hoàn tiền #APT-" + apptId
+                        : "Chỉ được hoàn tiền cho lịch đã được staff duyệt hủy trước check-in, đã thanh toán và chưa có yêu cầu hoàn tiền đang xử lý.");
                 } else if (invoiceIdParam != null && !invoiceIdParam.trim().isEmpty()) {
                     int invoiceId = Integer.parseInt(invoiceIdParam.replaceAll("[^0-9]", ""));
                     if (invoiceDAO.hasActiveRefundRequest(invoiceId)) {
@@ -55,10 +50,10 @@ public class RefundRequestServlet extends HttpServlet {
                     } else {
                         ok = invoiceDAO.createRefundRequest(invoiceId, currentUser.getId(), amount, reason);
                         if (ok) {
-                            appointmentDAO.requestCancelByInvoice(invoiceId, currentUser.getId(), reason);
-                            session.setAttribute("successMessage", "Yêu cầu hoàn tiền cho hóa đơn #INV-" + String.format("%05d", invoiceId) + " đã được gửi thành công tới nhân viên. Trạng thái lịch liên quan đã chuyển sang 'Chờ duyệt'!");
+
+                            session.setAttribute("successMessage", "Yêu cầu hoàn tiền cho hóa đơn #INV-" + String.format("%05d", invoiceId) + " đã được gửi thành công tới nhân viên. ");
                         } else {
-                            session.setAttribute("errorMessage", "Không thể gửi yêu cầu hoàn tiền. Vui lòng kiểm tra lại thông tin hóa đơn.");
+                            session.setAttribute("errorMessage", "Không thể gửi yêu cầu hoàn tiền. Quy định: Lịch phải được staff duyệt hủy trước check-in và đã thanh toán.");
                         }
                     }
                 }

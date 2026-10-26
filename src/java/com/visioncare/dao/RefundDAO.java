@@ -118,8 +118,7 @@ public class RefundDAO {
      * Staff/Admin approve refund request
      * - Refund_Request -> Approved
      * - Master_Invoice -> Refunded
-     * - Pending/Confirmed appointment -> Canceled; completed examination remains completed
-     * - In-progress examination cannot be interrupted by staff approval
+     * - Only staff-approved pre-check-in cancellations are eligible; appointment stays canceled
      */
     public boolean approveRefund(int refundId, int employeeId) {
         String sqlFindDetails = "SELECT r.Invoice_ID, i.Appointment_ID " +
@@ -133,19 +132,16 @@ public class RefundDAO {
             conn.setAutoCommit(false);
             try {
                 int invoiceId = 0;
-                int appointmentId = 0;
                 try (PreparedStatement psFind = conn.prepareStatement(sqlFindDetails)) {
                     psFind.setInt(1, refundId);
                     try (ResultSet rs = psFind.executeQuery()) {
                         if (rs.next()) {
                             invoiceId = rs.getInt("Invoice_ID");
-                            appointmentId = rs.getInt("Appointment_ID");
                         }
                     }
                 }
 
-                String appointmentStatus = appointmentId > 0 ? lockAppointmentStatus(conn, appointmentId) : null;
-                if ("In_Progress".equals(appointmentStatus)) {
+                if (!isEligibleForApproval(conn, invoiceId, refundId)) {
                     conn.rollback();
                     return false;
                 }
@@ -166,10 +162,6 @@ public class RefundDAO {
                     }
                 }
 
-                if (appointmentId > 0) {
-                    cancelAppointmentForRefund(conn, appointmentId, appointmentStatus);
-                }
-
                 conn.commit();
                 return true;
             } catch (Exception e) {
@@ -187,19 +179,12 @@ public class RefundDAO {
     /**
      * Staff/Admin reject refund request
      * - Refund_Request -> Rejected
-     * - Appointment reverts to Confirmed if it was Pending
-     * - Doctor's schedule remains Booked
+     * - Cancellation remains in force when a refund is rejected
      */
     public boolean rejectRefund(int refundId, int employeeId, String note) {
         String sql = "UPDATE Refund_Request SET Status = 'Rejected', approved_by_employee_id = ?, " +
                      "Reason = CASE WHEN ? IS NOT NULL AND LEN(?) > 0 THEN Reason + N' [Từ chối: ' + ? + N']' ELSE Reason END, " +
-                     "Update_At = SYSUTCDATETIME() WHERE Refund_ID = ?";
-        String sqlRevertAppt = "UPDATE a SET a.Status = 'Confirmed' " +
-                               "FROM Appointment a " +
-                               "JOIN Master_Invoice i ON a.Appointment_ID = i.Appointment_ID " +
-                               "JOIN Refund_Request r ON i.Invoice_ID = r.Invoice_ID " +
-                               "WHERE r.Refund_ID = ? AND a.Status = 'Pending'";
-
+                     "Update_At = SYSUTCDATETIME() WHERE Refund_ID = ? AND Status = 'Pending'";
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
             try {
@@ -209,12 +194,7 @@ public class RefundDAO {
                     ps.setString(3, note);
                     ps.setString(4, note);
                     ps.setInt(5, refundId);
-                    ps.executeUpdate();
-                }
-
-                try (PreparedStatement psRev = conn.prepareStatement(sqlRevertAppt)) {
-                    psRev.setInt(1, refundId);
-                    psRev.executeUpdate();
+                    if (ps.executeUpdate() != 1) { conn.rollback(); return false; }
                 }
 
                 conn.commit();
@@ -235,54 +215,36 @@ public class RefundDAO {
      * Staff creates a new refund request on behalf of a patient (Create Refund Request)
      */
     public boolean createRefundByStaff(int invoiceId, int employeeId, int patientId, long amount, String reason, String initialStatus) {
-        String status = "Approved".equalsIgnoreCase(initialStatus) ? "Approved" : "Pending";
+        String status = "Pending";
         String sql = "INSERT INTO Refund_Request (Invoice_ID, created_by_employee_id, approved_by_employee_id, Patient_ID, Refund_Amount, Reason, Status, Created_At, Update_At) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, SYSUTCDATETIME(), SYSUTCDATETIME())";
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                int appointmentId = 0;
-                String appointmentStatus = null;
-                if ("Approved".equals(status)) {
-                    try (PreparedStatement psA = conn.prepareStatement(
-                            "SELECT Appointment_ID FROM Master_Invoice WHERE Invoice_ID = ?")) {
-                        psA.setInt(1, invoiceId);
-                        try (ResultSet rs = psA.executeQuery()) {
-                            if (rs.next()) appointmentId = rs.getInt(1);
+                String eligibleSql = "SELECT a.Appointment_ID, a.Patient_ID, "
+                    + "CASE WHEN i.Status = 'Partial_Paid' THEN i.Deposit_Amount ELSE i.Total_Amount END AS Paid_Amount "
+                    + "FROM Master_Invoice i WITH (UPDLOCK, HOLDLOCK) "
+                    + "JOIN Appointment a WITH (UPDLOCK, HOLDLOCK) ON a.Appointment_ID = i.Appointment_ID "
+                    + "WHERE i.Invoice_ID = ? AND " + RefundPolicy.ELIGIBLE + " AND " + RefundPolicy.NO_ACTIVE_REQUEST;
+                try (PreparedStatement check = conn.prepareStatement(eligibleSql)) {
+                    check.setInt(1, invoiceId);
+                    try (ResultSet rs = check.executeQuery()) {
+                        if (!rs.next() || rs.getInt("Patient_ID") != patientId || amount <= 0
+                                || amount > rs.getLong("Paid_Amount") || reason == null || reason.trim().isEmpty()) {
+                            conn.rollback();
+                            return false;
                         }
-                    }
-                    if (appointmentId <= 0) {
-                        conn.rollback();
-                        return false;
-                    }
-                    appointmentStatus = lockAppointmentStatus(conn, appointmentId);
-                    if ("In_Progress".equals(appointmentStatus)) {
-                        conn.rollback();
-                        return false;
                     }
                 }
                 try (PreparedStatement ps = conn.prepareStatement(sql)) {
                     ps.setInt(1, invoiceId);
                     ps.setInt(2, employeeId);
-                    if ("Approved".equals(status)) {
-                        ps.setInt(3, employeeId);
-                    } else {
-                        ps.setNull(3, Types.INTEGER);
-                    }
+                    ps.setNull(3, Types.INTEGER);
                     ps.setInt(4, patientId);
                     ps.setLong(5, amount);
                     ps.setString(6, reason);
                     ps.setString(7, status);
                     ps.executeUpdate();
-                }
-
-                if ("Approved".equals(status)) {
-                    try (PreparedStatement psI = conn.prepareStatement("UPDATE Master_Invoice SET Status = 'Refunded' WHERE Invoice_ID = ?")) {
-                        psI.setInt(1, invoiceId);
-                        psI.executeUpdate();
-                    }
-
-                    cancelAppointmentForRefund(conn, appointmentId, appointmentStatus);
                 }
 
                 conn.commit();
@@ -299,36 +261,31 @@ public class RefundDAO {
         }
     }
 
-    private String lockAppointmentStatus(Connection conn, int appointmentId) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT Status FROM Appointment WITH (UPDLOCK, HOLDLOCK) WHERE Appointment_ID = ?")) {
-            ps.setInt(1, appointmentId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) throw new SQLException("Appointment for refund not found");
-                return rs.getString(1);
-            }
+    private boolean isEligibleForApproval(Connection conn, int invoiceId, int refundId) throws SQLException {
+        String sql = "SELECT 1 FROM Master_Invoice i WITH (UPDLOCK, HOLDLOCK) "
+            + "JOIN Appointment a ON a.Appointment_ID = i.Appointment_ID WHERE i.Invoice_ID = ? AND "
+            + RefundPolicy.ELIGIBLE + " AND EXISTS (SELECT 1 FROM Refund_Request r WHERE r.Refund_ID = ? "
+            + "AND r.Invoice_ID = i.Invoice_ID AND r.Patient_ID = a.Patient_ID AND r.Refund_Amount > 0 "
+            + "AND r.Refund_Amount <= CASE WHEN i.Status = 'Partial_Paid' THEN i.Deposit_Amount ELSE i.Total_Amount END)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, invoiceId);
+            ps.setInt(2, refundId);
+            try (ResultSet rs = ps.executeQuery()) { return rs.next(); }
         }
     }
 
-    /** A refund does not erase a completed examination or interrupt one in progress. */
-    private void cancelAppointmentForRefund(Connection conn, int appointmentId, String status) throws SQLException {
-        if (!"Pending".equals(status) && !"Confirmed".equals(status)) return;
-        try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE Appointment SET Status = 'Canceled' WHERE Appointment_ID = ? AND Status IN ('Pending', 'Confirmed')")) {
-            ps.setInt(1, appointmentId);
-            if (ps.executeUpdate() != 1) throw new SQLException("Appointment status changed during refund");
-        }
-        try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE Work_Schedule SET Status = 'Available' "
-                + "WHERE Schedule_ID = (SELECT Schedule_ID FROM Appointment WHERE Appointment_ID = ?) "
-                + "AND Status = 'Booked' AND NOT EXISTS (SELECT 1 FROM Appointment "
-                + "WHERE Schedule_ID = (SELECT Schedule_ID FROM Appointment WHERE Appointment_ID = ?) "
-                + "AND Appointment_ID <> ? AND Status <> 'Canceled')")) {
-            ps.setInt(1, appointmentId);
-            ps.setInt(2, appointmentId);
-            ps.setInt(3, appointmentId);
-            ps.executeUpdate();
-        }
+    public boolean createRefundByPatient(int invoiceId, int accountId, long amount, String reason) {
+        String sql = "SELECT a.Patient_ID, (SELECT TOP 1 Employee_ID FROM Employee_Profile ORDER BY Employee_ID) AS Employee_ID "
+            + "FROM Master_Invoice i JOIN Appointment a ON a.Appointment_ID = i.Appointment_ID "
+            + "JOIN Patient p ON p.Patient_ID = a.Patient_ID WHERE i.Invoice_ID = ? AND p.Account_ID = ?";
+        try (Connection conn = DBContext.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, invoiceId);
+            ps.setInt(2, accountId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return false;
+                return createRefundByStaff(invoiceId, rs.getInt("Employee_ID"), rs.getInt("Patient_ID"), amount, reason, "Pending");
+            }
+        } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
     /**
@@ -341,7 +298,7 @@ public class RefundDAO {
                      "FROM Master_Invoice i " +
                      "JOIN Appointment a ON i.Appointment_ID = a.Appointment_ID " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
-                     "ORDER BY i.Invoice_ID DESC";
+                     "WHERE " + RefundPolicy.ELIGIBLE + " AND " + RefundPolicy.NO_ACTIVE_REQUEST + " ORDER BY i.Invoice_ID DESC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -351,7 +308,7 @@ public class RefundDAO {
                 int aptId = rs.getInt("Appointment_ID");
                 long total = rs.getLong("Total_Amount");
                 long dep = rs.getLong("Deposit_Amount");
-                long refundable = total > 0 ? total : (dep > 0 ? dep : 250000);
+                long refundable = "Partial_Paid".equalsIgnoreCase(rs.getString("Status")) ? dep : total;
 
                 map.put("invoiceId", invId);
                 map.put("formattedInvoiceId", String.format("#INV-%05d", invId));
@@ -368,6 +325,34 @@ public class RefundDAO {
             e.printStackTrace();
         }
         return list;
+    }
+
+    /** Existing requests are visible to reception without permitting a duplicate refund. */
+    public Map<Integer, Map<String, Object>> getActiveRefundsForStaffAppointments() {
+        Map<Integer, Map<String, Object>> results = new HashMap<>();
+        String sql = "SELECT i.Appointment_ID, i.Invoice_ID, r.Refund_ID, r.Status, r.Refund_Amount, r.Reason "
+                + "FROM Refund_Request r JOIN Master_Invoice i ON i.Invoice_ID = r.Invoice_ID "
+                + "JOIN Appointment a ON a.Appointment_ID = i.Appointment_ID "
+                + "WHERE a.Status = 'Canceled' AND a.checkin_time IS NULL "
+                + "AND r.Status IN ('Pending', 'Approved') ORDER BY r.Refund_ID DESC";
+        try (Connection conn = DBContext.getConnection(); PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                int appointmentId = rs.getInt("Appointment_ID");
+                if (results.containsKey(appointmentId)) continue;
+                Map<String, Object> refund = new HashMap<>();
+                refund.put("id", rs.getInt("Refund_ID"));
+                refund.put("code", String.format("#REF-%03d", rs.getInt("Refund_ID")));
+                refund.put("invoiceCode", String.format("#INV-%05d", rs.getInt("Invoice_ID")));
+                refund.put("status", rs.getString("Status"));
+                refund.put("statusLabel", "Pending".equals(rs.getString("Status")) ? "Chờ giám đốc duyệt" : "Đã duyệt hoàn tiền");
+                refund.put("amount", rs.getLong("Refund_Amount"));
+                refund.put("amountLabel", String.format("%,d đ", rs.getLong("Refund_Amount")));
+                refund.put("reason", rs.getString("Reason"));
+                results.put(appointmentId, refund);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return results;
     }
 
     private String getStatusVn(String st) {

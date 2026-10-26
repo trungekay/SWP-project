@@ -33,6 +33,9 @@ public class ScheduleDayDTO {
     public String getDateStr() {
         return dateStr;
     }
+    public String getDate() {
+        return dateStr;
+    }
     public String getDayDate() {
         return dateStr;
     }

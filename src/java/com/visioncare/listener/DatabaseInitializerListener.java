@@ -49,6 +49,20 @@ public class DatabaseInitializerListener implements ServletContextListener {
                 System.err.println("[VisionCare] Note on doctor_completed_at check: " + e.getMessage());
             }
 
+            // 2b. Tự động kiểm tra và cấu hình Work_Schedule cho lịch Nhân viên
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("IF COL_LENGTH('dbo.Work_Schedule', 'Staff_Employee_ID') IS NULL "
+                           + "ALTER TABLE dbo.Work_Schedule ADD Staff_Employee_ID INT NULL");
+                stmt.execute("IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CHK_WS_Has_Employee') "
+                           + "BEGIN "
+                           + "  ALTER TABLE [dbo].[Work_Schedule] DROP CONSTRAINT [CHK_WS_Has_Employee]; "
+                           + "  ALTER TABLE [dbo].[Work_Schedule] WITH CHECK ADD CONSTRAINT [CHK_WS_Has_Employee] "
+                           + "  CHECK (([Doctor_Employee_ID] IS NOT NULL OR [Specialist_Employee_ID] IS NOT NULL OR [Staff_Employee_ID] IS NOT NULL)); "
+                           + "END");
+            } catch (Exception e) {
+                System.err.println("[VisionCare] Note on Work_Schedule staff check: " + e.getMessage());
+            }
+
             // 3. Tự động kiểm tra và bổ sung các cột mới cho Procedure_Order (2026-10-19)
             try (Statement stmt = conn.createStatement()) {
                 stmt.execute("IF COL_LENGTH('dbo.Procedure_Order', 'Result_Text') IS NULL "

@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Yêu cầu Hoàn tiền - VisionCare Staff</title>
+    <title>Quản lý Yêu cầu Hoàn tiền - VisionCare</title>
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -237,7 +237,7 @@
 <body>
 
     <!-- Sidebar Include -->
-    <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
+    <jsp:include page="/views/director/layout/director-sidebar.jsp">
         <jsp:param name="activeNav" value="refunds" />
     </jsp:include>
 
@@ -252,13 +252,9 @@
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
                 <div>
                     <h3 class="fw-bold mb-1" style="color: #0f172a;"><i class="bi bi-cash-coin me-2 text-teal"></i>Quản lý Yêu cầu Hoàn tiền</h3>
-                    <p class="text-muted small mb-0">Theo dõi, duyệt yêu cầu hoàn tiền từ bệnh nhân và tạo phiếu hoàn tiền trực tiếp cho nhân viên</p>
+                    <p class="text-muted small mb-0">Theo dõi, duyệt yêu cầu hoàn tiền từ bệnh nhân và nhân viên</p>
                 </div>
-                <div>
-                    <button type="button" class="btn btn-teal px-3 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#createRefundModal">
-                        <i class="bi bi-plus-circle me-2"></i>Tạo yêu cầu hoàn tiền
-                    </button>
-                </div>
+
             </div>
 
             <!-- Flash Alerts -->
@@ -336,10 +332,10 @@
                 <!-- Filters & Search -->
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-3 border-bottom">
                     <div class="d-flex gap-2 flex-wrap">
-                        <a href="${pageContext.request.contextPath}/staff/refunds?status=all" class="filter-tab ${currentStatus == 'all' ? 'active' : ''}">Tất cả</a>
-                        <a href="${pageContext.request.contextPath}/staff/refunds?status=Pending" class="filter-tab ${currentStatus == 'Pending' ? 'active' : ''}">Chờ duyệt (${stats.pending})</a>
-                        <a href="${pageContext.request.contextPath}/staff/refunds?status=Approved" class="filter-tab ${currentStatus == 'Approved' ? 'active' : ''}">Đã xác nhận (${stats.approved})</a>
-                        <a href="${pageContext.request.contextPath}/staff/refunds?status=Rejected" class="filter-tab ${currentStatus == 'Rejected' ? 'active' : ''}">Đã từ chối (${stats.rejected})</a>
+                        <a href="${pageContext.request.contextPath}/director/refunds?status=all" class="filter-tab ${currentStatus == 'all' ? 'active' : ''}">Tất cả</a>
+                        <a href="${pageContext.request.contextPath}/director/refunds?status=Pending" class="filter-tab ${currentStatus == 'Pending' ? 'active' : ''}">Chờ duyệt (${stats.pending})</a>
+                        <a href="${pageContext.request.contextPath}/director/refunds?status=Approved" class="filter-tab ${currentStatus == 'Approved' ? 'active' : ''}">Đã xác nhận (${stats.approved})</a>
+                        <a href="${pageContext.request.contextPath}/director/refunds?status=Rejected" class="filter-tab ${currentStatus == 'Rejected' ? 'active' : ''}">Đã từ chối (${stats.rejected})</a>
                     </div>
                     <div class="text-muted small">
                         Hiển thị <strong>${refunds.size()}</strong> yêu cầu
@@ -509,58 +505,6 @@
         </div>
     </div>
 
-    <!-- Modal 1: Tạo yêu cầu hoàn tiền (Staff Create Refund Request) -->
-    <div class="modal fade" id="createRefundModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius: 12px; border: none;">
-                <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold" style="color: #0d9488;"><i class="bi bi-plus-circle me-2"></i>Tạo yêu cầu hoàn tiền (Nhân viên)</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form action="${pageContext.request.contextPath}/staff/refunds" method="POST">
-                    <input type="hidden" name="action" value="create">
-                    <input type="hidden" name="patientId" id="createRefundPatientId" value="">
-
-                    <div class="modal-body p-4">
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Chọn Hóa đơn / Lịch hẹn <span class="text-danger">*</span></label>
-                            <select class="form-select" name="invoiceId" id="createRefundInvoiceSelect" onchange="onInvoiceSelected()" required>
-                                <option value="" data-patient-id="" data-amount="250000">-- Chọn hóa đơn cần hoàn tiền --</option>
-                                <c:forEach var="inv" items="${availableInvoices}">
-                                    <option value="${inv.invoiceId}" data-patient-id="${inv.patientId}" data-amount="${inv.refundableAmount}">
-                                        ${inv.label}
-                                    </option>
-                                </c:forEach>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Số tiền hoàn (VNĐ) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" name="amount" id="createRefundAmountInput" placeholder="VD: 250000" min="10000" step="10000" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Lý do hoàn tiền <span class="text-danger">*</span></label>
-                            <textarea class="form-control" name="reason" rows="3" placeholder="Nhập lý do hoàn tiền cho bệnh nhân..." required></textarea>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Trạng thái xử lý <span class="text-danger">*</span></label>
-                            <select class="form-select" name="initialStatus" required>
-                                <option value="Pending" selected>Chờ duyệt (Pending)</option>
-                                <option value="Approved">Duyệt và hoàn tiền ngay (Approved)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer border-0 pt-0">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
-                        <button type="submit" class="btn btn-teal">Xác nhận tạo yêu cầu</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- Modal 2: Duyệt hoàn tiền -->
     <div class="modal fade" id="approveModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -569,7 +513,7 @@
                     <h5 class="modal-title fw-bold text-success"><i class="bi bi-check-circle me-2"></i>Xác nhận duyệt hoàn tiền</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form action="${pageContext.request.contextPath}/staff/refunds" method="POST">
+                <form action="${pageContext.request.contextPath}/director/refunds" method="POST">
                     <input type="hidden" name="action" value="approve">
                     <input type="hidden" name="refundId" id="approveRefundId">
                     <div class="modal-body p-4">
@@ -612,7 +556,7 @@
                     <h5 class="modal-title fw-bold text-danger"><i class="bi bi-x-circle me-2"></i>Từ chối yêu cầu hoàn tiền</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form action="${pageContext.request.contextPath}/staff/refunds" method="POST">
+                <form action="${pageContext.request.contextPath}/director/refunds" method="POST">
                     <input type="hidden" name="action" value="reject">
                     <input type="hidden" name="refundId" id="rejectRefundId">
                     <div class="modal-body p-4">
@@ -749,19 +693,6 @@
             setTimeout(function() {
                 openRejectModal(currentDetailData.id, currentDetailData.code, currentDetailData.patientName);
             }, 300);
-        }
-
-        function onInvoiceSelected() {
-            const sel = document.getElementById('createRefundInvoiceSelect');
-            const opt = sel.options[sel.selectedIndex];
-            const patientId = opt.getAttribute('data-patient-id');
-            const amt = opt.getAttribute('data-amount');
-            if (patientId) {
-                document.getElementById('createRefundPatientId').value = patientId;
-            }
-            if (amt) {
-                document.getElementById('createRefundAmountInput').value = amt;
-            }
         }
 
         function openApproveModal(id, code, patientName, amount) {

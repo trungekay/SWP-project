@@ -52,8 +52,9 @@ public class ProcedurePaymentDAO {
 
     /** Record the receipt once and release the matching surgery order atomically. */
     public boolean confirm(int orderId, int staffEmployeeId, String method) throws Exception {
+        try { method = com.visioncare.util.PaymentMethod.canonical(method); } catch (IllegalArgumentException error) { return false; }
         if (orderId <= 0 || staffEmployeeId <= 0
-                || !("Cash_At_Counter".equals(method) || "Bank_Transfer".equals(method))) {
+                || !("Cash".equals(method) || "QR_Banking".equals(method))) {
             return false;
         }
         try (Connection conn = DBContext.getConnection()) {
@@ -80,7 +81,8 @@ public class ProcedurePaymentDAO {
                         + "JOIN Master_Invoice i WITH (UPDLOCK, HOLDLOCK) ON i.Appointment_ID = mr.Appointment_ID "
                         + "WHERE pr.Order_ID = ? AND pr.Status = 'Pending' AND po.Status = 'Pending' "
                         + "AND s.Service_Code LIKE 'PT-%' AND po.Referral_Notes IS NOT NULL "
-                        + "AND i.Status NOT IN ('Canceled', 'Refunded')";
+                        + "AND i.Status NOT IN ('Canceled', 'Refunded') "
+                        + "AND NOT EXISTS (SELECT 1 FROM Invoice_Checkout co WHERE co.Invoice_ID=i.Invoice_ID AND co.Finalized_At IS NOT NULL)";
                 int invoiceId;
                 BigDecimal amount;
                 try (PreparedStatement ps = conn.prepareStatement(lookup)) {

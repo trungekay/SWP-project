@@ -139,7 +139,7 @@
                                     </div>
                                     <div class="metric-info">
                                         <div class="metric-num">${canceledCount}</div>
-                                        <div class="metric-title text-secondary">Vắng mặt / Đã huỷ</div>
+                                        <div class="metric-title text-secondary">Đã hủy</div>
                                     </div>
                                 </a>
                             </div>
@@ -213,13 +213,30 @@
                                         class="btn btn-sm ${selectedStatus == 'CheckedIn' ? 'btn-primary fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
                                         <i class="bi bi-person-check-fill me-1"></i> Đã tiếp đón (${checkedInCount})
                                     </a>
+                                    <a href="${pageContext.request.contextPath}/staff/appointments?date=${selectedDate}&status=Completed&doctorId=${selectedDoctorId}&keyword=${param.keyword}"
+                                        class="btn btn-sm ${selectedStatus == 'Completed' ? 'btn-success fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
+                                        <i class="bi bi-check2-circle me-1"></i> Hoàn thành (${completedCount})
+                                    </a>
                                     <a href="${pageContext.request.contextPath}/staff/appointments?date=${selectedDate}&status=Canceled&doctorId=${selectedDoctorId}&keyword=${param.keyword}"
                                         class="btn btn-sm ${selectedStatus == 'Canceled' ? 'btn-danger fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
-                                        <i class="bi bi-person-x-fill me-1"></i> Vắng mặt / Đã hủy (${canceledCount})
+                                        <i class="bi bi-person-x-fill me-1"></i> Đã hủy (${canceledCount})
+                                    </a>
+                                    <a href="${pageContext.request.contextPath}/staff/appointments?date=all&amp;status=CancellationRequested"
+                                        class="btn btn-sm ${selectedStatus == 'CancellationRequested' ? 'btn-warning text-dark fw-bold' : 'btn-white border text-secondary'} rounded-pill px-3">
+                                        <i class="bi bi-calendar-x me-1"></i> Chờ duyệt hủy · Tất cả ngày (${cancellationRequestedCount})
+                                    </a>
+                                    <a href="${pageContext.request.contextPath}/staff/appointments?date=all&amp;status=RefundEligible"
+                                        class="btn btn-sm ${selectedStatus == 'RefundEligible' ? 'btn-success fw-bold' : 'btn-white border text-secondary'} rounded-pill px-3">
+                                        <i class="bi bi-cash-coin me-1"></i> Đủ điều kiện hoàn tiền · Tất cả ngày (${refundEligibleCount})
                                     </a>
                                 </div>
                             </div>
 
+                            <div class="px-3 py-2 small text-muted border-bottom">
+                                <i class="bi bi-info-circle me-1"></i>Bệnh nhân gửi yêu cầu hủy → Staff duyệt hủy → Tạo yêu cầu hoàn tiền.
+                                Lịch phải chưa check-in, đã thanh toán và chưa có yêu cầu hoàn tiền đang xử lý.
+                                Nếu bác sĩ đổi lịch và không bố trí được lịch khác, chọn đúng lý do trong thao tác hủy lịch.
+                            </div>
                             <!-- Table: Danh sách bệnh nhân -->
                             <div class="table-container">
                                 <table class="custom-table" style="table-layout: fixed; width: 100%;">
@@ -234,7 +251,11 @@
                                     </colgroup>
                                     <thead>
                                         <tr>
-                                            <th class="text-center text-nowrap" style="width: 8%;">Mã Hẹn</th>
+                                            <th class="text-center text-nowrap" style="width: 8%;" data-appointment-id-sort aria-sort="none">
+                                                <button type="button" class="btn btn-link p-0 text-reset text-decoration-none fw-semibold text-nowrap" style="font: inherit;" title="Sắp xếp theo mã hẹn">
+                                                    Mã Hẹn <i class="bi bi-arrow-down-up" aria-hidden="true"></i>
+                                                </button>
+                                            </th>
                                             <th class="text-nowrap" style="width: 15%;">Bệnh Nhân</th>
                                             <th class="text-nowrap" style="width: 13%;">Khung Giờ & Ngày</th>
                                             <th class="text-nowrap" style="width: 15%;">Bác Sĩ Phụ Trách</th>
@@ -247,13 +268,13 @@
                                         <c:choose>
                                             <c:when test="${not empty appointments}">
                                                 <c:forEach var="appt" items="${appointments}">
-                                                    <tr>
+                                                    <tr data-appointment-id="${appt.id}" class="${appt.status == 'In_Progress' ? 'row-examining' : ''}">
                                                         <!-- Mã Hẹn -->
                                                         <td class="text-center text-nowrap">
                                                             <a href="${pageContext.request.contextPath}/staff/appointment-detail?id=${appt.id}"
                                                                 class="badge bg-light text-dark border px-2 py-1 fw-bold text-decoration-none hover-teal"
                                                                 style="font-size: 13px; font-family: 'SFMono-Regular', Consolas, monospace; letter-spacing: 0.3px;">
-                                                                #APPT-${appt.id}
+                                                                #APT-${appt.id}
                                                             </a>
                                                         </td>
 
@@ -320,11 +341,12 @@
                                                         <!-- Trạng Thái (Thống nhất tiếng Việt & màu sắc) -->
                                                         <td class="text-center text-nowrap">
                                                             <c:choose>
-                                                                <c:when test="${appt.status == 'Pending' && isPastAppt}">
-                                                                    <span class="badge-status badge-canceled" title="Đã qua ngày khám - Bệnh nhân không đến tiếp đón">
-                                                                        Đã qua ngày
+                                                                <c:when test="${appt.cancellationRequested}">
+                                                                    <span class="badge-status badge-canceled" title="${fn:escapeXml(appt.reason)}">
+                                                                        Chờ duyệt hủy
                                                                     </span>
                                                                 </c:when>
+                                                                <c:when test="${appt.status == 'Pending' && isPastAppt}"><span class="badge-status badge-canceled">Đã qua ngày</span></c:when>
                                                                 <c:when test="${appt.awaitingPayment}">
                                                                     <span class="badge-status badge-pending" title="Chưa xác nhận thanh toán phí khám">
                                                                         Chờ thanh toán
@@ -345,21 +367,26 @@
                                                                         Chờ khám
                                                                     </span>
                                                                 </c:when>
-                                                                <c:when test="${appt.status == 'In_Progress'}">
-                                                                    <span class="badge-status badge-in-progress" title="Bác sĩ đang thực hiện khám">
+                                                                <c:when test="${appt.status == 'In_Progress' || (appt.status == 'Completed' && appt.hasSurgery && !appt.surgeryPaid)}">
+                                                                    <span class="badge-status badge-in-progress" title="${appt.status == 'Completed' ? 'Được chỉ định phẫu thuật - Đang chờ xác nhận thanh toán tại Quản lý thanh toán' : 'Bác sĩ đang thực hiện khám'}">
                                                                         Đang khám
                                                                     </span>
                                                                 </c:when>
                                                                 <c:when test="${appt.status == 'Completed'}">
                                                                     <span class="badge-status badge-completed" title="Ca khám đã hoàn thành">
-                                                                        Đã khám xong
+                                                                        <i class="bi bi-check2-circle me-1"></i>Hoàn thành
                                                                     </span>
                                                                 </c:when>
                                                                 <c:when test="${appt.status == 'Canceled'}">
-                                                                    <span class="badge-status badge-canceled"
-                                                                        title="${not empty appt.medicalNotes ? appt.medicalNotes : 'Lịch hẹn đã hủy / vắng mặt'}">
-                                                                        Đã hủy / Vắng mặt
+                                                                    <span class="badge-status badge-canceled" title="${fn:escapeXml(not empty appt.reason ? appt.reason : appt.medicalNotes)}">
+                                                                        <c:choose>
+                                                                            <c:when test="${fn:contains(appt.reason, 'Hết hạn thanh toán')}">Hết hạn thanh toán</c:when>
+                                                                            <c:when test="${fn:startsWith(appt.reason, 'Báo vắng mặt:')}">Vắng mặt</c:when>
+                                                                            <c:otherwise>Đã hủy</c:otherwise>
+                                                                        </c:choose>
                                                                     </span>
+                                                                    <c:if test="${not empty activeAppointmentRefunds[appt.id]}"><div class="small text-muted mt-1"><c:out value="${activeAppointmentRefunds[appt.id].code}" /> · <c:out value="${activeAppointmentRefunds[appt.id].statusLabel}" /></div></c:if>
+                                                                    <c:if test="${fn:contains(appt.reason, 'Hết hạn thanh toán')}"><div class="small text-muted mt-1">Hủy tự động · Không đủ điều kiện hoàn tiền</div></c:if>
                                                                 </c:when>
                                                                 <c:otherwise>
                                                                     <span class="badge-status badge-pending">
@@ -378,6 +405,22 @@
                                                                     title="Xem chi tiết & Ghi chú y tế" data-bs-toggle="tooltip">
                                                                     <i class="bi bi-pencil"></i>
                                                                 </a>
+
+<c:if test="${refundEligible[appt.id]}"><button type="button" class="action-btn" title="Tạo yêu cầu hoàn tiền" aria-label="Tạo yêu cầu hoàn tiền" data-bs-toggle="modal" data-bs-target="#createRefundModal" data-appointment-id="${appt.id}"><i class="bi bi-cash-coin"></i></button></c:if>
+<c:if test="${not empty activeAppointmentRefunds[appt.id]}">
+    <c:set var="existingRefund" value="${activeAppointmentRefunds[appt.id]}" />
+    <button type="button" class="action-btn" title="${existingRefund.code}: ${existingRefund.statusLabel}" aria-label="Xem yêu cầu hoàn tiền hiện có"
+        data-bs-toggle="modal" data-bs-target="#existingRefundModal" data-refund-code="${existingRefund.code}"
+        data-invoice-code="${existingRefund.invoiceCode}" data-status="${existingRefund.statusLabel}"
+        data-amount="${existingRefund.amountLabel}" data-reason="${fn:escapeXml(existingRefund.reason)}">
+        <i class="bi bi-receipt"></i>
+    </button>
+</c:if>
+<c:if test="${appt.cancellationRequested}">
+<form action="${pageContext.request.contextPath}/staff/appointments" method="post" class="d-inline">
+<input type="hidden" name="action" value="approveCancellation"><input type="hidden" name="appointmentId" value="${appt.id}">
+<button type="submit" class="action-btn" title="Duyệt yêu cầu hủy lịch" aria-label="Duyệt yêu cầu hủy lịch"><i class="bi bi-check2-circle"></i></button>
+</form></c:if>
 
                                                                 <!-- Các thao tác tiếp đón & hủy: Chỉ hiển thị khi ca khám CHƯA qua ngày -->
                                                                 <c:if test="${!isPastAppt}">
@@ -399,7 +442,7 @@
                                                                     </c:if>
 
                                                                     <!-- 3. Hủy lịch hẹn -->
-                                                                    <c:if test="${appt.status == 'Pending' || appt.readyForCheckIn}">
+                                                                    <c:if test="${!appt.cancellationRequested && (appt.status == 'Pending' || appt.readyForCheckIn)}">
                                                                         <button type="button"
                                                                             class="action-btn delete btn-trigger-cancel"
                                                                             title="Hủy lịch hẹn" data-bs-toggle="tooltip"
@@ -433,8 +476,8 @@
                                                             <c:choose>
                                                                 <c:when test="${selectedStatus == 'Canceled'}">
                                                                     <i class="bi bi-check-circle fs-1 d-block mb-2 text-secondary"></i>
-                                                                    <p class="mb-1 fw-semibold text-dark">Không có ca khám nào bị hủy hoặc báo vắng mặt!</p>
-                                                                    <p class="small text-muted">Tất cả bệnh nhân đều đến đúng hẹn hoặc chưa phát sinh vắng mặt.</p>
+                                                                    <p class="mb-1 fw-semibold text-dark">Không có ca khám nào bị hủy!</p>
+                                                                    <p class="small text-muted">Tất cả bệnh nhân đều đến đúng hẹn hoặc chưa phát sinh hủy lịch.</p>
                                                                 </c:when>
                                                                 <c:when test="${selectedStatus == 'CheckedIn'}">
                                                                     <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
@@ -517,7 +560,7 @@
                                 <h3 class="modal-title-custom">Xác nhận hủy lịch hẹn?</h3>
                                 <p class="modal-text mb-3">
                                     Bệnh nhân <strong id="modalCancelPatientName" class="text-dark">---</strong> (<span
-                                        id="modalCancelApptCode" class="fw-bold text-secondary">#APPT-0</span>) sẽ được
+                                        id="modalCancelApptCode" class="fw-bold text-secondary">#APT-0</span>) sẽ được
                                     hủy lịch khám và giải phóng ca cho bác sĩ.
                                 </p>
                                 <form action="${pageContext.request.contextPath}/staff/appointments" method="post"
@@ -531,18 +574,21 @@
                                         <label class="form-label small fw-semibold text-dark mb-1.5">
                                             Lý do hủy lịch <span class="text-danger">*</span>
                                         </label>
-                                        <select name="cancelReasonSelect" id="cancelReasonSelect"
+                                        <select name="cancelReasonSelect" id="cancelReasonSelect" required
                                             class="form-select form-select-sm shadow-none mb-2"
                                             style="border-radius: 8px; font-size: 13.5px;"
                                             onchange="toggleCustomReason(this)">
-                                            <option value="Liên hệ nhưng bệnh nhân báo bận không đến khám">Liên hệ nhưng bệnh nhân báo bận không đến khám</option>
+                                            <option value="" disabled selected>-- Chọn lý do hủy lịch --</option>
+                                            <option value="Bệnh nhân yêu cầu hủy trực tiếp tại quầy trước check-in">Bệnh nhân yêu cầu hủy trực tiếp tại quầy trước check-in (Staff xác nhận)</option>
+                                            <option value="Liên hệ nhưng bệnh nhân báo bận không đến khám">Bệnh nhân hủy đột xuất trước check-in (Staff xác nhận)</option>
                                             <option value="Bệnh nhân báo bận, yêu cầu đổi lịch sang ngày khác">Bệnh nhân
                                                 báo bận, yêu cầu đổi lịch sang ngày khác</option>
                                             <option value="Bệnh nhân không có nhu cầu khám nữa">Bệnh nhân không có nhu
                                                 cầu khám nữa</option>
                                             <option value="Bệnh nhân đặt trùng / sai thông tin">Bệnh nhân đặt trùng /
                                                 sai thông tin</option>
-                                            <option value="other">Lý do khác (Nhập ghi chú)...</option>
+                                            <option value="Bác sĩ đổi lịch, không thể sắp xếp lịch khám khác cho bệnh nhân">Bác sĩ đổi lịch, không thể sắp xếp lịch khám khác cho bệnh nhân</option>
+<option value="other">Lý do khác (Nhập ghi chú)...</option>
                                         </select>
                                         <textarea name="cancelReasonCustom" id="cancelReasonCustom"
                                             class="form-control form-control-sm shadow-none d-none" rows="2"
@@ -737,12 +783,12 @@
 
                                                     <!-- Chọn hình thức thanh toán -->
                                                     <div class="btn-group p-0.5 rounded-3 bg-white border" role="group">
-                                                        <input type="radio" class="btn-check" name="paymentMethod" id="payMethodCash" value="Cash_At_Counter" checked onchange="toggleWalkinPayMode('Cash_At_Counter')">
+                                                        <input type="radio" class="btn-check" name="paymentMethod" id="payMethodCash" value="Cash" checked onchange="toggleWalkinPayMode('Cash')">
                                                         <label class="btn btn-sm btn-outline-success border-0 px-2.5 py-1 fw-semibold" for="payMethodCash" style="font-size: 12px; border-radius: 6px;">
                                                             <i class="bi bi-cash me-1"></i>Tiền mặt tại quầy
                                                         </label>
 
-                                                        <input type="radio" class="btn-check" name="paymentMethod" id="payMethodQR" value="VietQR_Banking" onchange="toggleWalkinPayMode('VietQR_Banking')">
+                                                        <input type="radio" class="btn-check" name="paymentMethod" id="payMethodQR" value="QR_Banking" onchange="toggleWalkinPayMode('QR_Banking')">
                                                         <label class="btn btn-sm btn-outline-primary border-0 px-2.5 py-1 fw-semibold" for="payMethodQR" style="font-size: 12px; border-radius: 6px;">
                                                             <i class="bi bi-qr-code-scan me-1"></i>Chuyển khoản VietQR
                                                         </label>
@@ -982,6 +1028,7 @@
 
                 <!-- Bootstrap 5 JS -->
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                <script src="${pageContext.request.contextPath}/assets/js/appointment-id-sort.js"></script>
                 <script>
                     function validateWalkinName() {
                         var nameInput = document.getElementById('walkinPatientName');
@@ -1263,7 +1310,7 @@
                                             var isPending = data.apptStatus === 'Pending';
                                             feedback.innerHTML = '<div class="alert alert-warning py-1 px-2 mb-0 mt-1 d-flex align-items-center justify-content-between" style="font-size: 11.5px; border-radius: 6px;">' +
                                                 '<div><i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>' +
-                                                'Đã có hẹn <strong>#APPT-' + data.apptId + '</strong> (' + (data.apptTime || '') + ' - ' + (data.doctorName || '') + ' - ' + statusLabel + ')</div>' +
+                                                'Đã có hẹn <strong>#APT-' + data.apptId + '</strong> (' + (data.apptTime || '') + ' - ' + (data.doctorName || '') + ' - ' + statusLabel + ')</div>' +
                                                 (isPending ? '<button type="button" class="btn btn-warning py-0 px-2 fw-semibold ms-2 text-nowrap" style="font-size: 11px;" onclick="quickCheckinFromWalkin(' + data.apptId + ', \'' + (data.name || '').replace(/'/g, "\\'") + '\')">Check-in ngay</button>' : '') +
                                                 '</div>';
                                             if (submitBtn) submitBtn.disabled = true;
@@ -1504,7 +1551,7 @@
                         var feeDisplay = document.getElementById('walkinFeeDisplay');
                         var currentFeeText = feeDisplay ? feeDisplay.textContent : '200.000 ₫';
 
-                        if (mode === 'VietQR_Banking') {
+                        if (mode === 'QR_Banking') {
                             if (cashNotice) { cashNotice.classList.remove('d-flex'); cashNotice.classList.add('d-none'); }
                             if (qrNotice) { qrNotice.classList.remove('d-none'); qrNotice.classList.add('d-flex'); }
                             if (submitBtn) {
@@ -1567,7 +1614,7 @@
                         .then(function(data) {
                             if (submitBtn) {
                                 submitBtn.disabled = false;
-                                toggleWalkinPayMode('VietQR_Banking');
+                                toggleWalkinPayMode('QR_Banking');
                             }
 
                             if (data.success) {
@@ -1623,7 +1670,7 @@
                         .catch(function(err) {
                             if (submitBtn) {
                                 submitBtn.disabled = false;
-                                toggleWalkinPayMode('VietQR_Banking');
+                                toggleWalkinPayMode('QR_Banking');
                             }
                             alert('Lỗi tạo mã QR: ' + err.message);
                         });
@@ -1756,7 +1803,7 @@
                             if (submitBtn) {
                                 submitBtn.disabled = false;
                                 var payMode = document.querySelector('input[name="paymentMethod"]:checked');
-                                toggleWalkinPayMode(payMode ? payMode.value : 'VietQR_Banking');
+                                toggleWalkinPayMode(payMode ? payMode.value : 'QR_Banking');
                             }
                             var walkinModal = bootstrap.Modal.getInstance(walkinModalEl) || new bootstrap.Modal(walkinModalEl);
                             walkinModal.show();
@@ -1984,7 +2031,7 @@
                         walkinFormEl.addEventListener('submit', function(e) {
                             e.preventDefault();
                             var selectedMethod = document.querySelector('input[name="paymentMethod"]:checked');
-                            if (selectedMethod && selectedMethod.value === 'VietQR_Banking') {
+                            if (selectedMethod && selectedMethod.value === 'QR_Banking') {
                                 initiateWalkinQR();
                             } else {
                                 initiateWalkinCash();
@@ -2050,10 +2097,10 @@
                             if (nameElem) nameElem.textContent = name || 'này';
 
                             var codeElem = document.getElementById('modalCancelApptCode');
-                            if (codeElem) codeElem.textContent = '#APPT-' + id;
+                            if (codeElem) codeElem.textContent = '#APT-' + id;
 
                             var selectElem = document.getElementById('cancelReasonSelect');
-                            if (selectElem) selectElem.value = 'Bệnh nhân báo bận, yêu cầu đổi lịch sang ngày khác';
+                            if (selectElem) selectElem.value = '';
 
                             var customElem = document.getElementById('cancelReasonCustom');
                             if (customElem) {
@@ -2146,5 +2193,7 @@
                 .qr-toast-close:hover { color: #fff; }
             </style>
 
-            </body>
+            <jsp:include page="/views/staff/refund-create-modal.jsp" />
+            <jsp:include page="/views/staff/refund-status-modal.jsp" />
+</body>
             </html>

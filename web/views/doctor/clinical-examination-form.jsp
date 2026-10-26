@@ -31,7 +31,7 @@
 
         <header class="doctor-form-heading">
             <div>
-                <span class="doctor-form-eyebrow">CA KHÁM #APPT-<c:out value="${appointment.id}" /></span>
+                <span class="doctor-form-eyebrow">CA KHÁM #APT-<c:out value="${appointment.id}" /></span>
                 <h1>Phiếu khám lâm sàng</h1>
                 <p>Ghi nhận thị lực, dấu hiệu nhãn khoa và kết luận của ca khám.</p>
             </div>

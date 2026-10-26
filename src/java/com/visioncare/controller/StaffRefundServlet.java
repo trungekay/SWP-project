@@ -13,10 +13,8 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.List;
-import java.util.Map;
 
-@WebServlet(name = "StaffRefundServlet", urlPatterns = {"/staff/refunds", "/admin/refunds"})
+@WebServlet(name = "StaffRefundServlet", urlPatterns = {"/staff/refunds", "/admin/refunds", "/admin/reschedule-requests"})
 public class StaffRefundServlet extends HttpServlet {
 
     private final RefundDAO refundDAO = new RefundDAO();
@@ -32,37 +30,19 @@ public class StaffRefundServlet extends HttpServlet {
             return;
         }
 
-        String role = currentUser.getRole() != null ? currentUser.getRole().toLowerCase() : "";
-        if (!"staff".equals(role) && !"admin".equals(role) && !"manager".equals(role)) {
-            response.sendRedirect(request.getContextPath() + "/views/profile/refund-request.jsp");
+        if ("/staff/refunds".equals(request.getServletPath())) {
+            response.sendRedirect(request.getContextPath() + "/staff/appointments");
             return;
         }
-
-        String statusFilter = request.getParameter("status");
-        if (statusFilter == null || statusFilter.isEmpty()) {
-            statusFilter = "all";
+        if (currentUser.getRoleId() != 1 && currentUser.getRoleId() != 2) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
         }
-
-        List<Map<String, Object>> refunds = refundDAO.getAllRefundRequests(statusFilter);
-        Map<String, Object> stats = refundDAO.getRefundStats();
-        List<Map<String, Object>> availableInvoices = refundDAO.getInvoicesForStaffRefundSelection();
-
-        request.setAttribute("refunds", refunds);
-        request.setAttribute("stats", stats);
-        request.setAttribute("availableInvoices", availableInvoices);
-        request.setAttribute("currentStatus", statusFilter);
-
-        // Flash messages
-        if (session.getAttribute("successMessage") != null) {
-            request.setAttribute("successMessage", session.getAttribute("successMessage"));
-            session.removeAttribute("successMessage");
-        }
-        if (session.getAttribute("errorMessage") != null) {
-            request.setAttribute("errorMessage", session.getAttribute("errorMessage"));
-            session.removeAttribute("errorMessage");
-        }
-
-        request.getRequestDispatcher("/views/admin/refund-management.jsp").forward(request, response);
+        String destination = "/admin/reschedule-requests".equals(request.getServletPath())
+                ? "/director/reschedule-requests" : "/director/refunds";
+        String status = request.getParameter("status");
+        if (status != null) destination += "?status=" + java.net.URLEncoder.encode(status, java.nio.charset.StandardCharsets.UTF_8);
+        response.sendRedirect(request.getContextPath() + destination);
     }
 
     @Override
@@ -77,8 +57,20 @@ public class StaffRefundServlet extends HttpServlet {
             return;
         }
 
-        int employeeId = getEmployeeId(currentUser.getId());
         String action = request.getParameter("action");
+        boolean creating = "create".equalsIgnoreCase(action);
+        boolean management = currentUser.getRoleId() == 1 || currentUser.getRoleId() == 2;
+        if ((creating && currentUser.getRoleId() != 5 && !management) || (!creating && !management)
+                || (creating && !"/staff/refunds".equals(request.getServletPath()))
+                || (!creating && !"/admin/refunds".equals(request.getServletPath()))) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
+        int employeeId = getEmployeeId(currentUser.getId());
+        if (employeeId <= 0) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Tài khoản chưa có hồ sơ nhân viên.");
+            return;
+        }
 
         try {
             if ("approve".equalsIgnoreCase(action)) {
@@ -87,7 +79,7 @@ public class StaffRefundServlet extends HttpServlet {
                 if (ok) {
                     session.setAttribute("successMessage", "Đã duyệt và xác nhận hoàn tiền cho yêu cầu #REF-" + refundId + " thành công!");
                 } else {
-                    session.setAttribute("errorMessage", "Không thể duyệt hoàn tiền cho yêu cầu #REF-" + refundId + ". Nếu ca đang khám, hãy đợi bác sĩ kết thúc hoặc dừng ca trước.");
+                    session.setAttribute("errorMessage", "Không thể duyệt hoàn tiền cho yêu cầu #REF-" + refundId + ". Lịch phải được duyệt hủy trước check-in và hóa đơn chưa hoàn tiền.");
                 }
             } else if ("reject".equalsIgnoreCase(action)) {
                 int refundId = Integer.parseInt(request.getParameter("refundId"));
@@ -101,15 +93,15 @@ public class StaffRefundServlet extends HttpServlet {
             } else if ("create".equalsIgnoreCase(action)) {
                 int invoiceId = Integer.parseInt(request.getParameter("invoiceId"));
                 int patientId = Integer.parseInt(request.getParameter("patientId"));
-                long amount = Long.parseLong(request.getParameter("amount").replaceAll("[^0-9]", ""));
+                long amount = Long.parseLong(request.getParameter("amount").trim());
                 String reason = request.getParameter("reason");
-                String initialStatus = request.getParameter("initialStatus");
+                String initialStatus = "Pending";
 
                 boolean ok = refundDAO.createRefundByStaff(invoiceId, employeeId, patientId, amount, reason, initialStatus);
                 if (ok) {
                     session.setAttribute("successMessage", "Tạo yêu cầu hoàn tiền cho hóa đơn #" + invoiceId + " thành công!");
                 } else {
-                    session.setAttribute("errorMessage", "Không thể tạo yêu cầu hoàn tiền.");
+                    session.setAttribute("errorMessage", "Không thể tạo yêu cầu hoàn tiền: lịch phải được duyệt hủy trước check-in, đã thanh toán, số tiền hợp lệ và chưa có yêu cầu đang xử lý.");
                 }
             }
         } catch (Exception e) {
@@ -117,7 +109,7 @@ public class StaffRefundServlet extends HttpServlet {
             session.setAttribute("errorMessage", "Lỗi: " + e.getMessage());
         }
 
-        response.sendRedirect(request.getContextPath() + "/staff/refunds");
+        response.sendRedirect(request.getContextPath() + (creating ? "/staff/appointments" : "/director/refunds"));
     }
 
     private int getEmployeeId(int accountId) {
@@ -129,6 +121,6 @@ public class StaffRefundServlet extends HttpServlet {
                 if (rs.next()) return rs.getInt(1);
             }
         } catch (Exception ignored) {}
-        return 1;
+        return 0;
     }
 }

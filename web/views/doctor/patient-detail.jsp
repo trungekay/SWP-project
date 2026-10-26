@@ -97,7 +97,7 @@
                                 <h2 id="patient-name"><c:out value="${appointment.patientName}" default="Chưa có tên" /></h2>
                                 <div class="doctor-detail-hero-identifiers">
                                     <span>Mã BN <strong>#PT-<c:out value="${appointment.patientId}" /></strong></span>
-                                    <span>Mã lịch hẹn <strong>#APPT-<c:out value="${appointment.id}" /></strong></span>
+                                    <span>Mã lịch hẹn <strong>#APT-<c:out value="${appointment.id}" /></strong></span>
                                 </div>
                             </div>
                         </div>
@@ -309,7 +309,7 @@
                     </div>
                     <div class="modal-body p-4 text-start">
                         <p class="text-secondary small mb-3">
-                            Bác sĩ xác nhận đã hoàn thành việc khám bệnh cho bệnh nhân <strong class="text-dark"><c:out value="${appointment.patientName}" /></strong> (#APPT-<c:out value="${appointment.id}" />).
+                            Bác sĩ xác nhận đã hoàn thành việc khám bệnh cho bệnh nhân <strong class="text-dark"><c:out value="${appointment.patientName}" /></strong> (#APT-<c:out value="${appointment.id}" />).
                         </p>
                         <div class="bg-light p-3 rounded-3 small border mb-3">
                             <div class="d-flex justify-content-between py-1 border-bottom">

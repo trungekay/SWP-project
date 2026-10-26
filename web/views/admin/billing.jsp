@@ -193,6 +193,11 @@
 
     <!-- Sidebar Include -->
     <c:choose>
+        <c:when test="${directorBilling}">
+            <jsp:include page="/views/director/layout/director-sidebar.jsp">
+                <jsp:param name="activeNav" value="revenue" />
+            </jsp:include>
+        </c:when>
         <c:when test="${staffBilling}">
             <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
                 <jsp:param name="activeNav" value="payments" />
@@ -210,6 +215,7 @@
         
         <!-- Header Include -->
         <c:choose>
+            <c:when test="${directorBilling}"><jsp:include page="/views/employee/layout/employee-header.jsp" /></c:when>
             <c:when test="${staffBilling}"><jsp:include page="/views/employee/layout/employee-header.jsp" /></c:when>
             <c:otherwise><jsp:include page="/views/admin/layout/admin-header.jsp" /></c:otherwise>
         </c:choose>
@@ -251,7 +257,7 @@
                         <tbody>
                             <c:forEach var="item" items="${procedureRequests}">
                                 <tr>
-                                    <td><strong>#CD-${item.orderId}</strong><div class="small text-muted">#APPT-${item.appointmentId}</div></td>
+                                    <td><strong>#CD-${item.orderId}</strong><div class="small text-muted">#APT-${item.appointmentId}</div></td>
                                     <td><c:out value="${item.patientName}" /></td>
                                     <td><c:out value="${item.serviceName}" /></td>
                                     <td><fmt:formatNumber value="${item.price}" pattern="#,###" /> đ</td>
@@ -265,8 +271,8 @@
                                                 <input type="hidden" name="orderId" value="${item.orderId}">
                                                 <input type="hidden" name="csrfToken" value="<c:out value='${procedurePaymentCsrf}' />">
                                                 <select name="paymentMethod" class="form-select form-select-sm" aria-label="Phương thức thanh toán">
-                                                    <option value="Cash_At_Counter">Tiền mặt</option>
-                                                    <option value="Bank_Transfer">Chuyển khoản</option>
+                                                    <option value="Cash">Tiền mặt</option>
+                                                    <option value="QR_Banking">Chuyển khoản</option>
                                                 </select>
                                                 <button class="btn btn-success btn-sm text-nowrap" type="submit">Xác nhận đã thu</button>
                                             </form>
@@ -502,6 +508,10 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="d-inline-flex gap-1">
+                                                    <c:choose><c:when test="${billingPath == '/staff/payments'}">
+                                                        <a class="action-icon-btn" href="${pageContext.request.contextPath}/staff/invoices/detail?id=${inv.id}" title="Xem hóa đơn tổng"><i class="bi bi-receipt"></i></a>
+                                                        <c:if test="${inv.status != 'Refunded' && inv.status != 'Canceled'}"><a class="action-icon-btn text-success" href="${pageContext.request.contextPath}/staff/invoices/checkout?id=${inv.id}" title="Đối chiếu và thanh toán"><i class="bi bi-credit-card"></i></a></c:if>
+                                                    </c:when><c:otherwise>
                                                     <button type="button" class="action-icon-btn" onclick="openInvoiceDetail(${inv.id})" title="Xem chi tiết hóa đơn">
                                                         <i class="bi bi-eye"></i>
                                                     </button>
@@ -510,6 +520,7 @@
                                                             <i class="bi bi-check2-circle"></i>
                                                         </button>
                                                     </c:if>
+                                                    </c:otherwise></c:choose>
                                                 </div>
                                             </td>
                                         </tr>
@@ -584,7 +595,7 @@
                             <label class="form-label small fw-bold text-dark">Phương thức thanh toán</label>
                             <select class="form-select" name="paymentMethod" required>
                                 <option value="Cash">Tiền mặt (Cash)</option>
-                                <option value="VNPay">Cổng VNPay</option>
+                                <option value="QR_Banking">Chuyển khoản QR</option>
                                 <option value="Bank Transfer">Chuyển khoản ngân hàng</option>
                                 <option value="Credit Card">Thẻ tín dụng (POS)</option>
                             </select>

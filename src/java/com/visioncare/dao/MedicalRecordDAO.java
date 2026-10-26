@@ -34,7 +34,8 @@ public class MedicalRecordDAO {
         StringBuilder sql = new StringBuilder(
             "SELECT m.Record_ID, m.Appointment_ID, m.Doctor_Employee_ID, " +
             "m.Clinical_Diagnosis, m.examination_result, m.conclusion, m.Created_At, " +
-            "a.Status AS Appointment_Status, " +
+            "a.Status AS Appointment_Status, a.checkin_time, " +
+            "ws.Work_Date, ws.Start_Time, ws.End_Time, ws.Slot, " +
             "p.Patient_ID, p.Full_Name AS Patient_Name, p.Phone AS Patient_Phone, p.DOB AS Patient_DOB, " +
             "p.Address AS Patient_Address, p.Account_ID, " +
             "acc.Email AS Patient_Email, " +
@@ -43,6 +44,7 @@ public class MedicalRecordDAO {
             "inv.Invoice_ID, inv.Total_Amount, inv.Status AS Invoice_Status " +
             "FROM Medical_Record m " +
             "JOIN Appointment a ON m.Appointment_ID = a.Appointment_ID " +
+            "LEFT JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
             "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
             "LEFT JOIN Account acc ON p.Account_ID = acc.Account_ID " +
             "LEFT JOIN Employee_Profile doc ON m.Doctor_Employee_ID = doc.Employee_ID " +
@@ -93,6 +95,26 @@ public class MedicalRecordDAO {
                     record.put("appointmentStatus", rs.getString("Appointment_Status"));
                     record.put("createdDate", createdAt != null ? dateTimeFormat.format(createdAt) : "");
 
+                    // Time and Schedule details
+                    java.sql.Date workDate = rs.getDate("Work_Date");
+                    record.put("appointmentDateFmt", workDate != null ? dateOnlyFormat.format(workDate) : (createdAt != null ? dateOnlyFormat.format(createdAt) : "N/A"));
+
+                    java.sql.Time st = rs.getTime("Start_Time");
+                    java.sql.Time et = rs.getTime("End_Time");
+                    String timeSlot = "";
+                    if (st != null && et != null) {
+                        timeSlot = st.toString().substring(0, 5) + " - " + et.toString().substring(0, 5);
+                    } else if (st != null) {
+                        timeSlot = st.toString().substring(0, 5);
+                    } else {
+                        String slot = rs.getString("Slot");
+                        timeSlot = slot != null && !slot.trim().isEmpty() ? slot : "Chưa cập nhật";
+                    }
+                    record.put("timeSlot", timeSlot);
+
+                    Timestamp checkinTs = rs.getTimestamp("checkin_time");
+                    record.put("checkinTime", checkinTs != null ? dateTimeFormat.format(checkinTs) : null);
+
                     // Patient details
                     int patientId = rs.getInt("Patient_ID");
                     record.put("patientId", patientId);
@@ -125,9 +147,9 @@ public class MedicalRecordDAO {
                         }
                     }
                     record.put("doctorName", docName);
-                    record.put("doctorSpecialty", rs.getString("Doctor_Specialty") != null ? rs.getString("Doctor_Specialty") : "Chưa cập nhật");
+                    record.put("doctorSpecialty", rs.getString("Doctor_Specialty") != null ? rs.getString("Doctor_Specialty") : "Bác sĩ nhãn khoa");
                     record.put("doctorPhone", rs.getString("Doctor_Phone") != null ? rs.getString("Doctor_Phone") : "Chưa cập nhật");
-                    record.put("roomName", rs.getString("Room_Name") != null ? rs.getString("Room_Name") : "Chưa cập nhật");
+                    record.put("roomName", rs.getString("Room_Name") != null ? rs.getString("Room_Name") : "Phòng khám Mắt");
 
                     // Clinical details
                     String diag = rs.getString("Clinical_Diagnosis");
@@ -148,8 +170,11 @@ public class MedicalRecordDAO {
                     // Load Procedures (Cận lâm sàng & Thủ thuật)
                     record.put("procedures", loadProcedures(conn, recordId));
 
-                    // Load Prescription & Medicine details
+                    // Load Prescription & Medicine details & Eyeglass
                     loadPrescription(conn, recordId, record);
+
+                    // Load Previous visits history of this patient (matching doctor screen)
+                    record.put("history", loadPatientHistory(conn, patientId, recordId));
                 }
             }
         }
@@ -183,7 +208,8 @@ public class MedicalRecordDAO {
 
     private List<Map<String, Object>> loadProcedures(Connection conn, int recordId) {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT po.Order_ID, po.Status, po.Referral_Notes, s.Service_Name, po.Actual_Price, esp.Full_Name AS Specialist_Name " +
+        String sql = "SELECT po.Order_ID, po.Status, po.Referral_Notes, po.Result_Text, po.Result_Conclusion, po.Completed_At, " +
+                     "s.Service_Name, po.Actual_Price, esp.Full_Name AS Specialist_Name " +
                      "FROM Procedure_Order po " +
                      "JOIN Service_Catalog s ON po.Service_ID = s.Service_ID " +
                      "LEFT JOIN Employee_Profile esp ON po.Specialist_Employee_ID = esp.Employee_ID " +
@@ -201,6 +227,10 @@ public class MedicalRecordDAO {
                     item.put("priceFmt", String.format("%,d đ", rs.getLong("Actual_Price")));
                     item.put("status", rs.getString("Status"));
                     item.put("referralNotes", rs.getString("Referral_Notes"));
+                    item.put("resultText", rs.getString("Result_Text"));
+                    item.put("resultConclusion", rs.getString("Result_Conclusion"));
+                    Timestamp compAt = rs.getTimestamp("Completed_At");
+                    item.put("completedAtFmt", compAt != null ? dateTimeFormat.format(compAt) : null);
                     String specName = rs.getString("Specialist_Name");
                     item.put("specialistName", specName != null ? specName : "Chưa phân công");
                     list.add(item);
@@ -242,20 +272,64 @@ public class MedicalRecordDAO {
         record.put("prescriptionDate", presCreated != null ? dateTimeFormat.format(presCreated) : record.get("createdDate"));
 
         if (prescriptionId > 0) {
+            // Load Medicines
             String sqlDetail = "SELECT Detail_ID, Medicine_Name, Quantity, Dosage_Instruction " +
                                "FROM Prescription_Detail WHERE Prescription_ID = ? ORDER BY Detail_ID ASC";
             try (PreparedStatement psDetail = conn.prepareStatement(sqlDetail)) {
                 psDetail.setInt(1, prescriptionId);
-                try (ResultSet rs = psDetail.executeQuery()) {
+                try (ResultSet rsDetail = psDetail.executeQuery()) {
                     int stt = 1;
-                    while (rs.next()) {
+                    while (rsDetail.next()) {
                         Map<String, Object> med = new HashMap<>();
                         med.put("stt", stt++);
-                        med.put("medicineName", rs.getString("Medicine_Name"));
-                        med.put("quantity", rs.getInt("Quantity"));
-                        String dosage = rs.getString("Dosage_Instruction");
+                        med.put("medicineName", rsDetail.getString("Medicine_Name"));
+                        med.put("quantity", rsDetail.getInt("Quantity"));
+                        String dosage = rsDetail.getString("Dosage_Instruction");
                         med.put("dosageInstruction", dosage != null ? dosage : "Chưa cập nhật");
                         medicines.add(med);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            // Load Eyeglass Prescription if any
+            boolean hasEyeglassTable;
+            try (ResultSet tables = conn.getMetaData().getTables(conn.getCatalog(), null, "Eyeglass_Prescription", new String[]{"TABLE"})) {
+                hasEyeglassTable = tables.next();
+            } catch (Exception error) {
+                throw new IllegalStateException("Không kiểm tra được cấu trúc đơn kính.", error);
+            }
+            if (!hasEyeglassTable) {
+                record.put("medicines", medicines);
+                return;
+            }
+            String sqlGlass = "SELECT OD_SPH, OD_CYL, OD_AXIS, OD_ADD, OS_SPH, OS_CYL, OS_AXIS, OS_ADD, PD, Lens_Type, Glasses_Notes " +
+                              "FROM Eyeglass_Prescription WHERE Prescription_ID = ?";
+            try (PreparedStatement psGlass = conn.prepareStatement(sqlGlass)) {
+                psGlass.setInt(1, prescriptionId);
+                try (ResultSet rsGlass = psGlass.executeQuery()) {
+                    if (rsGlass.next()) {
+                        Map<String, Object> eyeglass = new HashMap<>();
+                        eyeglass.put("odSph", rsGlass.getString("OD_SPH"));
+                        eyeglass.put("odCyl", rsGlass.getString("OD_CYL"));
+                        eyeglass.put("odAxis", rsGlass.getString("OD_AXIS"));
+                        eyeglass.put("odAdd", rsGlass.getString("OD_ADD"));
+                        eyeglass.put("osSph", rsGlass.getString("OS_SPH"));
+                        eyeglass.put("osCyl", rsGlass.getString("OS_CYL"));
+                        eyeglass.put("osAxis", rsGlass.getString("OS_AXIS"));
+                        eyeglass.put("osAdd", rsGlass.getString("OS_ADD"));
+                        eyeglass.put("pd", rsGlass.getString("PD"));
+                        String lensType = rsGlass.getString("Lens_Type");
+                        eyeglass.put("lensType", lensType);
+                        String lensTypeName = "Kính nhìn xa";
+                        if ("near".equalsIgnoreCase(lensType)) lensTypeName = "Kính đọc gần";
+                        else if ("progressive".equalsIgnoreCase(lensType)) lensTypeName = "Kính đa tròng";
+                        else if ("other".equalsIgnoreCase(lensType)) lensTypeName = "Khác";
+                        eyeglass.put("lensTypeName", lensTypeName);
+                        eyeglass.put("glassesNotes", rsGlass.getString("Glasses_Notes"));
+                        record.put("eyeglass", eyeglass);
+                        record.put("hasGlasses", true);
                     }
                 }
             } catch (Exception e) {
@@ -264,5 +338,67 @@ public class MedicalRecordDAO {
         }
 
         record.put("medicines", medicines);
+    }
+
+    private List<Map<String, Object>> loadPatientHistory(Connection conn, int patientId, int currentRecordId) {
+        List<Map<String, Object>> list = new ArrayList<>();
+        String sql = "SELECT m.Record_ID, m.Appointment_ID, m.Clinical_Diagnosis, m.examination_result, m.conclusion, m.Created_At, " +
+                     "ws.Work_Date, ws.Start_Time, " +
+                     "doc.Full_Name AS Doctor_Name, doc.Specialty AS Doctor_Specialty " +
+                     "FROM Medical_Record m " +
+                     "JOIN Appointment a ON m.Appointment_ID = a.Appointment_ID " +
+                     "LEFT JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
+                     "LEFT JOIN Employee_Profile doc ON COALESCE(m.Doctor_Employee_ID, ws.Doctor_Employee_ID) = doc.Employee_ID " +
+                     "WHERE a.Patient_ID = ? AND m.Record_ID != ? AND a.Status = 'Completed' " +
+                     "ORDER BY COALESCE(ws.Work_Date, CAST(m.Created_At AS DATE)) DESC, COALESCE(ws.Start_Time, CAST(m.Created_At AS TIME)) DESC, m.Created_At DESC";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, patientId);
+            ps.setInt(2, currentRecordId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> item = new HashMap<>();
+                    int recId = rs.getInt("Record_ID");
+                    item.put("recordId", recId);
+                    item.put("formattedId", String.format("#MR-%05d", recId));
+                    item.put("appointmentId", rs.getInt("Appointment_ID"));
+                    java.sql.Date workDate = rs.getDate("Work_Date");
+                    java.sql.Time startTime = rs.getTime("Start_Time");
+                    Timestamp cat = rs.getTimestamp("Created_At");
+
+                    String dateFmt = "N/A";
+                    if (workDate != null) {
+                        dateFmt = dateOnlyFormat.format(workDate);
+                    } else if (cat != null) {
+                        dateFmt = dateOnlyFormat.format(cat);
+                    }
+
+                    String timeFmt = "--:--";
+                    if (startTime != null) {
+                        timeFmt = new SimpleDateFormat("HH:mm").format(startTime);
+                    } else if (cat != null) {
+                        timeFmt = new SimpleDateFormat("HH:mm").format(cat);
+                    }
+
+                    item.put("dateFmt", dateFmt);
+                    item.put("timeFmt", timeFmt);
+                    String rawDoc = rs.getString("Doctor_Name");
+                    String docName = rawDoc != null && !rawDoc.trim().isEmpty() ? rawDoc.trim() : "Chưa cập nhật";
+                    if (!"Chưa cập nhật".equals(docName) && !docName.startsWith("BS.") && !docName.startsWith("BS ")) {
+                        docName = "BS. " + docName;
+                    }
+                    item.put("doctorName", docName);
+                    item.put("doctorSpecialty", rs.getString("Doctor_Specialty"));
+                    item.put("clinicalDiagnosis", rs.getString("Clinical_Diagnosis"));
+                    item.put("examinationResult", rs.getString("examination_result"));
+                    item.put("conclusion", rs.getString("conclusion"));
+                    list.add(item);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return list;
     }
 }
