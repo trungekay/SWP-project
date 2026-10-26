@@ -50,12 +50,19 @@ Xem `user-flow-fixtures-20261026.md` để lấy tài khoản patient, các mã 
 
 Các ca test thay đổi khi bạn thao tác. Không tự reset để tránh xóa kết quả bạn đang kiểm tra. Chạy seed lần hai tạo thêm 0 ca đã được xác minh.
 
-## File và cách chạy lại
+## Cách dùng khi chia sẻ cho thành viên
+
+1. Pull/merge code rồi mở `database/eye_clinic_db.sql` trong SSMS và chạy toàn bộ trên SQL Server phát triển. File là script khởi tạo/reset `eye_clinic_db`, sẽ thay database cùng tên; không chạy lên database có dữ liệu cần giữ.
+2. Cuối file trả ra Case_Code, Appointment_ID, Invoice_ID, ngày/giờ khám. Dùng các mã trả về trên máy đó, không mặc định mã APT-111..119 của máy người tạo.
+3. Đăng nhập tài khoản Nguyễn Văn An có sẵn trong dữ liệu gốc. Không có tài khoản/email mới và không đổi mật khẩu.
+4. Không cần chạy migration hay Java seed. Công cụ Java bên dưới chỉ là tùy chọn để đối chiếu/tạo lại ca khi cần. Java cũng nhận diện được bộ ca đã tạo từ SQL, tránh tạo thêm lần nữa.
+
+## File và công cụ tùy chọn
 
 - `database-audit-20261026.md`: tên DB nhìn thấy, toàn bộ 24 bảng, cột/số dòng trước seed; không chứa mật khẩu DB.
 - `user-flow-verification-20261026.md`: kết quả 89 kiểm tra trên bộ ca và chi tiết kiểm tra khóa ngoại.
 - `../../scripts/testdata/DatabaseAudit.java`: chỉ đọc schema/count; ghi báo cáo audit.
-- `../../scripts/testdata/SeedUserFlows.java`: seed có nhận diện theo marker `[FLOW-20261026:...]`, một transaction rollback nếu lỗi; không xóa dữ liệu hoặc reset ca đã dùng. Chỉ dùng eye_clinic_db local.
+- `../../scripts/testdata/SeedUserFlows.java`: seed nhận diện bằng `docs/testing/user-flow-registry.properties` (mã lịch/hóa đơn/bệnh án và thời điểm tạo, kèm định danh server/database), một transaction rollback nếu lỗi; không xóa dữ liệu hoặc reset ca đã dùng. Chỉ dùng eye_clinic_db local.
 - `../../scripts/testdata/VerifyUserFlows.java`: chỉ đọc để kiểm tra trạng thái ban đầu; sau khi bạn thao tác đổi trạng thái test, assertion ban đầu có thể fail là bình thường.
 - `../../scripts/testdata/user-flow-checks.sql`: các SELECT để bạn kiểm tra trong SSMS.
 
@@ -79,7 +86,7 @@ Ba cột `Payment_Transaction.Payment_Gateway`, `Invoice_Checkout.Payment_Method
 
 Không thay số tiền, mã/ngày giao dịch, trạng thái khám/hóa đơn/refund. Database hiện có 2 giao dịch Cash, 19 giao dịch QR_Banking tại thời điểm chuẩn hóa. Các trạng thái hiện có đã đối chiếu: Appointment (Pending, Confirmed, In_Progress, Completed, Canceled), Master_Invoice (Paid, Partial_Paid, Canceled, Refunded), Payment_Transaction (Success), Refund_Request (Pending, Approved), Procedure_Order (Pending, Completed), Invoice_Checkout_Payment (Pending). Không có trạng thái Test_Seed/Demo_Seed; không gộp trạng thái của các thực thể khác nhau.
 
-Migration đã áp dụng: `database/migrations/20261026_payment_methods.sql`, có transaction, kiểm tra giá trị lạ và CHECK constraint chống ghi tên sai. Khi tạo mới DB: chạy schema gốc → migration checkout 20261025 → migration phương thức 20261026. Hai bản schema SQL gốc cũng đã cập nhật tên phương thức.
+Toàn bộ schema checkout, guard Opening_Paid, unique index QR đang chờ và transaction chuẩn hóa phương thức đã gộp trong `database/eye_clinic_db.sql`; bản `src/java/database/eye_clinic_db.sql` được đồng bộ. Không cần thư mục migrations hay chạy file migration riêng. File SQL gốc là script khởi tạo/reset database: chỉ chạy trên database phát triển mà bạn chủ động muốn khởi tạo lại, không dùng để nâng cấp trực tiếp dữ liệu đang giữ.
 
 Kiểm tra nhanh:
 
@@ -88,3 +95,25 @@ SELECT Payment_Gateway, COUNT(*) AS SoGiaoDich FROM Payment_Transaction GROUP BY
 SELECT Payment_Method, COUNT(*) AS SoHoaDon FROM Invoice_Checkout GROUP BY Payment_Method;
 SELECT Payment_Method, COUNT(*) AS SoYeuCau FROM Procedure_Payment_Request GROUP BY Payment_Method;
 ```
+
+## Đối chiếu hóa đơn cũ và SQL đã tích hợp
+
+- `invoice-reconciliation-20261026.md`: đối chiếu từng hóa đơn, giao dịch thiếu/nghi trùng, tổng khoản thu, refund và lỗi hiển thị; audit chỉ đọc, không tự sửa chứng từ thiếu nguồn.
+- `../../scripts/testdata/AuditAllInvoices.java`: chạy lại đối chiếu toàn bộ hóa đơn.
+- `../../scripts/testdata/ValidateIntegratedSql.java`: kiểm tra phần DDL checkout và chuẩn hóa trong schema tạm trên transaction luôn rollback; không chạy DROP/CREATE database của file khởi tạo, không giữ schema/bảng test sau kiểm tra.
+- Thư mục migrations đã được bỏ sau khi xác nhận nội dung đã nằm trong hai bản eye_clinic_db.sql. Phần seed lịch bác sĩ và dữ liệu ảnh/binary hiện có trong file chính được giữ nguyên.
+- 9 ca đã được nhúng vào cuối eye_clinic_db.sql trong khối PORTABLE PATIENT INVOICE SCENARIOS. Các thành viên chạy một file SQL khởi tạo là có cả schema và bộ ca; không bắt buộc chạy Java seed riêng.
+
+## Nội dung bệnh án hiển thị
+
+Các mã FLOW/DEMO không còn được lưu trong chẩn đoán, kết quả, kết luận, đơn thuốc hay lý do refund của bộ ca này. Nội dung dựa trên dịch vụ thực tế có trong từng ca: TP-LEO đã thực hiện và thuốc Systane ở APT-118; khám tổng quát không có dịch vụ thêm ở APT-117/APT-119; APT-96 có TP-LEO chờ thực hiện. Ca chưa khám không tạo chẩn đoán/kết quả giả.
+
+Định danh phục vụ chạy seed lại lưu ngoài DB trong `user-flow-registry.properties`, có kiểm tra server, database, patient, mã hóa đơn/bệnh án và thời điểm tạo để tránh nhận nhầm ca khác. `FixtureRegistry.java` chỉ đọc marker cũ để chuyển tiếp; seed mới không ghi marker vào bệnh án. `RefreshClinicalFixtures.java --apply` chỉ thay placeholder đã tạo, không ghi đè nội dung bác sĩ tự cập nhật và không thay đổi tiền/trạng thái. Xem `clinical-fixture-content-20261026.md` để đối chiếu nội dung. Đây vẫn là bộ ca mô phỏng được quản lý trong tài liệu, không phải hồ sơ điều trị thực tế.
+
+## Seed SQL dùng chung trong Git
+
+Hai bản `database/eye_clinic_db.sql` và `src/java/database/eye_clinic_db.sql` được đồng bộ hoàn toàn. Khối cuối tạo 9 ca cho An dựa trên catalog NK-01, TP-LEO và thuốc Systane đang có; tính tiền từ giá catalog, chỉ lưu Cash/QR_Banking. Không có mã FLOW trong chẩn đoán/kết luận/đơn thuốc. Ca chưa khám không bị gán chẩn đoán.
+
+Khối seed có transaction rollback nếu thiếu dữ liệu tham chiếu hoặc lịch trống. Chạy lại riêng khối seed không reset ca đã thao tác và không tạo trùng: nhận diện bằng patient + thời điểm đặt lịch cố định. Những thời điểm này là thời gian đặt lịch hợp lệ của dữ liệu mô phỏng; mã ca chỉ xuất hiện trong biến tạm và kết quả SQL.
+
+`ValidatePortablePatientSeed.java` đã kiểm tra tạo 9 ca, các số tiền/trạng thái, final snapshot, chạy lần hai không trùng và rollback hết dữ liệu kiểm tra. Bộ local hiện tại được giữ nguyên, không seed thêm 9 ca SQL vào database đang test. File user-flow-fixtures-20261026.md là mã trên máy người tạo; các thành viên dùng mã từ kết quả SQL trên máy mình.

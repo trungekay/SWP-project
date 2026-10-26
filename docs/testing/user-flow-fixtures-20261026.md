@@ -21,3 +21,5 @@ Phương thức thanh toán dùng Cash / QR_Banking như luồng thật. Các m�
 | PAID_FINAL | APT-119 | INV-00085 | Đã chốt đầy đủ; test xem trước/in hóa đơn và khóa sửa |
 
 Staff và director dùng tài khoản hiện có. Các ca hủy chưa check-in; ca khám xong có check-in, kết quả khám và Examination_Detail. Chỉ Invoice_Checkout.Finalized_At thể hiện staff chốt cuối.
+
+**Khi chia sẻ qua Git:** 9 ca nay đã nằm trong cuối eye_clinic_db.sql. Mã APT/INV ở bảng trên là của máy người tạo; máy khác lấy mã do khối SQL cuối trả về. Không cần tạo email mới hoặc chạy Java seed để thấy bộ ca.

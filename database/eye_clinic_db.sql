@@ -526,6 +526,100 @@ ALTER TABLE [dbo].[Refund_Request] CHECK CONSTRAINT [CHK_Refund_Status]
 GO
 
 -- -----------------------------------------------------
+-- Table: [Invoice_Checkout]
+-- -----------------------------------------------------
+SET ANSI_NULLS ON
+SET QUOTED_IDENTIFIER ON
+IF OBJECT_ID('dbo.Invoice_Checkout','U') IS NULL
+CREATE TABLE [dbo].[Invoice_Checkout](
+	[Invoice_ID] [int] NOT NULL,
+	[Base_Amount] [decimal](18, 0) NOT NULL,
+	[Opening_Paid] [decimal](18, 0) NOT NULL DEFAULT (0),
+	[Finalized_At] [datetime2](7) NULL,
+	[Finalized_By] [int] NULL,
+	[Payment_Method] [nvarchar](50) NULL,
+PRIMARY KEY CLUSTERED
+(
+	[Invoice_ID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+CONSTRAINT [CHK_Invoice_Checkout_Base] CHECK (([Base_Amount]>=(0))),
+CONSTRAINT [CHK_Invoice_Checkout_Opening] CHECK (([Opening_Paid]>=(0))),
+CONSTRAINT [CHK_Checkout_Payment_Method] CHECK ([Payment_Method] IS NULL OR [Payment_Method] COLLATE Latin1_General_100_BIN2 IN ('Cash','QR_Banking')),
+CONSTRAINT [FK_Invoice_Checkout_Invoice] FOREIGN KEY ([Invoice_ID]) REFERENCES [dbo].[Master_Invoice]([Invoice_ID]),
+CONSTRAINT [FK_Invoice_Checkout_Employee] FOREIGN KEY ([Finalized_By]) REFERENCES [dbo].[Employee_Profile]([Employee_ID])
+) ON [PRIMARY]
+GO
+
+-- Upgrade guard for existing checkout schemas.
+IF COL_LENGTH('dbo.Invoice_Checkout','Opening_Paid') IS NULL
+ALTER TABLE dbo.Invoice_Checkout ADD Opening_Paid decimal(18,0) NOT NULL DEFAULT 0;
+GO
+
+-- -----------------------------------------------------
+-- Table: [Invoice_Checkout_Item]
+-- -----------------------------------------------------
+SET ANSI_NULLS ON
+SET QUOTED_IDENTIFIER ON
+IF OBJECT_ID('dbo.Invoice_Checkout_Item','U') IS NULL
+CREATE TABLE [dbo].[Invoice_Checkout_Item](
+	[Invoice_ID] [int] NOT NULL,
+	[Item_Key] [nvarchar](64) NOT NULL,
+	[Item_Name] [nvarchar](500) NOT NULL,
+	[Item_Type] [nvarchar](30) NOT NULL,
+	[Quantity] [int] NOT NULL,
+	[Unit_Price] [decimal](18, 0) NOT NULL,
+	[Removable] [bit] NOT NULL,
+	[Declined] [bit] NOT NULL DEFAULT (0),
+	[Unpriced] [bit] NOT NULL DEFAULT (0),
+	[Changed_By] [int] NULL,
+	[Changed_At] [datetime2](7) NOT NULL DEFAULT (sysutcdatetime()),
+PRIMARY KEY CLUSTERED
+(
+	[Invoice_ID] ASC,
+	[Item_Key] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+CONSTRAINT [CHK_Checkout_Item_Qty] CHECK (([Quantity]>(0))),
+CONSTRAINT [CHK_Checkout_Item_Price] CHECK (([Unit_Price]>=(0))),
+CONSTRAINT [FK_Invoice_Checkout_Item_Checkout] FOREIGN KEY ([Invoice_ID]) REFERENCES [dbo].[Invoice_Checkout]([Invoice_ID]),
+CONSTRAINT [FK_Invoice_Checkout_Item_Employee] FOREIGN KEY ([Changed_By]) REFERENCES [dbo].[Employee_Profile]([Employee_ID])
+) ON [PRIMARY]
+GO
+
+-- -----------------------------------------------------
+-- Table: [Invoice_Checkout_Payment]
+-- -----------------------------------------------------
+SET ANSI_NULLS ON
+SET QUOTED_IDENTIFIER ON
+IF OBJECT_ID('dbo.Invoice_Checkout_Payment','U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[Invoice_Checkout_Payment](
+	[Order_Code] [bigint] NOT NULL,
+	[Invoice_ID] [int] NOT NULL,
+	[Amount] [decimal](18, 0) NOT NULL,
+	[Fingerprint] [varchar](64) NOT NULL,
+	[Status] [varchar](20) NOT NULL,
+	[Checkout_Url] [nvarchar](1000) NULL,
+	[QR_Code] [nvarchar](max) NULL,
+	[Created_By] [int] NOT NULL,
+	[Created_At] [datetime2](7) NOT NULL DEFAULT (sysutcdatetime()),
+	[Updated_At] [datetime2](7) NOT NULL DEFAULT (sysutcdatetime()),
+	[Transaction_ID] [int] NULL,
+PRIMARY KEY CLUSTERED
+(
+	[Order_Code] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+CONSTRAINT [CHK_Checkout_Payment_Amount] CHECK (([Amount]>(0))),
+CONSTRAINT [CHK_Checkout_Payment_Status] CHECK ([Status] IN ('Creating','Pending','Paid','Failed','Cancelled')),
+CONSTRAINT [FK_Invoice_Checkout_Payment_Checkout] FOREIGN KEY ([Invoice_ID]) REFERENCES [dbo].[Invoice_Checkout]([Invoice_ID]),
+CONSTRAINT [FK_Invoice_Checkout_Payment_Employee] FOREIGN KEY ([Created_By]) REFERENCES [dbo].[Employee_Profile]([Employee_ID]),
+CONSTRAINT [FK_Invoice_Checkout_Payment_Tx] FOREIGN KEY ([Transaction_ID]) REFERENCES [dbo].[Payment_Transaction]([Transaction_ID])
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY];
+
+CREATE UNIQUE INDEX [UX_Checkout_ActivePayment] ON [dbo].[Invoice_Checkout_Payment]([Invoice_ID]) WHERE [Status] IN ('Creating','Pending');
+END;
+GO
+
+-- -----------------------------------------------------
 -- Table: [Clinic_Gallery]
 -- -----------------------------------------------------
 SET ANSI_NULLS ON
@@ -2523,11 +2617,43 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 GO
--- Canonical payment methods (apply the checkout migration separately for checkout tables).
+-- Restore the filtered unique index on an existing checkout payment table.
+IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Invoice_Checkout_Payment') AND name='UX_Checkout_ActivePayment')
+CREATE UNIQUE INDEX UX_Checkout_ActivePayment ON dbo.Invoice_Checkout_Payment(Invoice_ID) WHERE Status IN ('Creating','Pending');
+GO
+
+-- BEGIN INTEGRATED PAYMENT NORMALIZATION
+-- Canonical payment methods for the application database only.
+-- Normalize names; never alter amount, transaction outcome, IDs or appointment/refund state.
+SET XACT_ABORT ON;
+BEGIN TRANSACTION;
+IF DB_NAME() <> N'eye_clinic_db' THROW 51000, 'Unexpected database', 1;
+IF EXISTS(SELECT 1 FROM Payment_Transaction WHERE Payment_Gateway NOT IN ('Cash','Cash_At_Counter','QR_Banking','VietQR_Banking','Bank_Transfer','PayOS_Checkout','VNPay','Test_Seed','Demo_Seed','Test_Deposit'))
+ THROW 51001, 'Unknown transaction method; review before migration', 1;
+IF EXISTS(SELECT 1 FROM Invoice_Checkout WHERE Payment_Method IS NOT NULL AND Payment_Method NOT IN ('Cash','Cash_At_Counter','QR_Banking','VietQR_Banking','Bank_Transfer','PayOS_Checkout','VNPay','Previously_Paid'))
+ THROW 51002, 'Unknown checkout method; review before migration', 1;
+IF EXISTS(SELECT 1 FROM Procedure_Payment_Request WHERE Payment_Method IS NOT NULL AND Payment_Method NOT IN ('Cash','Cash_At_Counter','QR_Banking','VietQR_Banking','Bank_Transfer','PayOS_Checkout','VNPay'))
+ THROW 51003, 'Unknown procedure method; review before migration', 1;
+
+UPDATE Payment_Transaction SET Payment_Gateway=CASE WHEN Payment_Gateway IN ('Cash','Cash_At_Counter') THEN 'Cash' ELSE 'QR_Banking' END
+WHERE Payment_Gateway NOT IN ('Cash','QR_Banking');
+-- A zero-balance close uses the method of its latest actual recorded receipt.
+-- NULL remains valid when no receipt identifies the method; do not invent another cash receipt.
+UPDATE co SET Payment_Method=(SELECT TOP 1 pt.Payment_Gateway FROM Payment_Transaction pt WHERE pt.Invoice_ID=co.Invoice_ID AND pt.Gateway_Status='Success' ORDER BY pt.Transaction_ID DESC)
+FROM Invoice_Checkout co WHERE co.Payment_Method='Previously_Paid';
+UPDATE Invoice_Checkout SET Payment_Method=CASE WHEN Payment_Method IN ('Cash','Cash_At_Counter') THEN 'Cash' ELSE 'QR_Banking' END
+WHERE Payment_Method IS NOT NULL AND Payment_Method NOT IN ('Cash','QR_Banking');
+UPDATE Procedure_Payment_Request SET Payment_Method=CASE WHEN Payment_Method IN ('Cash','Cash_At_Counter') THEN 'Cash' ELSE 'QR_Banking' END
+WHERE Payment_Method IS NOT NULL AND Payment_Method NOT IN ('Cash','QR_Banking');
+
 IF NOT EXISTS(SELECT 1 FROM sys.check_constraints WHERE name='CHK_Transaction_Payment_Method')
- ALTER TABLE dbo.Payment_Transaction WITH CHECK ADD CONSTRAINT CHK_Transaction_Payment_Method CHECK(Payment_Gateway COLLATE Latin1_General_100_BIN2 IN ('Cash','QR_Banking'));
+ ALTER TABLE Payment_Transaction WITH CHECK ADD CONSTRAINT CHK_Transaction_Payment_Method CHECK (Payment_Gateway COLLATE Latin1_General_100_BIN2 IN ('Cash','QR_Banking'));
+IF NOT EXISTS(SELECT 1 FROM sys.check_constraints WHERE name='CHK_Checkout_Payment_Method')
+ ALTER TABLE Invoice_Checkout WITH CHECK ADD CONSTRAINT CHK_Checkout_Payment_Method CHECK (Payment_Method IS NULL OR Payment_Method COLLATE Latin1_General_100_BIN2 IN ('Cash','QR_Banking'));
 IF NOT EXISTS(SELECT 1 FROM sys.check_constraints WHERE name='CHK_Procedure_Payment_Method')
- ALTER TABLE dbo.Procedure_Payment_Request WITH CHECK ADD CONSTRAINT CHK_Procedure_Payment_Method CHECK(Payment_Method IS NULL OR Payment_Method COLLATE Latin1_General_100_BIN2 IN ('Cash','QR_Banking'));
+ ALTER TABLE Procedure_Payment_Request WITH CHECK ADD CONSTRAINT CHK_Procedure_Payment_Method CHECK (Payment_Method IS NULL OR Payment_Method COLLATE Latin1_General_100_BIN2 IN ('Cash','QR_Banking'));
+COMMIT TRANSACTION;
+-- END INTEGRATED PAYMENT NORMALIZATION
 GO
 
 -- Demo doctor queue for 25 and 27 October 2026.
@@ -2799,4 +2925,141 @@ BEGIN CATCH
     IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
     THROW;
 END CATCH;
+GO
+
+-- BEGIN PORTABLE PATIENT INVOICE SCENARIOS
+-- Development sample visits for the existing Nguyen Van An account.
+-- Case codes live only in table variables/result output, never in clinical free text.
+-- Deterministic booking times identify these visits on reruns; used visits are not reset.
+SET XACT_ABORT ON;
+BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @FlowPatient int, @FlowStaff int, @FlowSpecialist int;
+    IF (SELECT COUNT(*) FROM dbo.Patient p JOIN dbo.Account ac ON ac.Account_ID=p.Account_ID
+        WHERE ac.Email=N'patient.an@gmail.com' AND p.Full_Name=N'Nguyễn Văn An' AND ac.Role_ID=6) <> 1
+        THROW 51100, 'Exactly one existing Nguyen Van An patient account is required.', 1;
+    SELECT @FlowPatient=p.Patient_ID FROM dbo.Patient p JOIN dbo.Account ac ON ac.Account_ID=p.Account_ID
+    WHERE ac.Email=N'patient.an@gmail.com' AND p.Full_Name=N'Nguyễn Văn An' AND ac.Role_ID=6;
+    SELECT TOP (1) @FlowStaff=e.Employee_ID FROM dbo.Employee_Profile e JOIN dbo.Account ac ON ac.Account_ID=e.Account_ID WHERE ac.Role_ID=5 ORDER BY e.Employee_ID;
+    SELECT TOP (1) @FlowSpecialist=e.Employee_ID FROM dbo.Employee_Profile e JOIN dbo.Account ac ON ac.Account_ID=e.Account_ID WHERE ac.Role_ID=4 ORDER BY e.Employee_ID;
+    IF @FlowStaff IS NULL OR @FlowSpecialist IS NULL THROW 51101, 'Staff and specialist reference data are required.', 1;
+
+    DECLARE @FlowConsult decimal(18,0), @FlowProcedurePrice decimal(18,0), @FlowMedicinePrice decimal(18,0);
+    DECLARE @FlowProcedure int, @FlowMedicine nvarchar(150);
+    SELECT @FlowConsult=Price FROM dbo.Service_Catalog WHERE Service_Code=N'NK-01';
+    SELECT @FlowProcedure=Service_ID,@FlowProcedurePrice=Price FROM dbo.Service_Catalog WHERE Service_Code=N'TP-LEO';
+    SELECT TOP (1) @FlowMedicine=Supply_Name,@FlowMedicinePrice=Price FROM dbo.Medical_Supply
+    WHERE Supply_Name=N'Thuốc nhỏ mắt Systane Ultra (10ml)' ORDER BY Supply_ID;
+    IF @FlowConsult IS NULL OR @FlowProcedure IS NULL OR @FlowMedicine IS NULL
+        THROW 51102, 'Required consultation, minor procedure or medicine is absent from the catalog.', 1;
+
+    DECLARE @FlowCases TABLE(Seq int PRIMARY KEY, Case_Code varchar(32), Work_Date date, Clinical_Status nvarchar(50), Has_Exam bit, Has_Extras bit, Is_Unpaid bit, Is_Finalized bit);
+    INSERT INTO @FlowCases VALUES
+    (1,'BOOKED','2026-10-27',N'Confirmed',0,0,0,0),
+    (2,'CANCEL_PENDING','2026-10-27',N'Pending',0,0,0,0),
+    (3,'REFUND_ELIGIBLE','2026-10-27',N'Canceled',0,0,0,0),
+    (4,'DOCTOR_CANCEL','2026-10-27',N'Canceled',0,0,0,0),
+    (5,'REFUND_PENDING','2026-10-27',N'Canceled',0,0,0,0),
+    (6,'EXPIRED','2026-10-27',N'Canceled',0,0,1,0),
+    (7,'EXAM_DONE_BASE','2026-10-26',N'Completed',1,0,0,0),
+    (8,'EXAM_DONE_EXTRAS','2026-10-26',N'Completed',1,1,0,0),
+    (9,'PAID_FINAL','2026-10-26',N'Completed',1,0,0,1);
+    DECLARE @FlowOutput TABLE(Seq int PRIMARY KEY,Case_Code varchar(32),Appointment_ID int,Invoice_ID int,Schedule_ID int,Created_Now bit);
+    DECLARE @FlowSeq int=1, @FlowCode varchar(32), @FlowDate date, @FlowStatus nvarchar(50), @FlowExam bit, @FlowExtras bit, @FlowUnpaid bit, @FlowFinal bit;
+    DECLARE @FlowBooking datetime2(7), @FlowSchedule int, @FlowDoctor int, @FlowStart time(0), @FlowCheckin datetime2(7), @FlowEnd datetime2(7);
+    DECLARE @FlowAppointment int, @FlowInvoice int, @FlowRecord int, @FlowPrescription int, @FlowTotal decimal(18,0), @FlowNote nvarchar(max);
+    WHILE @FlowSeq<=9
+    BEGIN
+        SELECT @FlowCode=Case_Code,@FlowDate=Work_Date,@FlowStatus=Clinical_Status,@FlowExam=Has_Exam,@FlowExtras=Has_Extras,@FlowUnpaid=Is_Unpaid,@FlowFinal=Is_Finalized FROM @FlowCases WHERE Seq=@FlowSeq;
+        SET @FlowBooking=DATEADD(MINUTE,@FlowSeq,CONVERT(datetime2(7),'2026-10-24T18:00:00'));
+        SET @FlowAppointment=NULL; SET @FlowInvoice=NULL; SET @FlowRecord=NULL; SET @FlowSchedule=NULL; SET @FlowDoctor=NULL;
+        IF (SELECT COUNT(*) FROM dbo.Appointment WHERE Patient_ID=@FlowPatient AND created_at=@FlowBooking)>1
+            THROW 51103, 'Ambiguous existing sample booking time; review data before seeding.', 1;
+        SELECT @FlowAppointment=a.Appointment_ID,@FlowSchedule=a.Schedule_ID FROM dbo.Appointment a WITH(UPDLOCK,HOLDLOCK)
+        WHERE a.Patient_ID=@FlowPatient AND a.created_at=@FlowBooking;
+        IF @FlowAppointment IS NOT NULL
+        BEGIN
+            SELECT @FlowInvoice=Invoice_ID FROM dbo.Master_Invoice WHERE Appointment_ID=@FlowAppointment;
+            SELECT @FlowRecord=Record_ID FROM dbo.Medical_Record WHERE Appointment_ID=@FlowAppointment;
+            IF @FlowInvoice IS NULL OR @FlowRecord IS NULL OR NOT EXISTS(SELECT 1 FROM dbo.Work_Schedule WHERE Schedule_ID=@FlowSchedule AND Work_Date=@FlowDate)
+                THROW 51104, 'Existing sample booking has inconsistent linked records; no data was reset.', 1;
+            INSERT INTO @FlowOutput VALUES(@FlowSeq,@FlowCode,@FlowAppointment,@FlowInvoice,@FlowSchedule,0);
+            SET @FlowSeq+=1;
+            CONTINUE;
+        END;
+        SELECT TOP (1) @FlowSchedule=ws.Schedule_ID,@FlowDoctor=ws.Doctor_Employee_ID,@FlowStart=ws.Start_Time
+        FROM dbo.Work_Schedule ws WITH(UPDLOCK,HOLDLOCK)
+        WHERE ws.Work_Date=@FlowDate AND ws.Status=N'Available' AND ws.Doctor_Employee_ID IS NOT NULL
+        AND NOT EXISTS(SELECT 1 FROM dbo.Appointment a WHERE a.Schedule_ID=ws.Schedule_ID AND a.Status<>N'Canceled')
+        AND NOT EXISTS(SELECT 1 FROM @FlowOutput fo WHERE fo.Schedule_ID=ws.Schedule_ID)
+        ORDER BY CASE WHEN ws.Doctor_Employee_ID=3 THEN 0 ELSE 1 END,ws.Start_Time,ws.Schedule_ID;
+        IF @FlowSchedule IS NULL THROW 51105, 'Not enough existing free schedules to create the nine sample visits.', 1;
+        SET @FlowCheckin=CASE WHEN @FlowExam=1 THEN CONVERT(datetime2(7),CONCAT(CONVERT(char(10),@FlowDate,23),' ',CONVERT(char(8),@FlowStart,108))) ELSE NULL END;
+        SET @FlowEnd=CASE WHEN @FlowExam=1 THEN DATEADD(MINUTE,25,@FlowCheckin) ELSE NULL END;
+        INSERT INTO dbo.Appointment(Patient_ID,Schedule_ID,Staff_Employee_ID,Status,created_at,checkin_time,doctor_completed_at)
+        VALUES(@FlowPatient,@FlowSchedule,@FlowStaff,@FlowStatus,@FlowBooking,@FlowCheckin,@FlowEnd);
+        SET @FlowAppointment=CONVERT(int,SCOPE_IDENTITY());
+        SET @FlowTotal=@FlowConsult+CASE WHEN @FlowExtras=1 THEN @FlowProcedurePrice+@FlowMedicinePrice ELSE 0 END;
+        INSERT INTO dbo.Master_Invoice(Appointment_ID,Total_Amount,Deposit_Amount,Balance_Due,Status,Create_At,Close_At)
+        VALUES(@FlowAppointment,@FlowTotal,@FlowConsult,CASE WHEN @FlowUnpaid=1 THEN @FlowTotal ELSE @FlowTotal-@FlowConsult END,
+            CASE WHEN @FlowUnpaid=1 THEN N'Canceled' WHEN @FlowExtras=1 THEN N'Partial_Paid' ELSE N'Paid' END,
+            @FlowBooking,CASE WHEN @FlowFinal=1 THEN DATEADD(HOUR,-7,DATEADD(MINUTE,5,@FlowEnd)) ELSE NULL END);
+        SET @FlowInvoice=CONVERT(int,SCOPE_IDENTITY());
+        IF @FlowUnpaid=0
+            INSERT INTO dbo.Payment_Transaction(Invoice_ID,Amount,Gateway_Status,Payment_Gateway,Trans_Date)
+            VALUES(@FlowInvoice,@FlowConsult,N'Success',N'QR_Banking',DATEADD(MINUTE,1,@FlowBooking));
+        SET @FlowNote=CASE
+            WHEN @FlowCode='CANCEL_PENDING' THEN N'Yêu cầu hủy lịch: Bận việc cá nhân, không thể đến khám theo lịch đã đặt'
+            WHEN @FlowCode IN ('REFUND_ELIGIBLE','REFUND_PENDING') THEN N'Đã duyệt hủy trước tiếp đón: Bệnh nhân yêu cầu hủy trực tiếp tại quầy trước check-in'
+            WHEN @FlowCode='DOCTOR_CANCEL' THEN N'Đã duyệt hủy trước tiếp đón: Bác sĩ đổi lịch, không thể sắp xếp lịch khám khác cho bệnh nhân'
+            WHEN @FlowUnpaid=1 THEN N'Hệ thống: Hết hạn thanh toán'
+            WHEN @FlowExtras=1 THEN N'Đã hoàn tất tiểu phẫu; dùng thuốc theo đơn và tái khám theo hướng dẫn của bác sĩ.'
+            WHEN @FlowExam=1 THEN N'Kết thúc khám, không có chỉ định can thiệp bổ sung tại lần khám này.' ELSE NULL END;
+        INSERT INTO dbo.Medical_Record(Appointment_ID,Doctor_Employee_ID,Clinical_Diagnosis,examination_result,conclusion,Created_At)
+        VALUES(@FlowAppointment,@FlowDoctor,
+            CASE WHEN @FlowExtras=1 THEN N'Chắp/lẹo mi mắt; kèm khô mắt.' WHEN @FlowExam=1 THEN N'Khám mắt tổng quát định kỳ.' ELSE NULL END,
+            CASE WHEN @FlowExtras=1 THEN N'Đã thực hiện chích rạch chắp lẹo mi mắt theo chỉ định; có kê nước mắt nhân tạo.'
+                 WHEN @FlowExam=1 THEN N'Đã hoàn tất khám mắt tổng quát; không ghi nhận chỉ định thủ thuật hoặc đơn thuốc bổ sung trong hồ sơ.' ELSE NULL END,
+            @FlowNote,CASE WHEN @FlowExam=1 THEN @FlowCheckin ELSE DATEADD(MINUTE,10,@FlowBooking) END);
+        SET @FlowRecord=CONVERT(int,SCOPE_IDENTITY());
+        IF @FlowExam=1
+            INSERT INTO dbo.Examination_Detail(Record_ID,Chief_Complaint,Medical_History)
+            VALUES(@FlowRecord,CASE WHEN @FlowExtras=1 THEN N'Chắp/lẹo mi mắt, khô mắt.' ELSE N'Khám mắt định kỳ.' END,NULL);
+        IF @FlowExtras=1
+        BEGIN
+            INSERT INTO dbo.Procedure_Order(Specialist_Employee_ID,Record_ID,Service_ID,Actual_Price,Status,Referral_Notes,Result_Text,Result_Conclusion,Completed_At)
+            VALUES(@FlowSpecialist,@FlowRecord,@FlowProcedure,@FlowProcedurePrice,N'Completed',N'Chỉ định chích rạch chắp lẹo mi mắt',
+                N'Đã thực hiện chích rạch chắp lẹo mi mắt',N'Hoàn tất thủ thuật theo chỉ định',DATEADD(MINUTE,15,@FlowCheckin));
+            INSERT INTO dbo.Prescription(Record_ID,Doctor_Notes,created_at)
+            VALUES(@FlowRecord,N'Dùng thuốc theo đơn và tái khám theo hướng dẫn của bác sĩ',DATEADD(MINUTE,20,@FlowCheckin));
+            SET @FlowPrescription=CONVERT(int,SCOPE_IDENTITY());
+            INSERT INTO dbo.Prescription_Detail(Prescription_ID,Quantity,Medicine_Name,Is_Custom_Medicine,Dosage_Instruction)
+            VALUES(@FlowPrescription,1,@FlowMedicine,0,N'Dùng theo hướng dẫn trong đơn thuốc');
+        END;
+        IF @FlowCode='REFUND_PENDING'
+            INSERT INTO dbo.Refund_Request(Invoice_ID,created_by_employee_id,Patient_ID,Refund_Amount,Reason,Status,Created_At,Update_At)
+            VALUES(@FlowInvoice,@FlowStaff,@FlowPatient,@FlowConsult,N'Đề nghị hoàn phí khám sau khi yêu cầu hủy lịch đã được duyệt trước check-in',N'Pending',
+                DATEADD(HOUR,-7,DATEADD(MINUTE,20,@FlowBooking)),DATEADD(HOUR,-7,DATEADD(MINUTE,20,@FlowBooking)));
+        IF @FlowFinal=1
+        BEGIN
+            INSERT INTO dbo.Invoice_Checkout(Invoice_ID,Base_Amount,Opening_Paid,Finalized_At,Finalized_By,Payment_Method)
+            VALUES(@FlowInvoice,@FlowConsult,0,DATEADD(HOUR,-7,DATEADD(MINUTE,5,@FlowEnd)),@FlowStaff,N'QR_Banking');
+            INSERT INTO dbo.Invoice_Checkout_Item(Invoice_ID,Item_Key,Item_Name,Item_Type,Quantity,Unit_Price,Removable,Declined,Unpriced,Changed_By,Changed_At)
+            VALUES(@FlowInvoice,N'CONSULT',N'Phí khám / đăng ký khám',N'Khám bệnh',1,@FlowConsult,0,0,0,@FlowStaff,DATEADD(HOUR,-7,DATEADD(MINUTE,5,@FlowEnd)));
+        END;
+        IF @FlowStatus<>N'Canceled' UPDATE dbo.Work_Schedule SET Status=N'Booked' WHERE Schedule_ID=@FlowSchedule;
+        INSERT INTO @FlowOutput VALUES(@FlowSeq,@FlowCode,@FlowAppointment,@FlowInvoice,@FlowSchedule,1);
+        SET @FlowSeq+=1;
+    END;
+    IF (SELECT COUNT(*) FROM @FlowOutput)<>9 THROW 51106, 'Expected exactly nine patient sample cases.', 1;
+    COMMIT TRANSACTION;
+    SELECT fo.Case_Code,fo.Appointment_ID,fo.Invoice_ID,ws.Work_Date,ws.Start_Time,fo.Created_Now
+    FROM @FlowOutput fo JOIN dbo.Work_Schedule ws ON ws.Schedule_ID=fo.Schedule_ID ORDER BY fo.Seq;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT>0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
+-- END PORTABLE PATIENT INVOICE SCENARIOS
+
 GO

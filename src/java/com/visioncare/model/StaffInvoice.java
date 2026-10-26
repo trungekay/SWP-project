@@ -35,6 +35,7 @@ public class StaffInvoice {
  public Map<String,Object> getActivePayment(){return activePayment;}
  public long getTotal(){long total=0; for(Item item:items) if(!item.declined) total=Math.addExact(total,item.getAmount());return total;}
  public long getDue(){return isBlocked()?0:Math.max(0,getTotal()-paid);}
+ public long getOutstanding(){return Math.max(0,getTotal()-paid);}
  public long getOverpaid(){return Math.max(0,paid-getTotal());}
  public boolean isBlocked(){return "Canceled".equals(appointmentStatus)||"Canceled".equals(invoiceStatus)||"Refunded".equals(invoiceStatus)||hasActiveRefund;}
  public boolean isClinicalComplete(){return "Completed".equals(appointmentStatus);}
