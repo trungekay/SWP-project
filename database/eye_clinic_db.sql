@@ -2529,3 +2529,274 @@ IF NOT EXISTS(SELECT 1 FROM sys.check_constraints WHERE name='CHK_Transaction_Pa
 IF NOT EXISTS(SELECT 1 FROM sys.check_constraints WHERE name='CHK_Procedure_Payment_Method')
  ALTER TABLE dbo.Procedure_Payment_Request WITH CHECK ADD CONSTRAINT CHK_Procedure_Payment_Method CHECK(Payment_Method IS NULL OR Payment_Method COLLATE Latin1_General_100_BIN2 IN ('Cash','QR_Banking'));
 GO
+
+-- Demo doctor queue for 25 and 27 October 2026.
+-- Ten checked-in appointments per day, spread across doctors 3-8.
+-- The 26 October appointments are filled by the five-visit seed below.
+-- Safe to rerun: existing matching appointments are left unchanged.
+SET XACT_ABORT ON;
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @Cases TABLE (
+        Work_Date date NOT NULL,
+        Doctor_Employee_ID int NOT NULL,
+        Slot_Number int NOT NULL,
+        Patient_ID int NOT NULL,
+        PRIMARY KEY (Work_Date, Doctor_Employee_ID, Slot_Number)
+    );
+
+    INSERT INTO @Cases (Work_Date, Doctor_Employee_ID, Slot_Number, Patient_ID)
+    SELECT d.Work_Date, v.Doctor_Employee_ID, v.Slot_Number, v.Patient_ID
+    FROM (VALUES (CAST('2026-10-25' AS date)),
+                 (CAST('2026-10-27' AS date))) d(Work_Date)
+    CROSS JOIN (VALUES
+        (3, 1, 1), (3, 2, 2),
+        (4, 1, 3), (4, 2, 4),
+        (5, 1, 5), (5, 2, 6),
+        (6, 1, 7), (6, 2, 8),
+        (7, 1, 9), (8, 1, 10)
+    ) v(Doctor_Employee_ID, Slot_Number, Patient_ID);
+
+    DECLARE @Targets TABLE (
+        Work_Date date NOT NULL,
+        Schedule_ID int NOT NULL PRIMARY KEY,
+        Patient_ID int NOT NULL,
+        Start_Time time(0) NOT NULL
+    );
+
+    ;WITH RankedSlots AS (
+        SELECT ws.Schedule_ID, ws.Work_Date, ws.Doctor_Employee_ID,
+               ws.Start_Time,
+               ROW_NUMBER() OVER (
+                   PARTITION BY ws.Work_Date, ws.Doctor_Employee_ID
+                   ORDER BY ws.Start_Time, ws.Schedule_ID
+               ) AS Slot_Number
+        FROM dbo.Work_Schedule ws
+        WHERE ws.Work_Date IN ('2026-10-25', '2026-10-27')
+          AND ws.Doctor_Employee_ID IS NOT NULL
+    )
+    INSERT INTO @Targets (Work_Date, Schedule_ID, Patient_ID, Start_Time)
+    SELECT c.Work_Date, ws.Schedule_ID, c.Patient_ID, ws.Start_Time
+    FROM @Cases c
+    JOIN RankedSlots ws ON ws.Work_Date = c.Work_Date
+                       AND ws.Doctor_Employee_ID = c.Doctor_Employee_ID
+                       AND ws.Slot_Number = c.Slot_Number;
+
+    IF (SELECT COUNT(*) FROM @Targets) <> 20
+        THROW 50020, 'Not all doctor slots exist for the demo queue.', 1;
+
+    IF EXISTS (
+        SELECT 1 FROM @Targets t
+        LEFT JOIN dbo.Patient p ON p.Patient_ID = t.Patient_ID
+        WHERE p.Patient_ID IS NULL
+    ) OR NOT EXISTS (SELECT 1 FROM dbo.Employee_Profile WHERE Employee_ID = 12)
+        THROW 50021, 'A demo patient or reception staff member is missing.', 1;
+
+    IF EXISTS (
+        SELECT 1 FROM @Targets t
+        JOIN dbo.Appointment a ON a.Schedule_ID = t.Schedule_ID
+        WHERE a.Patient_ID <> t.Patient_ID OR a.Status <> N'Confirmed'
+              OR a.checkin_time IS NULL
+    ) OR EXISTS (
+        SELECT 1 FROM @Targets t
+        JOIN dbo.Work_Schedule ws ON ws.Schedule_ID = t.Schedule_ID
+        WHERE ws.Status NOT IN (N'Available', N'Booked')
+    )
+        THROW 50022, 'A target slot has another booking or is unavailable.', 1;
+
+    INSERT INTO dbo.Appointment
+        (Patient_ID, Schedule_ID, Staff_Employee_ID, Status, created_at, checkin_time)
+    SELECT t.Patient_ID, t.Schedule_ID, 12, N'Confirmed',
+           DATEADD(day, -1, checkin.CheckinAt), checkin.CheckinAt
+    FROM @Targets t
+    CROSS APPLY (
+        SELECT DATEADD(minute, -15,
+            CAST(CONCAT(CONVERT(char(10), t.Work_Date, 120), 'T',
+                        CONVERT(char(8), t.Start_Time, 108)) AS datetime2(7))) AS CheckinAt
+    ) checkin
+    WHERE NOT EXISTS (
+        SELECT 1 FROM dbo.Appointment a WHERE a.Schedule_ID = t.Schedule_ID
+    );
+
+    UPDATE ws SET ws.Status = N'Booked'
+    FROM dbo.Work_Schedule ws
+    JOIN @Targets t ON t.Schedule_ID = ws.Schedule_ID
+    WHERE ws.Status = N'Available';
+
+    IF EXISTS (
+        SELECT t.Work_Date
+        FROM @Targets t
+        JOIN dbo.Appointment a ON a.Schedule_ID = t.Schedule_ID
+        GROUP BY t.Work_Date
+        HAVING COUNT(*) <> 10
+    )
+        THROW 50023, 'A demo date does not contain exactly ten appointments.', 1;
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
+GO
+
+-- 26 October 2026: one checked-in visit for each login patient with Dr Tinh.
+-- Preserve existing appointment IDs when updating a local demo database.
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET NUMERIC_ROUNDABORT OFF;
+SET XACT_ABORT ON;
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    DECLARE @DemoDate date = '2026-10-26';
+    DECLARE @CheckinAt datetime2(7) = '2026-10-26T11:35:00';
+    DECLARE @Visits TABLE (
+        Patient_ID int NOT NULL PRIMARY KEY,
+        Start_Time time(0) NOT NULL UNIQUE,
+        Slot_Name nvarchar(50) NOT NULL
+    );
+    INSERT INTO @Visits (Patient_ID, Start_Time, Slot_Name) VALUES
+        (1, '13:00:00', N'Slot 8'),
+        (3, '13:30:00', N'Slot 9'),
+        (4, '14:00:00', N'Slot 10'),
+        (5, '14:30:00', N'Slot 11'),
+        (6, '15:00:00', N'Slot 12');
+
+    IF (SELECT COUNT(*) FROM @Visits v
+        JOIN dbo.Patient p ON p.Patient_ID = v.Patient_ID
+        JOIN dbo.Account ac ON ac.Account_ID = p.Account_ID
+        WHERE ac.Role_ID = 6 AND ac.Account_Status = N'Active'
+          AND ac.Email IN ('patient.an@gmail.com', 'patient.linh@gmail.com',
+                           'patient.hoang@gmail.com', 'patient.mai@gmail.com',
+                           'patient.duc@gmail.com')) <> 5
+        THROW 50030, 'The five login patients are missing or inactive.', 1;
+
+    DECLARE @Existing TABLE (
+        Appointment_ID int NOT NULL PRIMARY KEY,
+        Patient_ID int NOT NULL UNIQUE,
+        Old_Schedule_ID int NOT NULL
+    );
+    INSERT INTO @Existing (Appointment_ID, Patient_ID, Old_Schedule_ID)
+    SELECT a.Appointment_ID, a.Patient_ID, a.Schedule_ID
+    FROM dbo.Appointment a
+    JOIN dbo.Work_Schedule ws ON ws.Schedule_ID = a.Schedule_ID
+    JOIN @Visits v ON v.Patient_ID = a.Patient_ID
+    WHERE ws.Work_Date = @DemoDate;
+
+    IF (SELECT COUNT(*) FROM @Existing) NOT IN (0, 5)
+       OR EXISTS (
+           SELECT 1 FROM dbo.Appointment a
+           JOIN dbo.Work_Schedule ws ON ws.Schedule_ID = a.Schedule_ID
+           LEFT JOIN @Visits v ON v.Patient_ID = a.Patient_ID
+           WHERE ws.Work_Date = @DemoDate AND ws.Doctor_Employee_ID IS NOT NULL
+             AND v.Patient_ID IS NULL
+       )
+        THROW 50031, 'Unexpected doctor appointments on 26 October; nothing was changed.', 1;
+
+    IF EXISTS (SELECT 1 FROM dbo.Master_Invoice mi
+               JOIN @Existing e ON e.Appointment_ID = mi.Appointment_ID)
+       OR EXISTS (SELECT 1 FROM dbo.Procedure_Order po
+                  JOIN dbo.Medical_Record mr ON mr.Record_ID = po.Record_ID
+                  JOIN @Existing e ON e.Appointment_ID = mr.Appointment_ID)
+       OR EXISTS (SELECT 1 FROM dbo.Prescription pr
+                  JOIN dbo.Medical_Record mr ON mr.Record_ID = pr.Record_ID
+                  JOIN @Existing e ON e.Appointment_ID = mr.Appointment_ID)
+        THROW 50032, 'A visit has billing or treatment data; nothing was changed.', 1;
+
+    IF EXISTS (
+        SELECT 1 FROM dbo.Work_Schedule ws
+        JOIN @Visits v ON v.Start_Time = ws.Start_Time
+        WHERE ws.Work_Date = @DemoDate AND ws.Doctor_Employee_ID = 4
+        GROUP BY ws.Start_Time HAVING COUNT(*) > 1
+    )
+        THROW 50033, 'Dr Tinh has duplicate afternoon slots.', 1;
+
+    INSERT INTO dbo.Work_Schedule
+        (Doctor_Employee_ID, Specialist_Employee_ID, Staff_Employee_ID,
+         Work_Date, Start_Time, End_Time, Slot, Status)
+    SELECT 4, NULL, NULL, @DemoDate, v.Start_Time,
+           DATEADD(minute, 30, v.Start_Time), v.Slot_Name, N'Available'
+    FROM @Visits v
+    WHERE NOT EXISTS (
+        SELECT 1 FROM dbo.Work_Schedule ws
+        WHERE ws.Work_Date = @DemoDate AND ws.Doctor_Employee_ID = 4
+          AND ws.Start_Time = v.Start_Time
+    );
+
+    IF (SELECT COUNT(*) FROM @Visits v
+        JOIN dbo.Work_Schedule ws
+          ON ws.Work_Date = @DemoDate AND ws.Doctor_Employee_ID = 4
+         AND ws.Start_Time = v.Start_Time
+        WHERE ws.Status IN (N'Available', N'Booked')) <> 5
+       OR EXISTS (
+           SELECT 1 FROM dbo.Appointment a
+           JOIN dbo.Work_Schedule ws ON ws.Schedule_ID = a.Schedule_ID
+           JOIN @Visits v ON v.Start_Time = ws.Start_Time
+           WHERE ws.Work_Date = @DemoDate AND ws.Doctor_Employee_ID = 4
+             AND a.Patient_ID <> v.Patient_ID
+       )
+        THROW 50034, 'An afternoon slot is unavailable or belongs to another patient.', 1;
+
+    -- The three previously completed demo visits are reset to waiting status.
+    DELETE ed
+    FROM dbo.Examination_Detail ed
+    JOIN dbo.Medical_Record mr ON mr.Record_ID = ed.Record_ID
+    JOIN @Existing e ON e.Appointment_ID = mr.Appointment_ID;
+
+    DELETE mr
+    FROM dbo.Medical_Record mr
+    JOIN @Existing e ON e.Appointment_ID = mr.Appointment_ID;
+
+    UPDATE a SET
+        a.Schedule_ID = ws.Schedule_ID,
+        a.Staff_Employee_ID = 12,
+        a.Status = N'Confirmed',
+        a.checkin_time = @CheckinAt,
+        a.doctor_completed_at = NULL
+    FROM dbo.Appointment a
+    JOIN @Existing e ON e.Appointment_ID = a.Appointment_ID
+    JOIN @Visits v ON v.Patient_ID = e.Patient_ID
+    JOIN dbo.Work_Schedule ws
+      ON ws.Work_Date = @DemoDate AND ws.Doctor_Employee_ID = 4
+     AND ws.Start_Time = v.Start_Time;
+
+    INSERT INTO dbo.Appointment
+        (Patient_ID, Schedule_ID, Staff_Employee_ID, Status, created_at, checkin_time)
+    SELECT v.Patient_ID, ws.Schedule_ID, 12, N'Confirmed',
+           '2026-10-25T09:00:00', @CheckinAt
+    FROM @Visits v
+    JOIN dbo.Work_Schedule ws
+      ON ws.Work_Date = @DemoDate AND ws.Doctor_Employee_ID = 4
+     AND ws.Start_Time = v.Start_Time
+    WHERE NOT EXISTS (SELECT 1 FROM @Existing e WHERE e.Patient_ID = v.Patient_ID);
+
+    UPDATE ws SET ws.Status = N'Available'
+    FROM dbo.Work_Schedule ws
+    JOIN @Existing e ON e.Old_Schedule_ID = ws.Schedule_ID
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.Appointment a WHERE a.Schedule_ID = ws.Schedule_ID);
+
+    UPDATE ws SET ws.Status = N'Booked'
+    FROM dbo.Work_Schedule ws
+    JOIN @Visits v ON v.Start_Time = ws.Start_Time
+    WHERE ws.Work_Date = @DemoDate AND ws.Doctor_Employee_ID = 4;
+
+    IF (SELECT COUNT(*) FROM dbo.Appointment a
+        JOIN dbo.Work_Schedule ws ON ws.Schedule_ID = a.Schedule_ID
+        JOIN @Visits v ON v.Patient_ID = a.Patient_ID AND v.Start_Time = ws.Start_Time
+        WHERE ws.Work_Date = @DemoDate AND ws.Doctor_Employee_ID = 4
+          AND a.Status = N'Confirmed' AND a.checkin_time = @CheckinAt) <> 5
+        THROW 50035, 'Expected five checked-in afternoon visits for Dr Tinh.', 1;
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
+GO

@@ -173,7 +173,7 @@ public class DoctorQueueDAO {
                         }
                         workDate = rs.getDate("Work_Date");
                         if (workDate == null || rs.getTime("Start_Time") == null
-                                || !"open".equals(ExaminationWindow.startState(appointmentId,
+                                || !"open".equals(ExaminationWindow.state(
                                         workDate.toLocalDate(), rs.getTime("Start_Time").toLocalTime(), clinicNow))) {
                             conn.rollback();
                             return false;
