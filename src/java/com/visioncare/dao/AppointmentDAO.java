@@ -582,6 +582,10 @@ public class AppointmentDAO {
     }
 
     public boolean confirmAndCheckinWalkin(int appointmentId, int staffEmployeeId) throws Exception {
+        return confirmAndCheckinWalkin(appointmentId, staffEmployeeId, true);
+    }
+
+    public boolean confirmAndCheckinWalkin(int appointmentId, int staffEmployeeId, boolean shouldCheckin) throws Exception {
         Connection conn = null;
         try {
             conn = DBContext.getConnection();
@@ -631,11 +635,19 @@ public class AppointmentDAO {
                 psTrans.executeUpdate();
             }
 
-            // 3. Cập nhật Appointment Confirmed và checkin_time
-            String sqlAppt = "UPDATE Appointment SET Status = 'Confirmed', checkin_time = COALESCE(checkin_time, DATEADD(HOUR, 7, SYSUTCDATETIME())), " +
-                             "Staff_Employee_ID = CASE WHEN ? > 0 THEN ? ELSE Staff_Employee_ID END "
-                             + "WHERE Appointment_ID = ? AND Status IN ('Pending', 'Confirmed') "
-                    + "AND NOT (" + RefundPolicy.CANCELLATION_REQUESTED.replace("a.", "Appointment.") + ")";
+            // 3. Cập nhật Appointment Confirmed (chỉ gán checkin_time nếu shouldCheckin = true)
+            String sqlAppt;
+            if (shouldCheckin) {
+                sqlAppt = "UPDATE Appointment SET Status = 'Confirmed', checkin_time = COALESCE(checkin_time, DATEADD(HOUR, 7, SYSUTCDATETIME())), " +
+                          "Staff_Employee_ID = CASE WHEN ? > 0 THEN ? ELSE Staff_Employee_ID END "
+                          + "WHERE Appointment_ID = ? AND Status IN ('Pending', 'Confirmed') "
+                          + "AND NOT (" + RefundPolicy.CANCELLATION_REQUESTED.replace("a.", "Appointment.") + ")";
+            } else {
+                sqlAppt = "UPDATE Appointment SET Status = 'Confirmed', " +
+                          "Staff_Employee_ID = CASE WHEN ? > 0 THEN ? ELSE Staff_Employee_ID END "
+                          + "WHERE Appointment_ID = ? AND Status IN ('Pending', 'Confirmed') "
+                          + "AND NOT (" + RefundPolicy.CANCELLATION_REQUESTED.replace("a.", "Appointment.") + ")";
+            }
             try (PreparedStatement psAppt = conn.prepareStatement(sqlAppt)) {
                 psAppt.setInt(1, staffEmployeeId);
                 psAppt.setInt(2, staffEmployeeId);
@@ -1290,10 +1302,18 @@ public class AppointmentDAO {
 
             // The conditional update is the authority for every staff cancellation path.
             // It also resolves a race with the doctor's start action on the same row.
-            String sqlAppt = "UPDATE Appointment SET Status = 'Canceled' "
-                    + "WHERE Appointment_ID = ? AND Status IN ('Pending', 'Confirmed') AND checkin_time IS NULL";
-            if (reason != null && reason.startsWith("Đã duyệt yêu cầu hủy lịch")) {
-                sqlAppt += " AND (" + RefundPolicy.CANCELLATION_REQUESTED.replace("a.", "Appointment.") + ")";
+            String sqlAppt;
+            boolean isAbsentOrExpired = (reason != null && (reason.startsWith("Báo vắng mặt:") || reason.contains("Quá hạn")));
+            if (isAbsentOrExpired) {
+                // Cho phép báo vắng mặt hoặc tự động hủy ca quá hạn cho cả ca đã check-in nhưng chưa hoàn tất
+                sqlAppt = "UPDATE Appointment SET Status = 'Canceled' "
+                        + "WHERE Appointment_ID = ? AND Status IN ('Pending', 'Confirmed', 'In_Progress')";
+            } else {
+                sqlAppt = "UPDATE Appointment SET Status = 'Canceled' "
+                        + "WHERE Appointment_ID = ? AND Status IN ('Pending', 'Confirmed') AND checkin_time IS NULL";
+                if (reason != null && reason.startsWith("Đã duyệt yêu cầu hủy lịch")) {
+                    sqlAppt += " AND (" + RefundPolicy.CANCELLATION_REQUESTED.replace("a.", "Appointment.") + ")";
+                }
             }
             try (PreparedStatement psAppt = conn.prepareStatement(sqlAppt)) {
                 psAppt.setInt(1, appointmentId);
@@ -1402,13 +1422,39 @@ public class AppointmentDAO {
     }
 
     /**
-     * Tự động quét và cập nhật trạng thái các ca hẹn quá hạn thành 'Canceled':
-     * Đã tắt chức năng tự động hủy lịch để Lễ tân chủ động gọi điện liên hệ bệnh nhân
-     * xác nhận check-in hoặc thao tác hủy lịch thủ công.
+     * Tự động quét và hủy các ca hẹn trong quá khứ (từ ngày hôm qua trở về trước)
+     * mà chưa được hoàn thành (bao gồm cả ca chưa check-in và ca đã check-in nhưng bị bỏ quên).
+     * Cập nhật trạng thái thành 'Canceled', trả lại slot bác sĩ, hủy hóa đơn chờ và ghi nhận lý do vắng mặt.
+     *
+     * @return số lượng ca hẹn đã được tự động hủy
      */
     public int autoCancelExpiredAppointments() {
-        // Disabled: lễ tân chủ động liên hệ bệnh nhân và thao tác thủ công
-        return 0;
+        int count = 0;
+        String sql = "SELECT a.Appointment_ID " +
+                     "FROM Appointment a " +
+                     "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
+                     "WHERE a.Status IN ('Pending', 'Confirmed', 'In_Progress') " +
+                     "  AND ws.Work_Date < CAST(DATEADD(HOUR, 7, SYSUTCDATETIME()) AS DATE)";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            List<Integer> apptIds = new ArrayList<>();
+            while (rs.next()) {
+                apptIds.add(rs.getInt("Appointment_ID"));
+            }
+            for (int id : apptIds) {
+                try {
+                    if (cancelAppointment(id, "Báo vắng mặt: Quá hạn ngày khám (Hệ thống tự động hủy ca chưa hoàn tất)")) {
+                        count++;
+                    }
+                } catch (Exception ex) {
+                    System.err.println("[AutoCancelExpired] Lỗi khi hủy ca #" + id + ": " + ex.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return count;
     }
 
     public boolean saveMedicalNotes(int appointmentId, int doctorId, String notes) throws Exception {
