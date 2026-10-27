@@ -389,7 +389,8 @@ public class StaffWaitingListServlet extends HttpServlet {
                     appt.setReason(reason != null && !reason.trim().isEmpty() ? reason.trim() : "Khách vãng lai");
                     appt.setTotalAmount(fee);
                     appt.setFee(fee);
-                    appt.setPayment(paymentMethod != null && !paymentMethod.trim().isEmpty() ? paymentMethod.trim() : "Cash_At_Counter");
+                    paymentMethod = paymentMethod != null && !paymentMethod.isBlank() ? com.visioncare.util.PaymentMethod.canonical(paymentMethod) : "Cash";
+                    appt.setPayment(paymentMethod);
 
                     User currentUser = (User) session.getAttribute("user");
                     int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;

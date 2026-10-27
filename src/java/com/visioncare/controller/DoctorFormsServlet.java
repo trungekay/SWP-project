@@ -24,7 +24,8 @@ import java.util.UUID;
 /**
  * Renders the doctor form screens with their saved values.
  */
-@WebServlet(name = "DoctorFormsServlet", urlPatterns = {"/doctor/examination", "/doctor/prescription"})
+@WebServlet(name = "DoctorFormsServlet", urlPatterns = {
+        "/doctor/examination", "/doctor/examination/print", "/doctor/prescription"})
 public class DoctorFormsServlet extends HttpServlet {
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
     private final DoctorFormDAO formDAO = new DoctorFormDAO();
@@ -57,6 +58,7 @@ public class DoctorFormsServlet extends HttpServlet {
         try {
             Appointment appointment = appointmentDAO.getAppointmentById(appointmentId);
             boolean prescription = request.getServletPath().endsWith("/prescription");
+            boolean printExamination = request.getServletPath().endsWith("/examination/print");
             if (appointment == null || appointment.getDoctorId() != doctor.getActorId()
                     || appointment.getCheckinTime() == null || appointment.getCheckinTime().isBlank()
                     || !("In_Progress".equals(appointment.getStatus())
@@ -82,6 +84,21 @@ public class DoctorFormsServlet extends HttpServlet {
                 }
             } else {
                 formValues = formDAO.loadExamination(appointmentId);
+                boolean printReady = formDAO.hasSavedExamination(appointmentId);
+                if (printExamination && !printReady) {
+                    response.sendError(HttpServletResponse.SC_CONFLICT,
+                            "Lưu đầy đủ phiếu khám trước khi in.");
+                    return;
+                }
+                request.setAttribute("printReady", printReady);
+                if (printExamination) {
+                    response.setHeader("Cache-Control", "no-store");
+                    request.setAttribute("appointment", appointment);
+                    request.setAttribute("formValues", formValues);
+                    request.getRequestDispatcher("/views/doctor/examination-print.jsp")
+                            .forward(request, response);
+                    return;
+                }
                 request.setAttribute("surgeryServices", catalogDAO.listSurgeryServices());
             }
             if (medicineRows.isEmpty()) medicineRows.add(new HashMap<>());

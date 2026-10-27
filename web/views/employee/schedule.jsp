@@ -252,7 +252,7 @@
                           <c:choose>
 
                             <%-- 1. Ca tạm dừng / Đóng bởi Admin (Toàn viện hoặc ca cụ thể) -> Sky Blue --%>
-                              <c:when test="${isSlotGloballyClosed || (cell != null && cell.closed)}">
+                              <c:when test="${(isSlotGloballyClosed && cell == null) || (cell != null && cell.closed)}">
                                 <div class="slot-btn slot-closed"
                                   title="Khung giờ khám này đã bị đóng bởi Quản trị viên">
                                   <span class="slot-title"><i class="bi bi-slash-circle me-1"></i>Đóng ca</span>

@@ -48,7 +48,7 @@ public class StaffInvoiceDAO {
   Map<String,Item> saved=new LinkedHashMap<>();
   try(PreparedStatement ps=c.prepareStatement("SELECT * FROM Invoice_Checkout_Item WHERE Invoice_ID=? ORDER BY Item_Key")){ps.setInt(1,id);try(ResultSet r=ps.executeQuery()){while(r.next()){Item item=new Item(r.getString("Item_Key"),r.getString("Item_Name"),r.getString("Item_Type"),r.getInt("Quantity"),r.getLong("Unit_Price"),r.getBoolean("Removable"),r.getBoolean("Unpriced"),false);item.declined=r.getBoolean("Declined");saved.put(item.key,item);}}}
   if(inv.finalized)inv.items.addAll(saved.values());
-  else if(inv.isBlocked())inv.items.add(new Item("RECORDED","Giá trị hóa đơn đã ghi nhận","Hóa đơn hủy / Hoàn tiền",1,inv.recordedTotal,false,false,false));
+  else if("Canceled".equals(inv.appointmentStatus)||"Canceled".equals(inv.invoiceStatus)||"Refunded".equals(inv.invoiceStatus))inv.items.add(new Item("RECORDED","Giá trị hóa đơn đã ghi nhận","Hóa đơn hủy / Hoàn tiền",1,inv.recordedTotal,false,false,false));
   else {
    inv.items.add(new Item("CONSULT","Phí khám / đăng ký khám","Khám bệnh",1,inv.baseAmount,false,false,false));
    sql="SELECT po.Order_ID,s.Service_Name,po.Actual_Price,po.Status,pr.Status AS Request_Status,COALESCE(pr.Credit_Amount,0) AS Credit_Amount FROM Procedure_Order po JOIN Medical_Record mr ON mr.Record_ID=po.Record_ID JOIN Service_Catalog s ON s.Service_ID=po.Service_ID LEFT JOIN Procedure_Payment_Request pr ON pr.Order_ID=po.Order_ID WHERE mr.Appointment_ID=? AND po.Status<>'Cancelled' AND s.Service_ID<>1 AND s.Service_Name<>N'Khám mắt tổng quát' ORDER BY po.Order_ID";
@@ -90,8 +90,13 @@ public class StaffInvoiceDAO {
   try(PreparedStatement ps=c.prepareStatement("UPDATE Master_Invoice SET Total_Amount=?,Deposit_Amount=?,Balance_Due=0,Status='Paid',Close_At=SYSUTCDATETIME() WHERE Invoice_ID=?")){ps.setLong(1,inv.getTotal());ps.setLong(2,inv.getTotal());ps.setInt(3,inv.id);ps.executeUpdate();}
   try(PreparedStatement ps=c.prepareStatement("UPDATE Invoice_Checkout SET Finalized_At=SYSUTCDATETIME(),Finalized_By=?,Payment_Method=? WHERE Invoice_ID=? AND Finalized_At IS NULL")){ps.setInt(1,employee);ps.setString(2,method);ps.setInt(3,inv.id);if(ps.executeUpdate()!=1)throw new IllegalStateException("Hóa đơn đã được chốt.");}
  }
+ private String lastPaidMethod(Connection c,int invoiceId)throws Exception {
+  try(PreparedStatement ps=c.prepareStatement("SELECT TOP 1 Payment_Gateway FROM Payment_Transaction WHERE Invoice_ID=? AND Gateway_Status='Success' ORDER BY Transaction_ID DESC")){
+   ps.setInt(1,invoiceId);try(ResultSet rs=ps.executeQuery()){return rs.next()?com.visioncare.util.PaymentMethod.canonical(rs.getString(1)):null;}
+  }
+ }
  public void cash(int id,int employee,String expected)throws Exception {
-  try(Connection c=connections.open()){c.setAutoCommit(false);c.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);try{StaffInvoice inv=load(c,id,true);expect(inv,expected);ready(inv);finalizeInvoice(c,inv,employee,inv.getDue()==0?"Previously_Paid":"Cash_At_Counter",inv.getDue(),null);c.commit();}catch(Exception e){c.rollback();throw e;}}
+  try(Connection c=connections.open()){c.setAutoCommit(false);c.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);try{StaffInvoice inv=load(c,id,true);expect(inv,expected);ready(inv);finalizeInvoice(c,inv,employee,inv.getDue()==0?lastPaidMethod(c,id):"Cash",inv.getDue(),null);c.commit();}catch(Exception e){c.rollback();throw e;}}
  }
  public Map<String,Object> reserveQr(int id,int employee,String expected)throws Exception {
   try(Connection c=connections.open()){c.setAutoCommit(false);c.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);try{StaffInvoice inv=load(c,id,true);expect(inv,expected);ready(inv);if(inv.getDue()<=0||inv.getDue()>Integer.MAX_VALUE)throw new IllegalArgumentException("Số tiền không hợp lệ để tạo mã QR.");snapshot(c,inv,employee);updateTotal(c,inv);
@@ -107,7 +112,7 @@ public class StaffInvoiceDAO {
   Map<String,Object> pay=payment(order);if(pay==null)throw new IllegalArgumentException("Không tìm thấy yêu cầu thanh toán.");if("Paid".equals(pay.get("status")))return;
   try(Connection c=connections.open()){c.setAutoCommit(false);c.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);try{StaffInvoice inv=load(c,(Integer)pay.get("invoiceId"),true);pay=paymentOn(c,order);if("Paid".equals(pay.get("status"))){c.commit();return;}
    if(!"Pending".equals(pay.get("status"))||verifiedAmount!=(Long)pay.get("amount")||inv.getDue()!=verifiedAmount||inv.isBlocked()||!inv.isClinicalComplete()||inv.finalized)throw new IllegalStateException("Giao dịch không khớp hóa đơn hiện tại.");
-   expect(inv,(String)pay.get("fingerprint"));finalizeInvoice(c,inv,(Integer)pay.get("employeeId"),"PayOS_Checkout",verifiedAmount,order);c.commit();
+   expect(inv,(String)pay.get("fingerprint"));finalizeInvoice(c,inv,(Integer)pay.get("employeeId"),"QR_Banking",verifiedAmount,order);c.commit();
   }catch(Exception e){c.rollback();throw e;}}
  }
  private Map<String,Object> paymentOn(Connection c,long order)throws Exception{try(PreparedStatement ps=c.prepareStatement("SELECT * FROM Invoice_Checkout_Payment WITH(UPDLOCK,HOLDLOCK) WHERE Order_Code=?")){ps.setLong(1,order);try(ResultSet r=ps.executeQuery()){if(!r.next())throw new IllegalArgumentException("Không tìm thấy mã QR.");return paymentRow(r);}}}

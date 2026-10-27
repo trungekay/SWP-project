@@ -194,14 +194,17 @@
                                     <span class="fw-bold fs-5 text-success">${not empty invoice.totalAmountFmt ? invoice.totalAmountFmt : '0 đ'}</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted"><i class="bi bi-check2-circle text-success me-1"></i>Đã thanh toán đặt cọc:</span>
-                                    <span class="fw-bold text-success">- ${not empty invoice.depositAmountFmt ? invoice.depositAmountFmt : '0 đ'}</span>
+                                    <span class="text-muted"><i class="bi bi-check2-circle text-success me-1"></i>Tổng tiền đã ghi nhận thu:</span>
+                                    <span class="fw-bold text-success">- ${not empty invoice.paidAmountFmt ? invoice.paidAmountFmt : '0 đ'}</span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center pt-2 border-top">
                                     <span class="fw-bold text-dark">Còn lại cần thanh toán:</span>
                                     <c:choose>
-                                        <c:when test="${invoice.status == 'Paid' || invoice.balanceDue <= 0}">
+                                        <c:when test="${invoice.settled}">
                                             <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fw-semibold">0 đ (Đã tất toán đủ)</span>
+                                        </c:when>
+                                        <c:when test="${invoice.balanceDue == 0 && not invoice.collectionBlocked}">
+                                            <span class="text-muted">0 đ (Chưa chốt hóa đơn)</span>
                                         </c:when>
                                         <c:otherwise>
                                             <span class="fw-bold fs-5 text-danger">${invoice.balanceDueFmt}</span>
@@ -211,11 +214,12 @@
                             </div>
                         </div>
 
+                        <c:if test="${invoice.collectionBlocked}"><div class="alert alert-warning">Hóa đơn có yêu cầu hoàn tiền hoặc đã hủy/hoàn tiền. Tạm khóa thu thêm để đối chiếu; trạng thái này không có nghĩa đã thanh toán đủ.</div></c:if>
                         <!-- Payment & Close Date Box -->
                         <div class="p-3 border rounded-3 bg-light mb-4">
                             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                 <span class="small text-muted">Phương thức thanh toán: <strong>${not empty invoice.paymentMethod ? invoice.paymentMethod : 'Chưa thanh toán'}</strong></span>
-                                <span class="small text-muted">Ngày hoàn tất: <strong>${not empty invoice.closeDate ? invoice.closeDate : 'Đã hoàn tất'}</strong></span>
+                                <span class="small text-muted">Ngày hoàn tất: <strong>${not empty invoice.closeDate ? invoice.closeDate : 'Chưa chốt hóa đơn'}</strong></span>
                             </div>
                         </div>
 

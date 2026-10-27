@@ -2,6 +2,7 @@ package com.visioncare.model;
 
 public enum SupplyCategory {
     MEDICATIONS_AND_SOLUTIONS("Thuốc & dung dịch"),
+    GLASSES_AND_ACCESSORIES("Kính & Phụ kiện"),
     FRAMES_AND_LENSES("Kính gọng & tròng kính"),
     CONTACT_LENSES("Kính áp tròng"),
     ACCESSORIES_AND_SUPPORT("Phụ kiện & sản phẩm hỗ trợ"),
@@ -17,7 +18,7 @@ public enum SupplyCategory {
     public String getVietnameseName() { return vietnameseName; }
 
     public static SupplyCategory[] retailValues() {
-        return new SupplyCategory[]{MEDICATIONS_AND_SOLUTIONS, FRAMES_AND_LENSES,
+        return new SupplyCategory[]{MEDICATIONS_AND_SOLUTIONS, GLASSES_AND_ACCESSORIES, FRAMES_AND_LENSES,
                 CONTACT_LENSES, ACCESSORIES_AND_SUPPORT, OTHER};
     }
 

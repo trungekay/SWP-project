@@ -21,13 +21,15 @@ public class AppointmentDAO {
             }
 
             // Check if slot is already booked, taken, or in the past
+            int pendingHoldMinutes = TimeSlotDAO.getPendingHoldMinutes();
             String checkSlotSql = "SELECT ws.Status, ws.Work_Date, ws.Start_Time, " +
                                   "       (SELECT COUNT(*) FROM Appointment ap WHERE ap.Schedule_ID = ws.Schedule_ID " +
                                   "        AND (ap.Status IN ('Confirmed', 'In_Progress', 'Completed') " +
-                                  "             OR (ap.Status = 'Pending' AND DATEDIFF(MINUTE, ap.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) < 15))) AS ActiveAppts " +
+                                  "             OR (ap.Status = 'Pending' AND DATEDIFF(MINUTE, ap.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) < ?))) AS ActiveAppts " +
                                   "FROM Work_Schedule ws WHERE ws.Schedule_ID = ?";
             try (PreparedStatement psCheck = conn.prepareStatement(checkSlotSql)) {
-                psCheck.setInt(1, scheduleId);
+                psCheck.setInt(1, pendingHoldMinutes);
+                psCheck.setInt(2, scheduleId);
                 try (ResultSet rsCheck = psCheck.executeQuery()) {
                     if (rsCheck.next()) {
                         String st = rsCheck.getString("Status");
@@ -172,7 +174,7 @@ public class AppointmentDAO {
 
             // 2. Insert Payment_Transaction
             String sqlTrans = "INSERT INTO Payment_Transaction (Invoice_ID, Amount, Gateway_Status, Trans_Date, Payment_Gateway) " +
-                              "VALUES (?, ?, 'Success', DATEADD(HOUR, 7, SYSUTCDATETIME()), 'VietQR_Banking')";
+                              "VALUES (?, ?, 'Success', DATEADD(HOUR, 7, SYSUTCDATETIME()), 'QR_Banking')";
             try (PreparedStatement psTrans = conn.prepareStatement(sqlTrans)) {
                 psTrans.setInt(1, invoiceId);
                 psTrans.setLong(2, depositAmount);
@@ -532,7 +534,7 @@ public class AppointmentDAO {
 
                 // Ghi nhận giao dịch thanh toán tại quầy vào Payment_Transaction
                 if (invoiceId > 0) {
-                    String gateway = (a.getPayment() != null && !a.getPayment().trim().isEmpty()) ? a.getPayment().trim() : "Cash_At_Counter";
+                    String gateway = (a.getPayment() != null && !a.getPayment().trim().isEmpty()) ? com.visioncare.util.PaymentMethod.canonical(a.getPayment()) : "Cash";
                     String sqlTrans = "INSERT INTO Payment_Transaction (Invoice_ID, Amount, Gateway_Status, Trans_Date, Payment_Gateway) " +
                                       "VALUES (?, ?, 'Success', DATEADD(HOUR, 7, SYSUTCDATETIME()), ?)";
                     try (PreparedStatement psTrans = conn.prepareStatement(sqlTrans)) {
@@ -626,7 +628,7 @@ public class AppointmentDAO {
 
             // 2. Ghi nhận giao dịch thanh toán VietQR vào Payment_Transaction
             String sqlTrans = "INSERT INTO Payment_Transaction (Invoice_ID, Amount, Gateway_Status, Trans_Date, Payment_Gateway) " +
-                              "VALUES (?, ?, 'Success', DATEADD(HOUR, 7, SYSUTCDATETIME()), 'VietQR_Banking')";
+                              "VALUES (?, ?, 'Success', DATEADD(HOUR, 7, SYSUTCDATETIME()), 'QR_Banking')";
             try (PreparedStatement psTrans = conn.prepareStatement(sqlTrans)) {
                 psTrans.setInt(1, invoiceId);
                 psTrans.setLong(2, totalAmount);
@@ -902,8 +904,10 @@ public class AppointmentDAO {
                     appt.setInvoiceStatus(rs.getString("Invoice_Status"));
                     appt.setHasRefundRequest(rs.getInt("Has_Refund_Request") == 1);
 
+                    int pendingHoldMinutes = TimeSlotDAO.getPendingHoldMinutes();
+                    int totalHoldSeconds = pendingHoldMinutes * 60;
                     int elapsedSec = rs.getInt("Elapsed_Sec");
-                    long remainingSec = Math.max(0, 900 - elapsedSec);
+                    long remainingSec = Math.max(0, totalHoldSeconds - elapsedSec);
                     appt.setRemainingSeconds(remainingSec);
                     Timestamp createdTs = rs.getTimestamp("created_at");
                     if (createdTs != null) {
@@ -941,16 +945,18 @@ public class AppointmentDAO {
     }
 
     public boolean isSlotBooked(int doctorId, Date date, String timeSlot) throws Exception {
+        int pendingHoldMinutes = TimeSlotDAO.getPendingHoldMinutes();
         String sql = "SELECT COUNT(*) FROM Appointment a " +
                      "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
                      "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? AND CAST(ws.Start_Time AS VARCHAR(5)) = ? " +
                      "  AND (a.Status IN ('Confirmed', 'In_Progress', 'Completed') " +
-                     "       OR (a.Status = 'Pending' AND DATEDIFF(MINUTE, a.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) < 15))";
+                     "       OR (a.Status = 'Pending' AND DATEDIFF(MINUTE, a.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) < ?))";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, doctorId);
             ps.setDate(2, date);
             ps.setString(3, timeSlot != null && timeSlot.length() >= 5 ? timeSlot.substring(0, 5) : timeSlot);
+            ps.setInt(4, pendingHoldMinutes);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt(1) > 0;
@@ -1202,7 +1208,7 @@ public class AppointmentDAO {
                 }
             }
 
-            String gateway = (paymentGateway != null && !paymentGateway.trim().isEmpty()) ? paymentGateway.trim() : "Cash";
+            String gateway = (paymentGateway != null && !paymentGateway.trim().isEmpty()) ? com.visioncare.util.PaymentMethod.canonical(paymentGateway) : "Cash";
 
             if (invoiceId <= 0) {
                 // Nếu chưa có hóa đơn, tạo mới với trạng thái Paid
@@ -1929,28 +1935,32 @@ public class AppointmentDAO {
     }
 
     /**
-     * Tự động quét và hủy các lịch hẹn Pending quá hạn 15 phút chưa thanh toán
+     * Tự động quét và hủy các lịch hẹn Pending quá hạn giữ chỗ chưa thanh toán (dynamic theo Clinic_Setting)
      */
     public int autoCancelExpiredPendingAppointments() {
         int count = 0;
+        int pendingHoldMinutes = TimeSlotDAO.getPendingHoldMinutes();
+        int thresholdSec = pendingHoldMinutes * 60;
         String findExpired = "SELECT a.Appointment_ID " +
                              "FROM Appointment a " +
                              "LEFT JOIN Master_Invoice mi ON a.Appointment_ID = mi.Appointment_ID " +
                              "WHERE a.Status = 'Pending' " +
                              "  AND (mi.Status IS NULL OR mi.Status IN ('Pending_Deposit', 'Unpaid')) " +
-                             "  AND DATEDIFF(SECOND, a.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) >= 900";
+                             "  AND DATEDIFF(SECOND, a.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) >= ?";
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement psFind = conn.prepareStatement(findExpired);
-             ResultSet rs = psFind.executeQuery()) {
-            List<Integer> apptIds = new ArrayList<>();
-            while (rs.next()) {
-                apptIds.add(rs.getInt("Appointment_ID"));
-            }
-            for (int apptId : apptIds) {
-                try {
-                    cancelAppointment(apptId, "Hệ thống: Hết hạn thanh toán");
-                    count++;
-                } catch (Exception ignored) {}
+             PreparedStatement psFind = conn.prepareStatement(findExpired)) {
+            psFind.setInt(1, thresholdSec);
+            try (ResultSet rs = psFind.executeQuery()) {
+                List<Integer> apptIds = new ArrayList<>();
+                while (rs.next()) {
+                    apptIds.add(rs.getInt("Appointment_ID"));
+                }
+                for (int apptId : apptIds) {
+                    try {
+                        cancelAppointment(apptId, "Hệ thống: Hết hạn thanh toán");
+                        count++;
+                    } catch (Exception ignored) {}
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -147,6 +147,14 @@ public class WorkScheduleDAO {
             conn.setAutoCommit(false);
             try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
                 for (ScheduleRegistrationDTO item : list) {
+                    try (PreparedStatement cfg = conn.prepareStatement(
+                            "SELECT 1 FROM Time_Slot_Config WITH (HOLDLOCK) WHERE Slot_Name=? "
+                            + "AND Start_Time=CAST(? AS TIME) AND End_Time=CAST(? AS TIME) AND Status='Available'")) {
+                        cfg.setString(1,item.getSlot()); cfg.setString(2,item.getStartTime()); cfg.setString(3,item.getEndTime());
+                        try (ResultSet valid = cfg.executeQuery()) {
+                            if (!valid.next()) throw new IllegalArgumentException("Ca đã đóng hoặc đã thay đổi.");
+                        }
+                    }
                     int pIndex = 1;
                     ps.setString(pIndex++, item.getWorkDate());
                     ps.setString(pIndex++, item.getSlot());
@@ -295,6 +303,7 @@ public class WorkScheduleDAO {
     public List<com.visioncare.model.TimeSlot> getDoctorSlotsForDate(int doctorId, String dateStr) {
         List<com.visioncare.model.TimeSlot> list = new ArrayList<>();
         ensureRealisticSchedules();
+        int pendingHoldMinutes = TimeSlotDAO.getPendingHoldMinutes();
         String sql = "SELECT ws.Schedule_ID, ws.Doctor_Employee_ID, ws.Work_Date, ws.Slot, " +
                      "       CONVERT(VARCHAR(5), ws.Start_Time, 108) AS Start_Time_Str, " +
                      "       CONVERT(VARCHAR(5), ws.End_Time, 108) AS End_Time_Str, " +
@@ -303,7 +312,7 @@ public class WorkScheduleDAO {
                      "         WHEN ws.Status = 'Booked' THEN 1 " +
                      "         WHEN EXISTS (SELECT 1 FROM Appointment ap WHERE ap.Schedule_ID = ws.Schedule_ID " +
                      "                      AND (ap.Status IN ('Confirmed', 'In_Progress', 'Completed') " +
-                     "                           OR (ap.Status = 'Pending' AND DATEDIFF(MINUTE, ap.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) < 15))) THEN 1 " +
+                     "                           OR (ap.Status = 'Pending' AND DATEDIFF(MINUTE, ap.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) < ?))) THEN 1 " +
                      "         ELSE 0 " +
                      "       END AS Is_Booked, " +
                      "       CASE " +
@@ -323,8 +332,9 @@ public class WorkScheduleDAO {
                      "ORDER BY ws.Start_Time ASC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, doctorId);
-            ps.setString(2, dateStr);
+            ps.setInt(1, pendingHoldMinutes);
+            ps.setInt(2, doctorId);
+            ps.setString(3, dateStr);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     com.visioncare.model.TimeSlot ts = new com.visioncare.model.TimeSlot();

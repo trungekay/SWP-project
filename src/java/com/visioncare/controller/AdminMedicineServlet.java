@@ -254,7 +254,7 @@ public class AdminMedicineServlet extends HttpServlet {
 
     private void showError(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.setAttribute("error", "Không tải được vật tư bán lẻ. Kiểm tra kết nối và bảng Medicine trong eye_clinic_db.");
+        request.setAttribute("error", "Không tải được vật tư bán lẻ. Kiểm tra kết nối và bảng Medical_Supply trong eye_clinic_db.");
         request.getRequestDispatcher("/views/admin/medicine-error.jsp").forward(request, response);
     }
 

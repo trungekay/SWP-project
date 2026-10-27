@@ -156,10 +156,7 @@ public class EmployeeScheduleServlet extends HttpServlet {
                 for (ScheduleSlotDTO slot : slots) {
                     String key = day.getFullDate() + "_" + slot.getId();
                     ScheduleCellDTO cell = scheduleMatrix.get(key);
-                    boolean isGloballyClosed = "Canceled".equalsIgnoreCase(slotStatusMap.get(slot.getId())) 
-                            || "Inactive".equalsIgnoreCase(slotStatusMap.get(slot.getId())) 
-                            || "Disabled".equalsIgnoreCase(slotStatusMap.get(slot.getId()));
-                    if (!isGloballyClosed && cell != null && !cell.isOff() && !cell.isOnLeave() && !cell.isClosed()) {
+                    if (cell != null && !cell.isOff() && !cell.isOnLeave() && !cell.isClosed()) {
                         daySlotsCount++;
                         totalWeeklySlots++;
                     }

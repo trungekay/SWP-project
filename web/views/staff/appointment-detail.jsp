@@ -662,7 +662,6 @@
                                                 method="post">
                                                 <input type="hidden" name="action" value="saveNotes">
                                                 <input type="hidden" name="appointmentId" value="${appointment.id}">
-                                                <input type="hidden" name="doctorId" value="${appointment.doctorId}">
 
                                                 <div class="mb-3">
                                                     <label for="medicalNotesInput" class="info-label fw-semibold text-dark">

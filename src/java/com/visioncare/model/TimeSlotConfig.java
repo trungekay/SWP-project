@@ -1,6 +1,9 @@
 package com.visioncare.model;
 
 public class TimeSlotConfig {
+    private int slotId;
+    public int getSlotId() { return slotId; }
+    public void setSlotId(int slotId) { this.slotId = slotId; }
     private String slotName;
     private String startTime;
     private String endTime;

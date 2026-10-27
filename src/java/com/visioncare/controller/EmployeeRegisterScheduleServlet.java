@@ -267,6 +267,21 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                 return;
             }
 
+            // Recheck posted names and times on the server; disabled or stale forms cannot register.
+            Map<String, TimeSlotConfig> activeSlots = new HashMap<>();
+            for (TimeSlotConfig cfg : timeSlotDAO.getConfiguredSlots()) {
+                if ("Available".equals(cfg.getStatus())) activeSlots.put(cfg.getSlotName(), cfg);
+            }
+            Set<String> uniqueSelections = new HashSet<>();
+            for (ScheduleRegistrationDTO item : registrationList) {
+                TimeSlotConfig cfg = activeSlots.get(item.getSlot());
+                if (cfg == null
+                        || !java.time.LocalTime.parse(cfg.getStartTime()).equals(java.time.LocalTime.parse(item.getStartTime()))
+                        || !java.time.LocalTime.parse(cfg.getEndTime()).equals(java.time.LocalTime.parse(item.getEndTime()))
+                        || !cfg.getSession().equals(item.getSession())
+                        || !uniqueSelections.add(item.getWorkDate() + "|" + item.getSlot()))
+                    throw new IllegalArgumentException("Ca đã thay đổi, bị đóng hoặc bị chọn trùng. Vui lòng tải lại trang.");
+            }
             int year = Integer.parseInt(yearParam);
             int week = Integer.parseInt(weekParam);
             LocalDate firstMondayOfSelectedYear = LocalDate.of(year, 1, 4).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
@@ -289,7 +304,7 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
                 Map<String, List<String>> sessionSlotMap = new HashMap<>();
                 for (TimeSlotConfig sc : allConfiguredSlots) {
                     String sess = sc.getSession();
-                    if (sess != null) {
+                    if (sess != null && "Available".equals(sc.getStatus())) {
                         sessionSlotMap.computeIfAbsent(sess.toLowerCase(), k -> new ArrayList<>()).add(sc.getSlotName());
                     }
                 }

@@ -315,13 +315,8 @@ public class StaffAppointmentListServlet extends HttpServlet {
                     if (success) {
                         // Lưu medical notes nếu lễ tân nhập luôn trong lúc check-in
                         String notes = request.getParameter("medicalNotes");
-                        String docIdParam = request.getParameter("doctorId");
-                        int doctorId = 0;
-                        if (docIdParam != null && !docIdParam.trim().isEmpty()) {
-                            try { doctorId = Integer.parseInt(docIdParam.trim()); } catch (NumberFormatException ignored) {}
-                        }
                         if (notes != null && !notes.trim().isEmpty()) {
-                            appointmentDAO.saveMedicalNotes(apptId, doctorId, notes.trim());
+                            appointmentDAO.saveMedicalNotes(apptId, ticket.getDoctorId(), notes);
                         }
 
                         ticket = appointmentDAO.getAppointmentById(apptId);
@@ -602,13 +597,13 @@ public class StaffAppointmentListServlet extends HttpServlet {
                     appt.setReason(reason != null && !reason.trim().isEmpty() ? reason.trim() : "Khách vãng lai");
                     appt.setTotalAmount(fee);
                     appt.setFee(fee);
-                    String canonicalPayment = ("QR_Banking".equalsIgnoreCase(paymentMethod) || "VietQR_Banking".equalsIgnoreCase(paymentMethod)) ? "QR_Banking" : "Cash";
-                    appt.setPayment(canonicalPayment);
+                    paymentMethod = paymentMethod != null && !paymentMethod.isBlank() ? com.visioncare.util.PaymentMethod.canonical(paymentMethod) : "Cash";
+                    appt.setPayment(paymentMethod);
 
                     User currentUser = (User) session.getAttribute("user");
                     int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
 
-                    boolean isPendingPayment = "QR_Banking".equalsIgnoreCase(canonicalPayment);
+                    boolean isPendingPayment = "QR_Banking".equalsIgnoreCase(paymentMethod);
                     int newApptId = appointmentDAO.createWalkinAppointment(appt, staffEmployeeId, isPendingPayment);
 
                     if (newApptId > 0) {
@@ -669,7 +664,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                                 String json = "{"
                                         + "\"success\":true,"
                                         + "\"appointmentId\":" + newApptId + ","
-                                        + "\"paymentMethod\":\"" + escapeJson(canonicalPayment) + "\","
+                                        + "\"paymentMethod\":\"Cash\","
                                         + "\"patientName\":\"" + escapeJson(patientName.trim()) + "\","
                                         + "\"phone\":\"" + escapeJson(phone.trim()) + "\","
                                         + "\"fee\":" + fee + ","

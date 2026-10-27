@@ -73,7 +73,7 @@
                           <div class="icon-box" data-aos="zoom-out" data-aos-delay="500">
                             <i class="bi bi-credit-card"></i>
                             <h4>Thanh toán linh hoạt</h4>
-                            <p>Hỗ trợ VNPay, MoMo hoặc thanh toán trực tiếp tại phòng khám, hợp tác bảo hiểm y tế.</p>
+                            <p>Hỗ trợ chuyển khoản QR hoặc thanh toán tiền mặt trực tiếp tại phòng khám.</p>
                           </div>
                         </div><!-- End Icon Box -->
 

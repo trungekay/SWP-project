@@ -24,7 +24,7 @@ public class StaffCheckoutTest {
   Fixture f=new Fixture();f.medicinePrice=price;
   f.appointment=insert(c,"INSERT INTO Appointment(Patient_ID,Schedule_ID,Staff_Employee_ID,Status,created_at,checkin_time,doctor_completed_at) VALUES(?,?,?,'Completed',SYSUTCDATETIME(),SYSUTCDATETIME(),SYSUTCDATETIME())",patient,schedule,employee);
   f.invoice=insert(c,"INSERT INTO Master_Invoice(Appointment_ID,Total_Amount,Deposit_Amount,Balance_Due,Status,Create_At) VALUES(?,200000,200000,0,'Paid',SYSUTCDATETIME())",f.appointment);
-  insert(c,"INSERT INTO Payment_Transaction(Invoice_ID,Amount,Gateway_Status,Payment_Gateway,Trans_Date) VALUES(?,200000,'Success','Test_Deposit',SYSUTCDATETIME())",f.invoice);
+  insert(c,"INSERT INTO Payment_Transaction(Invoice_ID,Amount,Gateway_Status,Payment_Gateway,Trans_Date) VALUES(?,200000,'Success','QR_Banking',SYSUTCDATETIME())",f.invoice);
   int record=insert(c,"INSERT INTO Medical_Record(Appointment_ID,Doctor_Employee_ID,Clinical_Diagnosis,Created_At) VALUES(?,?,N'Checkout rollback test',SYSUTCDATETIME())",f.appointment,doctor);
   int prescription=insert(c,"INSERT INTO Prescription(Record_ID,created_at) VALUES(?,SYSUTCDATETIME())",record);
   f.medicine=insert(c,"INSERT INTO Prescription_Detail(Prescription_ID,Quantity,Medicine_Name,Is_Custom_Medicine) VALUES(?,2,?,0)",prescription,medicine);
@@ -49,6 +49,7 @@ public class StaffCheckoutTest {
     check(dao.list("APT-"+baseAppointment,"Examined",null).stream().anyMatch(r->Integer.valueOf(baseInvoice).equals(r.get("invoiceId"))),"Examined filter follows doctor completion");
     dao.cash(baseInvoice,employee,base.fingerprint());
     check("Hoàn thành".equals(dao.get(baseInvoice).getPaymentLabel()),"Staff explicitly closes fee-only invoice");
+    check(scalar(real,"SELECT COUNT(*) FROM Invoice_Checkout WHERE Invoice_ID=? AND Payment_Method IS NULL",baseInvoice)==1,"No receipt means no invented payment method on zero-balance close");
     check(scalar(real,"SELECT COUNT(*) FROM Payment_Transaction WHERE Invoice_ID=?",baseInvoice)==0,"Zero balance close never creates a fictitious cash receipt");
     check(dao.list("APT-"+baseAppointment,"Completed",null).stream().anyMatch(r->Integer.valueOf(baseInvoice).equals(r.get("invoiceId"))),"Completed filter requires staff checkout finalization");
     Fixture cash=fixture(real);StaffInvoice inv=dao.get(cash.invoice);
@@ -62,6 +63,7 @@ public class StaffCheckoutTest {
     check(scalar(real,"SELECT COUNT(*) FROM Procedure_Order WHERE Order_ID=? AND Status='Cancelled'",cash.pending)==1,"Declined clinical order is cancelled, not deleted");
     String beforeCash=inv.fingerprint();dao.cash(cash.invoice,employee,beforeCash);StaffInvoice paid=dao.get(cash.invoice);
     check(paid.finalized&&paid.getDue()==0&&paid.paid==paid.getTotal(),"Cash settles and freezes full invoice");
+    check(scalar(real,"SELECT COUNT(*) FROM Invoice_Checkout WHERE Invoice_ID=? AND Payment_Method='Cash'",cash.invoice)==1,"Cash checkout persists canonical method");
     check(scalar(real,"SELECT COUNT(*) FROM Payment_Transaction WHERE Invoice_ID=?",cash.invoice)==2,"Only deposit and outstanding cash are recorded");
     reject(()->dao.cash(cash.invoice,employee,beforeCash),"Double-submit cash must not duplicate receipt");
     check(scalar(real,"SELECT COUNT(*) FROM Payment_Transaction WHERE Invoice_ID=?",cash.invoice)==2,"No duplicate cash transaction");
@@ -82,6 +84,7 @@ public class StaffCheckoutTest {
     StaffCheckoutPayments.refresh(dao,c->verified,code,qr.invoice);
     check(scalar(real,"SELECT COUNT(*) FROM Payment_Transaction WHERE Invoice_ID=?",qr.invoice)==2,"Polling and webhook are idempotent");
     check(dao.get(qr.invoice).finalized&&dao.get(qr.invoice).getDue()==0,"QR checkout final invoice is settled");
+    check(scalar(real,"SELECT COUNT(*) FROM Invoice_Checkout WHERE Invoice_ID=? AND Payment_Method='QR_Banking'",qr.invoice)==1,"Verified QR checkout persists canonical method");
     Fixture legacy=fixture(real);
     try(PreparedStatement ps=real.prepareStatement("DELETE FROM Payment_Transaction WHERE Invoice_ID=?")){ps.setInt(1,legacy.invoice);ps.executeUpdate();}
     StaffInvoice old=dao.get(legacy.invoice);
@@ -90,6 +93,13 @@ public class StaffCheckoutTest {
     dao.cash(legacy.invoice,employee,old.fingerprint());old=dao.get(legacy.invoice);
     check(old.finalized&&old.paid==old.getTotal()&&old.priorPaid==200000,"Legacy paid amount persists after checkout");
     check(scalar(real,"SELECT COUNT(*) FROM Payment_Transaction WHERE Invoice_ID=?",legacy.invoice)==1,"Only new outstanding balance is collected on a legacy paid invoice");
+    Fixture refundPending=fixture(real);
+    int refundPatient=scalar(real,"SELECT Patient_ID FROM Appointment WHERE Appointment_ID=?",refundPending.appointment);
+    insert(real,"INSERT INTO Refund_Request(Invoice_ID,created_by_employee_id,Patient_ID,Refund_Amount,Reason,Status,Created_At,Update_At) VALUES(?,?,?,200000,N'Legacy pending refund regression','Pending',SYSUTCDATETIME(),SYSUTCDATETIME())",refundPending.invoice,employee,refundPatient);
+    StaffInvoice held=dao.get(refundPending.invoice);
+    check(held.getTotal()==330000+2*refundPending.medicinePrice,"Pending refund does not hide existing procedure and medicine costs");
+    check(held.getOutstanding()==130000+2*refundPending.medicinePrice,"Financial balance remains visible when collection is blocked");
+    check(held.getDue()==0&&!held.isCanCheckout(),"Pending refund blocks collection without implying full payment");
     Fixture blocked=fixture(real);
     try(PreparedStatement ps=real.prepareStatement("UPDATE Appointment SET Status='Canceled' WHERE Appointment_ID=?")){ps.setInt(1,blocked.appointment);ps.executeUpdate();}
     check(dao.get(blocked.invoice).isBlocked(),"Canceled appointment cannot collect new payment");

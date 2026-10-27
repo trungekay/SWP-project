@@ -294,6 +294,16 @@ public class MedicalRecordDAO {
             }
 
             // Load Eyeglass Prescription if any
+            boolean hasEyeglassTable;
+            try (ResultSet tables = conn.getMetaData().getTables(conn.getCatalog(), null, "Eyeglass_Prescription", new String[]{"TABLE"})) {
+                hasEyeglassTable = tables.next();
+            } catch (Exception error) {
+                throw new IllegalStateException("Không kiểm tra được cấu trúc đơn kính.", error);
+            }
+            if (!hasEyeglassTable) {
+                record.put("medicines", medicines);
+                return;
+            }
             String sqlGlass = "SELECT OD_SPH, OD_CYL, OD_AXIS, OD_ADD, OS_SPH, OS_CYL, OS_AXIS, OS_ADD, PD, Lens_Type, Glasses_Notes " +
                               "FROM Eyeglass_Prescription WHERE Prescription_ID = ?";
             try (PreparedStatement psGlass = conn.prepareStatement(sqlGlass)) {

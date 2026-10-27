@@ -91,6 +91,78 @@ public class DatabaseInitializerListener implements ServletContextListener {
                 System.err.println("[VisionCare] Note on Prescription_Detail columns check: " + e.getMessage());
             }
 
+            // Keep reception notes separate from the doctor's clinical diagnosis.
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("IF COL_LENGTH('dbo.Medical_Record', 'Staff_Notes') IS NULL "
+                           + "ALTER TABLE dbo.Medical_Record ADD Staff_Notes NVARCHAR(MAX) NULL");
+                stmt.execute("UPDATE mr SET Staff_Notes = mr.Clinical_Diagnosis "
+                           + "FROM dbo.Medical_Record mr JOIN dbo.Appointment a "
+                           + "ON a.Appointment_ID = mr.Appointment_ID "
+                           + "WHERE a.Status IN ('Pending', 'Confirmed', 'In_Progress') "
+                           + "AND mr.Staff_Notes IS NULL AND mr.Clinical_Diagnosis IS NOT NULL "
+                           + "AND mr.examination_result IS NULL AND mr.conclusion IS NULL");
+            } catch (Exception e) {
+                System.err.println("[VisionCare] Note on Staff_Notes migration: " + e.getMessage());
+            }
+
+            // Align the existing supply category constraint with the retail form.
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("SET XACT_ABORT ON; BEGIN TRANSACTION; "
+                           + "IF EXISTS (SELECT 1 FROM sys.check_constraints "
+                           + "WHERE name = 'CHK_Medical_Supply_Category' "
+                           + "AND parent_object_id = OBJECT_ID('dbo.Medical_Supply') "
+                           + "AND definition NOT LIKE N'%Kính áp tròng%') "
+                           + "ALTER TABLE dbo.Medical_Supply DROP CONSTRAINT CHK_Medical_Supply_Category; "
+                           + "IF OBJECT_ID('dbo.Medical_Supply', 'U') IS NOT NULL "
+                           + "AND NOT EXISTS (SELECT 1 FROM sys.check_constraints "
+                           + "WHERE name = 'CHK_Medical_Supply_Category' "
+                           + "AND parent_object_id = OBJECT_ID('dbo.Medical_Supply')) "
+                           + "ALTER TABLE dbo.Medical_Supply WITH CHECK ADD CONSTRAINT CHK_Medical_Supply_Category "
+                           + "CHECK (Category IN (N'Khác', N'Vật tư y tế tiêu hao', N'Kính & Phụ kiện', "
+                           + "N'Kính gọng & tròng kính', N'Kính áp tròng', "
+                           + "N'Phụ kiện & sản phẩm hỗ trợ', N'Thuốc & dung dịch')); "
+                           + "COMMIT TRANSACTION");
+            } catch (Exception e) {
+                System.err.println("[VisionCare] Note on Medical_Supply categories: " + e.getMessage());
+            }
+
+            // 6. Tự động kiểm tra và khởi tạo 3 bảng quản lý hóa đơn & thanh toán (Invoice_Checkout, Invoice_Checkout_Item, Invoice_Checkout_Payment) nếu chưa có
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("IF OBJECT_ID('dbo.Invoice_Checkout','U') IS NULL "
+                           + "CREATE TABLE dbo.Invoice_Checkout ("
+                           + "  Invoice_ID int NOT NULL PRIMARY KEY REFERENCES dbo.Master_Invoice(Invoice_ID),"
+                           + "  Base_Amount decimal(18,0) NOT NULL CHECK (Base_Amount >= 0),"
+                           + "  Opening_Paid decimal(18,0) NOT NULL DEFAULT 0 CHECK (Opening_Paid >= 0),"
+                           + "  Finalized_At datetime2 NULL, Finalized_By int NULL REFERENCES dbo.Employee_Profile(Employee_ID),"
+                           + "  Payment_Method nvarchar(50) NULL CONSTRAINT CHK_Checkout_Payment_Method CHECK(Payment_Method IS NULL OR Payment_Method COLLATE Latin1_General_100_BIN2 IN ('Cash','QR_Banking'))"
+                           + ")");
+                stmt.execute("IF COL_LENGTH('dbo.Invoice_Checkout','Opening_Paid') IS NULL "
+                           + "ALTER TABLE dbo.Invoice_Checkout ADD Opening_Paid decimal(18,0) NOT NULL DEFAULT 0");
+                stmt.execute("IF OBJECT_ID('dbo.Invoice_Checkout_Item','U') IS NULL "
+                           + "CREATE TABLE dbo.Invoice_Checkout_Item ("
+                           + "  Invoice_ID int NOT NULL REFERENCES dbo.Invoice_Checkout(Invoice_ID), Item_Key nvarchar(64) NOT NULL,"
+                           + "  Item_Name nvarchar(500) NOT NULL, Item_Type nvarchar(30) NOT NULL,"
+                           + "  Quantity int NOT NULL CHECK(Quantity > 0), Unit_Price decimal(18,0) NOT NULL CHECK(Unit_Price >= 0),"
+                           + "  Removable bit NOT NULL, Declined bit NOT NULL DEFAULT 0, Unpriced bit NOT NULL DEFAULT 0,"
+                           + "  Changed_By int NULL REFERENCES dbo.Employee_Profile(Employee_ID), Changed_At datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),"
+                           + "  PRIMARY KEY(Invoice_ID, Item_Key)"
+                           + ")");
+                stmt.execute("IF OBJECT_ID('dbo.Invoice_Checkout_Payment','U') IS NULL "
+                           + "BEGIN "
+                           + "  CREATE TABLE dbo.Invoice_Checkout_Payment ("
+                           + "    Order_Code bigint NOT NULL PRIMARY KEY, Invoice_ID int NOT NULL REFERENCES dbo.Invoice_Checkout(Invoice_ID),"
+                           + "    Amount decimal(18,0) NOT NULL CHECK(Amount > 0), Fingerprint varchar(64) NOT NULL,"
+                           + "    Status varchar(20) NOT NULL CHECK(Status IN ('Creating','Pending','Paid','Failed','Cancelled')),"
+                           + "    Checkout_Url nvarchar(1000) NULL, QR_Code nvarchar(max) NULL,"
+                           + "    Created_By int NOT NULL REFERENCES dbo.Employee_Profile(Employee_ID), Created_At datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),"
+                           + "    Updated_At datetime2 NOT NULL DEFAULT SYSUTCDATETIME(), Transaction_ID int NULL REFERENCES dbo.Payment_Transaction(Transaction_ID)"
+                           + "  ); "
+                           + "  CREATE UNIQUE INDEX UX_Checkout_ActivePayment ON dbo.Invoice_Checkout_Payment(Invoice_ID) WHERE Status IN ('Creating','Pending'); "
+                           + "END");
+            } catch (Exception e) {
+                System.err.println("[VisionCare] Note on Invoice_Checkout tables init: " + e.getMessage());
+            }
+
             System.out.println("[VisionCare] Database check completed successfully!");
             System.out.println("==================================================================");
 

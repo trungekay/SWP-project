@@ -19,23 +19,17 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
                 String startTime = request.getParameter("startTime");
                 String endTime = request.getParameter("endTime");
 
-                if (!timeSlotDAO.isStartTimeValid(startTime)) {
-                    request.getSession().setAttribute("errorMsg", "Không thể thêm ca. Ca mới phải bắt đầu sau khi các ca hiện tại kết thúc!");
-                    response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=slots");
-                    return;
-                }
-
                 timeSlotDAO.addTimeSlot(slotName, startTime, endTime);
             } else if ("edit".equals(action)) {
-                String oldSlotName = request.getParameter("oldSlotName");
+                int slotId = Integer.parseInt(request.getParameter("slotId"));
                 String newSlotName = request.getParameter("slotName");
                 String startTime = request.getParameter("startTime");
                 String endTime = request.getParameter("endTime");
                 String status = request.getParameter("status");
-                timeSlotDAO.updateTimeSlotConfig(oldSlotName, newSlotName, startTime, endTime, status);
+                timeSlotDAO.updateTimeSlotConfig(slotId, newSlotName, startTime, endTime, status);
             } else if ("delete".equals(action)) {
-                int scheduleId = Integer.parseInt(request.getParameter("scheduleId"));
-                boolean success = timeSlotDAO.deleteTimeSlot(scheduleId);
+                int slotId = Integer.parseInt(request.getParameter("slotId"));
+                boolean success = timeSlotDAO.deleteTimeSlot(slotId);
                 if (!success) {
                     request.getSession().setAttribute("errorMsg", "Không thể xóa Slot này vì đã có bệnh nhân đặt hoặc dữ liệu không tồn tại!");
                 }
@@ -59,13 +53,32 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
                         request.getSession().setAttribute("errorMsg", "Vui lòng nhập định dạng số hợp lệ cho số giờ làm việc!");
                     }
                 }
+            } else if ("update_pending_hold_minutes".equals(action)) {
+                String minutesStr = request.getParameter("pendingHoldMinutes");
+                if (minutesStr != null && !minutesStr.trim().isEmpty()) {
+                    try {
+                        int minutes = Integer.parseInt(minutesStr.trim());
+                        if (minutes < 1 || minutes > 120) {
+                            request.getSession().setAttribute("errorMsg", "Thời gian giữ chỗ phải từ 1 đến 120 phút!");
+                        } else {
+                            boolean success = timeSlotDAO.updatePendingHoldMinutes(minutes);
+                            if (success) {
+                                request.getSession().setAttribute("successMsg", "Đã cập nhật thời gian giữ chỗ thành công (" + minutes + " phút)!");
+                            } else {
+                                request.getSession().setAttribute("errorMsg", "Không thể cập nhật thời gian giữ chỗ!");
+                            }
+                        }
+                    } catch (NumberFormatException e) {
+                        request.getSession().setAttribute("errorMsg", "Vui lòng nhập định dạng số nguyên hợp lệ cho thời gian giữ chỗ!");
+                    }
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
-            request.getSession().setAttribute("errorMsg", "Lỗi cấu hình Slot: " + e.getMessage());
+            request.getSession().setAttribute("errorMsg", "Lỗi cấu hình: " + e.getMessage());
         }
 
-        if ("update_min_hours".equals(action)) {
+        if ("update_min_hours".equals(action) || "update_pending_hold_minutes".equals(action)) {
             response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=rules");
             return;
         }

@@ -26,10 +26,59 @@ public class TimeSlotDAO {
                     + "); "
                     + "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
                     + "VALUES ('MIN_WORK_HOURS_PER_WEEK', '30.0', N'Số giờ làm việc tối thiểu mỗi tuần'); "
+                    + "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
+                    + "VALUES ('BOOKING_PENDING_HOLD_MINUTES', '15', N'Thời gian giữ chỗ tối đa cho lịch hẹn Pending chờ thanh toán (phút)'); "
+                    + "END "
+                    + "ELSE IF NOT EXISTS (SELECT 1 FROM Clinic_Setting WHERE Setting_Key = 'BOOKING_PENDING_HOLD_MINUTES') "
+                    + "BEGIN "
+                    + "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
+                    + "VALUES ('BOOKING_PENDING_HOLD_MINUTES', '15', N'Thời gian giữ chỗ tối đa cho lịch hẹn Pending chờ thanh toán (phút)'); "
                     + "END";
             st.execute(createTableSql);
         } catch (Exception e) {
             System.err.println("Error ensuring Clinic_Setting table: " + e.getMessage());
+        }
+    }
+
+    public static int getPendingHoldMinutes() {
+        int minutes = 15;
+        String sql = "SELECT Setting_Value FROM Clinic_Setting WHERE Setting_Key = 'BOOKING_PENDING_HOLD_MINUTES'";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                String val = rs.getString("Setting_Value");
+                if (val != null && !val.trim().isEmpty()) {
+                    minutes = Integer.parseInt(val.trim());
+                }
+            }
+        } catch (Exception e) {
+            // Default 15 if table or row not yet ready
+            minutes = 15;
+        }
+        return minutes > 0 ? minutes : 15;
+    }
+
+    public boolean updatePendingHoldMinutes(int minutes) {
+        if (minutes <= 0) return false;
+        ensureSettingTable();
+        String sql = "UPDATE Clinic_Setting SET Setting_Value = ? WHERE Setting_Key = 'BOOKING_PENDING_HOLD_MINUTES'";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, String.valueOf(minutes));
+            int rows = ps.executeUpdate();
+            if (rows == 0) {
+                String insertSql = "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
+                        + "VALUES ('BOOKING_PENDING_HOLD_MINUTES', ?, N'Thời gian giữ chỗ tối đa cho lịch hẹn Pending chờ thanh toán (phút)')";
+                try (PreparedStatement psIns = conn.prepareStatement(insertSql)) {
+                    psIns.setString(1, String.valueOf(minutes));
+                    return psIns.executeUpdate() > 0;
+                }
+            }
+            return rows > 0;
+        } catch (Exception e) {
+            System.err.println("Error updatePendingHoldMinutes: " + e.getMessage());
+            return false;
         }
     }
 
@@ -38,7 +87,7 @@ public class TimeSlotDAO {
             List<TimeSlotConfig> slots = getConfiguredSlots();
             int activeCount = 0;
             for (TimeSlotConfig s : slots) {
-                if (s.getStatus() == null || "Available".equalsIgnoreCase(s.getStatus()) || !"Canceled".equalsIgnoreCase(s.getStatus())) {
+                if ("Available".equalsIgnoreCase(s.getStatus())) {
                     activeCount++;
                 }
             }
@@ -63,7 +112,7 @@ public class TimeSlotDAO {
             System.err.println("Error getMinWeeklyWorkingHours: " + e.getMessage());
         }
         double maxHours = getMaxWeeklyAvailableHours();
-        if (maxHours > 0 && hours > maxHours) {
+        if (hours > maxHours) {
             hours = maxHours;
         }
         return hours;
@@ -72,7 +121,7 @@ public class TimeSlotDAO {
     public boolean updateMinWeeklyWorkingHours(double hours) {
         ensureSettingTable();
         double maxHours = getMaxWeeklyAvailableHours();
-        if (maxHours > 0 && hours > maxHours) {
+        if (hours > maxHours) {
             return false;
         }
         String sql = "UPDATE Clinic_Setting SET Setting_Value = ? WHERE Setting_Key = 'MIN_WORK_HOURS_PER_WEEK'";
@@ -96,87 +145,101 @@ public class TimeSlotDAO {
     }
     public List<TimeSlotConfig> getConfiguredSlots() throws Exception {
         List<TimeSlotConfig> list = new ArrayList<>();
-        String sql = "SELECT DISTINCT Slot, Start_Time, End_Time, " +
+        String sql = "SELECT Slot_ID, Slot_Name AS Slot, Start_Time, End_Time, " +
                 "CASE " +
                 "  WHEN CAST(Start_Time AS TIME) < '12:00:00' THEN 'Morning' " +
                 "  WHEN CAST(Start_Time AS TIME) < '17:00:00' THEN 'Afternoon' " +
                 "  ELSE 'Evening' " +
                 "END AS Session, Status " +
-                "FROM Work_Schedule " +
+                "FROM Time_Slot_Config " +
                 "ORDER BY Start_Time";
         try (Connection conn = DBContext.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                list.add(new TimeSlotConfig(
+                TimeSlotConfig config = new TimeSlotConfig(
                         rs.getString("Slot"),
                         rs.getString("Start_Time"),
                         rs.getString("End_Time"),
                         rs.getString("Session"),
-                        rs.getString("Status")));
+                        rs.getString("Status"));
+                config.setSlotId(rs.getInt("Slot_ID"));
+                list.add(config);
             }
         }
         return list;
     }
 
-    public boolean isStartTimeValid(String startTime) throws Exception {
-        String sql = "SELECT CASE WHEN CAST(? AS TIME) >= CAST(MAX(End_Time) AS TIME) THEN 1 ELSE 0 END FROM Work_Schedule HAVING MAX(End_Time) IS NOT NULL";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, startTime);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1) == 1;
+
+    public boolean addTimeSlot(String name, String start, String end) throws Exception {
+        return save(0, name, start, end, "Available");
+    }
+
+    public boolean updateTimeSlotConfig(int id, String name, String start, String end, String status) throws Exception {
+        if (id <= 0) throw new IllegalArgumentException("Mã ca không hợp lệ.");
+        return save(id, name, start, end, status);
+    }
+
+    private boolean save(int id, String name, String start, String end, String status) throws Exception {
+        if(name==null || name.trim().isEmpty() || name.trim().length()>100 || name.contains("|"))
+            throw new IllegalArgumentException("Tên ca không hợp lệ.");
+        java.time.LocalTime from=java.time.LocalTime.parse(start), to=java.time.LocalTime.parse(end);
+        if(java.time.Duration.between(from,to).getSeconds()!=1800)
+            throw new IllegalArgumentException("Khung giờ phải dài đúng 30 phút.");
+        if(!"Available".equals(status) && !"Canceled".equals(status))
+            throw new IllegalArgumentException("Trạng thái không hợp lệ.");
+        try(Connection conn=DBContext.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                try(PreparedStatement ps=conn.prepareStatement(
+                        "SELECT 1 FROM Time_Slot_Config WITH (UPDLOCK,HOLDLOCK) WHERE Slot_ID<>? "
+                        +"AND (Slot_Name=? OR (Start_Time<CAST(? AS TIME) AND End_Time>CAST(? AS TIME)))")) {
+                    ps.setInt(1,id); ps.setString(2,name.trim()); ps.setString(3,end); ps.setString(4,start);
+                    try(ResultSet rs=ps.executeQuery()) {
+                        if(rs.next()) throw new IllegalArgumentException("Tên ca trùng hoặc thời gian chồng lấn.");
+                    }
                 }
-            }
-        }
-        return true; // if no schedule exists, it's valid
-    }
-
-    public boolean addTimeSlot(String slotName, String startTime, String endTime)
-            throws Exception {
-        // Insert this slot for all active doctors and specialists for all distinct dates
-        String sql = "INSERT INTO Work_Schedule (Doctor_Employee_ID, Specialist_Employee_ID, Work_Date, Slot, Start_Time, End_Time, Status) "
-                +
-                "SELECT " +
-                "  CASE WHEN a.Role_ID = 3 THEN e.Employee_ID ELSE NULL END, " +
-                "  CASE WHEN a.Role_ID = 4 THEN e.Employee_ID ELSE NULL END, " +
-                "  d.Work_Date, ?, ?, ?, 'Available' " +
-                "FROM Employee_Profile e JOIN Account a ON e.Account_ID = a.Account_ID " +
-                "CROSS JOIN (SELECT DISTINCT Work_Date FROM Work_Schedule) d " +
-                "WHERE a.Role_ID IN (3, 4) AND a.Account_Status = 'Active'";
-        try (Connection conn = DBContext.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, slotName);
-            ps.setString(2, startTime);
-            ps.setString(3, endTime);
-
-            return ps.executeUpdate() > 0;
-        }
-    }
-
-    public boolean updateTimeSlotConfig(String oldSlotName, String newSlotName, String startTime, String endTime,
-            String status) throws Exception {
-        String sql = "UPDATE Work_Schedule SET Slot = ?, Start_Time = ?, End_Time = ?, Status = ? WHERE Slot = ?";
-        try (Connection conn = DBContext.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, newSlotName);
-            ps.setString(2, startTime);
-            ps.setString(3, endTime);
-            ps.setString(4, status);
-            ps.setString(5, oldSlotName);
-            return ps.executeUpdate() > 0;
+                if(id>0) {
+                    String oldName,oldStart,oldEnd;
+                    try(PreparedStatement ps=conn.prepareStatement(
+                            "SELECT Slot_Name,Start_Time,End_Time FROM Time_Slot_Config WITH (UPDLOCK,HOLDLOCK) WHERE Slot_ID=?")) {
+                        ps.setInt(1,id);
+                        try(ResultSet rs=ps.executeQuery()) {
+                            if(!rs.next()) throw new IllegalArgumentException("Ca không tồn tại.");
+                            oldName=rs.getString(1); oldStart=rs.getString(2); oldEnd=rs.getString(3);
+                        }
+                    }
+                    try(PreparedStatement ps=conn.prepareStatement(
+                            "SELECT 1 FROM Work_Schedule WHERE Slot=? AND Start_Time=CAST(? AS TIME) AND End_Time=CAST(? AS TIME)")) {
+                        ps.setString(1,oldName); ps.setString(2,oldStart); ps.setString(3,oldEnd);
+                        try(ResultSet rs=ps.executeQuery()) {
+                            if(rs.next() && (!from.equals(java.time.LocalTime.parse(oldStart)) || !to.equals(java.time.LocalTime.parse(oldEnd))))
+                                throw new IllegalArgumentException("Ca đã có lịch làm việc. Hãy tạo ca mới để đổi giờ.");
+                        }
+                    }
+                    // Synchronize labels only. Never overwrite booking, leave status, dates or times.
+                    try(PreparedStatement ps=conn.prepareStatement(
+                            "UPDATE Work_Schedule SET Slot=? WHERE Slot=? AND Start_Time=CAST(? AS TIME) AND End_Time=CAST(? AS TIME)")) {
+                        ps.setString(1,name.trim()); ps.setString(2,oldName); ps.setString(3,oldStart); ps.setString(4,oldEnd);
+                        ps.executeUpdate();
+                    }
+                }
+                try(PreparedStatement ps=conn.prepareStatement(id==0
+                        ? "INSERT Time_Slot_Config(Slot_Name,Start_Time,End_Time,Status) VALUES (?,?,?,?)"
+                        : "UPDATE Time_Slot_Config SET Slot_Name=?,Start_Time=?,End_Time=?,Status=? WHERE Slot_ID=?")) {
+                    ps.setString(1,name.trim()); ps.setString(2,start); ps.setString(3,end); ps.setString(4,status);
+                    if(id>0) ps.setInt(5,id);
+                    ps.executeUpdate();
+                }
+                conn.commit(); return true;
+            } catch(Exception e) { conn.rollback(); throw e; }
         }
     }
 
-    public boolean deleteTimeSlot(int scheduleId) throws Exception {
-        String sql = "DELETE FROM Work_Schedule WHERE Schedule_ID = ? AND Status = 'Available'";
-        try (Connection conn = DBContext.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, scheduleId);
-            return ps.executeUpdate() > 0;
+    public boolean deleteTimeSlot(int id) throws Exception {
+        try(Connection conn=DBContext.getConnection(); PreparedStatement ps=conn.prepareStatement(
+                "UPDATE Time_Slot_Config SET Status='Canceled' WHERE Slot_ID=?")) {
+            ps.setInt(1,id); return ps.executeUpdate()>0;
         }
     }
-
-
 }

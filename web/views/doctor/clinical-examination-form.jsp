@@ -72,6 +72,9 @@
                         <div><h2 id="exam-complaint-heading">Lý do đến khám</h2><p>Triệu chứng và bệnh sử liên quan</p></div>
                     </div>
                     <div class="doctor-form-fields">
+                        <c:if test="${not empty formValues.staffNotes}">
+                            <div class="doctor-form-prior-diagnoses doctor-form-span"><strong>Ghi chú từ nhân viên tiếp nhận</strong><p><c:out value="${formValues.staffNotes}" /></p></div>
+                        </c:if>
                         <label class="doctor-form-field doctor-form-span"><span>Triệu chứng chính</span>
                             <textarea name="chiefComplaint" rows="3" maxlength="1000" placeholder="Ví dụ: Nhìn mờ mắt phải trong 2 tuần, tăng khi đọc gần..."><c:out value="${formValues.chiefComplaint}" /></textarea>
                             <c:if test="${not empty formValues.chiefComplaintSource}"><small class="doctor-form-hint"><c:out value="${formValues.chiefComplaintSource}" />. Hãy kiểm tra và cập nhật nếu cần.</small></c:if>
@@ -190,6 +193,10 @@
 
                 <div class="doctor-form-actions">
                     <a class="doctor-form-button secondary" href="${pageContext.request.contextPath}/doctor/patient-detail?id=${appointment.id}">Quay lại hồ sơ</a>
+                    <c:choose>
+                        <c:when test="${printReady}"><a class="doctor-form-button secondary" href="${pageContext.request.contextPath}/doctor/examination/print?id=${appointment.id}" target="_blank" rel="noopener"><i class="bi bi-printer" aria-hidden="true"></i> In phiếu khám đã lưu</a></c:when>
+                        <c:otherwise><button class="doctor-form-button secondary" type="button" disabled title="Lưu đầy đủ phiếu khám trước khi in"><i class="bi bi-printer" aria-hidden="true"></i> In phiếu khám</button></c:otherwise>
+                    </c:choose>
                     <c:if test="${not readOnly}"><button class="doctor-form-button primary" type="submit" name="submitAction" value="save" data-exam-submit data-label-save="Lưu phiếu khám" data-label-refer="Lưu và gửi chỉ định"><i class="bi bi-cloud-arrow-up" data-exam-submit-icon aria-hidden="true"></i><span data-exam-submit-label>Lưu phiếu khám</span></button></c:if>
                 </div>
             </form>

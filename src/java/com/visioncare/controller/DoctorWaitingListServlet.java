@@ -150,7 +150,8 @@ public class DoctorWaitingListServlet extends HttpServlet {
             appointmentId = Integer.parseInt(request.getParameter("appointmentId"));
             if (appointmentId <= 0) throw new NumberFormatException();
         } catch (NumberFormatException invalidId) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            session.setAttribute("doctorQueueMessage", "Không xác định được ca khám. Hãy tải lại danh sách rồi thử lại.");
+            response.sendRedirect(returnToQueue(request));
             return;
         }
 
@@ -189,7 +190,10 @@ public class DoctorWaitingListServlet extends HttpServlet {
                         if ("late".equals(state)) message = "Đã quá giờ khám. Chỉ có thể bắt đầu trong vòng 1 giờ sau giờ hẹn.";
                     }
                 } else if ("cancel".equals(action)) {
-                    message = "Chỉ bác sĩ phụ trách được dừng ca đang khám hoặc hủy ca chờ khám quá 1 giờ sau giờ hẹn.";
+                    Appointment appointment = appointmentDAO.getAppointmentById(appointmentId);
+                    message = appointment == null
+                            ? "Ca khám #APT-" + appointmentId + " không còn trong hệ thống. Hãy tải lại danh sách."
+                            : "Chỉ bác sĩ phụ trách được dừng ca đang khám hoặc hủy ca chờ khám quá 1 giờ sau giờ hẹn.";
                 } else if ("complete".equals(action)
                         && !doctorQueueDAO.readyForCompletion(doctor.getActorId(), clinicDate).contains(appointmentId)) {
                     message = "Chưa thể hoàn tất. Hãy mở phiếu khám, điền kết quả khám, chẩn đoán và kết luận rồi lưu.";

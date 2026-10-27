@@ -246,8 +246,6 @@ public class InvoiceDAO {
      * Get full detailed invoice with items, patient, doctor and transactions
      */
     public Map<String, Object> getInvoiceDetail(int invoiceId) {
-        Map<String, Object> finalized = getFinalizedCheckoutDetail(invoiceId);
-        if (finalized != null) return finalized;
         Map<String, Object> invoice = null;
 
         String sqlInv = "SELECT i.Invoice_ID, i.Appointment_ID, i.Total_Amount, i.Deposit_Amount, i.Balance_Due, i.Status, i.Create_At, i.Close_At, " +
@@ -259,7 +257,7 @@ public class InvoiceDAO {
                         "JOIN Appointment a ON i.Appointment_ID = a.Appointment_ID " +
                         "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
                         "LEFT JOIN Account acc ON p.Account_ID = acc.Account_ID " +
-                        "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
+                        "LEFT JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
                         "LEFT JOIN Employee_Profile e ON ws.Doctor_Employee_ID = e.Employee_ID " +
                         "LEFT JOIN Medical_Record m ON a.Appointment_ID = m.Appointment_ID " +
                         "WHERE i.Invoice_ID = ?";
@@ -337,146 +335,41 @@ public class InvoiceDAO {
 
         if (invoice == null) return null;
 
-        // Fetch line items according to clinic billing rules:
-        // 1. Phí khám theo bác sĩ (Tiền cọc đã thanh toán khi đặt hẹn)
-        // 2. Thuốc kê đơn phát sinh từ hồ sơ khám (nếu có thì cộng vào tổng)
-        // 3. Thủ thuật / Cận lâm sàng phát sinh ngoài phí khám (nếu có)
-        List<Map<String, Object>> items = new ArrayList<>();
-        int stt = 1;
-
-        long depositAmount = (long) invoice.get("depositAmount");
-        if (depositAmount <= 0) {
-            depositAmount = 250000;
-            invoice.put("depositAmount", depositAmount);
-            invoice.put("depositAmountFmt", formatVND(depositAmount));
-        }
-
-        String docName = (String) invoice.get("doctorName");
-        Map<String, Object> consultItem = new HashMap<>();
-        consultItem.put("stt", stt++);
-        consultItem.put("name", "Phí đăng ký khám chuyên khoa (Bác sĩ: " + (docName != null ? docName : "BS. Khám") + ")");
-        consultItem.put("type", "Khám bệnh (Tiền cọc)");
-        consultItem.put("quantity", 1);
-        consultItem.put("unitPrice", depositAmount);
-        consultItem.put("unitPriceFmt", formatVND(depositAmount));
-        consultItem.put("totalPrice", depositAmount);
-        consultItem.put("totalPriceFmt", formatVND(depositAmount));
-        items.add(consultItem);
-
-        // Fetch additional procedures (if any, excluding base examination already covered by consultation deposit)
-        long totalProcedureCost = 0;
-        String sqlProcedures = "SELECT po.Order_ID, s.Service_ID, s.Service_Name, po.Actual_Price, " +
-                              "COALESCE(pr.Credit_Amount, 0) AS Credit_Amount, po.Status " +
-                              "FROM Procedure_Order po " +
-                              "LEFT JOIN Procedure_Payment_Request pr ON pr.Order_ID = po.Order_ID " +
-                              "JOIN Service_Catalog s ON po.Service_ID = s.Service_ID " +
-                              "JOIN Medical_Record m ON po.Record_ID = m.Record_ID " +
-                              "JOIN Master_Invoice i ON m.Appointment_ID = i.Appointment_ID " +
-                              "WHERE i.Invoice_ID = ? AND (po.Referral_Notes IS NULL OR po.Status = 'Completed' OR pr.Status = 'Paid')";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sqlProcedures)) {
-            ps.setInt(1, invoiceId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    int svcId = rs.getInt("Service_ID");
-                    String svcName = rs.getString("Service_Name");
-                    // Service_ID = 1 ("Khám mắt tổng quát") đã được bao gồm trong Phí khám theo bác sĩ ở Mục 1
-                    if (svcId == 1 || (svcName != null && svcName.equalsIgnoreCase("Khám mắt tổng quát"))) {
-                        continue;
-                    }
-                    Map<String, Object> item = new HashMap<>();
-                    long credit = rs.getLong("Credit_Amount");
-                    long price = rs.getLong("Actual_Price") - credit;
-                    if (credit > 0) item.put("name", svcName + " (đã trừ phí khám tiền phẫu)");
-                    item.put("stt", stt++);
-                    item.put("name", svcName);
-                    item.put("type", "Cận lâm sàng / Thủ thuật");
-                    item.put("quantity", 1);
-                    item.put("unitPrice", price);
-                    item.put("unitPriceFmt", formatVND(price));
-                    item.put("totalPrice", price);
-                    item.put("totalPriceFmt", formatVND(price));
-                    items.add(item);
-                    totalProcedureCost += price;
-                }
+        // Paid on a legacy booking can mean only the consultation fee was collected.
+        // Share the staff calculation and final snapshot instead of guessing that Paid means zero balance.
+        try {
+            com.visioncare.model.StaffInvoice bill = new StaffInvoiceDAO().get(invoiceId);
+            List<Map<String, Object>> items = new ArrayList<>();
+            long medAmount=0, procedureAmount=0;
+            int sequence=1;
+            for (com.visioncare.model.StaffInvoice.Item source : bill.items) {
+                if (source.declined) continue;
+                Map<String,Object> item=new HashMap<>();
+                item.put("stt",sequence++);item.put("name",source.name);item.put("type",source.type);
+                item.put("quantity",source.quantity);item.put("unitPrice",source.unitPrice);
+                item.put("unitPriceFmt",source.unpriced?"Chưa định giá":formatVND(source.unitPrice));
+                item.put("totalPrice",source.getAmount());
+                item.put("totalPriceFmt",source.unpriced?"Chưa định giá":formatVND(source.getAmount()));
+                items.add(item);
+                if(source.key.startsWith("MEDICINE:"))medAmount+=source.getAmount();
+                if(source.key.startsWith("PROCEDURE:"))procedureAmount+=source.getAmount();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+            invoice.put("items",items);
+            invoice.put("depositAmount",bill.baseAmount);invoice.put("depositAmountFmt",formatVND(bill.baseAmount));
+            invoice.put("paidAmount",bill.paid);invoice.put("paidAmountFmt",formatVND(bill.paid));
+            invoice.put("medAmount",medAmount);invoice.put("medAmountFmt",formatVND(medAmount));
+            invoice.put("procedureAmount",procedureAmount);invoice.put("procedureAmountFmt",formatVND(procedureAmount));
+            invoice.put("totalAmount",bill.getTotal());invoice.put("totalAmountFmt",formatVND(bill.getTotal()));
+            invoice.put("balanceDue",bill.getOutstanding());invoice.put("balanceDueFmt",formatVND(bill.getOutstanding()));
+            invoice.put("collectionBlocked",bill.isBlocked());
+            invoice.put("finalized",bill.finalized);
+            invoice.put("settled",bill.finalized&&!bill.isBlocked()&&bill.getOutstanding()==0);
+            invoice.put("closeDate",bill.finalizedAt!=null?bill.finalizedAt:"");
+            invoice.put("statusVn",bill.getPaymentLabel());
+        } catch(Exception error) {
+            error.printStackTrace();
+            return null;
         }
-
-        // Fetch Prescriptions (Thuốc kê đơn)
-        long totalMedCost = 0;
-        String sqlMeds = "SELECT pd.Medicine_Name, pd.Quantity, pd.Dosage_Instruction, pd.Is_Custom_Medicine, " +
-                         "CASE WHEN pd.Is_Custom_Medicine = 1 THEN 0 ELSE COALESCE(ms.Price, 50000) END AS Unit_Price " +
-                         "FROM Prescription_Detail pd " +
-                         "JOIN Prescription p ON pd.Prescription_ID = p.Prescription_ID " +
-                         "JOIN Medical_Record m ON p.Record_ID = m.Record_ID " +
-                         "JOIN Master_Invoice i ON m.Appointment_ID = i.Appointment_ID " +
-                         "LEFT JOIN Medicine ms ON pd.Is_Custom_Medicine = 0 AND (pd.Medicine_Name LIKE '%' + ms.Supply_Name + '%' OR ms.Supply_Name LIKE '%' + pd.Medicine_Name + '%') " +
-                         "WHERE i.Invoice_ID = ?";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sqlMeds)) {
-            ps.setInt(1, invoiceId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Map<String, Object> item = new HashMap<>();
-                    String medName = rs.getString("Medicine_Name");
-                    String dosage = rs.getString("Dosage_Instruction");
-                    int qty = rs.getInt("Quantity");
-                    if (qty <= 0) qty = 1;
-                    boolean customMedicine = rs.getBoolean("Is_Custom_Medicine");
-                    long unitPrice = rs.getLong("Unit_Price");
-                    
-                    // Chuẩn hóa đơn giá thuốc thực tế phòng khám
-                    if (!customMedicine && (unitPrice <= 0 || unitPrice == 50000)) {
-                        if (medName != null && medName.toLowerCase().contains("tobradex")) {
-                            unitPrice = 50000;
-                        } else if (medName != null && medName.toLowerCase().contains("sanlein")) {
-                            unitPrice = 25000; // 2 lọ x 25.000 = 50.000đ -> tổng đơn thuốc = 100.000đ
-                        }
-                    }
-                    long linePrice = qty * unitPrice;
-
-                    item.put("stt", stt++);
-                    item.put("name", medName + (dosage != null && !dosage.trim().isEmpty() ? " (" + dosage.trim() + ")" : ""));
-                    item.put("type", customMedicine ? "Thuốc nhập tay (chưa định giá)" : "Thuốc kê đơn");
-                    item.put("quantity", qty);
-                    item.put("unitPrice", unitPrice);
-                    item.put("unitPriceFmt", customMedicine ? "Chưa định giá" : formatVND(unitPrice));
-                    item.put("totalPrice", linePrice);
-                    item.put("totalPriceFmt", customMedicine ? "Chưa định giá" : formatVND(linePrice));
-                    items.add(item);
-                    totalMedCost += linePrice;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        invoice.put("items", items);
-        invoice.put("medAmount", totalMedCost);
-        invoice.put("medAmountFmt", formatVND(totalMedCost));
-        invoice.put("procedureAmount", totalProcedureCost);
-        invoice.put("procedureAmountFmt", formatVND(totalProcedureCost));
-
-        // Tính toán tài chính:
-        // - Tiền cọc = Tiền đăng ký khám theo bác sĩ đã chọn
-        // - Có đơn thuốc / thủ thuật phát sinh thì mới cộng thêm vào tổng
-        // - Không có đơn thuốc thì hóa đơn chỉ gồm tiền cọc = tiền tổng
-        long computedTotal = depositAmount + totalMedCost + totalProcedureCost;
-        invoice.put("totalAmount", computedTotal);
-        invoice.put("totalAmountFmt", formatVND(computedTotal));
-
-        // Số tiền còn lại cần thanh toán (Balance Due)
-        String st = (String) invoice.get("status");
-        long balanceDue = 0;
-        if ("Paid".equalsIgnoreCase(st)) {
-            balanceDue = 0;
-        } else {
-            balanceDue = Math.max(0, computedTotal - depositAmount);
-        }
-        invoice.put("balanceDue", balanceDue);
-        invoice.put("balanceDueFmt", formatVND(balanceDue));
 
         // Fetch payment transactions
         List<Map<String, Object>> transactions = new ArrayList<>();
@@ -514,31 +407,6 @@ public class InvoiceDAO {
         return invoice;
     }
 
-    private Map<String, Object> getFinalizedCheckoutDetail(int id) {
-        String sql = "SELECT p.Account_ID,p.Patient_ID,p.DOB,p.Address,acc.Email,e.Full_Name,co.Finalized_At,co.Payment_Method "
-                + "FROM Invoice_Checkout co JOIN Master_Invoice i ON i.Invoice_ID=co.Invoice_ID "
-                + "JOIN Appointment a ON a.Appointment_ID=i.Appointment_ID JOIN Patient p ON p.Patient_ID=a.Patient_ID "
-                + "LEFT JOIN Account acc ON acc.Account_ID=p.Account_ID JOIN Work_Schedule ws ON ws.Schedule_ID=a.Schedule_ID "
-                + "LEFT JOIN Employee_Profile e ON e.Employee_ID=ws.Doctor_Employee_ID WHERE co.Invoice_ID=? AND co.Finalized_At IS NOT NULL";
-        try (Connection c=DBContext.getConnection(); PreparedStatement ps=c.prepareStatement(sql)) {
-            ps.setInt(1,id);
-            try (ResultSet r=ps.executeQuery()) {
-                if(!r.next()) return null;
-                com.visioncare.model.StaffInvoice bill=new StaffInvoiceDAO().get(id);
-                Map<String,Object> out=new HashMap<>();
-                out.put("id",id);out.put("formattedId",String.format("#INV-%05d",id));out.put("appointmentId",bill.appointmentId);
-                out.put("accountId",r.getInt("Account_ID"));out.put("patientId",r.getInt("Patient_ID"));out.put("patientName",bill.patientName);out.put("patientPhone",bill.phone);
-                out.put("patientDob",r.getDate("DOB")!=null?dateOnlyFormat.format(r.getDate("DOB")):"");out.put("patientAddress",r.getString("Address"));out.put("patientEmail",r.getString("Email"));out.put("doctorName",r.getString("Full_Name"));
-                out.put("totalAmount",bill.getTotal());out.put("totalAmountFmt",formatVND(bill.getTotal()));out.put("depositAmount",bill.paid);out.put("depositAmountFmt",formatVND(bill.paid));out.put("balanceDue",bill.getDue());out.put("balanceDueFmt",formatVND(bill.getDue()));
-                out.put("status",bill.invoiceStatus);out.put("statusVn",getStatusVn(bill.invoiceStatus));out.put("badgeClass",getBadgeClass(bill.invoiceStatus));out.put("closeDate",dateFormat.format(r.getTimestamp("Finalized_At")));out.put("createDate",bill.date);out.put("paymentMethod",r.getString("Payment_Method"));
-                List<Map<String,Object>> lines=new ArrayList<>();int index=1;
-                for(com.visioncare.model.StaffInvoice.Item item:bill.items) if(!item.declined) {Map<String,Object> line=new HashMap<>();line.put("stt",index++);line.put("name",item.name);line.put("type",item.type);line.put("quantity",item.quantity);line.put("unitPrice",item.unitPrice);line.put("unitPriceFmt",formatVND(item.unitPrice));line.put("totalPrice",item.getAmount());line.put("totalPriceFmt",formatVND(item.getAmount()));lines.add(line);}
-                out.put("items",lines);List<Map<String,Object>> txs=new ArrayList<>();
-                for(Map<String,Object> entry:bill.transactions){Map<String,Object> tx=new HashMap<>(entry);tx.put("gateway",entry.get("method"));tx.put("amountFmt",formatVND((Long)entry.get("amount")));txs.add(tx);}out.put("transactions",txs);return out;
-            }
-        } catch(Exception error) {throw new IllegalStateException("Không đọc được bản hóa đơn đã chốt.",error);}
-    }
-
     /**
      * Get invoice detail for patient with security check (must belong to their account)
      */
@@ -564,10 +432,6 @@ public class InvoiceDAO {
         try {
             conn = DBContext.getConnection();
             conn.setAutoCommit(false);
-            try (PreparedStatement guard = conn.prepareStatement("SELECT Invoice_ID FROM Invoice_Checkout WITH(UPDLOCK,HOLDLOCK) WHERE Invoice_ID=?")) {
-                guard.setInt(1,invoiceId);
-                try(ResultSet row=guard.executeQuery()){if(row.next()){conn.rollback();return false;}}
-            }
 
             try (PreparedStatement ps = conn.prepareStatement(updateInv)) {
                 ps.setString(1, newStatus);
@@ -600,25 +464,19 @@ public class InvoiceDAO {
     }
 
     /**
-     * List of paid invoices for refund selection in patient profile.
-     * Chỉ lịch được staff duyệt hủy trước check-in và có khoản đã thanh toán mới đủ điều kiện.
+     * List of paid invoices for refund selection in patient profile
      */
     public List<Map<String, Object>> getPaidInvoicesForPatient(int accountId) {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT i.Invoice_ID, i.Total_Amount, i.Deposit_Amount, i.Close_At, i.Create_At, " +
-                     "       a.Appointment_ID, a.Status AS Appointment_Status, i.Status AS Paid_Status, " +
-                     "       ws.Work_Date, ws.Start_Time, ws.End_Time, " +
+        String sql = "SELECT i.Invoice_ID, i.Total_Amount, i.Deposit_Amount, i.Close_At, i.Create_At, a.Appointment_ID, " +
                      "       r.Refund_ID, r.Status AS Refund_Status, " +
                      "       CASE WHEN r.Refund_ID IS NOT NULL THEN 1 ELSE 0 END AS Has_Refund " +
                      "FROM Master_Invoice i " +
                      "JOIN Appointment a ON i.Appointment_ID = a.Appointment_ID " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
-                     "LEFT JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
                      "LEFT JOIN Refund_Request r ON i.Invoice_ID = r.Invoice_ID AND r.Status IN ('Pending', 'Approved', 'Success') " +
-                     "WHERE p.Account_ID = ? " +
-                     "  AND i.Status IN ('Paid', 'Partial_Paid') " +
-                     "  AND " + RefundPolicy.ELIGIBLE + " " +
-                     "ORDER BY a.Appointment_ID DESC, i.Invoice_ID DESC";
+                     "WHERE p.Account_ID = ? AND i.Status = 'Paid' " +
+                     "ORDER BY i.Invoice_ID DESC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
@@ -626,18 +484,17 @@ public class InvoiceDAO {
                 while (rs.next()) {
                     Map<String, Object> map = new HashMap<>();
                     int id = rs.getInt("Invoice_ID");
+                    long amt = rs.getLong("Total_Amount");
                     long depAmt = rs.getLong("Deposit_Amount");
-                    long amt = "Partial_Paid".equals(rs.getString("Paid_Status")) ? depAmt : rs.getLong("Total_Amount");
                     int apptId = rs.getInt("Appointment_ID");
                     boolean hasRefund = rs.getInt("Has_Refund") == 1;
                     String refStatus = rs.getString("Refund_Status");
                     int refId = rs.getInt("Refund_ID");
-                    String apptStatus = rs.getString("Appointment_Status");
 
                     map.put("id", id);
                     map.put("formattedId", String.format("#INV-%05d", id));
                     map.put("amount", amt);
-                    map.put("depositAmount", amt);
+                    map.put("depositAmount", depAmt > 0 ? depAmt : amt);
                     map.put("amountFmt", formatVND(amt));
                     Timestamp t = rs.getTimestamp("Close_At");
                     if (t == null) t = rs.getTimestamp("Create_At");
@@ -648,23 +505,6 @@ public class InvoiceDAO {
                     map.put("isEligible", !hasRefund);
                     map.put("refundStatus", refStatus != null ? refStatus : "");
                     map.put("refundId", refId);
-                    map.put("apptStatus", apptStatus);
-
-                    java.sql.Date workDate = rs.getDate("Work_Date");
-                    java.sql.Time startTime = rs.getTime("Start_Time");
-                    String apptDateFmt = workDate != null ? dateOnlyFormat.format(workDate) : "";
-                    String apptTimeFmt = startTime != null ? new SimpleDateFormat("HH:mm").format(startTime) : "";
-                    map.put("apptDateFmt", apptDateFmt);
-                    map.put("apptTimeFmt", apptTimeFmt);
-
-                    String apptStatusVn = "Đã duyệt hủy";
-                    if ("Pending".equalsIgnoreCase(apptStatus)) {
-                        apptStatusVn = "Chờ duyệt hủy";
-                    } else if ("Confirmed".equalsIgnoreCase(apptStatus)) {
-                        apptStatusVn = "Đã đăng ký thành công";
-                    }
-                    map.put("apptStatusVn", apptStatusVn);
-
                     list.add(map);
                 }
             }
@@ -695,20 +535,130 @@ public class InvoiceDAO {
 
     /**
      * Create patient refund request
-     * Requires a staff-approved cancellation before check-in and a paid invoice.
      */
     public boolean createRefundRequest(int invoiceId, int accountId, long amount, String reason) {
-        return new RefundDAO().createRefundByPatient(invoiceId, accountId, amount, reason);
+        // Chặn tạo trùng yêu cầu hoàn tiền nếu hóa đơn đã có yêu cầu đang xử lý hoặc thành công
+        if (hasActiveRefundRequest(invoiceId)) {
+            System.err.println("Prevent duplicate refund request for invoice #" + invoiceId);
+            return false;
+        }
+
+        String findPatient = "SELECT Patient_ID FROM Patient WHERE Account_ID = ?";
+        String findStaff = "SELECT TOP 1 Employee_ID FROM Employee_Profile";
+        String insertSql = "INSERT INTO Refund_Request (Invoice_ID, created_by_employee_id, Patient_ID, Refund_Amount, Reason, Status, Created_At, Update_At) " +
+                           "VALUES (?, ?, ?, ?, ?, 'Pending', DATEADD(HOUR, 7, SYSUTCDATETIME()), DATEADD(HOUR, 7, SYSUTCDATETIME()))";
+        try (Connection conn = DBContext.getConnection()) {
+            int patientId = 0;
+            try (PreparedStatement psP = conn.prepareStatement(findPatient)) {
+                psP.setInt(1, accountId);
+                try (ResultSet rsP = psP.executeQuery()) {
+                    if (rsP.next()) patientId = rsP.getInt(1);
+                }
+            }
+            if (patientId == 0) return false;
+
+            int staffId = 1;
+            try (PreparedStatement psE = conn.prepareStatement(findStaff);
+                 ResultSet rs = psE.executeQuery()) {
+                if (rs.next()) staffId = rs.getInt(1);
+            }
+
+            try (PreparedStatement psIns = conn.prepareStatement(insertSql)) {
+                psIns.setInt(1, invoiceId);
+                psIns.setInt(2, staffId);
+                psIns.setInt(3, patientId);
+                psIns.setLong(4, amount);
+                psIns.setString(5, reason);
+                return psIns.executeUpdate() > 0;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
+    /**
+     * Create patient refund request by Appointment ID
+     */
     public boolean createRefundRequestForAppointment(int appointmentId, int accountId, long amount, String reason) {
-        String sql = "SELECT i.Invoice_ID FROM Master_Invoice i JOIN Appointment a ON a.Appointment_ID = i.Appointment_ID "
-            + "JOIN Patient p ON p.Patient_ID = a.Patient_ID WHERE a.Appointment_ID = ? AND p.Account_ID = ?";
-        try (Connection conn = DBContext.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, appointmentId); ps.setInt(2, accountId);
+        int invoiceId = 0;
+        int patientId = 0;
+        long depositAmount = 0;
+        String sql = "SELECT mi.Invoice_ID, mi.Deposit_Amount, mi.Total_Amount, a.Patient_ID " +
+                     "FROM Master_Invoice mi " +
+                     "JOIN Appointment a ON mi.Appointment_ID = a.Appointment_ID " +
+                     "WHERE a.Appointment_ID = ?";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, appointmentId);
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() && createRefundRequest(rs.getInt(1), accountId, amount, reason);
+                if (rs.next()) {
+                    invoiceId = rs.getInt("Invoice_ID");
+                    depositAmount = rs.getLong("Deposit_Amount");
+                    patientId = rs.getInt("Patient_ID");
+                }
             }
-        } catch (Exception e) { e.printStackTrace(); return false; }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        if (invoiceId > 0 && hasActiveRefundRequest(invoiceId)) {
+            System.err.println("Prevent duplicate refund request for appointment #" + appointmentId + " (Invoice #" + invoiceId + ")");
+            return false;
+        }
+
+        if (invoiceId <= 0) {
+            String sqlCreateInv = "INSERT INTO Master_Invoice (Appointment_ID, Total_Amount, Deposit_Amount, Balance_Due, Status, Create_At) VALUES (?, ?, ?, 0, 'Paid', DATEADD(HOUR, 7, SYSUTCDATETIME()))";
+            try (Connection conn = DBContext.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(sqlCreateInv, Statement.RETURN_GENERATED_KEYS)) {
+                long defAmt = amount > 0 ? amount : 200000;
+                ps.setInt(1, appointmentId);
+                ps.setLong(2, defAmt);
+                ps.setLong(3, defAmt);
+                ps.executeUpdate();
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    if (keys.next()) invoiceId = keys.getInt(1);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        long refundAmount = (amount > 0) ? amount : (depositAmount > 0 ? depositAmount : 200000);
+
+        if (patientId <= 0) {
+            String findPatient = "SELECT Patient_ID FROM Patient WHERE Account_ID = ?";
+            try (Connection conn = DBContext.getConnection();
+                 PreparedStatement psP = conn.prepareStatement(findPatient)) {
+                psP.setInt(1, accountId);
+                try (ResultSet rsP = psP.executeQuery()) {
+                    if (rsP.next()) patientId = rsP.getInt(1);
+                }
+            } catch (Exception ignored) {}
+        }
+        if (patientId <= 0) return false;
+
+        int staffId = 1;
+        String findStaff = "SELECT TOP 1 Employee_ID FROM Employee_Profile";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement psE = conn.prepareStatement(findStaff);
+             ResultSet rsE = psE.executeQuery()) {
+            if (rsE.next()) staffId = rsE.getInt(1);
+        } catch (Exception ignored) {}
+
+        String insertSql = "INSERT INTO Refund_Request (Invoice_ID, created_by_employee_id, Patient_ID, Refund_Amount, Reason, Status, Created_At, Update_At) " +
+                           "VALUES (?, ?, ?, ?, ?, 'Pending', DATEADD(HOUR, 7, SYSUTCDATETIME()), DATEADD(HOUR, 7, SYSUTCDATETIME()))";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement psIns = conn.prepareStatement(insertSql)) {
+            psIns.setInt(1, invoiceId);
+            psIns.setInt(2, staffId);
+            psIns.setInt(3, patientId);
+            psIns.setLong(4, refundAmount);
+            psIns.setString(5, reason);
+            return psIns.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }
