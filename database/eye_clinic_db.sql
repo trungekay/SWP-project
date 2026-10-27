@@ -185,6 +185,69 @@ ALTER TABLE [dbo].[Work_Schedule] CHECK CONSTRAINT [CHK_WS_Time]
 GO
 
 -- -----------------------------------------------------
+-- Table: [Time_Slot_Config]
+-- -----------------------------------------------------
+SET ANSI_NULLS ON
+SET QUOTED_IDENTIFIER ON
+IF OBJECT_ID('dbo.Time_Slot_Config', 'U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[Time_Slot_Config] (
+ [Slot_ID] INT IDENTITY PRIMARY KEY,
+ [Slot_Name] NVARCHAR(100) NOT NULL UNIQUE,
+ [Start_Time] TIME(0) NOT NULL UNIQUE,
+ [End_Time] TIME(0) NOT NULL,
+ [Status] VARCHAR(20) NOT NULL DEFAULT 'Available',
+ CHECK (DATEDIFF(SECOND,Start_Time,End_Time)=1800),
+ CHECK (Status IN ('Available','Canceled'))
+);
+END
+GO
+
+-- -----------------------------------------------------
+-- Table: [Clinic_Setting]
+-- -----------------------------------------------------
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Clinic_Setting' AND xtype='U')
+BEGIN
+CREATE TABLE [dbo].[Clinic_Setting] (
+    [Setting_Key] VARCHAR(50) PRIMARY KEY,
+    [Setting_Value] NVARCHAR(255) NOT NULL,
+    [Description] NVARCHAR(255) NULL
+);
+INSERT INTO [dbo].[Clinic_Setting] ([Setting_Key], [Setting_Value], [Description])
+VALUES ('MIN_WORK_HOURS_PER_WEEK', '30.0', N'Số giờ làm việc tối thiểu mỗi tuần');
+INSERT INTO [dbo].[Clinic_Setting] ([Setting_Key], [Setting_Value], [Description])
+VALUES ('BOOKING_PENDING_HOLD_MINUTES', '15', N'Thời gian giữ chỗ tối đa cho lịch hẹn Pending chờ thanh toán (phút)');
+END
+GO
+
+-- -----------------------------------------------------
+-- Table: [Clinic_Gallery]
+-- -----------------------------------------------------
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Clinic_Gallery' AND xtype='U')
+BEGIN
+CREATE TABLE [dbo].[Clinic_Gallery] (
+    [Item_ID] INT PRIMARY KEY,
+    [Title] NVARCHAR(200) NULL,
+    [Description] NVARCHAR(500) NULL,
+    [Display_Order] INT NOT NULL DEFAULT 1,
+    [Default_Filename] VARCHAR(100) NULL,
+    [Image_Data] VARBINARY(MAX) NULL,
+    [Image_Mime_Type] VARCHAR(50) NULL,
+    [Updated_At] DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+);
+INSERT INTO [dbo].[Clinic_Gallery] ([Item_ID], [Title], [Description], [Display_Order], [Default_Filename]) VALUES
+(1, N'Sảnh tiếp đón và quầy tư vấn dịch vụ', N'Không gian hiện đại, tiện nghi tại VisionCare.', 1, 'gallery-1.jpg'),
+(2, N'Phòng khám khúc xạ và kiểm tra thị lực tự động', N'Không gian hiện đại, tiện nghi tại VisionCare.', 2, 'gallery-2.jpg'),
+(3, N'Phòng khám nhãn khoa tổng quát và soi đáy mắt', N'Không gian hiện đại, tiện nghi tại VisionCare.', 3, 'gallery-3.jpg'),
+(4, N'Phòng phẫu thuật khúc xạ công nghệ cao (LASIK/SMILE)', N'Không gian hiện đại, tiện nghi tại VisionCare.', 4, 'gallery-4.jpg'),
+(5, N'Hệ thống máy chụp cắt lớp võng mạc OCT hiện đại', N'Không gian hiện đại, tiện nghi tại VisionCare.', 5, 'gallery-5.jpg'),
+(6, N'Khu vực phòng chờ tiện nghi, thân thiện cho bệnh nhân', N'Không gian hiện đại, tiện nghi tại VisionCare.', 6, 'gallery-6.jpg'),
+(7, N'Phòng tiểu phẫu vô trùng đạt chuẩn y tế', N'Không gian hiện đại, tiện nghi tại VisionCare.', 7, 'gallery-7.jpg'),
+(8, N'Trung tâm kính mắt chuyên sâu và tư vấn tròng kính', N'Không gian hiện đại, tiện nghi tại VisionCare.', 8, 'gallery-8.jpg');
+END
+GO
+
+-- -----------------------------------------------------
 -- Table: [Patient]
 -- -----------------------------------------------------
 SET ANSI_NULLS ON
