@@ -17,7 +17,7 @@
             <!-- Hero Section -->
             <section id="hero" class="hero section light-background">
 
-              <img src="${pageContext.request.contextPath}/assets/img/hero-bg.jpg" alt="" data-aos="fade-in">
+              <img src="${pageContext.request.contextPath}/clinic-banner-image?key=HERO_BANNER" alt="VisionCare" data-aos="fade-in">
 
               <div class="container position-relative">
 
@@ -94,7 +94,7 @@
                 <div class="row gy-4 gx-5">
 
                   <div class="col-lg-6 position-relative align-self-start" data-aos="fade-up" data-aos-delay="200">
-                    <img src="${pageContext.request.contextPath}/assets/img/about.jpg" class="img-fluid rounded shadow"
+                    <img src="${pageContext.request.contextPath}/clinic-banner-image?key=ABOUT_IMAGE" class="img-fluid rounded shadow"
                       alt="VisionCare Clinic">
                   </div>
 

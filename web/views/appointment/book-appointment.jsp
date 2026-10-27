@@ -978,7 +978,7 @@
                                                                                 class="bi bi-brightness-high me-1"></i>Ca
                                                                               Chiều</span>
                                                                             <small class="text-muted">(13:30 —
-                                                                              16:30)</small>
+                                                                              17:00)</small>
                                                                           </div>
                                                                           <div class="d-flex flex-wrap gap-2"
                                                                             id="afternoonSlotsContainer"></div>

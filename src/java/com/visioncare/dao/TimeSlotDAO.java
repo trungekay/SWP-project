@@ -12,6 +12,74 @@ public class TimeSlotDAO {
 
     public TimeSlotDAO() {
         ensureSettingTable();
+        ensureTimeSlotConfigTable();
+    }
+
+    private void ensureTimeSlotConfigTable() {
+        try (Connection conn = DBContext.getConnection();
+             Statement st = conn.createStatement()) {
+            String checkSql = "IF OBJECT_ID('dbo.Time_Slot_Config', 'U') IS NULL "
+                    + "BEGIN "
+                    + "CREATE TABLE dbo.Time_Slot_Config ( "
+                    + " Slot_ID INT IDENTITY PRIMARY KEY, "
+                    + " Slot_Name NVARCHAR(100) NOT NULL UNIQUE, "
+                    + " Start_Time TIME(0) NOT NULL UNIQUE, "
+                    + " End_Time TIME(0) NOT NULL, "
+                    + " Status VARCHAR(20) NOT NULL DEFAULT 'Available', "
+                    + " CHECK (DATEDIFF(SECOND,Start_Time,End_Time)=1800), "
+                    + " CHECK (Status IN ('Available','Canceled')) "
+                    + "); "
+                    + "IF EXISTS (SELECT 1 FROM dbo.Work_Schedule) "
+                    + "BEGIN "
+                    + "    ;WITH labels AS ( "
+                    + "     SELECT Slot,Start_Time,End_Time,COUNT(*) Uses, "
+                    + "     ROW_NUMBER() OVER(PARTITION BY Start_Time,End_Time ORDER BY COUNT(*) DESC,Slot) Label_Rank "
+                    + "     FROM dbo.Work_Schedule GROUP BY Slot,Start_Time,End_Time "
+                    + "    ), ranges AS ( "
+                    + "     SELECT l.Slot,l.Start_Time,l.End_Time, "
+                    + "     CASE WHEN EXISTS(SELECT 1 FROM dbo.Work_Schedule w "
+                    + "     WHERE w.Start_Time=l.Start_Time AND w.End_Time=l.End_Time AND w.Status<>'Canceled') "
+                    + "     THEN 'Available' ELSE 'Canceled' END Status "
+                    + "     FROM labels l WHERE Label_Rank=1 "
+                    + "    ), names AS ( "
+                    + "     SELECT *,COUNT(*) OVER(PARTITION BY Slot) Name_Count FROM ranges "
+                    + "    ) "
+                    + "    INSERT dbo.Time_Slot_Config(Slot_Name,Start_Time,End_Time,Status) "
+                    + "    SELECT CASE WHEN Name_Count>1 THEN CONCAT(Slot,' (',CONVERT(VARCHAR(5),Start_Time,108),')') ELSE Slot END, "
+                    + "     Start_Time,End_Time,Status FROM names; "
+                    + "    UPDATE ws SET Slot=cfg.Slot_Name FROM dbo.Work_Schedule ws "
+                    + "    JOIN dbo.Time_Slot_Config cfg ON cfg.Start_Time=ws.Start_Time AND cfg.End_Time=ws.End_Time; "
+                    + "END "
+                    + "ELSE "
+                    + "BEGIN "
+                    + "    INSERT dbo.Time_Slot_Config(Slot_Name,Start_Time,End_Time,Status) VALUES "
+                    + "    (N'Ca 1 (08:00 - 08:30)', '08:00:00', '08:30:00', 'Available'), "
+                    + "    (N'Ca 2 (08:30 - 09:00)', '08:30:00', '09:00:00', 'Available'), "
+                    + "    (N'Ca 3 (09:00 - 09:30)', '09:00:00', '09:30:00', 'Available'), "
+                    + "    (N'Ca 4 (09:30 - 10:00)', '09:30:00', '10:00:00', 'Available'), "
+                    + "    (N'Ca 5 (10:00 - 10:30)', '10:00:00', '10:30:00', 'Available'), "
+                    + "    (N'Ca 6 (10:30 - 11:00)', '10:30:00', '11:00:00', 'Available'), "
+                    + "    (N'Ca 7 (11:00 - 11:30)', '11:00:00', '11:30:00', 'Available'), "
+                    + "    (N'Ca 8 (13:30 - 14:00)', '13:30:00', '14:00:00', 'Available'), "
+                    + "    (N'Ca 9 (14:00 - 14:30)', '14:00:00', '14:30:00', 'Available'), "
+                    + "    (N'Ca 10 (14:30 - 15:00)', '14:30:00', '15:00:00', 'Available'), "
+                    + "    (N'Ca 11 (15:00 - 15:30)', '15:00:00', '15:30:00', 'Available'), "
+                    + "    (N'Ca 12 (15:30 - 16:00)', '15:30:00', '16:00:00', 'Available'), "
+                    + "    (N'Ca 13 (16:00 - 16:30)', '16:00:00', '16:30:00', 'Available'), "
+                    + "    (N'Ca 14 (16:30 - 17:00)', '16:30:00', '17:00:00', 'Available'); "
+                    + "END "
+                    + "END";
+            st.execute(checkSql);
+
+            // Permanently delete unwanted slots (13:00 or >= 17:00) if present
+            String autoCleanSql = "IF OBJECT_ID('dbo.Time_Slot_Config', 'U') IS NOT NULL "
+                    + "BEGIN "
+                    + "    DELETE FROM dbo.Time_Slot_Config WHERE Start_Time = '13:00:00' OR Start_Time >= '17:00:00'; "
+                    + "END";
+            st.execute(autoCleanSql);
+        } catch (Exception e) {
+            System.err.println("Error ensuring Time_Slot_Config table: " + e.getMessage());
+        }
     }
 
     private void ensureSettingTable() {
@@ -237,9 +305,83 @@ public class TimeSlotDAO {
     }
 
     public boolean deleteTimeSlot(int id) throws Exception {
-        try(Connection conn=DBContext.getConnection(); PreparedStatement ps=conn.prepareStatement(
-                "UPDATE Time_Slot_Config SET Status='Canceled' WHERE Slot_ID=?")) {
-            ps.setInt(1,id); return ps.executeUpdate()>0;
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement("DELETE FROM Time_Slot_Config WHERE Slot_ID=?")) {
+            ps.setInt(1, id);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Resets/re-aligns to 14 standard slots:
+     * - Ca Sáng: 7 slots (08:00 - 11:30)
+     * - Lunch break: 11:30 - 13:30 (2 hours)
+     * - Ca Chiều: 7 slots (13:30 - 17:00)
+     */
+    public boolean resetToStandardSlots() {
+        String[][] standardSlots = {
+            {"Ca 1 (08:00 - 08:30)", "08:00:00", "08:30:00"},
+            {"Ca 2 (08:30 - 09:00)", "08:30:00", "09:00:00"},
+            {"Ca 3 (09:00 - 09:30)", "09:00:00", "09:30:00"},
+            {"Ca 4 (09:30 - 10:00)", "09:30:00", "10:00:00"},
+            {"Ca 5 (10:00 - 10:30)", "10:00:00", "10:30:00"},
+            {"Ca 6 (10:30 - 11:00)", "10:30:00", "11:00:00"},
+            {"Ca 7 (11:00 - 11:30)", "11:00:00", "11:30:00"},
+            {"Ca 8 (13:30 - 14:00)", "13:30:00", "14:00:00"},
+            {"Ca 9 (14:00 - 14:30)", "14:00:00", "14:30:00"},
+            {"Ca 10 (14:30 - 15:00)", "14:30:00", "15:00:00"},
+            {"Ca 11 (15:00 - 15:30)", "15:00:00", "15:30:00"},
+            {"Ca 12 (15:30 - 16:00)", "15:30:00", "16:00:00"},
+            {"Ca 13 (16:00 - 16:30)", "16:00:00", "16:30:00"},
+            {"Ca 14 (16:30 - 17:00)", "16:30:00", "17:00:00"}
+        };
+
+        try (Connection conn = DBContext.getConnection()) {
+            conn.setAutoCommit(false);
+            try (Statement st = conn.createStatement()) {
+                // 1. Rename existing slots temporarily to avoid UNIQUE constraint collision on Slot_Name
+                st.executeUpdate("UPDATE Time_Slot_Config SET Slot_Name = CONCAT('__TEMP__', Slot_ID, '__', Slot_Name)");
+
+                // 2. Permanently delete unwanted slots (13:00 or >= 17:00)
+                st.executeUpdate("DELETE FROM Time_Slot_Config WHERE Start_Time = '13:00:00' OR Start_Time >= '17:00:00'");
+
+                // 3. Upsert the 14 standard slots
+                String updateSql = "UPDATE Time_Slot_Config SET Slot_Name = ?, End_Time = ?, Status = 'Available' WHERE Start_Time = ?";
+                String insertSql = "INSERT INTO Time_Slot_Config (Slot_Name, Start_Time, End_Time, Status) VALUES (?, ?, ?, 'Available')";
+
+                try (PreparedStatement psUpdate = conn.prepareStatement(updateSql);
+                     PreparedStatement psInsert = conn.prepareStatement(insertSql)) {
+                    for (String[] slot : standardSlots) {
+                        psUpdate.setString(1, slot[0]);
+                        psUpdate.setString(2, slot[2]);
+                        psUpdate.setString(3, slot[1]);
+                        int affected = psUpdate.executeUpdate();
+                        if (affected == 0) {
+                            psInsert.setString(1, slot[0]);
+                            psInsert.setString(2, slot[1]);
+                            psInsert.setString(3, slot[2]);
+                            psInsert.executeUpdate();
+                        }
+                    }
+                }
+
+                // 4. Restore names of any extra slots
+                st.executeUpdate("UPDATE Time_Slot_Config SET Slot_Name = REPLACE(Slot_Name, CONCAT('__TEMP__', Slot_ID, '__'), '') WHERE Slot_Name LIKE '__TEMP__%'");
+
+                // 5. Update Work_Schedule labels to match
+                st.executeUpdate("UPDATE ws SET Slot = cfg.Slot_Name FROM Work_Schedule ws "
+                        + "JOIN Time_Slot_Config cfg ON cfg.Start_Time = ws.Start_Time AND cfg.End_Time = ws.End_Time "
+                        + "WHERE cfg.Status = 'Available'");
+
+                conn.commit();
+                return true;
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            }
+        } catch (Exception e) {
+            System.err.println("Error resetToStandardSlots: " + e.getMessage());
+            return false;
         }
     }
 }
