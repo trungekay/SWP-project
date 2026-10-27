@@ -775,12 +775,12 @@
 
                                                     <!-- Chọn hình thức thanh toán -->
                                                     <div class="btn-group p-0.5 rounded-3 bg-white border" role="group">
-                                                        <input type="radio" class="btn-check" name="paymentMethod" id="payMethodCash" value="Cash_At_Counter" checked onchange="toggleWalkinPayMode('Cash_At_Counter')">
+                                                        <input type="radio" class="btn-check" name="paymentMethod" id="payMethodCash" value="Cash" checked onchange="toggleWalkinPayMode('Cash')">
                                                         <label class="btn btn-sm btn-outline-success border-0 px-2.5 py-1 fw-semibold" id="payMethodCashLabel" for="payMethodCash" style="font-size: 12px; border-radius: 6px;">
                                                             <i class="bi bi-cash me-1"></i>Tiền mặt tại quầy
                                                         </label>
 
-                                                        <input type="radio" class="btn-check" name="paymentMethod" id="payMethodQR" value="VietQR_Banking" onchange="toggleWalkinPayMode('VietQR_Banking')">
+                                                        <input type="radio" class="btn-check" name="paymentMethod" id="payMethodQR" value="QR_Banking" onchange="toggleWalkinPayMode('QR_Banking')">
                                                         <label class="btn btn-sm btn-outline-primary border-0 px-2.5 py-1 fw-semibold" id="payMethodQRLabel" for="payMethodQR" style="font-size: 12px; border-radius: 6px;">
                                                             <i class="bi bi-qr-code-scan me-1"></i>Chuyển khoản VietQR
                                                         </label>
@@ -1545,7 +1545,7 @@
                         var feeDisplay = document.getElementById('walkinFeeDisplay');
                         var currentFeeText = feeDisplay ? feeDisplay.textContent : '200.000 ₫';
 
-                        if (mode === 'VietQR_Banking') {
+                        if (mode === 'QR_Banking' || mode === 'VietQR_Banking') {
                             if (cashNotice) { cashNotice.classList.remove('d-flex'); cashNotice.classList.add('d-none'); }
                             if (qrNotice) { qrNotice.classList.remove('d-none'); qrNotice.classList.add('d-flex'); }
                             if (submitBtn) {
@@ -1608,7 +1608,7 @@
                         .then(function(data) {
                             if (submitBtn) {
                                 submitBtn.disabled = false;
-                                toggleWalkinPayMode('VietQR_Banking');
+                                toggleWalkinPayMode('QR_Banking');
                             }
 
                             if (data.success) {
@@ -1664,7 +1664,7 @@
                         .catch(function(err) {
                             if (submitBtn) {
                                 submitBtn.disabled = false;
-                                toggleWalkinPayMode('VietQR_Banking');
+                                toggleWalkinPayMode('QR_Banking');
                             }
                             alert('Lỗi tạo mã QR: ' + err.message);
                         });
@@ -1801,7 +1801,7 @@
                             if (submitBtn) {
                                 submitBtn.disabled = false;
                                 var payMode = document.querySelector('input[name="paymentMethod"]:checked');
-                                toggleWalkinPayMode(payMode ? payMode.value : 'VietQR_Banking');
+                                toggleWalkinPayMode(payMode ? payMode.value : 'QR_Banking');
                             }
                             var walkinModal = bootstrap.Modal.getInstance(walkinModalEl) || new bootstrap.Modal(walkinModalEl);
                             walkinModal.show();
@@ -2029,7 +2029,7 @@
                         walkinFormEl.addEventListener('submit', function(e) {
                             e.preventDefault();
                             var selectedMethod = document.querySelector('input[name="paymentMethod"]:checked');
-                            if (selectedMethod && selectedMethod.value === 'VietQR_Banking') {
+                            if (selectedMethod && (selectedMethod.value === 'QR_Banking' || selectedMethod.value === 'VietQR_Banking')) {
                                 initiateWalkinQR();
                             } else {
                                 initiateWalkinCash();

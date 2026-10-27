@@ -602,12 +602,13 @@ public class StaffAppointmentListServlet extends HttpServlet {
                     appt.setReason(reason != null && !reason.trim().isEmpty() ? reason.trim() : "Khách vãng lai");
                     appt.setTotalAmount(fee);
                     appt.setFee(fee);
-                    appt.setPayment(paymentMethod != null && !paymentMethod.trim().isEmpty() ? paymentMethod.trim() : "Cash_At_Counter");
+                    String canonicalPayment = ("QR_Banking".equalsIgnoreCase(paymentMethod) || "VietQR_Banking".equalsIgnoreCase(paymentMethod)) ? "QR_Banking" : "Cash";
+                    appt.setPayment(canonicalPayment);
 
                     User currentUser = (User) session.getAttribute("user");
                     int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
 
-                    boolean isPendingPayment = "VietQR_Banking".equalsIgnoreCase(paymentMethod);
+                    boolean isPendingPayment = "QR_Banking".equalsIgnoreCase(canonicalPayment);
                     int newApptId = appointmentDAO.createWalkinAppointment(appt, staffEmployeeId, isPendingPayment);
 
                     if (newApptId > 0) {
@@ -668,7 +669,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                                 String json = "{"
                                         + "\"success\":true,"
                                         + "\"appointmentId\":" + newApptId + ","
-                                        + "\"paymentMethod\":\"Cash_At_Counter\","
+                                        + "\"paymentMethod\":\"" + escapeJson(canonicalPayment) + "\","
                                         + "\"patientName\":\"" + escapeJson(patientName.trim()) + "\","
                                         + "\"phone\":\"" + escapeJson(phone.trim()) + "\","
                                         + "\"fee\":" + fee + ","
