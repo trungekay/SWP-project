@@ -33,6 +33,13 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
                 if (!success) {
                     request.getSession().setAttribute("errorMsg", "Không thể xóa Slot này vì đã có bệnh nhân đặt hoặc dữ liệu không tồn tại!");
                 }
+            } else if ("reset_standard".equals(action)) {
+                boolean success = timeSlotDAO.resetToStandardSlots();
+                if (success) {
+                    request.getSession().setAttribute("successMsg", "Đã thiết lập lại khung giờ chuẩn cân bằng: Ca Sáng (08:00 - 11:30, 7 ca) và Ca Chiều (13:30 - 17:00, 7 ca)!");
+                } else {
+                    request.getSession().setAttribute("errorMsg", "Không thể đặt lại khung giờ!");
+                }
             } else if ("update_min_hours".equals(action)) {
                 String hoursStr = request.getParameter("minWorkHours");
                 if (hoursStr != null && !hoursStr.trim().isEmpty()) {

@@ -98,6 +98,25 @@ public class CatalogDAO {
         }
     }
 
+    public boolean updateServiceImage(int serviceId, byte[] imageData, String mimeType) throws Exception {
+        String sql = "UPDATE Service_Catalog SET Image_Data = ?, Image_Mime_Type = ? WHERE Service_ID = ?";
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setBytes(1, imageData);
+            statement.setString(2, mimeType);
+            statement.setInt(3, serviceId);
+            return statement.executeUpdate() == 1;
+        }
+    }
+
+    public boolean resetServiceImage(int serviceId) throws Exception {
+        String sql = "UPDATE Service_Catalog SET Image_Data = NULL, Image_Mime_Type = NULL WHERE Service_ID = ?";
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, serviceId);
+            return statement.executeUpdate() == 1;
+        }
+    }
     private String supplyCategoryFilter(String kind) {
         switch (kind) {
             case "supply": return "Category <> ?";
