@@ -246,10 +246,10 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
                 String nextStatus = "saveDraft".equalsIgnoreCase(action) ? "Pending" : "Completed";
                 completionDAO.save(orderId, specialistEmployeeId, serializedResult, conclusion, nextStatus, closeVisit);
                 session.setAttribute("successMessage", closeVisit
-                        ? "Đã hoàn tất thủ thuật và kết thúc ca khám. Bệnh nhân chuyển đến staff để chốt viện phí."
+                        ? "Đã hoàn tất thủ thuật và đóng ca khám thành công."
                         : "saveDraft".equalsIgnoreCase(action) ? "Đã lưu nháp biên bản thủ thuật."
-                        : "updateResults".equalsIgnoreCase(action) ? "Đã cập nhật biên bản thủ thuật."
-                        : "Đã hoàn tất thủ thuật và trả kết quả. Bác sĩ chỉ định cần xem kết quả để kết thúc ca khám.");
+                        : "updateResults".equalsIgnoreCase(action) ? "Cập nhật biên bản thủ thuật thành công."
+                        : "Đã hoàn tất thủ thuật và bàn giao kết quả về Bác sĩ khám.");
                 response.sendRedirect(request.getContextPath() + "/specialist/procedure-detail?orderId=" + orderId);
 
             } else {

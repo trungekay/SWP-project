@@ -38,29 +38,26 @@
     <main class="page-content">
       
       <!-- Thông báo Flash Messages -->
-      <c:if test="${not empty sessionScope.successMessage}">
-        <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4" role="alert">
-          <i class="bi bi-check-circle-fill me-2 fs-5 align-middle"></i>
-          <strong>Thành công!</strong> <c:out value="${sessionScope.successMessage}" />
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        <c:remove var="successMessage" scope="session" />
-      </c:if>
+      <c:remove var="successMessage" scope="session" />
 
       <c:if test="${not empty sessionScope.errorMessage}">
-        <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4" role="alert">
-          <i class="bi bi-exclamation-triangle-fill me-2 fs-5 align-middle"></i>
-          <strong>Lỗi!</strong> <c:out value="${sessionScope.errorMessage}" />
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="procedure-toast-alert error mb-4" role="alert">
+          <div class="d-flex align-items-center gap-2.5">
+            <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+            <span class="text-dark fw-semibold"><c:out value="${sessionScope.errorMessage}" /></span>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" onclick="this.closest('.procedure-toast-alert').remove()" aria-label="Đóng"></button>
         </div>
         <c:remove var="errorMessage" scope="session" />
       </c:if>
 
       <c:if test="${not empty sessionScope.infoMessage}">
-        <div class="alert alert-info alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4" role="alert">
-          <i class="bi bi-info-circle-fill me-2 fs-5 align-middle"></i>
-          <c:out value="${sessionScope.infoMessage}" />
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="procedure-toast-alert mb-4" style="border-left: 4px solid #0284c7 !important; border-color: #bae6fd;" role="note">
+          <div class="d-flex align-items-center gap-2.5">
+            <i class="bi bi-info-circle-fill fs-5 text-info"></i>
+            <span class="text-dark fw-semibold"><c:out value="${sessionScope.infoMessage}" /></span>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" onclick="this.closest('.procedure-toast-alert').remove()" aria-label="Đóng"></button>
         </div>
         <c:remove var="infoMessage" scope="session" />
       </c:if>
@@ -530,25 +527,6 @@
             <!-- Card Body: Form Lập Biên Bản -->
             <div class="p-4">
 
-              <!-- Thông báo khi Completed -->
-              <c:if test="${order.status == 'Completed'}">
-                <div class="alert alert-success border-0 bg-success-subtle text-success-emphasis rounded-3 p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
-                  <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-check-circle-fill fs-4 text-success"></i>
-                    <div>
-                      <strong>Thủ thuật đã hoàn tất thành công!</strong>
-                      <div class="small">Biên bản đã được lưu và đồng bộ về hồ sơ bệnh án của Bác sĩ.</div>
-                    </div>
-                  </div>
-                  <div>
-                    <a href="${pageContext.request.contextPath}/profile/medical-record?id=${order.recordId}" target="_blank" class="btn btn-sm btn-teal rounded-pill px-3 py-1.5 fw-bold text-white shadow-sm d-inline-flex align-items-center gap-1.5">
-                      <i class="bi bi-file-earmark-medical"></i>
-                      <span>Xem Bệnh án</span>
-                    </a>
-                  </div>
-                </div>
-              </c:if>
-
               <!-- FORM CHÍNH CỦA SPECIALIST -->
               <form action="${pageContext.request.contextPath}/specialist/procedure-detail" method="POST" id="protocolForm" data-can-edit="${canEditProcedure}">
                 <input type="hidden" name="orderId" value="${order.orderId}">
@@ -587,31 +565,35 @@
                     Quy trình kỹ thuật & Diễn biến thủ thuật <span class="text-danger">*</span>
                   </label>
 
-                  <!-- Quick Chips cho các bước thực hiện -->
-                  <div class="mb-2">
-                    <span class="quick-chip" onclick="applyTemplate('chap_leo')">
-                      <i class="bi bi-magic me-1 text-teal"></i>Mẫu Chích rạch chắp lẹo
-                    </span>
-                    <span class="quick-chip" onclick="applyTemplate('le_dao')">
-                      <i class="bi bi-magic me-1 text-teal"></i>Mẫu Bơm thông lệ đạo
-                    </span>
-                    <span class="quick-chip" onclick="applyTemplate('laser_yag')">
-                      <i class="bi bi-magic me-1 text-teal"></i>Mẫu Bắn Laser YAG
-                    </span>
-                    <span class="quick-chip" onclick="applyTemplate('phaco')">
-                      <i class="bi bi-magic me-1 text-teal"></i>Mẫu Phẫu thuật Phaco
-                    </span>
-                    <span class="quick-chip" onclick="applyTemplate('femto')">
-                      <i class="bi bi-magic me-1 text-teal"></i>Mẫu Phẫu thuật Lasik/SMILE
-                    </span>
-                  </div>
+                  <c:if test="${canEditProcedure}">
+                    <!-- Quick Chips cho các bước thực hiện -->
+                    <div class="mb-2">
+                      <span class="quick-chip" onclick="applyTemplate('chap_leo')">
+                        <i class="bi bi-magic me-1 text-teal"></i>Mẫu Chích rạch chắp lẹo
+                      </span>
+                      <span class="quick-chip" onclick="applyTemplate('le_dao')">
+                        <i class="bi bi-magic me-1 text-teal"></i>Mẫu Bơm thông lệ đạo
+                      </span>
+                      <span class="quick-chip" onclick="applyTemplate('laser_yag')">
+                        <i class="bi bi-magic me-1 text-teal"></i>Mẫu Bắn Laser YAG
+                      </span>
+                      <span class="quick-chip" onclick="applyTemplate('phaco')">
+                        <i class="bi bi-magic me-1 text-teal"></i>Mẫu Phẫu thuật Phaco
+                      </span>
+                      <span class="quick-chip" onclick="applyTemplate('femto')">
+                        <i class="bi bi-magic me-1 text-teal"></i>Mẫu Phẫu thuật Lasik/SMILE
+                      </span>
+                    </div>
+                  </c:if>
 
                   <textarea class="form-control protocol-textarea p-3" 
                             id="procedureSteps" 
                             name="procedure_steps" 
                             rows="5" 
                             placeholder="Mô tả chi tiết các bước sát trùng, thao tác chích rạch / bơm rửa / chiếu laser, diễn biến trong lúc thực hiện..."><c:out value="${protocol['procedure_steps']}" /></textarea>
-                  <div class="form-text small text-muted" style="font-size: 11.5px;">Bắt buộc ghi nhận quy trình thực hiện theo quy chuẩn y khoa.</div>
+                  <c:if test="${canEditProcedure}">
+                    <div class="form-text small text-muted" style="font-size: 11.5px;">Bắt buộc ghi nhận quy trình thực hiện theo quy chuẩn y khoa.</div>
+                  </c:if>
                 </div>
 
                 <!-- 3. TÌNH TRẠNG NGAY SAU THỦ THUẬT -->
@@ -621,12 +603,14 @@
                       <i class="bi bi-heart-pulse text-success me-1"></i>
                       Tình trạng mắt ngay sau thủ thuật <span class="text-danger">*</span>
                     </label>
-                    <div class="d-flex align-items-center gap-1 flex-wrap">
-                      <span class="quick-chip" onclick="appendOutcome('Mắt êm, không chảy máu, mép rạch áp tốt.')">Mắt êm, sạch</span>
-                      <span class="quick-chip" onclick="appendOutcome('Lệ đạo thông hoàn toàn, nước trào xuống họng tốt.')">Lệ đạo thông tốt</span>
-                      <span class="quick-chip" onclick="appendOutcome('Bao sau mở trong suốt đường kính 3.5mm, IOL cân đối.')">Bao sau trong</span>
-                      <span class="quick-chip" onclick="appendOutcome('Bệnh nhân tỉnh táo, tiếp xúc tốt, sinh hiệu ổn định.')">Sinh hiệu ổn định</span>
-                    </div>
+                    <c:if test="${canEditProcedure}">
+                      <div class="d-flex align-items-center gap-1 flex-wrap">
+                        <span class="quick-chip" onclick="appendOutcome('Mắt êm, không chảy máu, mép rạch áp tốt.')">Mắt êm, sạch</span>
+                        <span class="quick-chip" onclick="appendOutcome('Lệ đạo thông hoàn toàn, nước trào xuống họng tốt.')">Lệ đạo thông tốt</span>
+                        <span class="quick-chip" onclick="appendOutcome('Bao sau mở trong suốt đường kính 3.5mm, IOL cân đối.')">Bao sau trong</span>
+                        <span class="quick-chip" onclick="appendOutcome('Bệnh nhân tỉnh táo, tiếp xúc tốt, sinh hiệu ổn định.')">Sinh hiệu ổn định</span>
+                      </div>
+                    </c:if>
                   </div>
                   <textarea class="form-control protocol-textarea p-3" 
                             id="procedureOutcome" 
@@ -642,12 +626,14 @@
                       <i class="bi bi-prescription2 text-warning me-1"></i>
                       Lời dặn hậu phẫu & Hướng dẫn bệnh nhân
                     </label>
-                    <div class="d-flex align-items-center gap-1 flex-wrap">
-                      <span class="quick-chip" onclick="appendPostCare('Băng ép mắt trong 2 giờ đầu. Không dụi tay lên mắt.')">Băng ép 2h</span>
-                      <span class="quick-chip" onclick="appendPostCare('Tránh nước vào mắt trong 3 ngày đầu. Đeo kính bảo hộ khi ra ngoài.')">Kiêng nước 3 ngày</span>
-                      <span class="quick-chip" onclick="appendPostCare('Nhỏ thuốc kháng sinh và tra mỡ mắt theo đơn Bác sĩ.')">Nhỏ thuốc theo đơn</span>
-                      <span class="quick-chip" onclick="appendPostCare('Tái khám sau 24 giờ hoặc liên hệ ngay nếu đau nhức dữ dội.')">Tái khám 24h</span>
-                    </div>
+                    <c:if test="${canEditProcedure}">
+                      <div class="d-flex align-items-center gap-1 flex-wrap">
+                        <span class="quick-chip" onclick="appendPostCare('Băng ép mắt trong 2 giờ đầu. Không dụi tay lên mắt.')">Băng ép 2h</span>
+                        <span class="quick-chip" onclick="appendPostCare('Tránh nước vào mắt trong 3 ngày đầu. Đeo kính bảo hộ khi ra ngoài.')">Kiêng nước 3 ngày</span>
+                        <span class="quick-chip" onclick="appendPostCare('Nhỏ thuốc kháng sinh và tra mỡ mắt theo đơn Bác sĩ.')">Nhỏ thuốc theo đơn</span>
+                        <span class="quick-chip" onclick="appendPostCare('Tái khám sau 24 giờ hoặc liên hệ ngay nếu đau nhức dữ dội.')">Tái khám 24h</span>
+                      </div>
+                    </c:if>
                   </div>
                   <textarea class="form-control protocol-textarea p-3" 
                             id="postCare" 
@@ -670,7 +656,7 @@
                 </div>
 
                 <!-- 6. ACTION BUTTONS -->
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-3 border-top">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 pt-3 border-top">
                   <div>
                     <!-- Nút In biên bản thủ thuật luôn sẵn sàng -->
                     <button type="button" class="btn btn-outline-secondary rounded-pill px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm" onclick="printResultSheet()" title="In biên bản thủ thuật">
@@ -679,34 +665,30 @@
                     </button>
                   </div>
 
-                  <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <c:if test="${canEditProcedure}">
-                    <c:choose>
-                      <c:when test="${order.status != 'Completed'}">
-                        <button type="submit" name="action" value="complete" onclick="document.getElementById('formAction').value = 'complete'; document.getElementById('noFurtherDoctorWork').value = 'false';" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm fw-bold">
-                          Trả kết quả về BS
-                        </button>
-                        <button type="submit" name="action" value="completeAndClose" onclick="document.getElementById('formAction').value = 'completeAndClose'; document.getElementById('noFurtherDoctorWork').value = 'true';" class="btn btn-success rounded-pill px-4 py-2 shadow-sm fw-bold">
-                          Kết thúc ca khám
-                        </button>
-                      </c:when>
-                      <c:otherwise>
-                        <!-- Trạng thái Completed -->
-                        <button type="submit" name="action" value="updateResults" onclick="document.getElementById('formAction').value = 'updateResults'; document.getElementById('noFurtherDoctorWork').value = 'false';" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm fw-semibold">
-                          Lưu cập nhật biên bản
-                        </button>
-                        <button type="submit" name="action" value="completeAndClose" onclick="document.getElementById('formAction').value = 'completeAndClose'; document.getElementById('noFurtherDoctorWork').value = 'true';" class="btn btn-success rounded-pill px-4 py-2 shadow-sm fw-bold">
-                          Kết thúc ca khám
-                        </button>
-                      </c:otherwise>
-                    </c:choose>
-                    </c:if>
-                  </div>
+                  <c:if test="${canEditProcedure}">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                      <c:choose>
+                        <c:when test="${order.status != 'Completed'}">
+                          <button type="submit" name="action" value="complete" onclick="document.getElementById('formAction').value = 'complete'; document.getElementById('noFurtherDoctorWork').value = 'false';" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm fw-bold">
+                            Trả kết quả về BS
+                          </button>
+                          <button type="submit" name="action" value="completeAndClose" onclick="document.getElementById('formAction').value = 'completeAndClose'; document.getElementById('noFurtherDoctorWork').value = 'true';" class="btn btn-success rounded-pill px-4 py-2 shadow-sm fw-bold">
+                            Kết thúc ca khám
+                          </button>
+                        </c:when>
+                        <c:otherwise>
+                          <!-- Trạng thái Completed -->
+                          <button type="submit" name="action" value="updateResults" onclick="document.getElementById('formAction').value = 'updateResults'; document.getElementById('noFurtherDoctorWork').value = 'false';" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm fw-semibold">
+                            Lưu cập nhật biên bản
+                          </button>
+                          <button type="submit" name="action" value="completeAndClose" onclick="document.getElementById('formAction').value = 'completeAndClose'; document.getElementById('noFurtherDoctorWork').value = 'true';" class="btn btn-success rounded-pill px-4 py-2 shadow-sm fw-bold">
+                            Kết thúc ca khám
+                          </button>
+                        </c:otherwise>
+                      </c:choose>
+                    </div>
+                  </c:if>
                 </div>
-
-                <c:if test="${!canEditProcedure}">
-                  <div class="alert alert-info mt-3"><c:out value="${procedureReadOnlyReason}" default="Ca đã kết thúc, bị hủy hoặc thuộc bác sĩ khác. Biên bản hiện chỉ để xem và in." /></div>
-                </c:if>
 
               </form>
             </div>
@@ -851,6 +833,8 @@
   <script>
     // 1. Chuyển đổi nút chọn mắt (Target Eye)
     function selectEye(eye) {
+      const form = document.getElementById('protocolForm');
+      if (form && form.dataset.canEdit !== 'true') return;
       document.getElementById('procedureEyeInput').value = eye;
       
       const btnOD = document.getElementById('btnEyeOD');
@@ -885,6 +869,8 @@
     };
 
     function applyTemplate(type) {
+      const form = document.getElementById('protocolForm');
+      if (form && form.dataset.canEdit !== 'true') return;
       const textarea = document.getElementById('procedureSteps');
       if (!textarea) return;
       if (templates[type]) {
@@ -910,6 +896,8 @@
     ];
 
     function appendOutcome(text) {
+      const form = document.getElementById('protocolForm');
+      if (form && form.dataset.canEdit !== 'true') return;
       const el = document.getElementById('procedureOutcome');
       if (!el) return;
       let val = el.value.trim();
@@ -939,6 +927,8 @@
     }
 
     function appendPostCare(text) {
+      const form = document.getElementById('protocolForm');
+      if (form && form.dataset.canEdit !== 'true') return;
       const el = document.getElementById('postCare');
       if (!el) return;
       let val = el.value.trim();
@@ -1025,7 +1015,7 @@
       const form = document.getElementById('protocolForm');
       if (form) {
         if (form.dataset.canEdit !== 'true') {
-          form.querySelectorAll('input, select, textarea').forEach(control => { control.disabled = true; });
+          form.querySelectorAll('input, select, textarea').forEach(control => { control.readOnly = true; });
         }
         form.addEventListener('submit', function (e) {
           const action = document.getElementById('formAction').value;
