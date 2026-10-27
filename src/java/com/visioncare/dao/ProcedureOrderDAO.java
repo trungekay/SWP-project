@@ -67,7 +67,7 @@ public class ProcedureOrderDAO {
     public List<ProcedureOrder> getWaitingList(Integer specialistId, String status, String keyword, Date workDate) throws Exception {
         List<ProcedureOrder> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder(BASE_SELECT_ORDER);
-        sql.append("WHERE s.Category = N'Điều trị và thủ thuật' ");
+        sql.append("WHERE 1=1 ");
 
         List<Object> params = new ArrayList<>();
 
@@ -132,7 +132,7 @@ public class ProcedureOrderDAO {
 
         StringBuilder sql = new StringBuilder("SELECT po.Status, COUNT(*) AS Total FROM Procedure_Order po " +
                                               "JOIN Service_Catalog s ON po.Service_ID = s.Service_ID " +
-                                              "WHERE s.Category = N'Điều trị và thủ thuật' ");
+                                              "WHERE 1=1 ");
         List<Object> params = new ArrayList<>();
         if (specialistId != null && specialistId > 0) {
             sql.append("AND (po.Specialist_Employee_ID = ? OR po.Specialist_Employee_ID IS NULL) ");
@@ -275,7 +275,7 @@ public class ProcedureOrderDAO {
      */
     public List<ProcedureOrder> getOrdersByPatientId(int patientId) throws Exception {
         List<ProcedureOrder> list = new ArrayList<>();
-        String sql = BASE_SELECT_ORDER + "WHERE p.Patient_ID = ? AND s.Category = N'Điều trị và thủ thuật' ORDER BY po.Order_ID DESC";
+        String sql = BASE_SELECT_ORDER + "WHERE p.Patient_ID = ? ORDER BY po.Order_ID DESC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, patientId);
@@ -314,7 +314,7 @@ public class ProcedureOrderDAO {
      */
     public List<ProcedureOrder> getTodoListByRecordId(int recordId) throws Exception {
         List<ProcedureOrder> list = new ArrayList<>();
-        String sql = BASE_SELECT_ORDER + "WHERE po.Record_ID = ? AND s.Category = N'Điều trị và thủ thuật' ORDER BY po.Order_ID ASC";
+        String sql = BASE_SELECT_ORDER + "WHERE po.Record_ID = ? ORDER BY po.Order_ID ASC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, recordId);
@@ -376,10 +376,7 @@ public class ProcedureOrderDAO {
      */
     public boolean updateOrderStatus(int orderId, Integer specialistEmployeeId, String newStatus) throws Exception {
         String sql = "UPDATE po SET po.Status = ?, po.Specialist_Employee_ID = ? "
-                + "FROM Procedure_Order po JOIN Service_Catalog s ON s.Service_ID = po.Service_ID "
-                + "WHERE po.Order_ID = ? AND (po.Referral_Notes IS NULL OR s.Service_Code NOT LIKE 'PT-%' "
-                + "OR po.Status IN ('Completed', 'Cancelled') OR EXISTS "
-                + "(SELECT 1 FROM Procedure_Payment_Request pr WHERE pr.Order_ID = po.Order_ID AND pr.Status = 'Paid'))";
+                + "FROM Procedure_Order po WHERE po.Order_ID = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, newStatus);
@@ -399,12 +396,9 @@ public class ProcedureOrderDAO {
         String sql = "UPDATE po SET Result_Text = ?, Result_Conclusion = ?, " +
                 "Status = ?, Specialist_Employee_ID = ?, Completed_At = CASE WHEN ? = 'Completed' " +
                 "THEN COALESCE(Completed_At, SYSDATETIME()) ELSE Completed_At END " +
-                "FROM Procedure_Order po JOIN Service_Catalog s ON s.Service_ID = po.Service_ID " +
+                "FROM Procedure_Order po " +
                 "WHERE po.Order_ID = ? AND po.Status <> 'Cancelled' " +
-                "AND (po.Status <> 'Completed' OR ? = 'Completed') " +
-                "AND (po.Referral_Notes IS NULL OR s.Service_Code NOT LIKE 'PT-%' " +
-                "OR po.Status = 'Completed' OR EXISTS " +
-                "(SELECT 1 FROM Procedure_Payment_Request pr WHERE pr.Order_ID = po.Order_ID AND pr.Status = 'Paid'))";
+                "AND (po.Status <> 'Completed' OR ? = 'Completed')";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setNString(1, examinationResult);

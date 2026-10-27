@@ -55,11 +55,6 @@ public class SpecialistPatientDetailServlet extends HttpServlet {
                 try {
                     orderId = Integer.parseInt(orderIdStr.trim());
                     currentOrder = procedureOrderDAO.getOrderById(orderId);
-                    if (currentOrder != null && currentOrder.isPaymentBlocked()) {
-                        session.setAttribute("errorMessage", "Ca phẫu thuật đang chờ xác nhận thanh toán.");
-                        response.sendRedirect(request.getContextPath() + "/specialist/waiting-list");
-                        return;
-                    }
                     if (patientId <= 0 && currentOrder != null) {
                         patientId = currentOrder.getPatientId();
                     }

@@ -67,12 +67,6 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/specialist/waiting-list");
                 return;
             }
-            if (order.isPaymentBlocked()) {
-                session.setAttribute("errorMessage", "Ca #CD-" + orderId
-                        + " đang chờ staff xác nhận thanh toán phẫu thuật.");
-                response.sendRedirect(request.getContextPath() + "/specialist/waiting-list");
-                return;
-            }
 
             // Gán KTV hiện tại nếu ca chưa có người nhận
             if (order.getSpecialistId() == null && currentUser.getActorId() > 0
@@ -163,11 +157,6 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/specialist/waiting-list");
                 return;
             }
-            if (order.isPaymentBlocked()) {
-                session.setAttribute("errorMessage", "Chỉ định phẫu thuật chưa được xác nhận thanh toán.");
-                response.sendRedirect(request.getContextPath() + "/specialist/waiting-list");
-                return;
-            }
 
             // Fallback action nếu form submit qua phím Enter hoặc nút không gửi name
             if (action == null || action.trim().isEmpty()) {
@@ -181,7 +170,7 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
             if ("cancel".equalsIgnoreCase(action)) {
                 // Hủy ca thủ thuật
                 if (!procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Cancelled")) {
-                    throw new IllegalStateException("Ca chưa được xác nhận thanh toán hoặc đã thay đổi trạng thái.");
+                    throw new IllegalStateException("Ca không còn khả dụng hoặc đã thay đổi trạng thái.");
                 }
                 session.setAttribute("infoMessage", "Đã hủy ca chỉ định #CD-" + orderId + ".");
                 response.sendRedirect(request.getContextPath() + "/specialist/waiting-list");
@@ -220,8 +209,9 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
             if ("saveDraft".equalsIgnoreCase(action)) {
                 // Lưu nháp: Giữ nguyên trạng thái Pending
                 if (!procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Pending")) {
-                    throw new IllegalStateException("Ca chưa được xác nhận thanh toán hoặc đã thay đổi trạng thái.");
+                    throw new IllegalStateException("Ca không còn khả dụng hoặc đã thay đổi trạng thái.");
                 }
+                procedureOrderDAO.saveResults(orderId, specialistEmployeeId, serializedResult, conclusion, "Pending");
                 procedureOrderDAO.updateMedicalRecordExaminationResult(order.getRecordId(), serializedResult);
 
                 session.setAttribute("successMessage",
@@ -231,8 +221,9 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
             } else if ("complete".equalsIgnoreCase(action)) {
                 // Hoàn thành thủ thuật: Chuyển sang Completed
                 if (!procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Completed")) {
-                    throw new IllegalStateException("Ca chưa được xác nhận thanh toán hoặc đã thay đổi trạng thái.");
+                    throw new IllegalStateException("Ca không còn khả dụng hoặc đã thay đổi trạng thái.");
                 }
+                procedureOrderDAO.saveResults(orderId, specialistEmployeeId, serializedResult, conclusion, "Completed");
                 procedureOrderDAO.updateMedicalRecordExaminationResult(order.getRecordId(), serializedResult);
 
                 session.setAttribute("successMessage",
