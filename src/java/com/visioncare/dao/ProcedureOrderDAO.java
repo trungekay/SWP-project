@@ -67,7 +67,7 @@ public class ProcedureOrderDAO {
     public List<ProcedureOrder> getWaitingList(Integer specialistId, String status, String keyword, Date workDate) throws Exception {
         List<ProcedureOrder> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder(BASE_SELECT_ORDER);
-        sql.append("WHERE s.Category = N'Điều trị và thủ thuật' ");
+        sql.append("WHERE 1=1 ");
 
         List<Object> params = new ArrayList<>();
 
@@ -132,7 +132,7 @@ public class ProcedureOrderDAO {
 
         StringBuilder sql = new StringBuilder("SELECT po.Status, COUNT(*) AS Total FROM Procedure_Order po " +
                                               "JOIN Service_Catalog s ON po.Service_ID = s.Service_ID " +
-                                              "WHERE s.Category = N'Điều trị và thủ thuật' ");
+                                              "WHERE 1=1 ");
         List<Object> params = new ArrayList<>();
         if (specialistId != null && specialistId > 0) {
             sql.append("AND (po.Specialist_Employee_ID = ? OR po.Specialist_Employee_ID IS NULL) ");
@@ -275,7 +275,7 @@ public class ProcedureOrderDAO {
      */
     public List<ProcedureOrder> getOrdersByPatientId(int patientId) throws Exception {
         List<ProcedureOrder> list = new ArrayList<>();
-        String sql = BASE_SELECT_ORDER + "WHERE p.Patient_ID = ? AND s.Category = N'Điều trị và thủ thuật' ORDER BY po.Order_ID DESC";
+        String sql = BASE_SELECT_ORDER + "WHERE p.Patient_ID = ? ORDER BY po.Order_ID DESC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, patientId);
@@ -314,7 +314,7 @@ public class ProcedureOrderDAO {
      */
     public List<ProcedureOrder> getTodoListByRecordId(int recordId) throws Exception {
         List<ProcedureOrder> list = new ArrayList<>();
-        String sql = BASE_SELECT_ORDER + "WHERE po.Record_ID = ? AND s.Category = N'Điều trị và thủ thuật' ORDER BY po.Order_ID ASC";
+        String sql = BASE_SELECT_ORDER + "WHERE po.Record_ID = ? ORDER BY po.Order_ID ASC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, recordId);

@@ -27,6 +27,9 @@ public class SpecialistWithoutPaymentTest {
         public boolean updateOrderStatus(int id,Integer specialist,String status) {
             updates++; order.setStatus(status); return true;
         }
+        public boolean saveResults(int id,Integer specialist,String text,String conclusion,String status) {
+            updates++; order.setStatus(status); return true;
+        }
         public boolean updateMedicalRecordExaminationResult(int id,String result) { return true; }
     }
     static class Exchange {

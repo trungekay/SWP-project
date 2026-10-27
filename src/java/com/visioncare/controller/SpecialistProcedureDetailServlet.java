@@ -211,6 +211,7 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
                 if (!procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Pending")) {
                     throw new IllegalStateException("Ca không còn khả dụng hoặc đã thay đổi trạng thái.");
                 }
+                procedureOrderDAO.saveResults(orderId, specialistEmployeeId, serializedResult, conclusion, "Pending");
                 procedureOrderDAO.updateMedicalRecordExaminationResult(order.getRecordId(), serializedResult);
 
                 session.setAttribute("successMessage",
@@ -222,6 +223,7 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
                 if (!procedureOrderDAO.updateOrderStatus(orderId, specialistEmployeeId, "Completed")) {
                     throw new IllegalStateException("Ca không còn khả dụng hoặc đã thay đổi trạng thái.");
                 }
+                procedureOrderDAO.saveResults(orderId, specialistEmployeeId, serializedResult, conclusion, "Completed");
                 procedureOrderDAO.updateMedicalRecordExaminationResult(order.getRecordId(), serializedResult);
 
                 session.setAttribute("successMessage",
