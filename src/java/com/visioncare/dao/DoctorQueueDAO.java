@@ -17,7 +17,9 @@ public class DoctorQueueDAO {
             + "WHERE mr.Appointment_ID = a.Appointment_ID "
             + "AND NULLIF(LTRIM(RTRIM(mr.Clinical_Diagnosis)), '') IS NOT NULL "
             + "AND NULLIF(LTRIM(RTRIM(mr.examination_result)), '') IS NOT NULL "
-            + "AND NULLIF(LTRIM(RTRIM(mr.conclusion)), '') IS NOT NULL)";
+            + "AND NULLIF(LTRIM(RTRIM(mr.conclusion)), '') IS NOT NULL) "
+            + "AND NOT EXISTS (SELECT 1 FROM Procedure_Order po JOIN Medical_Record pm ON pm.Record_ID=po.Record_ID "
+            + "WHERE pm.Appointment_ID=a.Appointment_ID AND po.Status NOT IN ('Completed','Cancelled'))";
 
     /** Appointments whose saved examination form has the required result and conclusion. */
     public Set<Integer> readyForCompletion(int doctorEmployeeId, Date clinicDate) throws Exception {

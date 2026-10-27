@@ -19,7 +19,9 @@ public class SpecialistWithoutPaymentTest {
             order.setStatus("Pending"); order.setSpecialistId(9);
         }
         public ProcedureOrder getOrderById(int id) { return order; }
-        public MedicalRecord getMedicalRecordById(int id) { return new MedicalRecord(); }
+        public MedicalRecord getMedicalRecordById(int id) {
+            MedicalRecord record = new MedicalRecord(); record.setAppointmentStatus("In_Progress"); return record;
+        }
         public List<ProcedureOrder> getTodoListByRecordId(int id) { return List.of(order); }
         public Patient getPatientById(int id) { return new Patient(); }
         public List<MedicalRecord> getPatientMedicalHistory(int id) { return List.of(); }
@@ -31,6 +33,14 @@ public class SpecialistWithoutPaymentTest {
             updates++; order.setStatus(status); return true;
         }
         public boolean updateMedicalRecordExaminationResult(int id,String result) { return true; }
+    }
+    static class Completion extends com.visioncare.dao.SpecialistCompletionDAO {
+        final Orders orders;
+        boolean closed;
+        Completion(Orders orders) { this.orders=orders; }
+        public void save(int id,int actor,String report,String conclusion,String status,boolean close) {
+            orders.updates++; orders.order.setStatus(status); closed=close;
+        }
     }
     static class Exchange {
         Map<String,Object> sessionValues = new HashMap<>(), attrs = new HashMap<>();
@@ -79,18 +89,42 @@ public class SpecialistWithoutPaymentTest {
     public static void main(String[] args) throws Exception {
         Orders orders=new Orders();
         SpecialistProcedureDetailServlet detail=new SpecialistProcedureDetailServlet(); inject(detail,orders);
+        Completion completion=new Completion(orders);
+        Field writer=SpecialistProcedureDetailServlet.class.getDeclaredField("completionDAO");
+        writer.setAccessible(true); writer.set(detail,completion);
         Exchange get=new Exchange(4); detail.doGet(get.request,get.response);
         check("/views/specialist/specialist-procedure-detail.jsp".equals(get.forwarded),"Unpaid referral must open");
+        check(Boolean.TRUE.equals(get.attrs.get("canEditProcedure")),"Active referral must remain editable by its assigned specialist");
+        Exchange assigned=new Exchange(4);
+        ((User)assigned.sessionValues.get("user")).setActorId(11);
+        orders.order.setSpecialistId(11);
+        detail.doGet(assigned.request,assigned.response);
+        check(Boolean.TRUE.equals(assigned.attrs.get("canEditProcedure")),"Assigned specialist 11 must see action buttons");
+        check("".equals(assigned.attrs.get("procedureReadOnlyReason")),"Editable case must not display a lock message");
+        orders.order.setSpecialistId(9);
+        detail.doGet(assigned.request,assigned.response);
+        check(Boolean.FALSE.equals(assigned.attrs.get("canEditProcedure")),"Another specialist must remain read-only");
+        check(((String)assigned.attrs.get("procedureReadOnlyReason")).contains("phân công"),"Read-only reason must identify assignment, not claim the visit ended");
         SpecialistPatientDetailServlet patient=new SpecialistPatientDetailServlet(); inject(patient,orders);
         Exchange profile=new Exchange(4); patient.doGet(profile.request,profile.response);
         check("/views/specialist/specialist-patient-detail.jsp".equals(profile.forwarded),"Unpaid patient profile must open");
         Exchange complete=new Exchange(4); complete.params.put("action","complete");
         complete.params.put("procedure_steps","Recorded procedure");
         complete.params.put("procedure_outcome","Recorded outcome");
+        complete.params.put("conclusion","Recorded specialist conclusion");
         detail.doPost(complete.request,complete.response);
         check("Completed".equals(orders.order.getStatus()),"Unpaid surgery must complete");
         check("Pending".equals(orders.order.getPaymentStatus()),"Clinical completion must not mark payment paid");
         check(complete.sessionValues.containsKey("successMessage"),"Completion must report success");
+        check(!completion.closed,"Returning results must leave the visit open");
+        Exchange close=new Exchange(4); close.params.putAll(complete.params);
+        close.params.put("action","completeAndClose");
+        int beforeClose=orders.updates;
+        detail.doPost(close.request,close.response);
+        check(orders.updates==beforeClose,"Closing requires explicit confirmation about further doctor work");
+        close.params.put("noFurtherDoctorWork","true");
+        detail.doPost(close.request,close.response);
+        check(completion.closed && orders.updates==beforeClose+1,"Confirmed specialist closure must use the atomic save path");
         int updates=orders.updates;
         Exchange denied=new Exchange(3); denied.params.put("action","complete");
         detail.doPost(denied.request,denied.response);
