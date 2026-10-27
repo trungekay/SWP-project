@@ -159,7 +159,7 @@ public class DoctorFormSaveServlet extends HttpServlet {
                         .anyMatch(s -> s.getId() == paymentServiceId && s.getCode() != null
                                 && s.getCode().startsWith("PT-"));
                 session.setAttribute("doctorFormMessage", requiresPayment
-                        ? "Đã lưu chỉ định phẫu thuật và gửi yêu cầu thanh toán đến staff. Specialist sẽ tiếp nhận sau khi thanh toán."
+                        ? "Đã gửi chỉ định đến bác sĩ phẫu thuật và gửi yêu cầu thanh toán đến staff."
                         : referSurgery ? "Đã lưu phiếu khám và gửi chỉ định đến bác sĩ thủ thuật."
                         : "Đã lưu kết quả khám.");
             }
