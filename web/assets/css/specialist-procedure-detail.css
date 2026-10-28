@@ -586,3 +586,246 @@ body {
     display: none;
   }
 }
+
+/* ========================================================= */
+/* DOCTOR EXAMINATION SCREEN MINIATURIZED (READ-ONLY)       */
+/* ========================================================= */
+/* Overview Card - Diagnosis & Referral Box */
+.diagnosis-overview-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 3.5px solid #008b74;
+  border-radius: 9px;
+  padding: 8px 12px;
+  margin-top: 2px;
+}
+
+.diagnosis-overview-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #008b74;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.diagnosis-overview-text {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.45;
+}
+
+.referral-note-inline {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed #cbd5e1;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #475569;
+}
+
+.referral-note-tag {
+  font-weight: 700;
+  color: #008b74;
+  margin-right: 4px;
+}
+
+.referral-note-content {
+  color: #334155;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Mini Screen Header */
+.doctor-mini-screen-header {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #f0fdf9 0%, #ffffff 100%);
+  border: 1px solid #ccede4;
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0, 139, 116, 0.04);
+}
+
+.doctor-mini-screen-header .doctor-form-eyebrow {
+  font-size: 10px;
+  font-weight: 800;
+  color: #008b74;
+  letter-spacing: 1.4px;
+}
+
+.doctor-mini-screen-header h5 {
+  font-size: 15px;
+}
+
+/* Doctor Form Mini Stack */
+.doctor-form-mini-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.doctor-form-mini-stack .doctor-form-card {
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid #e2ebef;
+  box-shadow: 0 2px 8px rgba(22, 54, 67, 0.04);
+  background: #ffffff;
+}
+
+.doctor-form-mini-stack .doctor-form-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.doctor-form-mini-stack .doctor-form-icon {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 9px;
+  font-size: 15px;
+  display: grid;
+  place-items: center;
+}
+
+.doctor-form-mini-stack .doctor-form-card-heading h2 {
+  font-size: 14px;
+  font-weight: 750;
+  color: #17353a;
+  margin: 0;
+}
+
+.doctor-form-mini-stack .doctor-form-card-heading p {
+  font-size: 11px;
+  color: #7b8e9b;
+  margin: 2px 0 0;
+}
+
+.doctor-form-mini-stack .doctor-form-matrix {
+  min-width: 100%;
+}
+
+.doctor-form-mini-stack .doctor-form-matrix th,
+.doctor-form-mini-stack .doctor-form-matrix td {
+  padding: 7px 10px;
+  font-size: 11.5px;
+}
+
+.doctor-form-mini-stack .doctor-form-matrix tbody th {
+  width: 38%;
+  font-weight: 600;
+  color: #475569;
+}
+
+.doctor-form-mini-stack .doctor-form-matrix input {
+  min-height: 32px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+  cursor: default;
+}
+
+.doctor-form-mini-stack .doctor-form-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.doctor-form-mini-stack .doctor-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.doctor-form-mini-stack .doctor-form-span {
+  grid-column: 1 / -1;
+}
+
+.doctor-form-mini-stack .doctor-form-field input,
+.doctor-form-mini-stack .doctor-form-field textarea {
+  width: 100%;
+  border-radius: 7px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 7px 9px;
+  font-size: 12px;
+  color: #1e293b;
+  line-height: 1.5;
+  cursor: default;
+}
+
+.doctor-form-mini-stack .doctor-form-field textarea {
+  min-height: 52px;
+  resize: vertical;
+}
+
+.doctor-form-mini-stack .doctor-form-prior-diagnoses {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  border: 1px solid #d9e9e5;
+  background: #f7fbf9;
+  font-size: 11.5px;
+}
+
+/* Toast Notification Alert */
+.procedure-toast-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #d1fae5;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.08);
+  margin-bottom: 24px;
+}
+
+.procedure-toast-alert.success {
+  border-left: 4px solid #008b74 !important;
+}
+
+.procedure-toast-alert.error {
+  border-left: 4px solid #ef4444 !important;
+  border-color: #fee2e2;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.08);
+}
+
+/* Readonly state for protocol form */
+#protocolForm[data-can-edit="false"] .protocol-textarea {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+  color: #1e293b;
+  cursor: default;
+}
+
+#protocolForm[data-can-edit="false"] .eye-selector-btn {
+  cursor: default;
+  pointer-events: none;
+}
+
+#protocolForm[data-can-edit="false"] .eye-selector-btn:not([class*="active"]) {
+  opacity: 0.45;
+  border-style: dashed;
+}
+
+.procedure-readonly-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+}

@@ -19,6 +19,8 @@
   <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/employee.css">
   <!-- Custom Styles for Screen 36 -->
   <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/specialist-procedure-detail.css">
+  <!-- Doctor Forms Design System (for Read-only Clinical Screen) -->
+  <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=8">
 </head>
 <body>
 
@@ -36,29 +38,26 @@
     <main class="page-content">
       
       <!-- Thông báo Flash Messages -->
-      <c:if test="${not empty sessionScope.successMessage}">
-        <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4" role="alert">
-          <i class="bi bi-check-circle-fill me-2 fs-5 align-middle"></i>
-          <strong>Thành công!</strong> <c:out value="${sessionScope.successMessage}" />
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        <c:remove var="successMessage" scope="session" />
-      </c:if>
+      <c:remove var="successMessage" scope="session" />
 
       <c:if test="${not empty sessionScope.errorMessage}">
-        <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4" role="alert">
-          <i class="bi bi-exclamation-triangle-fill me-2 fs-5 align-middle"></i>
-          <strong>Lỗi!</strong> <c:out value="${sessionScope.errorMessage}" />
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="procedure-toast-alert error mb-4" role="alert">
+          <div class="d-flex align-items-center gap-2.5">
+            <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+            <span class="text-dark fw-semibold"><c:out value="${sessionScope.errorMessage}" /></span>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" onclick="this.closest('.procedure-toast-alert').remove()" aria-label="Đóng"></button>
         </div>
         <c:remove var="errorMessage" scope="session" />
       </c:if>
 
       <c:if test="${not empty sessionScope.infoMessage}">
-        <div class="alert alert-info alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4" role="alert">
-          <i class="bi bi-info-circle-fill me-2 fs-5 align-middle"></i>
-          <c:out value="${sessionScope.infoMessage}" />
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="procedure-toast-alert mb-4" style="border-left: 4px solid #0284c7 !important; border-color: #bae6fd;" role="note">
+          <div class="d-flex align-items-center gap-2.5">
+            <i class="bi bi-info-circle-fill fs-5 text-info"></i>
+            <span class="text-dark fw-semibold"><c:out value="${sessionScope.infoMessage}" /></span>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" onclick="this.closest('.procedure-toast-alert').remove()" aria-label="Đóng"></button>
         </div>
         <c:remove var="infoMessage" scope="session" />
       </c:if>
@@ -145,56 +144,60 @@
             </div>
           </div>
 
-          <!-- 2. Bác sĩ chỉ định & Chẩn đoán sơ bộ -->
-          <div class="col-lg-5 col-md-7 border-lg-end pe-lg-3">
-            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-1">
-              <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-person-badge text-teal fs-5"></i>
-                <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                  <span class="small text-muted">Bác sĩ chỉ định:</span>
-                  <strong class="text-dark small"><c:out value="${record.doctorName != null ? record.doctorName : order.doctorName}" /></strong>
-                  <span class="badge bg-light text-secondary border" style="font-size: 10.5px;"><c:out value="${record.doctorSpecialty != null ? record.doctorSpecialty : 'Chuyên khoa Mắt'}" /></span>
+          <!-- 2. Bác sĩ chỉ định & Chẩn đoán -->
+          <div class="col-lg-5 col-md-6 border-lg-end pe-lg-3">
+            <div class="d-flex flex-column gap-2">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-person-badge text-teal fs-5"></i>
+                  <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                    <span class="small text-muted">Bác sĩ chỉ định:</span>
+                    <strong class="text-dark small"><c:out value="${record.doctorName != null ? record.doctorName : order.doctorName}" /></strong>
+                    <span class="badge bg-light text-secondary border fw-medium" style="font-size: 10.5px;">
+                      <c:out value="${record.doctorSpecialty != null ? record.doctorSpecialty : 'Chuyên khoa Mắt'}" />
+                    </span>
+                  </div>
                 </div>
+                <a href="${pageContext.request.contextPath}/profile/medical-record?id=${order.recordId}" target="_blank" class="badge bg-white text-teal border border-teal-subtle text-decoration-none fw-semibold px-2.5 py-1 rounded-pill shadow-xs d-inline-flex align-items-center gap-1 hover-teal" title="Mở Bệnh án tổng thể">
+                  <i class="bi bi-file-earmark-medical"></i>#BA-${order.recordId} <i class="bi bi-box-arrow-up-right" style="font-size: 8.5px;"></i>
+                </a>
               </div>
-              <a href="${pageContext.request.contextPath}/profile/medical-record?id=${order.recordId}" target="_blank" class="badge bg-white text-teal border border-teal-subtle text-decoration-none fw-semibold px-2.5 py-1 rounded-pill shadow-xs d-inline-flex align-items-center gap-1 hover-teal" title="Mở Bệnh án tổng thể">
-                <i class="bi bi-file-earmark-medical"></i>Bệnh án #BA-${order.recordId} <i class="bi bi-box-arrow-up-right" style="font-size: 9px;"></i>
-              </a>
-            </div>
 
-            <!-- Chẩn đoán lâm sàng -->
-            <div class="diagnosis-alert-box">
-              <div class="d-flex align-items-center justify-content-between mb-1 text-nowrap">
-                <span class="fw-bold text-teal text-uppercase" style="font-size: 11px; letter-spacing: 0.3px;">
-                  <i class="bi bi-activity me-1"></i>Chẩn đoán lâm sàng của Bác sĩ
-                </span>
-                <span class="text-muted" style="font-size: 11px;">
-                  <i class="bi bi-clock me-1"></i><fmt:formatDate value="${order.recordCreatedAt != null ? order.recordCreatedAt : record.createdAt}" pattern="HH:mm - dd/MM" />
-                </span>
-              </div>
-              <div class="fw-semibold text-dark small" style="line-height: 1.45;">
-                <c:choose>
-                  <c:when test="${not empty record.clinicalDiagnosis}">
-                    <c:out value="${record.clinicalDiagnosis}" />
-                  </c:when>
-                  <c:otherwise>
-                    <span class="text-muted fw-normal fst-italic">Bác sĩ chưa ghi nhận chẩn đoán sơ bộ.</span>
-                  </c:otherwise>
-                </c:choose>
+              <!-- Chẩn đoán lâm sàng & Ghi chú chỉ định -->
+              <div class="diagnosis-overview-box">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <span class="diagnosis-overview-label">
+                    <i class="bi bi-activity me-1 text-teal"></i>Chẩn đoán lâm sàng
+                  </span>
+                  <span class="text-muted" style="font-size: 11px;">
+                    <i class="bi bi-clock me-1"></i><fmt:formatDate value="${order.recordCreatedAt != null ? order.recordCreatedAt : record.createdAt}" pattern="HH:mm - dd/MM" />
+                  </span>
+                </div>
+                <div class="diagnosis-overview-text">
+                  <c:choose>
+                    <c:when test="${not empty record.clinicalDiagnosis}">
+                      <c:out value="${record.clinicalDiagnosis}" />
+                    </c:when>
+                    <c:when test="${not empty examForm.clinicalDiagnosis}">
+                      <c:out value="${examForm.clinicalDiagnosis}" />
+                    </c:when>
+                    <c:otherwise>
+                      <span class="text-muted fw-normal fst-italic">Chưa ghi nhận chẩn đoán sơ bộ.</span>
+                    </c:otherwise>
+                  </c:choose>
+                </div>
+                <c:if test="${not empty order.referralNotes}">
+                  <div class="referral-note-inline">
+                    <span class="referral-note-tag">Ghi chú chỉ định:</span>
+                    <span class="referral-note-content"><c:out value="${order.referralNotes}" /></span>
+                  </div>
+                </c:if>
               </div>
             </div>
           </div>
 
-          <c:if test="${not empty order.referralNotes}">
-            <div class="col-12">
-              <div class="alert alert-info mb-0" role="note" style="white-space: pre-wrap; overflow-wrap: anywhere;">
-                <strong><i class="bi bi-journal-medical me-1"></i> Ghi chú chỉ định phẫu thuật:</strong>
-                <c:out value="${order.referralNotes}" />
-              </div>
-            </div>
-          </c:if>
-
           <!-- 3. Địa điểm thực hiện & Trạng thái -->
-          <div class="col-lg-3 col-md-5 ps-lg-2">
+          <div class="col-lg-3 col-md-6 ps-lg-2">
             <div class="d-flex flex-column gap-2">
               <div class="d-flex justify-content-between align-items-center">
                 <span class="text-muted small">Phòng thủ thuật:</span>
@@ -283,134 +286,151 @@
         <!-- ====================================================== -->
         <div class="col-lg-5">
           
-          <!-- THẺ 1: Y LỆNH VÀ KẾT QUẢ KHÁM CỦA BÁC SĨ -->
-          <div class="custom-card doctor-findings-card">
-            <div class="card-header-clean bg-light">
-              <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-clipboard2-pulse text-teal fs-5"></i>
-                <span class="fw-bold text-dark fs-6">Y lệnh & Đánh giá của Bác sĩ</span>
-              </div>
-            </div>
-
-            <div class="p-3 d-flex flex-column gap-3">
-              <!-- Thông tin Bác sĩ khám chính -->
-              <div class="doctor-info-badge d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                  <div class="doctor-avatar-circle me-2.5">
-                    BS
-                  </div>
-                  <div>
-                    <div class="fw-bold text-dark small"><c:out value="${record.doctorName != null ? record.doctorName : order.doctorName}" /></div>
-                    <div class="text-muted" style="font-size: 11.5px;"><c:out value="${record.doctorSpecialty != null ? record.doctorSpecialty : 'Bác sĩ Khám & Chẩn đoán'}" /></div>
-                  </div>
-                </div>
-                <div class="text-end">
-                  <span class="badge bg-light text-secondary border" style="font-size: 11px;">#MR-${order.recordId}</span>
-                  <div class="text-muted" style="font-size: 11px; margin-top: 2px;">
-                    <fmt:formatDate value="${order.recordCreatedAt != null ? order.recordCreatedAt : record.createdAt}" pattern="dd/MM/yyyy" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Chẩn đoán lâm sàng - Card nổi bật chuẩn Y khoa -->
-              <div class="diagnosis-callout-card">
-                <div class="diagnosis-callout-header">
-                  <i class="bi bi-activity text-teal"></i>Chẩn đoán lâm sàng chuyên khoa
-                </div>
-                <div class="diagnosis-callout-body">
-                  <c:choose>
-                    <c:when test="${not empty record.clinicalDiagnosis}">
-                      <c:out value="${record.clinicalDiagnosis}" />
-                    </c:when>
-                    <c:otherwise>
-                      <span class="text-muted fw-normal fst-italic">Bác sĩ chưa có ghi nhận chẩn đoán.</span>
-                    </c:otherwise>
-                  </c:choose>
-                </div>
-              </div>
-
-              <!-- Kết quả đo khám & Thông số mắt của Bác sĩ -->
+          <!-- Header mô phỏng màn hình Bác sĩ thu nhỏ -->
+          <div class="doctor-mini-screen-header mb-3">
+            <div class="d-flex align-items-center justify-content-between">
               <div>
-                <label class="form-label-custom d-flex align-items-center gap-1.5 text-secondary mb-2">
-                  <i class="bi bi-eye text-teal"></i>Kết quả khám & Thông số mắt
+                <span class="doctor-form-eyebrow">HỒ SƠ KHÁM LÂM SÀNG</span>
+                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                  <i class="bi bi-file-earmark-medical text-teal"></i>
+                  <span>Phiếu khám của Bác sĩ</span>
+                </h5>
+              </div>
+              <a href="${pageContext.request.contextPath}/profile/medical-record?id=${order.recordId}" target="_blank" class="badge bg-white text-teal border border-teal-subtle text-decoration-none fw-semibold px-2.5 py-1 rounded-pill shadow-xs hover-teal" title="Mở Bệnh án tổng thể">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Hồ sơ gốc
+              </a>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Ghi nhận thị lực, nhãn áp và nhận định ban đầu của Bác sĩ khám.</p>
+          </div>
+
+          <!-- CỘT TRÁI: MÀN HÌNH KHÁM CỦA BÁC SĨ THU NHỎ (READ-ONLY) -->
+          <div class="doctor-form-mini-stack mb-4">
+            
+            <!-- Phần 1: Lý do đến khám -->
+            <section class="doctor-form-card">
+              <div class="doctor-form-card-heading">
+                <span class="doctor-form-icon"><i class="bi bi-chat-left-text" aria-hidden="true"></i></span>
+                <div><h2>Lý do đến khám</h2><p>Triệu chứng và bệnh sử liên quan</p></div>
+              </div>
+              <div class="doctor-form-fields">
+                <c:if test="${not empty examForm.staffNotes}">
+                  <div class="doctor-form-prior-diagnoses doctor-form-span">
+                    <strong>Ghi chú từ nhân viên tiếp nhận</strong>
+                    <p><c:out value="${examForm.staffNotes}" /></p>
+                  </div>
+                </c:if>
+                <label class="doctor-form-field doctor-form-span"><span>Triệu chứng chính</span>
+                  <textarea rows="2" readonly><c:out value="${not empty examForm.chiefComplaint ? examForm.chiefComplaint : 'Không ghi nhận'}" /></textarea>
                 </label>
-                <c:choose>
-                  <c:when test="${not empty protocol['doctor_va'] || not empty protocol['doctor_iop']}">
-                    <div class="d-flex flex-column gap-2">
-                      <!-- Hàng Thị lực & Nhãn áp -->
-                      <div class="row g-2">
-                        <div class="col-6">
-                          <div class="doctor-stat-badge">
-                            <div class="doctor-stat-title">
-                              <i class="bi bi-eye text-primary"></i>Thị lực
-                            </div>
-                            <div class="doctor-stat-value"><c:out value="${protocol['doctor_va']}" /></div>
-                          </div>
-                        </div>
-                        <div class="col-6">
-                          <div class="doctor-stat-badge">
-                            <div class="doctor-stat-title">
-                              <i class="bi bi-speedometer2 text-teal"></i>Nhãn áp (IOP)
-                            </div>
-                            <div class="doctor-stat-value"><c:out value="${protocol['doctor_iop']}" /></div>
-                          </div>
-                        </div>
-                      </div>
-                      <!-- Hộp Khám thực thể -->
-                      <c:if test="${not empty protocol['doctor_slit_lamp']}">
-                        <div class="doctor-physical-box">
-                          <div class="doctor-stat-title mb-1.5">
-                            <i class="bi bi-search text-warning"></i>Khám thực thể mắt
-                          </div>
-                          <div class="text-dark small" style="line-height: 1.55;">
-                            <c:out value="${protocol['doctor_slit_lamp']}" />
-                          </div>
-                        </div>
+                <label class="doctor-form-field doctor-form-span"><span>Tiền sử mắt và bệnh sử liên quan</span>
+                  <textarea rows="2" readonly><c:out value="${not empty examForm.medicalHistory ? examForm.medicalHistory : 'Không có tiền sử đặc biệt'}" /></textarea>
+                </label>
+              </div>
+            </section>
+
+            <!-- Phần 2: Thị lực và nhãn áp -->
+            <section class="doctor-form-card">
+              <div class="doctor-form-card-heading">
+                <span class="doctor-form-icon blue"><i class="bi bi-eye" aria-hidden="true"></i></span>
+                <div><h2>Thị lực và nhãn áp</h2><p>Ghi riêng kết quả mắt phải (OD) và mắt trái (OS)</p></div>
+              </div>
+              <div class="doctor-form-table-wrap">
+                <table class="doctor-form-matrix">
+                  <thead>
+                    <tr>
+                      <th scope="col">Chỉ số</th>
+                      <th scope="col">Mắt phải (OD)</th>
+                      <th scope="col">Mắt trái (OS)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">Thị lực không kính</th>
+                      <td><input readonly value="<c:out value='${not empty examForm.odUncorrected ? examForm.odUncorrected : "--"}' />"></td>
+                      <td><input readonly value="<c:out value='${not empty examForm.osUncorrected ? examForm.osUncorrected : "--"}' />"></td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Thị lực có kính</th>
+                      <td><input readonly value="<c:out value='${not empty examForm.odCorrected ? examForm.odCorrected : "--"}' />"></td>
+                      <td><input readonly value="<c:out value='${not empty examForm.osCorrected ? examForm.osCorrected : "--"}' />"></td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Nhãn áp (mmHg)</th>
+                      <td><input readonly value="<c:out value='${not empty examForm.odIop ? examForm.odIop : "--"}' />"></td>
+                      <td><input readonly value="<c:out value='${not empty examForm.osIop ? examForm.osIop : "--"}' />"></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="doctor-form-hint">Ghi thị lực theo chuẩn đang sử dụng tại phòng khám.</p>
+            </section>
+
+            <!-- Phần 3: Khám thực thể -->
+            <section class="doctor-form-card">
+              <div class="doctor-form-card-heading">
+                <span class="doctor-form-icon amber"><i class="bi bi-clipboard2-pulse" aria-hidden="true"></i></span>
+                <div><h2>Khám thực thể</h2><p>Ghi nhận phát hiện qua khám mắt</p></div>
+              </div>
+              <div class="doctor-form-fields">
+                <label class="doctor-form-field"><span>Bán phần trước</span>
+                  <textarea rows="3" readonly><c:out value="${not empty examForm.anteriorFindings ? examForm.anteriorFindings : (not empty protocol['doctor_slit_lamp'] ? protocol['doctor_slit_lamp'] : 'Bình thường')}" /></textarea>
+                </label>
+                <label class="doctor-form-field"><span>Đáy mắt / bán phần sau</span>
+                  <textarea rows="3" readonly><c:out value="${not empty examForm.posteriorFindings ? examForm.posteriorFindings : 'Bình thường'}" /></textarea>
+                </label>
+              </div>
+            </section>
+
+            <!-- Phần 4: Kết quả khám -->
+            <section class="doctor-form-card">
+              <div class="doctor-form-card-heading">
+                <span class="doctor-form-icon blue"><i class="bi bi-clipboard2-data" aria-hidden="true"></i></span>
+                <div><h2>Kết quả khám</h2><p>Tóm tắt nhận định của Bác sĩ</p></div>
+              </div>
+              <div class="doctor-form-fields">
+                <label class="doctor-form-field doctor-form-span"><span>Kết quả khám</span>
+                  <textarea rows="3" readonly><c:out value="${not empty examForm.examinationResult ? examForm.examinationResult : (not empty record.examinationResult ? record.examinationResult : 'Chưa có tóm tắt kết quả')}" /></textarea>
+                </label>
+              </div>
+            </section>
+
+            <!-- Phần 5: Chẩn đoán và kết luận -->
+            <section class="doctor-form-card">
+              <div class="doctor-form-card-heading">
+                <span class="doctor-form-icon violet"><i class="bi bi-journal-check" aria-hidden="true"></i></span>
+                <div><h2>Chẩn đoán và kết luận</h2><p>Những thông tin cần thiết để tiếp tục điều trị</p></div>
+              </div>
+              <div class="doctor-form-fields">
+                <label class="doctor-form-field doctor-form-span"><span>Chẩn đoán lâm sàng</span>
+                  <input type="text" readonly value="<c:out value='${not empty examForm.clinicalDiagnosis ? examForm.clinicalDiagnosis : (not empty record.clinicalDiagnosis ? record.clinicalDiagnosis : "Chưa có chẩn đoán")}' />">
+                </label>
+                <label class="doctor-form-field doctor-form-span"><span>Kết luận và hướng xử trí</span>
+                  <textarea rows="2" readonly><c:out value="${not empty examForm.conclusion ? examForm.conclusion : (not empty record.conclusion ? record.conclusion : 'Không có ghi nhận bổ sung')}" /></textarea>
+                </label>
+                <c:if test="${not empty examForm.followUpDate}">
+                  <label class="doctor-form-field doctor-form-span"><span>Ngày tái khám dự kiến</span>
+                    <input type="text" readonly value="<fmt:formatDate value='${examForm.followUpDate}' pattern='dd/MM/yyyy' />">
+                  </label>
+                </c:if>
+              </div>
+
+              <!-- Khối chỉ định thủ thuật từ bác sĩ -->
+              <c:if test="${not empty order.referralNotes || not empty order.serviceName}">
+                <div class="doctor-form-surgery">
+                  <div class="doctor-form-referral-status active" role="status">
+                    <span class="doctor-form-referral-status-icon"><i class="bi bi-clipboard2-check" aria-hidden="true"></i></span>
+                    <div>
+                      <small>Y LỆNH PHẪU THUẬT / THỦ THUẬT</small>
+                      <strong><c:out value="${order.serviceName}" /></strong>
+                      <c:if test="${not empty order.referralNotes}">
+                        <span class="text-dark mt-1"><c:out value="${order.referralNotes}" /></span>
                       </c:if>
                     </div>
-                  </c:when>
-                  <c:when test="${not empty protocol['doctor_exam_findings']}">
-                    <div class="doctor-physical-box">
-                      <div class="text-dark small" style="line-height: 1.55;">
-                        <c:out value="${protocol['doctor_exam_findings']}" />
-                      </div>
-                    </div>
-                  </c:when>
-                  <c:otherwise>
-                    <div class="doctor-physical-box text-muted fst-italic">
-                      Bác sĩ chưa nhập kết quả khám thực thể ban đầu. Vui lòng căn cứ theo chẩn đoán lâm sàng để thực hiện thủ thuật.
-                    </div>
-                  </c:otherwise>
-                </c:choose>
-              </div>
-
-              <!-- Đề xuất điều trị & Kê đơn của Bác sĩ -->
-              <c:if test="${not empty record.conclusion}">
-                <div class="doctor-proposal-card">
-                  <div class="doctor-proposal-header">
-                    <i class="bi bi-prescription2 me-1"></i>Đề xuất điều trị & Kê đơn của Bác sĩ
-                  </div>
-                  <div class="doctor-proposal-body">
-                    <c:out value="${record.conclusion}" />
                   </div>
                 </div>
               </c:if>
+            </section>
 
-              <!-- Dịch vụ thủ thuật được chỉ định -->
-              <div class="p-3 rounded-3 border bg-teal-subtle border-teal-subtle">
-                <div class="fw-bold text-teal text-uppercase mb-1.5" style="font-size: 11px; letter-spacing: 0.3px;">
-                  <i class="bi bi-tools me-1"></i>Thủ thuật chỉ định thực hiện
-                </div>
-                <div class="fw-bold text-dark fs-6 mb-1"><c:out value="${order.serviceName}" /></div>
-                <div class="d-flex justify-content-between align-items-center small text-secondary">
-                  <span>Phòng: <strong><c:out value="${order.roomName != null ? order.roomName : 'P. Tiểu phẫu & Can thiệp'}" /></strong></span>
-                  <span class="text-teal fw-bold fs-6">
-                    <fmt:formatNumber value="${order.servicePrice}" type="currency" currencySymbol="đ" maxFractionDigits="0"/>
-                  </span>
-                </div>
-              </div>
-
-            </div>
           </div>
 
           <!-- THẺ 2: TO-DO LIST CÁC THỦ THUẬT TRONG CA KHÁM -->
@@ -507,29 +527,11 @@
             <!-- Card Body: Form Lập Biên Bản -->
             <div class="p-4">
 
-              <!-- Thông báo khi Completed -->
-              <c:if test="${order.status == 'Completed'}">
-                <div class="alert alert-success border-0 bg-success-subtle text-success-emphasis rounded-3 p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
-                  <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-check-circle-fill fs-4 text-success"></i>
-                    <div>
-                      <strong>Thủ thuật đã hoàn tất thành công!</strong>
-                      <div class="small">Biên bản đã được lưu và đồng bộ về hồ sơ bệnh án của Bác sĩ.</div>
-                    </div>
-                  </div>
-                  <div>
-                    <a href="${pageContext.request.contextPath}/profile/medical-record?id=${order.recordId}" target="_blank" class="btn btn-sm btn-teal rounded-pill px-3 py-1.5 fw-bold text-white shadow-sm d-inline-flex align-items-center gap-1.5">
-                      <i class="bi bi-file-earmark-medical"></i>
-                      <span>Xem Bệnh án</span>
-                    </a>
-                  </div>
-                </div>
-              </c:if>
-
               <!-- FORM CHÍNH CỦA SPECIALIST -->
-              <form action="${pageContext.request.contextPath}/specialist/procedure-detail" method="POST" id="protocolForm">
+              <form action="${pageContext.request.contextPath}/specialist/procedure-detail" method="POST" id="protocolForm" data-can-edit="${canEditProcedure}">
                 <input type="hidden" name="orderId" value="${order.orderId}">
-                <input type="hidden" name="action" id="formAction" value="${order.status == 'Completed' ? 'updateResults' : 'saveDraft'}">
+                <input type="hidden" name="action" id="formAction" value="${order.status == 'Completed' ? 'updateResults' : 'complete'}">
+                <input type="hidden" name="noFurtherDoctorWork" id="noFurtherDoctorWork" value="false">
                 <!-- Giữ nguyên kết quả khám của Bác sĩ trong trường ẩn để không bị ghi đè mất mát -->
                 <input type="hidden" name="doctor_exam_findings" id="doctorExamFindingsInput" value="<c:out value='${protocol["doctor_exam_findings"]}' />">
                 <!-- Mắt thực hiện (Hidden input được cập nhật qua các nút bấm) -->
@@ -563,31 +565,35 @@
                     Quy trình kỹ thuật & Diễn biến thủ thuật <span class="text-danger">*</span>
                   </label>
 
-                  <!-- Quick Chips cho các bước thực hiện -->
-                  <div class="mb-2">
-                    <span class="quick-chip" onclick="applyTemplate('chap_leo')">
-                      <i class="bi bi-magic me-1 text-teal"></i>Mẫu Chích rạch chắp lẹo
-                    </span>
-                    <span class="quick-chip" onclick="applyTemplate('le_dao')">
-                      <i class="bi bi-magic me-1 text-teal"></i>Mẫu Bơm thông lệ đạo
-                    </span>
-                    <span class="quick-chip" onclick="applyTemplate('laser_yag')">
-                      <i class="bi bi-magic me-1 text-teal"></i>Mẫu Bắn Laser YAG
-                    </span>
-                    <span class="quick-chip" onclick="applyTemplate('phaco')">
-                      <i class="bi bi-magic me-1 text-teal"></i>Mẫu Phẫu thuật Phaco
-                    </span>
-                    <span class="quick-chip" onclick="applyTemplate('femto')">
-                      <i class="bi bi-magic me-1 text-teal"></i>Mẫu Phẫu thuật Lasik/SMILE
-                    </span>
-                  </div>
+                  <c:if test="${canEditProcedure}">
+                    <!-- Quick Chips cho các bước thực hiện -->
+                    <div class="mb-2">
+                      <span class="quick-chip" onclick="applyTemplate('chap_leo')">
+                        <i class="bi bi-magic me-1 text-teal"></i>Mẫu Chích rạch chắp lẹo
+                      </span>
+                      <span class="quick-chip" onclick="applyTemplate('le_dao')">
+                        <i class="bi bi-magic me-1 text-teal"></i>Mẫu Bơm thông lệ đạo
+                      </span>
+                      <span class="quick-chip" onclick="applyTemplate('laser_yag')">
+                        <i class="bi bi-magic me-1 text-teal"></i>Mẫu Bắn Laser YAG
+                      </span>
+                      <span class="quick-chip" onclick="applyTemplate('phaco')">
+                        <i class="bi bi-magic me-1 text-teal"></i>Mẫu Phẫu thuật Phaco
+                      </span>
+                      <span class="quick-chip" onclick="applyTemplate('femto')">
+                        <i class="bi bi-magic me-1 text-teal"></i>Mẫu Phẫu thuật Lasik/SMILE
+                      </span>
+                    </div>
+                  </c:if>
 
                   <textarea class="form-control protocol-textarea p-3" 
                             id="procedureSteps" 
                             name="procedure_steps" 
                             rows="5" 
                             placeholder="Mô tả chi tiết các bước sát trùng, thao tác chích rạch / bơm rửa / chiếu laser, diễn biến trong lúc thực hiện..."><c:out value="${protocol['procedure_steps']}" /></textarea>
-                  <div class="form-text small text-muted" style="font-size: 11.5px;">Bắt buộc ghi nhận quy trình thực hiện theo quy chuẩn y khoa.</div>
+                  <c:if test="${canEditProcedure}">
+                    <div class="form-text small text-muted" style="font-size: 11.5px;">Bắt buộc ghi nhận quy trình thực hiện theo quy chuẩn y khoa.</div>
+                  </c:if>
                 </div>
 
                 <!-- 3. TÌNH TRẠNG NGAY SAU THỦ THUẬT -->
@@ -597,12 +603,14 @@
                       <i class="bi bi-heart-pulse text-success me-1"></i>
                       Tình trạng mắt ngay sau thủ thuật <span class="text-danger">*</span>
                     </label>
-                    <div class="d-flex align-items-center gap-1 flex-wrap">
-                      <span class="quick-chip" onclick="appendOutcome('Mắt êm, không chảy máu, mép rạch áp tốt.')">Mắt êm, sạch</span>
-                      <span class="quick-chip" onclick="appendOutcome('Lệ đạo thông hoàn toàn, nước trào xuống họng tốt.')">Lệ đạo thông tốt</span>
-                      <span class="quick-chip" onclick="appendOutcome('Bao sau mở trong suốt đường kính 3.5mm, IOL cân đối.')">Bao sau trong</span>
-                      <span class="quick-chip" onclick="appendOutcome('Bệnh nhân tỉnh táo, tiếp xúc tốt, sinh hiệu ổn định.')">Sinh hiệu ổn định</span>
-                    </div>
+                    <c:if test="${canEditProcedure}">
+                      <div class="d-flex align-items-center gap-1 flex-wrap">
+                        <span class="quick-chip" onclick="appendOutcome('Mắt êm, không chảy máu, mép rạch áp tốt.')">Mắt êm, sạch</span>
+                        <span class="quick-chip" onclick="appendOutcome('Lệ đạo thông hoàn toàn, nước trào xuống họng tốt.')">Lệ đạo thông tốt</span>
+                        <span class="quick-chip" onclick="appendOutcome('Bao sau mở trong suốt đường kính 3.5mm, IOL cân đối.')">Bao sau trong</span>
+                        <span class="quick-chip" onclick="appendOutcome('Bệnh nhân tỉnh táo, tiếp xúc tốt, sinh hiệu ổn định.')">Sinh hiệu ổn định</span>
+                      </div>
+                    </c:if>
                   </div>
                   <textarea class="form-control protocol-textarea p-3" 
                             id="procedureOutcome" 
@@ -618,35 +626,37 @@
                       <i class="bi bi-prescription2 text-warning me-1"></i>
                       Lời dặn hậu phẫu & Hướng dẫn bệnh nhân
                     </label>
-                    <div class="d-flex align-items-center gap-1 flex-wrap">
-                      <span class="quick-chip" onclick="appendPostCare('Băng ép mắt trong 2 giờ đầu. Không dụi tay lên mắt.')">Băng ép 2h</span>
-                      <span class="quick-chip" onclick="appendPostCare('Tránh nước vào mắt trong 3 ngày đầu. Đeo kính bảo hộ khi ra ngoài.')">Kiêng nước 3 ngày</span>
-                      <span class="quick-chip" onclick="appendPostCare('Nhỏ thuốc kháng sinh và tra mỡ mắt theo đơn Bác sĩ.')">Nhỏ thuốc theo đơn</span>
-                      <span class="quick-chip" onclick="appendPostCare('Tái khám sau 24 giờ hoặc liên hệ ngay nếu đau nhức dữ dội.')">Tái khám 24h</span>
-                    </div>
+                    <c:if test="${canEditProcedure}">
+                      <div class="d-flex align-items-center gap-1 flex-wrap">
+                        <span class="quick-chip" onclick="appendPostCare('Băng ép mắt trong 2 giờ đầu. Không dụi tay lên mắt.')">Băng ép 2h</span>
+                        <span class="quick-chip" onclick="appendPostCare('Tránh nước vào mắt trong 3 ngày đầu. Đeo kính bảo hộ khi ra ngoài.')">Kiêng nước 3 ngày</span>
+                        <span class="quick-chip" onclick="appendPostCare('Nhỏ thuốc kháng sinh và tra mỡ mắt theo đơn Bác sĩ.')">Nhỏ thuốc theo đơn</span>
+                        <span class="quick-chip" onclick="appendPostCare('Tái khám sau 24 giờ hoặc liên hệ ngay nếu đau nhức dữ dội.')">Tái khám 24h</span>
+                      </div>
+                    </c:if>
                   </div>
                   <textarea class="form-control protocol-textarea p-3" 
                             id="postCare" 
                             name="post_care" 
                             rows="3" 
-                            placeholder="Hướng dẫn dùng thuốc, băng mắt, kiêng cữ nước bẩn, lịch tái khám..."><c:out value="${protocol['post_care']}" /></textarea>
+                            placeholder="Ghi nhận lời dặn chăm sóc, theo dõi và bàn giao sau thủ thuật..."><c:out value="${protocol['post_care']}" /></textarea>
                 </div>
 
                 <!-- 5. KẾT LUẬN & BÀN GIAO TRẢ VỀ BÁC SĨ -->
                 <div class="mb-4">
                   <label for="conclusion" class="form-label-custom">
                     <i class="bi bi-check-circle text-teal me-1"></i>
-                    Kết luận của KTV / Phẫu thuật viên & Đề xuất trả về Bác sĩ
+                    Kết luận của bác sĩ phẫu thuật / thủ thuật
                   </label>
                   <textarea class="form-control protocol-textarea p-2.5" 
                             id="conclusion" 
                             name="conclusion" 
                             rows="2" 
-                            placeholder="Ghi chú hoàn thành gửi trả Bác sĩ khám chính..."><c:out value="${protocol['ktv_conclusion']}" /></textarea>
+                            placeholder="Ghi kết luận thực hiện và hướng bàn giao..."><c:out value="${protocol['ktv_conclusion']}" /></textarea>
                 </div>
 
                 <!-- 6. ACTION BUTTONS -->
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-3 border-top">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 pt-3 border-top">
                   <div>
                     <!-- Nút In biên bản thủ thuật luôn sẵn sàng -->
                     <button type="button" class="btn btn-outline-secondary rounded-pill px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm" onclick="printResultSheet()" title="In biên bản thủ thuật">
@@ -655,29 +665,29 @@
                     </button>
                   </div>
 
-                  <div class="d-flex align-items-center gap-2">
-                    <c:choose>
-                      <c:when test="${order.status != 'Completed'}">
-                        <!-- Nút lưu nháp -->
-                        <button type="submit" name="action" value="saveDraft" onclick="document.getElementById('formAction').value = 'saveDraft';" class="btn btn-light border rounded-pill px-3.5 py-2 text-secondary fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm" title="Lưu nháp biên bản thủ thuật">
-                          <i class="bi bi-save text-muted"></i>
-                          <span>Lưu nháp</span>
-                        </button>
-                        <!-- Nút Hoàn thành chính -->
-                        <button type="submit" name="action" value="complete" onclick="document.getElementById('formAction').value = 'complete';" class="btn btn-teal rounded-pill px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2 fw-bold">
-                          <i class="bi bi-check2-circle fs-5"></i>
-                          <span>Hoàn thành thủ thuật & Trả kết quả về Bác sĩ</span>
-                        </button>
-                      </c:when>
-                      <c:otherwise>
-                        <!-- Trạng thái Completed -->
-                        <button type="submit" name="action" value="updateResults" onclick="document.getElementById('formAction').value = 'updateResults';" class="btn btn-teal rounded-pill px-4 py-2 shadow-sm d-inline-flex align-items-center gap-1.5 fw-semibold">
-                          <i class="bi bi-arrow-repeat"></i>
-                          <span>Lưu cập nhật biên bản</span>
-                        </button>
-                      </c:otherwise>
-                    </c:choose>
-                  </div>
+                  <c:if test="${canEditProcedure}">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                      <c:choose>
+                        <c:when test="${order.status != 'Completed'}">
+                          <button type="submit" name="action" value="complete" onclick="document.getElementById('formAction').value = 'complete'; document.getElementById('noFurtherDoctorWork').value = 'false';" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm fw-bold">
+                            Trả kết quả về BS
+                          </button>
+                          <button type="submit" name="action" value="completeAndClose" onclick="document.getElementById('formAction').value = 'completeAndClose'; document.getElementById('noFurtherDoctorWork').value = 'true';" class="btn btn-success rounded-pill px-4 py-2 shadow-sm fw-bold">
+                            Kết thúc ca khám
+                          </button>
+                        </c:when>
+                        <c:otherwise>
+                          <!-- Trạng thái Completed -->
+                          <button type="submit" name="action" value="updateResults" onclick="document.getElementById('formAction').value = 'updateResults'; document.getElementById('noFurtherDoctorWork').value = 'false';" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm fw-semibold">
+                            Lưu cập nhật biên bản
+                          </button>
+                          <button type="submit" name="action" value="completeAndClose" onclick="document.getElementById('formAction').value = 'completeAndClose'; document.getElementById('noFurtherDoctorWork').value = 'true';" class="btn btn-success rounded-pill px-4 py-2 shadow-sm fw-bold">
+                            Kết thúc ca khám
+                          </button>
+                        </c:otherwise>
+                      </c:choose>
+                    </div>
+                  </c:if>
                 </div>
 
               </form>
@@ -744,10 +754,23 @@
     <!-- Kết quả khám ban đầu của Bác sĩ -->
     <h6 class="fw-bold text-uppercase mt-4 mb-2" style="font-size: 13px;">I. KẾT QUẢ ĐO MẮT & KHÁM THỰC THỂ CỦA BÁC SĨ</h6>
     <div class="p-2.5 border rounded bg-light mb-3" style="font-size: 12.5px; min-height: 40px; white-space: pre-wrap;">
-      <c:out value="${not empty protocol['doctor_exam_findings'] ? protocol['doctor_exam_findings'] : 'Không có ghi nhận bất thường trước thủ thuật.'}" />
-      <c:if test="${not empty record.conclusion}">
+      <c:choose>
+        <c:when test="${not empty examForm.odUncorrected || not empty examForm.odIop || not empty examForm.anteriorFindings}">
+          <div><strong>Thị lực:</strong> OD: ${not empty examForm.odUncorrected ? examForm.odUncorrected : '--'} (có kính: ${not empty examForm.odCorrected ? examForm.odCorrected : '--'}) | OS: ${not empty examForm.osUncorrected ? examForm.osUncorrected : '--'} (có kính: ${not empty examForm.osCorrected ? examForm.osCorrected : '--'})</div>
+          <div><strong>Nhãn áp (IOP):</strong> OD: ${not empty examForm.odIop ? examForm.odIop : '--'} mmHg | OS: ${not empty examForm.osIop ? examForm.osIop : '--'} mmHg</div>
+          <c:if test="${not empty examForm.anteriorFindings}"><div><strong>Bán phần trước:</strong> <c:out value="${examForm.anteriorFindings}" /></div></c:if>
+          <c:if test="${not empty examForm.posteriorFindings}"><div><strong>Đáy mắt:</strong> <c:out value="${examForm.posteriorFindings}" /></div></c:if>
+          <c:if test="${not empty examForm.examinationResult}"><div><strong>Tóm tắt:</strong> <c:out value="${examForm.examinationResult}" /></div></c:if>
+        </c:when>
+        <c:when test="${not empty protocol['doctor_exam_findings']}">
+          <c:out value="${protocol['doctor_exam_findings']}" />
+        </c:when>
+        <c:otherwise>Không có ghi nhận bất thường trước thủ thuật.</c:otherwise>
+      </c:choose>
+      <c:set var="printDocConclusion" value="${not empty examForm.conclusion ? examForm.conclusion : record.conclusion}" />
+      <c:if test="${not empty printDocConclusion}">
         <div class="mt-2 pt-2 border-top text-secondary small">
-          <strong>Đề xuất điều trị / Kê đơn của Bác sĩ:</strong> <c:out value="${record.conclusion}" />
+          <strong>Đề xuất điều trị / Kê đơn của Bác sĩ:</strong> <c:out value="${printDocConclusion}" />
         </div>
       </c:if>
     </div>
@@ -782,7 +805,7 @@
     <!-- Kết luận -->
     <h6 class="fw-bold text-uppercase mt-3 mb-1" style="font-size: 13px;">III. KẾT LUẬN & ĐỀ XUẤT CỦA KỸ THUẬT VIÊN</h6>
     <div id="print_conclusion_val" class="p-2 border rounded bg-light mb-4" style="font-size: 12.5px; min-height: 40px; white-space: pre-wrap;">
-      <c:out value="${not empty protocol['ktv_conclusion'] ? protocol['ktv_conclusion'] : 'Thủ thuật hoàn tất an toàn. Bệnh nhân ổn định.'}" />
+      <c:out value="${protocol['ktv_conclusion']}" default="Chưa ghi nhận kết luận." />
     </div>
 
     <!-- Chữ ký -->
@@ -810,6 +833,8 @@
   <script>
     // 1. Chuyển đổi nút chọn mắt (Target Eye)
     function selectEye(eye) {
+      const form = document.getElementById('protocolForm');
+      if (form && form.dataset.canEdit !== 'true') return;
       document.getElementById('procedureEyeInput').value = eye;
       
       const btnOD = document.getElementById('btnEyeOD');
@@ -844,6 +869,8 @@
     };
 
     function applyTemplate(type) {
+      const form = document.getElementById('protocolForm');
+      if (form && form.dataset.canEdit !== 'true') return;
       const textarea = document.getElementById('procedureSteps');
       if (!textarea) return;
       if (templates[type]) {
@@ -869,6 +896,8 @@
     ];
 
     function appendOutcome(text) {
+      const form = document.getElementById('protocolForm');
+      if (form && form.dataset.canEdit !== 'true') return;
       const el = document.getElementById('procedureOutcome');
       if (!el) return;
       let val = el.value.trim();
@@ -898,6 +927,8 @@
     }
 
     function appendPostCare(text) {
+      const form = document.getElementById('protocolForm');
+      if (form && form.dataset.canEdit !== 'true') return;
       const el = document.getElementById('postCare');
       if (!el) return;
       let val = el.value.trim();
@@ -934,7 +965,7 @@
       const stepsVal = (document.getElementById('procedureSteps') || {}).value || '';
       const outcomeVal = (document.getElementById('procedureOutcome') || {}).value || '';
       const careVal = (document.getElementById('postCare') || {}).value || '';
-      const conclusionVal = (document.getElementById('conclusion') || {}).value || 'Thủ thuật hoàn tất an toàn.';
+      const conclusionVal = (document.getElementById('conclusion') || {}).value || 'Chưa ghi nhận kết luận.';
 
       const setTxt = (id, txt) => {
         const el = document.getElementById(id);
@@ -983,9 +1014,12 @@
 
       const form = document.getElementById('protocolForm');
       if (form) {
+        if (form.dataset.canEdit !== 'true') {
+          form.querySelectorAll('input, select, textarea').forEach(control => { control.readOnly = true; });
+        }
         form.addEventListener('submit', function (e) {
           const action = document.getElementById('formAction').value;
-          if (action === 'complete') {
+          if (action === 'complete' || action === 'completeAndClose' || action === 'updateResults') {
             const steps = (document.getElementById('procedureSteps') || {}).value || '';
             const outcome = (document.getElementById('procedureOutcome') || {}).value || '';
             if (steps.trim() === '') {
@@ -999,6 +1033,21 @@
               alert('Vui lòng ghi nhận Tình trạng sau thủ thuật trước khi Hoàn tất!');
               document.getElementById('procedureOutcome').focus();
               return false;
+            }
+            if (!(document.getElementById('conclusion').value || '').trim()) {
+              e.preventDefault();
+              alert('Vui lòng nhập kết luận thủ thuật.');
+              document.getElementById('conclusion').focus();
+              return;
+            }
+            if (action === 'completeAndClose') {
+              if (document.getElementById('noFurtherDoctorWork')) {
+                document.getElementById('noFurtherDoctorWork').value = 'true';
+              }
+              if (!confirm('Xác nhận hoàn tất thủ thuật và kết thúc ca khám này?')) {
+                e.preventDefault();
+                return false;
+              }
             }
           }
         });

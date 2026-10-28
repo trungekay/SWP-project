@@ -132,7 +132,13 @@
                     <section class="doctor-form-card doctor-form-returned-result" aria-labelledby="surgery-result-heading">
                         <div class="doctor-form-card-heading">
                             <span class="doctor-form-icon green"><i class="bi bi-clipboard2-pulse" aria-hidden="true"></i></span>
-                            <div><h2 id="surgery-result-heading">Kết quả phẫu thuật / thủ thuật</h2><p>Kết quả bác sĩ thủ thuật đã gửi về phiếu khám này</p></div>
+                            <div><h2 id="surgery-result-heading">Kết quả phẫu thuật / thủ thuật</h2><p>
+                                <c:choose>
+                                    <c:when test="${readOnly && fn:contains(formValues.surgeryResult, '<VISIT_CLOSURE>')}">Bác sĩ phẫu thuật đã hoàn tất và kết thúc ca khám.</c:when>
+                                    <c:when test="${readOnly}">Ca khám đã kết thúc. Kết quả được lưu để xem lại.</c:when>
+                                    <c:otherwise>BSPT đã trả kết quả. Bác sĩ khám cần xem kết quả và tiếp tục xử lý ca khám.</c:otherwise>
+                                </c:choose>
+                            </p></div>
                         </div>
                         <div class="doctor-form-returned-meta">
                             <span><i class="bi bi-activity" aria-hidden="true"></i> <c:out value="${formValues.surgeryServiceName}" /></span>

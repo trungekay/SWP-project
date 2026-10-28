@@ -196,7 +196,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
                             : "Chỉ bác sĩ phụ trách được dừng ca đang khám hoặc hủy ca chờ khám quá 1 giờ sau giờ hẹn.";
                 } else if ("complete".equals(action)
                         && !doctorQueueDAO.readyForCompletion(doctor.getActorId(), clinicDate).contains(appointmentId)) {
-                    message = "Chưa thể hoàn tất. Hãy mở phiếu khám, điền kết quả khám, chẩn đoán và kết luận rồi lưu.";
+                    message = "Chưa thể hoàn tất. Hãy lưu đủ phiếu khám và xử lý các chỉ định còn chờ thực hiện.";
                 }
                 session.setAttribute("doctorQueueMessage", message);
                 response.sendRedirect(returnToQueue(request));
