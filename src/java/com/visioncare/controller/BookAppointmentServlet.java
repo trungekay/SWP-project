@@ -61,7 +61,9 @@ public class BookAppointmentServlet extends HttpServlet {
 
                         String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(orderCode);
                         if ("PAID".equalsIgnoreCase(payosStatus)) {
-                            appointmentDAO.confirmPayment(apptId);
+                            if (!appointmentDAO.confirmPayment(apptId)) {
+                                throw new IllegalStateException("Bác sĩ không còn làm việc trong khung giờ đã chọn hoặc lịch hẹn không còn hợp lệ. Nếu đã thanh toán, vui lòng liên hệ phòng khám để xử lý.");
+                            }
                             isPaid = true;
 
                             // Tự động gửi email xác nhận đặt lịch & hướng dẫn đi khám
@@ -425,7 +427,9 @@ public class BookAppointmentServlet extends HttpServlet {
                 }
 
                 // Xác nhận thanh toán thành công
-                appointmentDAO.confirmPayment(appointmentId);
+                if (!appointmentDAO.confirmPayment(appointmentId)) {
+                    throw new IllegalStateException("Bác sĩ không còn làm việc trong khung giờ đã chọn hoặc lịch hẹn không còn hợp lệ. Nếu đã thanh toán, vui lòng liên hệ phòng khám để xử lý.");
+                }
 
                 // Lấy thông tin lịch hẹn đầy đủ sau khi đã thanh toán
                 Appointment fullAppt = appointmentDAO.getAppointmentDetailById(appointmentId);
