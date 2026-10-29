@@ -231,51 +231,7 @@
       </div>
 
       <!-- ======================================================== -->
-      <!-- QUY TRÌNH THỰC HIỆN 3 BƯỚC (WORKFLOW STEPPER)             -->
       <!-- ======================================================== -->
-      <div class="workflow-stepper">
-        <!-- Bước 1 -->
-        <div class="step-item completed">
-          <div class="step-circle"><i class="bi bi-check-lg"></i></div>
-          <div class="step-text">
-            <div class="step-title">1. Y lệnh & Khám mắt ban đầu</div>
-            <div class="step-desc">Bác sĩ khám và chỉ định thủ thuật</div>
-          </div>
-        </div>
-
-        <div class="step-divider"></div>
-
-        <!-- Bước 2 -->
-        <div class="step-item ${order.status == 'Completed' ? 'completed' : 'active'}">
-          <div class="step-circle">
-            <c:choose>
-              <c:when test="${order.status == 'Completed'}"><i class="bi bi-check-lg"></i></c:when>
-              <c:otherwise>2</c:otherwise>
-            </c:choose>
-          </div>
-          <div class="step-text">
-            <div class="step-title">2. Lập Biên bản & Thực hiện</div>
-            <div class="step-desc">${order.status == 'Completed' ? 'Đã hoàn tất can thiệp thủ thuật' : 'KTV đang thực hiện kỹ thuật'}</div>
-          </div>
-        </div>
-
-        <div class="step-divider"></div>
-
-        <!-- Bước 3 -->
-        <div class="step-item ${order.status == 'Completed' ? 'completed' : 'pending'}">
-          <div class="step-circle">
-            <c:choose>
-              <c:when test="${order.status == 'Completed'}"><i class="bi bi-check-lg"></i></c:when>
-              <c:otherwise>3</c:otherwise>
-            </c:choose>
-          </div>
-          <div class="step-text">
-            <div class="step-title">3. Bàn giao kết quả cho Bác sĩ</div>
-            <div class="step-desc">${order.status == 'Completed' ? 'Đã đồng bộ kết quả về bệnh án' : 'Sẵn sàng trả về ca khám chính'}</div>
-          </div>
-        </div>
-      </div>
-
       <!-- ======================================================== -->
       <!-- KHU VỰC THAO TÁC CHÍNH: 2 CỘT SONG SONG (SPLIT SCREEN)    -->
       <!-- ======================================================== -->
@@ -558,44 +514,6 @@
                   </div>
                 </div>
 
-                <!-- 2. QUY TRÌNH & DIỄN BIẾN THỦ THUẬT -->
-                <div class="mb-4">
-                  <label for="procedureSteps" class="form-label-custom mb-2">
-                    <i class="bi bi-list-ol text-primary me-1"></i>
-                    Quy trình kỹ thuật & Diễn biến thủ thuật <span class="text-danger">*</span>
-                  </label>
-
-                  <c:if test="${canEditProcedure}">
-                    <!-- Quick Chips cho các bước thực hiện -->
-                    <div class="mb-2">
-                      <span class="quick-chip" onclick="applyTemplate('chap_leo')">
-                        <i class="bi bi-magic me-1 text-teal"></i>Mẫu Chích rạch chắp lẹo
-                      </span>
-                      <span class="quick-chip" onclick="applyTemplate('le_dao')">
-                        <i class="bi bi-magic me-1 text-teal"></i>Mẫu Bơm thông lệ đạo
-                      </span>
-                      <span class="quick-chip" onclick="applyTemplate('laser_yag')">
-                        <i class="bi bi-magic me-1 text-teal"></i>Mẫu Bắn Laser YAG
-                      </span>
-                      <span class="quick-chip" onclick="applyTemplate('phaco')">
-                        <i class="bi bi-magic me-1 text-teal"></i>Mẫu Phẫu thuật Phaco
-                      </span>
-                      <span class="quick-chip" onclick="applyTemplate('femto')">
-                        <i class="bi bi-magic me-1 text-teal"></i>Mẫu Phẫu thuật Lasik/SMILE
-                      </span>
-                    </div>
-                  </c:if>
-
-                  <textarea class="form-control protocol-textarea p-3" 
-                            id="procedureSteps" 
-                            name="procedure_steps" 
-                            rows="5" 
-                            placeholder="Mô tả chi tiết các bước sát trùng, thao tác chích rạch / bơm rửa / chiếu laser, diễn biến trong lúc thực hiện..."><c:out value="${protocol['procedure_steps']}" /></textarea>
-                  <c:if test="${canEditProcedure}">
-                    <div class="form-text small text-muted" style="font-size: 11.5px;">Bắt buộc ghi nhận quy trình thực hiện theo quy chuẩn y khoa.</div>
-                  </c:if>
-                </div>
-
                 <!-- 3. TÌNH TRẠNG NGAY SAU THỦ THUẬT -->
                 <div class="mb-4">
                   <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1.5">
@@ -603,14 +521,6 @@
                       <i class="bi bi-heart-pulse text-success me-1"></i>
                       Tình trạng mắt ngay sau thủ thuật <span class="text-danger">*</span>
                     </label>
-                    <c:if test="${canEditProcedure}">
-                      <div class="d-flex align-items-center gap-1 flex-wrap">
-                        <span class="quick-chip" onclick="appendOutcome('Mắt êm, không chảy máu, mép rạch áp tốt.')">Mắt êm, sạch</span>
-                        <span class="quick-chip" onclick="appendOutcome('Lệ đạo thông hoàn toàn, nước trào xuống họng tốt.')">Lệ đạo thông tốt</span>
-                        <span class="quick-chip" onclick="appendOutcome('Bao sau mở trong suốt đường kính 3.5mm, IOL cân đối.')">Bao sau trong</span>
-                        <span class="quick-chip" onclick="appendOutcome('Bệnh nhân tỉnh táo, tiếp xúc tốt, sinh hiệu ổn định.')">Sinh hiệu ổn định</span>
-                      </div>
-                    </c:if>
                   </div>
                   <textarea class="form-control protocol-textarea p-3" 
                             id="procedureOutcome" 
@@ -626,14 +536,6 @@
                       <i class="bi bi-prescription2 text-warning me-1"></i>
                       Lời dặn hậu phẫu & Hướng dẫn bệnh nhân
                     </label>
-                    <c:if test="${canEditProcedure}">
-                      <div class="d-flex align-items-center gap-1 flex-wrap">
-                        <span class="quick-chip" onclick="appendPostCare('Băng ép mắt trong 2 giờ đầu. Không dụi tay lên mắt.')">Băng ép 2h</span>
-                        <span class="quick-chip" onclick="appendPostCare('Tránh nước vào mắt trong 3 ngày đầu. Đeo kính bảo hộ khi ra ngoài.')">Kiêng nước 3 ngày</span>
-                        <span class="quick-chip" onclick="appendPostCare('Nhỏ thuốc kháng sinh và tra mỡ mắt theo đơn Bác sĩ.')">Nhỏ thuốc theo đơn</span>
-                        <span class="quick-chip" onclick="appendPostCare('Tái khám sau 24 giờ hoặc liên hệ ngay nếu đau nhức dữ dội.')">Tái khám 24h</span>
-                      </div>
-                    </c:if>
                   </div>
                   <textarea class="form-control protocol-textarea p-3" 
                             id="postCare" 
@@ -788,10 +690,12 @@
           </c:choose>
         </td>
       </tr>
+      <c:if test="${not empty protocol['procedure_steps']}">
       <tr>
         <td style="font-weight: bold; background-color: #f9f9f9;">Quy trình kỹ thuật:</td>
         <td colspan="3" id="print_steps_val" style="white-space: pre-wrap;"><c:out value="${protocol['procedure_steps']}" /></td>
       </tr>
+      </c:if>
       <tr>
         <td style="font-weight: bold; background-color: #f9f9f9;">Tình trạng sau thủ thuật:</td>
         <td colspan="3" id="print_outcome_val" style="white-space: pre-wrap;"><c:out value="${protocol['procedure_outcome']}" /></td>
@@ -855,114 +759,10 @@
       syncPrintData();
     }
 
-    // 2. Chèn mẫu quy trình nhanh theo thủ thuật
-    const templates = {
-      chap_leo: '1. Sát khuẩn vùng mắt và mi mắt bằng dung dịch Povidone Iodine 5%.\n2. Trải săng vô khuẩn chuyên dụng.\n3. Tiêm gây tê tại chỗ quanh tổn thương bằng Lidocaine 2% (0.5ml).\n4. Cặp kẹp chắp lẹo Desmarres cố định và bộc lộ nang chắp mi.\n5. Dùng dao vi phẫu rạch dọc mặt kết mạc mi tương ứng nang chắp dài 3mm.\n6. Dùng thìa nạo chuyên dụng nạo sạch hoàn toàn bọc mủ và màng bao chắp.\n7. Rửa sạch bằng nước muối sinh lý 0.9%, cầm máu kỹ bằng gạc vô trùng.',
-      
-      le_dao: '1. Nhỏ dung dịch gây tê bề mặt Tetracaine 0.5% (2 giọt, cách nhau 2 phút).\n2. Dùng que nong điểm lệ nong nhẹ nhàng lỗ lệ dưới.\n3. Dùng kim bơm đầu tù 27G luồn nhẹ theo trục lệ quản vào túi lệ đến khi chạm thành xương.\n4. Bơm từ từ 2ml nước muối sinh lý 0.9% pha kháng sinh Tobramycin.\n5. Bệnh nhân cảm nhận rõ nước trôi xuống họng, nuốt tự nhiên, không trào ngược ra điểm lệ trên/dưới.\n6. Lệ đạo thông hoàn toàn tốt.',
-      
-      laser_yag: '1. Tra thuốc dãn đồng tử Mydrin-P 1 giọt trước thủ thuật 20 phút.\n2. Nhỏ dung dịch gây tê bề mặt Alcaine 0.5%.\n3. Đặt kính tiếp xúc Abraham chuyên dụng lên giác mạc với gel bảo vệ Methocel.\n4. Định vị chùm tia ngắm Laser YAG đỏ chính xác vào trung tâm bao sau đục.\n5. Bắn Laser YAG mở bao sau trục quang học đường kính 3.5mm (năng lượng 1.8 mJ, 14 phát xung).\n6. Bao sau mở đều, trong suốt, không tổn thương kính IOL. Tra thuốc nhỏ hạ nhãn áp Alphagan P.',
-      
-      phaco: '1. Sát trùng Povidone Iodine 5%, trải săng lỗ vô khuẩn, đặt vành mi.\n2. Rạch mép giác mạc 2.2mm hướng 12h, rạch đường phụ 1.0mm hướng 2h.\n3. Bơm chất nhầy Healon, xé bao tròn liên tục đường kính 5.2mm.\n4. Tách nước xoay nhân tự do (Hydrodissection).\n5. Tán nhuyễn và hút sạch nhân bằng máy Phaco Alcon Centurion.\n6. Hút sạch chất vỏ bằng tay cầm I/A.\n7. Bơm chất nhầy, đặt thể thủy tinh nhân tạo IOL đơn tiêu trong bao an toàn, rửa sạch chất nhầy, tái tạo tiền phòng kín nước.',
-      
-      femto: '1. Nhỏ dung dịch gây tê bề mặt Tetracaine 0.5% 2 lần.\n2. Đặt vòng hút Suction Ring, cố định nhãn cầu.\n3. Dùng Laser Femtosecond tạo vạt giác mạc chiều dày 110µm hoàn hảo.\n4. Bộc lộ giường nhu mô giác mạc, kích hoạt hệ thống bám bắt mắt tự động Eye-tracking.\n5. Chiếu Laser Excimer Schwind Amaris bào mòn nhu mô theo thông số đo khúc xạ cá thể hóa.\n6. Rửa sạch buồng vạt bằng BSS, vuốt phẳng vạt giác mạc, tra kháng sinh và đặt kính áp tròng bảo vệ BCL.'
-    };
-
-    function applyTemplate(type) {
-      const form = document.getElementById('protocolForm');
-      if (form && form.dataset.canEdit !== 'true') return;
-      const textarea = document.getElementById('procedureSteps');
-      if (!textarea) return;
-      if (templates[type]) {
-        textarea.value = templates[type];
-      }
-      textarea.focus();
-      syncPrintData();
-    }
-
-    // 3. Chèn kết quả & Lời dặn nhanh (các phần có thể kết hợp nhưng mỗi nội dung chỉ hiện 1 lần, xuống dòng riêng biệt)
-    const outcomeSnippets = [
-      'Mắt êm, không chảy máu, mép rạch áp tốt.',
-      'Lệ đạo thông hoàn toàn, nước trào xuống họng tốt.',
-      'Bao sau mở trong suốt đường kính 3.5mm, IOL cân đối.',
-      'Bệnh nhân tỉnh táo, tiếp xúc tốt, sinh hiệu ổn định.'
-    ];
-
-    const postCareSnippets = [
-      'Băng ép mắt trong 2 giờ đầu. Không dụi tay lên mắt.',
-      'Tránh nước vào mắt trong 3 ngày đầu. Đeo kính bảo hộ khi ra ngoài.',
-      'Nhỏ thuốc kháng sinh và tra mỡ mắt theo đơn Bác sĩ.',
-      'Tái khám sau 24 giờ hoặc liên hệ ngay nếu đau nhức dữ dội.'
-    ];
-
-    function appendOutcome(text) {
-      const form = document.getElementById('protocolForm');
-      if (form && form.dataset.canEdit !== 'true') return;
-      const el = document.getElementById('procedureOutcome');
-      if (!el) return;
-      let val = el.value.trim();
-
-      // Nếu đã có nhưng đang bị dính liền trên cùng 1 dòng, tách thành các dòng riêng
-      if (val.includes(text)) {
-        let changed = false;
-        outcomeSnippets.forEach(snip => {
-          if (val.includes(snip) && !val.includes('- ' + snip) && !val.includes('\n' + snip)) {
-            val = val.replace(snip, '\n- ' + snip);
-            changed = true;
-          }
-        });
-        if (changed) {
-          val = val.replace(/^\n+/, '').trim();
-          if (!val.startsWith('- ') && val.length > 0) val = '- ' + val;
-          el.value = val;
-          syncPrintData();
-        }
-        return;
-      }
-
-      const line = '- ' + text;
-      el.value = val ? val + '\n' + line : line;
-      el.focus();
-      syncPrintData();
-    }
-
-    function appendPostCare(text) {
-      const form = document.getElementById('protocolForm');
-      if (form && form.dataset.canEdit !== 'true') return;
-      const el = document.getElementById('postCare');
-      if (!el) return;
-      let val = el.value.trim();
-
-      // Nếu đã có nhưng đang bị dính liền trên cùng 1 dòng, tách thành các dòng riêng
-      if (val.includes(text)) {
-        let changed = false;
-        postCareSnippets.forEach(snip => {
-          if (val.includes(snip) && !val.includes('- ' + snip) && !val.includes('\n' + snip)) {
-            val = val.replace(snip, '\n- ' + snip);
-            changed = true;
-          }
-        });
-        if (changed) {
-          val = val.replace(/^\n+/, '').trim();
-          if (!val.startsWith('- ') && val.length > 0) val = '- ' + val;
-          el.value = val;
-          syncPrintData();
-        }
-        return;
-      }
-
-      const line = '- ' + text;
-      el.value = val ? val + '\n' + line : line;
-      el.focus();
-      syncPrintData();
-    }
-
     // 4. Đồng bộ dữ liệu Form vào Bản in PDF
     function syncPrintData() {
       const eye = document.getElementById('procedureEyeInput').value;
       const eyeText = eye === 'OS' ? 'Mắt Trái' : (eye === 'OU' ? 'Cả Hai Mắt' : 'Mắt Phải');
-      
-      const stepsVal = (document.getElementById('procedureSteps') || {}).value || '';
       const outcomeVal = (document.getElementById('procedureOutcome') || {}).value || '';
       const careVal = (document.getElementById('postCare') || {}).value || '';
       const conclusionVal = (document.getElementById('conclusion') || {}).value || 'Chưa ghi nhận kết luận.';
@@ -973,7 +773,6 @@
       };
 
       setTxt('print_eye_val', eyeText);
-      setTxt('print_steps_val', stepsVal);
       setTxt('print_outcome_val', outcomeVal);
       setTxt('print_care_val', careVal);
       setTxt('print_conclusion_val', conclusionVal);
@@ -986,30 +785,8 @@
 
     window.addEventListener('beforeprint', syncPrintData);
 
-    // 5. Kiểm tra Form trước khi submit & Tự động tách dòng nội dung hiện có
+    // Kiểm tra form trước khi gửi
     document.addEventListener('DOMContentLoaded', function () {
-      // Tự động tách các câu dính liền thành từng dòng gạch đầu dòng rõ ràng
-      const formatExistingLines = (id, snippets) => {
-        const el = document.getElementById(id);
-        if (!el || !el.value) return;
-        let v = el.value.trim();
-        let changed = false;
-        snippets.forEach(snip => {
-          if (v.includes(snip) && !v.includes('- ' + snip) && !v.includes('\n' + snip)) {
-            v = v.replace(snip, '\n- ' + snip);
-            changed = true;
-          }
-        });
-        if (changed) {
-          v = v.replace(/^\n+/, '').trim();
-          if (!v.startsWith('- ') && v.length > 0) v = '- ' + v;
-          el.value = v;
-        }
-      };
-
-      formatExistingLines('procedureOutcome', outcomeSnippets);
-      formatExistingLines('postCare', postCareSnippets);
-
       syncPrintData();
 
       const form = document.getElementById('protocolForm');
@@ -1020,14 +797,7 @@
         form.addEventListener('submit', function (e) {
           const action = document.getElementById('formAction').value;
           if (action === 'complete' || action === 'completeAndClose' || action === 'updateResults') {
-            const steps = (document.getElementById('procedureSteps') || {}).value || '';
             const outcome = (document.getElementById('procedureOutcome') || {}).value || '';
-            if (steps.trim() === '') {
-              e.preventDefault();
-              alert('Vui lòng nhập Quy trình & Diễn biến kỹ thuật trước khi Hoàn thành!');
-              document.getElementById('procedureSteps').focus();
-              return false;
-            }
             if (outcome.trim() === '') {
               e.preventDefault();
               alert('Vui lòng ghi nhận Tình trạng sau thủ thuật trước khi Hoàn tất!');
