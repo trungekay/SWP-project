@@ -1,6 +1,8 @@
 package com.visioncare.model;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CatalogService {
     private final int id;
@@ -13,9 +15,19 @@ public class CatalogService {
     private final String imagePath;
     private final boolean uploadedImage;
 
+    // Configurable Workflow & Booking properties
+    private boolean requiresPreOp;
+    private Integer prerequisiteServiceId;
+    private String prerequisiteServiceName;
+    private BigDecimal prerequisiteServicePrice;
+    private boolean allowDirectBooking = true;
+    private List<ServiceWorkflowStep> workflowSteps = new ArrayList<>();
+
     public CatalogService(int id, String code, String name, BigDecimal price,
             String category, String summary, String description,
-            String imagePath, boolean uploadedImage) {
+            String imagePath, boolean uploadedImage,
+            boolean requiresPreOp, Integer prerequisiteServiceId,
+            String prerequisiteServiceName, boolean allowDirectBooking) {
         this.id = id;
         this.code = code;
         this.name = name;
@@ -25,6 +37,16 @@ public class CatalogService {
         this.description = description;
         this.imagePath = imagePath;
         this.uploadedImage = uploadedImage;
+        this.requiresPreOp = requiresPreOp;
+        this.prerequisiteServiceId = prerequisiteServiceId;
+        this.prerequisiteServiceName = prerequisiteServiceName;
+        this.allowDirectBooking = allowDirectBooking;
+    }
+
+    public CatalogService(int id, String code, String name, BigDecimal price,
+            String category, String summary, String description,
+            String imagePath, boolean uploadedImage) {
+        this(id, code, name, price, category, summary, description, imagePath, uploadedImage, false, null, null, true);
     }
 
     public CatalogService(int id, String code, String name, BigDecimal price,
@@ -43,6 +65,84 @@ public class CatalogService {
     public String getDescription() { return description; }
     public String getImagePath() { return imagePath; }
     public boolean isUploadedImage() { return uploadedImage; }
+
+    public boolean isRequiresPreOp() { return requiresPreOp; }
+    public void setRequiresPreOp(boolean requiresPreOp) { this.requiresPreOp = requiresPreOp; }
+
+    public Integer getPrerequisiteServiceId() { return prerequisiteServiceId; }
+    public void setPrerequisiteServiceId(Integer prerequisiteServiceId) { this.prerequisiteServiceId = prerequisiteServiceId; }
+
+    public String getPrerequisiteServiceName() { return prerequisiteServiceName; }
+    public void setPrerequisiteServiceName(String prerequisiteServiceName) { this.prerequisiteServiceName = prerequisiteServiceName; }
+
+    public BigDecimal getPrerequisiteServicePrice() { return prerequisiteServicePrice; }
+    public void setPrerequisiteServicePrice(BigDecimal prerequisiteServicePrice) { this.prerequisiteServicePrice = prerequisiteServicePrice; }
+
+    public long getOnlineDepositFee() {
+        long total = price != null ? price.longValue() : 200000;
+        if (requiresPreOp || total > 2000000) {
+            long preOpDeposit = 500000;
+            if (prerequisiteServicePrice != null && prerequisiteServicePrice.longValue() > 0) {
+                preOpDeposit = prerequisiteServicePrice.longValue();
+            }
+            return (total > preOpDeposit) ? preOpDeposit : total;
+        }
+        return total > 0 ? total : 200000;
+    }
+
+    public long getOnlineBalanceDue() {
+        long total = price != null ? price.longValue() : 200000;
+        long fee = getOnlineDepositFee();
+        return (total > fee) ? (total - fee) : 0;
+    }
+
+    public boolean isAllowDirectBooking() { return allowDirectBooking; }
+    public void setAllowDirectBooking(boolean allowDirectBooking) { this.allowDirectBooking = allowDirectBooking; }
+
+    public List<ServiceWorkflowStep> getWorkflowSteps() { return workflowSteps; }
+    public void setWorkflowSteps(List<ServiceWorkflowStep> workflowSteps) {
+        this.workflowSteps = workflowSteps != null ? workflowSteps : new ArrayList<>();
+    }
+
+    public boolean hasWorkflowSteps() {
+        return workflowSteps != null && !workflowSteps.isEmpty();
+    }
+
+    public List<ServiceWorkflowStep> getPreExamSteps() {
+        List<ServiceWorkflowStep> list = new ArrayList<>();
+        if (workflowSteps != null) {
+            for (ServiceWorkflowStep step : workflowSteps) {
+                if ("PRE_EXAM".equalsIgnoreCase(step.getStepStage())) {
+                    list.add(step);
+                }
+            }
+        }
+        return list;
+    }
+
+    public List<ServiceWorkflowStep> getInExamSteps() {
+        List<ServiceWorkflowStep> list = new ArrayList<>();
+        if (workflowSteps != null) {
+            for (ServiceWorkflowStep step : workflowSteps) {
+                if ("IN_EXAM".equalsIgnoreCase(step.getStepStage())) {
+                    list.add(step);
+                }
+            }
+        }
+        return list;
+    }
+
+    public List<ServiceWorkflowStep> getPostExamSteps() {
+        List<ServiceWorkflowStep> list = new ArrayList<>();
+        if (workflowSteps != null) {
+            for (ServiceWorkflowStep step : workflowSteps) {
+                if ("POST_EXAM".equalsIgnoreCase(step.getStepStage())) {
+                    list.add(step);
+                }
+            }
+        }
+        return list;
+    }
 
     public String getDefaultImagePath() {
         if (imagePath != null && !imagePath.trim().isEmpty()) {
@@ -136,6 +236,10 @@ public class CatalogService {
     }
 
     public boolean isSurgery() {
+        if (requiresPreOp) return true;
+        if (category != null && category.contains("thủ thuật")) {
+            if (!allowDirectBooking) return true;
+        }
         if (code != null) {
             String c = code.toUpperCase(java.util.Locale.ROOT);
             if (c.startsWith("PT-") || c.contains("LASIK") || c.contains("SMILE") || c.contains("PHACO")) {
@@ -179,7 +283,7 @@ public class CatalogService {
     }
 
     public String getMedicalNoticeTitle() {
-        if (isSurgery()) {
+        if (requiresPreOp || isSurgery()) {
             return "Lưu ý quy trình: Bắt buộc khám tiền phẫu trước";
         } else if (isProcedure()) {
             return "Lưu ý quy trình: Bắt buộc khám lâm sàng với Bác sĩ trước";
@@ -190,8 +294,10 @@ public class CatalogService {
     }
 
     public String getMedicalNoticeText() {
-        if (isSurgery()) {
-            return "Theo quy chuẩn y khoa, bệnh nhân bắt buộc phải thực hiện gói Khám tiền phẫu chuyên sâu trước để Bác sĩ đo các chỉ số sinh học mắt (bản đồ giác mạc, độ dày giác mạc, soi đáy mắt...) và kết luận chính xác mắt có đủ điều kiện phẫu thuật hay không. Sau khi có chỉ định chính thức từ Bác sĩ, bệnh viện mới xếp lịch phẫu thuật.";
+        if (requiresPreOp || isSurgery()) {
+            String preOpName = prerequisiteServiceName != null && !prerequisiteServiceName.isEmpty()
+                    ? prerequisiteServiceName : "Khám tiền phẫu chuyên sâu";
+            return "Theo quy chuẩn y khoa, bệnh nhân bắt buộc phải thực hiện gói " + preOpName + " trước để Bác sĩ đo các chỉ số sinh học mắt (bản đồ giác mạc, độ dày giác mạc, soi đáy mắt...) và kết luận chính xác mắt có đủ điều kiện can thiệp hay không. Sau khi có chỉ định chính thức từ Bác sĩ, bệnh viện mới xếp lịch phẫu thuật.";
         } else if (isProcedure()) {
             return "Để đảm bảo an toàn và vô trùng tuyệt đối, bệnh nhân không thể làm tiểu phẫu ngay mà bắt buộc phải qua bước Thăm khám lâm sàng trực tiếp với Bác sĩ chuyên khoa mắt trước. Bác sĩ sẽ dùng đèn sinh hiển vi đánh giá ổ viêm, giai đoạn bệnh và chỉ định thực hiện thủ thuật đúng quy trình y tế.";
         } else if (isPreOp()) {
@@ -200,4 +306,3 @@ public class CatalogService {
         return "Khám lâm sàng trực tiếp với Bác sĩ chuyên khoa giàu kinh nghiệm và hệ thống trang thiết bị nhãn khoa chuẩn quốc tế.";
     }
 }
-

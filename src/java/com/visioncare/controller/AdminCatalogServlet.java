@@ -5,6 +5,7 @@ import com.visioncare.dao.CatalogDAO.ImageData;
 import com.visioncare.model.CatalogService;
 import com.visioncare.model.MedicalSupply;
 import com.visioncare.model.ServiceCategory;
+import com.visioncare.model.ServiceWorkflowStep;
 import com.visioncare.model.SupplyCategory;
 import com.visioncare.model.User;
 import jakarta.servlet.ServletException;
@@ -17,6 +18,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +73,8 @@ public class AdminCatalogServlet extends HttpServlet {
                 if (!service) request.setAttribute("supplyCategories", SupplyCategory.values());
                 if (service) {
                     request.setAttribute("serviceCategories", ServiceCategory.values());
+                    // Pass available services for Prerequisite Dropdown
+                    request.setAttribute("availablePrereqServices", dao.listServices());
                 }
                 request.setAttribute("item", item);
                 request.setAttribute("kind", kind);
@@ -129,9 +133,52 @@ public class AdminCatalogServlet extends HttpServlet {
                 }
                 String summary = field(request, "summary", 500, false);
                 String description = field(request, "description", 4000, false);
+
+                // Workflow & PreOp settings
+                boolean requiresPreOp = "true".equalsIgnoreCase(request.getParameter("requiresPreOp"))
+                        || "on".equalsIgnoreCase(request.getParameter("requiresPreOp"))
+                        || "1".equals(request.getParameter("requiresPreOp"));
+
+                boolean allowDirectBooking = "true".equalsIgnoreCase(request.getParameter("allowDirectBooking"))
+                        || "on".equalsIgnoreCase(request.getParameter("allowDirectBooking"))
+                        || "1".equals(request.getParameter("allowDirectBooking"));
+
+                Integer prerequisiteServiceId = null;
+                String prereqParam = request.getParameter("prerequisiteServiceId");
+                if (prereqParam != null && !prereqParam.trim().isEmpty() && !"0".equals(prereqParam.trim())) {
+                    try {
+                        prerequisiteServiceId = Integer.parseInt(prereqParam.trim());
+                    } catch (NumberFormatException ignored) {}
+                }
+
+                // Parse dynamic workflow steps
+                List<ServiceWorkflowStep> workflowSteps = new ArrayList<>();
+                String[] stepNames = request.getParameterValues("stepName");
+                String[] stepStages = request.getParameterValues("stepStage");
+                String[] stepOrders = request.getParameterValues("stepOrder");
+                String[] stepDescs = request.getParameterValues("stepDescription");
+
+                if (stepNames != null) {
+                    for (int i = 0; i < stepNames.length; i++) {
+                        String sName = stepNames[i] != null ? stepNames[i].trim() : "";
+                        if (sName.isEmpty()) continue;
+                        String sStage = (stepStages != null && stepStages.length > i && stepStages[i] != null) ? stepStages[i].trim() : "PRE_EXAM";
+                        int sOrder = i + 1;
+                        if (stepOrders != null && stepOrders.length > i && stepOrders[i] != null && !stepOrders[i].trim().isEmpty()) {
+                            try {
+                                sOrder = Integer.parseInt(stepOrders[i].trim());
+                            } catch (NumberFormatException ignored) {}
+                        }
+                        String sDesc = (stepDescs != null && stepDescs.length > i && stepDescs[i] != null) ? stepDescs[i].trim() : null;
+                        workflowSteps.add(new ServiceWorkflowStep(0, id, sName, sStage, sOrder, sDesc));
+                    }
+                }
+
                 savedId = dao.saveService(id, code, name, price, category, summary,
                         description, upload == null ? null : upload.getBytes(),
-                        upload == null ? null : upload.getMimeType());
+                        upload == null ? null : upload.getMimeType(),
+                        requiresPreOp, prerequisiteServiceId, allowDirectBooking,
+                        workflowSteps);
             } else {
                 String name = field(request, "name", 255, true);
                 String category = field(request, "category", 100, true);
@@ -157,7 +204,7 @@ public class AdminCatalogServlet extends HttpServlet {
             throws ServletException, IOException {
         boolean service = "service".equals(kind);
         Map<String, Object> item = new HashMap<>();
-        for (String key : new String[]{"id", "code", "name", "price", "category", "summary", "description", "image"}) {
+        for (String key : new String[]{"id", "code", "name", "price", "category", "summary", "description", "image", "requiresPreOp", "prerequisiteServiceId", "allowDirectBooking"}) {
             item.put(key, request.getParameter(key));
         }
         try {
@@ -165,6 +212,7 @@ public class AdminCatalogServlet extends HttpServlet {
             if (!service) request.setAttribute("supplyCategories", SupplyCategory.values());
             if (service) {
                 request.setAttribute("serviceCategories", ServiceCategory.values());
+                request.setAttribute("availablePrereqServices", dao.listServices());
             }
         } catch (Exception e) {
             log("Could not reload catalog choices", e);

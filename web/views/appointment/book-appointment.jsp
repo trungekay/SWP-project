@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
   <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
     <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
     <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
@@ -266,6 +266,20 @@
                     </div>
                   </c:if>
 
+                  <%-- THÔNG BÁO CHUYỂN HƯỚNG DỊCH VỤ (NẾU DỊCH VỤ KHÔNG CHO ĐẶT TRỰC TIẾP) --%>
+                  <c:if test="${not empty serviceNotice}">
+                    <div class="alert alert-warning alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+                      <div class="d-flex align-items-center">
+                        <i class="bi bi-shield-check fs-4 me-3 text-warning"></i>
+                        <div>
+                          <strong class="d-block">Lưu ý quy trình y khoa</strong>
+                          <span>${serviceNotice}</span>
+                        </div>
+                      </div>
+                      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                  </c:if>
+
                   <div class="booking-card mb-5">
 
                     <%-- HEADER TIÊU ĐỀ & TIẾN TRÌNH --%>
@@ -521,7 +535,11 @@
                                                   <fmt:formatNumber value="${appointment.balanceDue}" type="number" groupingUsed="true" /> ₫
                                                 </div>
                                               </c:if>
-                                              <c:if test="${fn:contains(appointment.serviceName, 'tiền phẫu') or fn:contains(appointment.serviceName, 'tầm soát')}">
+                                              <%-- Hiển thị ưu đãi hoàn trừ nếu dịch vụ đã đặt là tiền phẫu/điều kiện cho dịch vụ khác
+                                                   Dùng cờ isPrerequisiteService được tính từ DB: dịch vụ này có được tham chiếu bởi
+                                                   Prerequisite_Service_ID của dịch vụ khác không?
+                                                   Fallback an toàn: kiểm tra tên dịch vụ (vì appointment chỉ lưu serviceName, không lưu requiresPreOp) --%>
+                                              <c:if test="${fn:contains(appointment.serviceName, 'tiền phẫu') or fn:contains(appointment.serviceName, 'tầm soát') or fn:contains(appointment.serviceName, 'Tiền phẫu') or fn:contains(appointment.serviceName, 'Tầm soát')}">
                                                 <div class="col-12 mt-2">
                                                   <div class="alert alert-success py-2 px-3 small rounded-3 mb-0 text-start">
                                                     <i class="bi bi-gift-fill me-1"></i> <b>Chính sách ưu đãi:</b> 100% phí khám tiền phẫu này sẽ được <b>khấu trừ trực tiếp vào chi phí ca mổ</b> nếu quý khách đủ điều kiện và tiến hành phẫu thuật tại VisionCare.
@@ -614,7 +632,7 @@
                                                             <i class="bi bi-heart-pulse-fill me-1"></i> Mắt trẻ em
                                                           </button>
                                                           <button type="button" class="btn booking-cat-btn" data-bgroup="thuthuat" onclick="filterBookingCategory('thuthuat', this)">
-                                                            <i class="bi bi-bandaid-fill me-1"></i> Thủ thuật ngoại trú
+                                                            <i class="bi bi-bandaid-fill me-1"></i> Phẫu thuật &amp; Thủ thuật
                                                           </button>
                                                         </div>
                                                       </div>
@@ -630,15 +648,18 @@
                                                               <c:set var="bGroupLabel" value="Mắt trẻ em" />
                                                               <c:set var="bBadgeStyle" value="background: #fce7f3; color: #be185d; border: 1px solid #fbcfe8;" />
                                                             </c:when>
-                                                            <c:when test="${svc.specialty == 'lasik' or svc.specialty == 'cataract' or svc.code == 'LS-03' or svc.code == 'TT-05' or svc.code == 'GL-06' or svc.code == 'OCT-DM' or svc.code == 'KM-DM'}">
+                                                            <c:when test="${fn:startsWith(svc.code, 'TP-') or fn:startsWith(svc.code, 'PT-') or svc.requiresPreOp or svc.category == 'Điều trị và thủ thuật'}">
+                                                              <c:set var="bGroup" value="thuthuat" />
+                                                              <c:set var="bGroupLabel" value="Phẫu thuật & Thủ thuật" />
+                                                              <c:set var="bBadgeStyle" value="background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa;" />
+                                                            </c:when>
+                                                            <%-- Nhóm "Tiền phẫu & Tầm soát": nhận dạng qua specialty hoặc tên dịch vụ,
+                                                                 không hardcode service code. GL-06/OCT-DM/KM-DM giữ lại vì là gói
+                                                                 tầm soát chuyên sâu không có specialty riêng. --%>
+                                                            <c:when test="${svc.specialty == 'lasik' or svc.specialty == 'cataract' or fn:contains(svc.name, 'tiền phẫu') or fn:contains(svc.name, 'Tiền phẫu') or fn:contains(svc.name, 'tầm soát') or fn:contains(svc.name, 'Tầm soát') or svc.code == 'GL-06' or svc.code == 'OCT-DM' or svc.code == 'KM-DM'}">
                                                               <c:set var="bGroup" value="tienphau_tamsoat" />
                                                               <c:set var="bGroupLabel" value="Tiền phẫu & Tầm soát" />
                                                               <c:set var="bBadgeStyle" value="background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe;" />
-                                                            </c:when>
-                                                            <c:when test="${fn:startsWith(svc.code, 'TP-')}">
-                                                              <c:set var="bGroup" value="thuthuat" />
-                                                              <c:set var="bGroupLabel" value="Thủ thuật" />
-                                                              <c:set var="bBadgeStyle" value="background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa;" />
                                                             </c:when>
                                                             <c:otherwise>
                                                               <c:set var="bGroup" value="kham_khucxa" />
@@ -655,6 +676,11 @@
                                                                 data-specialty="${svc.specialty}"
                                                                 data-bgroup="${bGroup}"
                                                                 data-name="${svc.name}" data-price="${svc.price}"
+                                                                data-deposit="${svc.onlineDepositFee}"
+                                                                data-balance="${svc.onlineBalanceDue}"
+                                                                data-requires-preop="${svc.requiresPreOp}"
+                                                                data-prereq-name="${svc.prerequisiteServiceName}"
+                                                                                                                                 data-is-preop-service="${bGroup == 'tienphau_tamsoat'}"
                                                                 onchange="filterDoctorsByService(this)"
                                                                 onclick="filterDoctorsByService(this)"
                                                                 ${(selectedServiceId==svc.id or (empty selectedServiceId
@@ -669,11 +695,18 @@
                                                                         ${bGroupLabel}
                                                                       </span>
                                                                     </div>
-                                                                    <span class="text-teal fw-bold"
-                                                                      style="color: #0d9488;">
-                                                                      <fmt:formatNumber value="${svc.price}"
-                                                                        type="number" groupingUsed="true" /> ₫
-                                                                    </span>
+                                                                    <div class="text-end">
+                                                                      <span class="text-teal fw-bold"
+                                                                        style="color: #0d9488;">
+                                                                        <fmt:formatNumber value="${svc.price}"
+                                                                          type="number" groupingUsed="true" /> ₫
+                                                                      </span>
+                                                                      <c:if test="${svc.onlineBalanceDue > 0}">
+                                                                        <div class="text-muted" style="font-size: 10.5px;">
+                                                                          Cọc trước: <strong class="text-success"><fmt:formatNumber value="${svc.onlineDepositFee}" type="number" groupingUsed="true" /> ₫</strong>
+                                                                        </div>
+                                                                      </c:if>
+                                                                    </div>
                                                                   </div>
                                                                   <h6 class="fw-bold text-dark mb-1">${svc.name}</h6>
                                                                   <c:if test="${bGroup == 'thuthuat'}">
@@ -683,7 +716,9 @@
                                                                       </span>
                                                                     </div>
                                                                   </c:if>
-                                                                  <c:if test="${svc.code == 'LS-03' or svc.code == 'TT-05' or fn:contains(svc.name, 'tiền phẫu') or fn:contains(svc.name, 'tầm soát')}">
+                                                                  <%-- Badge ưu đãi hoàn trừ 100%: hiển thị cho dịch vụ là gói tiền phẫu/tầm soát,
+                                                                       nhận dạng qua tên — không hardcode service code --%>
+                                                                  <c:if test="${fn:contains(svc.name, 'tiền phẫu') or fn:contains(svc.name, 'tầm soát')}">
                                                                     <div class="mb-1">
                                                                       <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: 10.5px;">
                                                                         <i class="bi bi-gift-fill me-1"></i>Trừ 100% vào chi phí mổ
@@ -738,10 +773,20 @@
                                                               <div class="modal-body pt-2 px-4 pb-3">
                                                                 <h5 class="fw-bold text-dark mt-2 mb-2">${svc.name}</h5>
                                                                 <div class="d-flex align-items-center justify-content-between p-3 rounded-3 mb-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
-                                                                  <span class="text-muted small">Chi phí dịch vụ:</span>
-                                                                  <span class="fs-5 fw-bold text-teal" style="color: #0d9488;">
-                                                                    <fmt:formatNumber value="${svc.price}" type="number" groupingUsed="true" /> ₫
-                                                                  </span>
+                                                                  <div>
+                                                                    <span class="text-muted small d-block">Tổng chi phí gói phẫu thuật / dịch vụ:</span>
+                                                                    <span class="fs-5 fw-bold text-teal" style="color: #0d9488;">
+                                                                      <fmt:formatNumber value="${svc.price}" type="number" groupingUsed="true" /> ₫
+                                                                    </span>
+                                                                  </div>
+                                                                  <c:if test="${svc.onlineBalanceDue > 0}">
+                                                                    <div class="text-end">
+                                                                      <span class="text-muted small d-block">Tiền cọc giữ chỗ &amp; khám ban đầu:</span>
+                                                                      <span class="fs-5 fw-bold text-success">
+                                                                        <fmt:formatNumber value="${svc.onlineDepositFee}" type="number" groupingUsed="true" /> ₫
+                                                                      </span>
+                                                                    </div>
+                                                                  </c:if>
                                                                 </div>
                                                                 <c:if test="${not empty svc.summary}">
                                                                   <p class="text-secondary small fw-semibold mb-2">${svc.summary}</p>
@@ -791,6 +836,30 @@
                                                                     </div>
                                                                   </c:when>
                                                                 </c:choose>
+
+                                                                <c:if test="${svc.hasWorkflowSteps()}">
+                                                                  <div class="card border-0 rounded-4 p-3 mt-3 shadow-sm" style="background: #f8fafc; border: 1px solid #e2e8f0 !important;">
+                                                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                                                      <i class="bi bi-diagram-3-fill fs-5" style="color: #0d9488;"></i>
+                                                                      <h6 class="fw-bold mb-0 text-dark small">Quy trình các bước thực hiện</h6>
+                                                                    </div>
+                                                                    <div class="d-flex flex-column gap-2">
+                                                                      <c:forEach items="${svc.workflowSteps}" var="step">
+                                                                        <div class="d-flex align-items-start gap-2 p-2 rounded-3 bg-white border border-light-subtle shadow-xs">
+                                                                          <span class="badge ${step.stageBadgeClass} rounded-pill py-1 px-2 flex-shrink-0" style="font-size: 10px;">
+                                                                            <i class="bi ${step.stageIcon} me-1"></i>Bước ${step.stepOrder}: ${step.stageDisplayName}
+                                                                          </span>
+                                                                          <div class="flex-grow-1">
+                                                                            <div class="fw-semibold text-dark small" style="font-size: 12px;"><c:out value="${step.stepName}" /></div>
+                                                                            <c:if test="${not empty step.description}">
+                                                                              <div class="text-muted" style="font-size: 11px;"><c:out value="${step.description}" /></div>
+                                                                            </c:if>
+                                                                          </div>
+                                                                        </div>
+                                                                      </c:forEach>
+                                                                    </div>
+                                                                  </div>
+                                                                </c:if>
                                                               </div>
                                                               <div class="modal-footer border-top-0 pt-0 px-4 pb-4 d-flex justify-content-between">
                                                                 <button type="button" class="btn btn-outline-secondary rounded-pill px-4 btn-sm" data-bs-dismiss="modal">Đóng</button>
@@ -830,6 +899,7 @@
                                                               <option value="${doc.id}" data-dept="${doc.departmentKey}"
                                                                 data-specialty="${doc.specialty}"
                                                                 data-name="${doc.fullName}"
+                                                                data-doctor-id="${doc.id}"
                                                                 data-room="${doc.roomName != null ? doc.roomName : 'Phòng khám chuyên khoa'}"
                                                                 data-avatar="${pageContext.request.contextPath}/assets/img/${not empty doc.image ? doc.image : 'doctors/doctors-1.jpg'}"
                                                                 ${(selectedDoctorId==doc.id or
@@ -1203,6 +1273,8 @@
           <jsp:include page="/views/common/footer.jsp" />
 
           <script>
+            // Lịch làm việc 7 ngày tới, pre-load từ server để filter bác sĩ client-side theo ngày (Option C)
+            const doctorScheduleMap = ${not empty doctorScheduleMapJson ? doctorScheduleMapJson : '{}'};
             let currentWizardStep = 1;
 
             // Thiết lập ngày tối thiểu là ngày hôm nay theo giờ địa phương
@@ -1217,6 +1289,11 @@
               if (!dateInput.value) {
                 dateInput.value = todayStr;
               }
+              // Re-filter bác sĩ theo lịch làm việc khi bệnh nhân đổi ngày khám (Option C)
+              dateInput.addEventListener('change', function () {
+                const checkedSvc = document.querySelector('input[name="serviceId"]:checked');
+                if (checkedSvc) filterDoctorsByService(checkedSvc);
+              });
             }
 
             // Điều hướng chuyển bước trong wizard
@@ -1370,10 +1447,28 @@
                 const docDept = (opt.dataset.dept || '').toLowerCase().trim();
                 const docSpecialty = (opt.dataset.specialty || '').toLowerCase().trim();
 
+                // Kiểm tra lịch làm việc theo ngày đã chọn (Option C - pre-loaded 7-day schedule map)
+                const selectedDate = document.getElementById('appointmentDate')?.value || '';
+                const workingDocIds = (selectedDate && doctorScheduleMap[selectedDate])
+                  ? new Set(doctorScheduleMap[selectedDate])
+                  : null; // null = không có dữ liệu → hiện tất cả
+                const docId = parseInt(opt.dataset.doctorId || '0');
+                const isWorkingToday = !workingDocIds || workingDocIds.has(docId);
+
                 let isMatch = false;
-                if (bgroup === 'thuthuat' || specialtyCode === 'thuthuat') {
-                  // Với Thủ thuật / Tiểu phẫu: Bắt buộc khám lâm sàng ban đầu -> chỉ định Bác sĩ khám mắt tổng quát
-                  if (docDept === 'general' || docSpecialty.includes('tổng quát')) {
+                if (specialtyCode === 'lasik' && (docDept === 'lasik' || docSpecialty.includes('lasik') || docSpecialty.includes('phẫu thuật'))) {
+                  isMatch = true;
+                } else if (specialtyCode === 'cataract' && (docDept === 'cataract' || docSpecialty.includes('thủy tinh thể') || docSpecialty.includes('phaco'))) {
+                  isMatch = true;
+                } else if (specialtyCode === 'refraction' && (docDept === 'refraction' || docSpecialty.includes('khúc xạ') || docSpecialty.includes('kính'))) {
+                  isMatch = true;
+                } else if (specialtyCode === 'children' && (docDept === 'children' || docSpecialty.includes('trẻ em') || docSpecialty.includes('nhược thị'))) {
+                  isMatch = true;
+                } else if (specialtyCode === 'retina' && (docDept === 'retina' || docSpecialty.includes('võng mạc') || docSpecialty.includes('glaucoma'))) {
+                  isMatch = true;
+                } else if (bgroup === 'thuthuat' || specialtyCode === 'thuthuat') {
+                  // Với Thủ thuật ngoại trú (như chích chắp lẹo): chỉ định Bác sĩ khám mắt tổng quát / tiểu phẫu
+                  if (docDept === 'general' || docSpecialty.includes('tổng quát') || docSpecialty.includes('tiểu phẫu')) {
                     isMatch = true;
                   }
                 } else if (!specialtyCode || specialtyCode === 'all') {
@@ -1382,38 +1477,47 @@
                   isMatch = true;
                 } else if (specialtyCode === 'general' && (docDept === 'general' || docSpecialty.includes('tổng quát'))) {
                   isMatch = true;
-                } else if (specialtyCode === 'refraction' && (docDept === 'refraction' || docSpecialty.includes('khúc xạ') || docSpecialty.includes('kính'))) {
-                  isMatch = true;
-                } else if (specialtyCode === 'lasik' && (docDept === 'lasik' || docSpecialty.includes('lasik') || docSpecialty.includes('phẫu thuật'))) {
-                  isMatch = true;
-                } else if (specialtyCode === 'children' && (docDept === 'children' || docSpecialty.includes('trẻ em') || docSpecialty.includes('nhược thị'))) {
-                  isMatch = true;
-                } else if (specialtyCode === 'cataract' && (docDept === 'cataract' || docSpecialty.includes('thủy tinh thể') || docSpecialty.includes('phaco'))) {
-                  isMatch = true;
-                } else if (specialtyCode === 'retina' && (docDept === 'retina' || docSpecialty.includes('võng mạc') || docSpecialty.includes('glaucoma'))) {
-                  isMatch = true;
                 }
 
-                // Giữ cho TẤT CẢ bác sĩ luôn luôn hiển thị đầy đủ
-                opt.hidden = false;
-                opt.disabled = false;
-                opt.style.display = '';
-
                 const baseText = opt.dataset.name + ' — Chuyên khoa: ' + opt.dataset.specialty + (opt.dataset.room ? ' (' + opt.dataset.room + ')' : '');
-                if (isMatch) {
-                  opt.text = (bgroup === 'thuthuat' ? '★ [Bác sĩ khám lâm sàng chỉ định] ' : '★ [Đúng chuyên khoa] ') + baseText;
+
+                if (!isWorkingToday) {
+                  // Bác sĩ nghỉ hôm đó → vô hiệu hóa (không ẩn, giúp bệnh nhân thấy và chọn ngày khác)
+                  opt.disabled = true;
+                  opt.hidden = false;
+                  opt.style.display = '';
+                  opt.style.color = '#94a3b8';
+                  opt.text = '🔴 [Nghỉ hôm nay] ' + (opt.dataset.name || '') + ' — ' + (opt.dataset.specialty || '');
+                } else if (isMatch) {
+                  opt.disabled = false;
+                  opt.hidden = false;
+                  opt.style.display = '';
+                  opt.style.color = '';
+                  const tagPrefix = (radioElement.dataset.requiresPreop === 'true')
+                    ? '★ [Bác sĩ phẫu thuật & Tiền phẫu] '
+                    : (bgroup === 'thuthuat' ? '★ [Bác sĩ khám lâm sàng chỉ định] ' : '★ [Đúng chuyên khoa] ');
+                  opt.text = tagPrefix + baseText;
                   matchedCount++;
-                  if (!firstMatchedValue) firstMatchedValue = opt.value;
+                  if (!firstMatchedValue) firstMatchedValue = opt.value; // Chỉ auto-chọn bác sĩ có lịch
                 } else {
+                  opt.disabled = false;
+                  opt.hidden = false;
+                  opt.style.display = '';
+                  opt.style.color = '';
                   opt.text = baseText;
                 }
               });
 
               // Khi ấn vào dịch vụ: luôn tự động chỉ định và chọn ngay bác sĩ chuyên khoa phù hợp nhất
+              // Fallback: tìm bác sĩ general có lịch làm việc (không bị disabled)
               if (!firstMatchedValue) {
-                const defaultDoc = Array.from(doctorSelect.options).find(opt => opt.value && (opt.dataset.dept === 'general' || (opt.dataset.specialty || '').toLowerCase().includes('tổng quát')));
+                const defaultDoc = Array.from(doctorSelect.options).find(opt => opt.value && !opt.disabled && (opt.dataset.dept === 'general' || (opt.dataset.specialty || '').toLowerCase().includes('tổng quát')));
                 if (defaultDoc) firstMatchedValue = defaultDoc.value;
-                else if (doctorSelect.options.length > 1) firstMatchedValue = doctorSelect.options[1].value;
+                else {
+                  // Lấy bác sĩ đầu tiên không bị disabled
+                  const firstEnabled = Array.from(doctorSelect.options).find(opt => opt.value && !opt.disabled);
+                  if (firstEnabled) firstMatchedValue = firstEnabled.value;
+                }
               }
               if (firstMatchedValue) {
                 doctorSelect.value = firstMatchedValue;
@@ -1424,9 +1528,12 @@
 
               if (filterTag) filterTag.classList.remove('d-none');
               if (filterNotice) {
-                if (bgroup === 'thuthuat') {
+                if (radioElement.dataset.requiresPreop === 'true') {
                   filterNotice.innerHTML = '<i class="bi bi-shield-check text-primary me-1"></i>' +
-                    'Thủ thuật cần khám lâm sàng trước: Đã tự động chỉ định <b>Bác sĩ khám mắt tổng quát (' + assignedDocName + ')</b> tiếp nhận cho gói: <b class="text-dark">' + serviceName + '</b>.';
+                    'Gói phẫu thuật chuyên sâu: Đã tự động chỉ định <b>Bác sĩ phẫu thuật (' + assignedDocName + ')</b> tiếp nhận khám &amp; đánh giá tiền phẫu cho gói: <b class="text-dark">' + serviceName + '</b>. (Bạn có thể tự do chọn bác sĩ khác bên dưới)';
+                } else if (bgroup === 'thuthuat') {
+                  filterNotice.innerHTML = '<i class="bi bi-shield-check text-primary me-1"></i>' +
+                    'Thủ thuật cần khám lâm sàng trước: Đã tự động chỉ định <b>Bác sĩ khám mắt (' + assignedDocName + ')</b> tiếp nhận cho gói: <b class="text-dark">' + serviceName + '</b>.';
                 } else {
                   filterNotice.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>' +
                     'Đã tự động chỉ định bác sĩ chuyên khoa: <b class="text-teal" style="color:#0d9488;">' + assignedDocName + '</b> cho dịch vụ: <b class="text-dark">' + serviceName + '</b>. (Bạn vẫn có thể tự do chọn bác sĩ khác trong danh sách bên dưới)';
@@ -1436,10 +1543,25 @@
 
               updateDoctorPreview();
 
-              // Cập nhật Banner cảnh báo quy trình y khoa cho dịch vụ đang chọn (tái sử dụng bgroup, không khai báo lại const)
+              // Cập nhật Banner cảnh báo quy trình y khoa cho dịch vụ đang chọn
               const protocolBox = document.getElementById('serviceProtocolAlertBox');
               if (protocolBox) {
-                if (bgroup === 'thuthuat') {
+                if (radio.dataset.requiresPreop === 'true') {
+                  protocolBox.style.display = 'block';
+                  protocolBox.innerHTML =
+                    '<div class="alert alert-warning border border-warning rounded-4 p-3 shadow-sm" style="background:#fffbeb;">' +
+                      '<div class="d-flex align-items-start">' +
+                        '<i class="bi bi-shield-check fs-3 text-warning me-3 flex-shrink-0 mt-1"></i>' +
+                        '<div>' +
+                          '<h6 class="fw-bold text-dark mb-1">📋 QUY TRÌNH TIỀN PHẪU &amp; ĐIỀU KIỆN CAN THIỆP:</h6>' +
+                          '<p class="small text-secondary mb-1">' +
+                            'Gói dịch vụ này có quy trình các bước trước khám (lấy máu xét nghiệm, đo khúc xạ máy, bản đồ giác mạc...). Buổi hẹn này sẽ bắt đầu bằng <strong>quy trình thăm khám &amp; kiểm tra tiền phẫu chuyên sâu</strong> để Bác sĩ đánh giá mắt có đủ điều kiện phẫu thuật an toàn hay không.' +
+                          '</p>' +
+                          '<div class="text-success small fw-semibold"><i class="bi bi-gift-fill me-1"></i>Tiền đặt cọc đặt lịch khám tiền phẫu ban đầu sẽ được khấu trừ 100% vào tổng chi phí ca phẫu thuật.</div>' +
+                        '</div>' +
+                      '</div>' +
+                    '</div>';
+                } else if (bgroup === 'thuthuat') {
                   protocolBox.style.display = 'block';
                   protocolBox.innerHTML =
                     '<div class="alert alert-warning border border-warning rounded-4 p-3 shadow-sm" style="background:#fffbeb;">' +
@@ -1763,31 +1885,55 @@
               }
             }
 
-            // Cập nhật hiển thị phí khám động theo dịch vụ được chọn (Chi phí gói dịch vụ là phí giữ chỗ luôn)
+            // Cập nhật hiển thị phí khám động theo dịch vụ được chọn (Chi phí giữ chỗ & tiền phẫu)
             function updateFeeDisplay() {
               const checkedSvc = document.querySelector('input[name="serviceId"]:checked');
               if (!checkedSvc) return;
               const price = parseFloat(checkedSvc.dataset.price) || 0;
+              const fee = parseFloat(checkedSvc.dataset.deposit) || (price > 0 ? price : 200000);
+              const balance = parseFloat(checkedSvc.dataset.balance) || 0;
               const svcName = (checkedSvc.dataset.name || '').toLowerCase();
+              // Dùng data-is-preop-service từ server (set bởi bGroup == 'tienphau_tamsoat')
+              // thay cho check tên dịch vụ hardcode — tránh sai khi admin đổi tên dịch vụ
+              const isPreopService = checkedSvc.dataset.isPreopService === 'true';
               const labelEl = document.getElementById('feeLabelText');
               const amountEl = document.getElementById('feeDisplayAmount');
               const badgeEl = document.getElementById('feeBadgeText');
               const noticeEl = document.getElementById('feeRemainingNotice');
 
-              if (labelEl) labelEl.textContent = 'Chi phí dịch vụ (Thanh toán giữ chỗ):';
-              if (amountEl) amountEl.textContent = price.toLocaleString('vi-VN') + ' ₫';
-              if (badgeEl) {
-                badgeEl.className = 'badge bg-success bg-opacity-10 text-success border border-success';
-                badgeEl.textContent = 'Thanh toán giữ chỗ lịch hẹn 100%';
-              }
-              if (noticeEl) {
-                noticeEl.style.display = 'block';
-                if (svcName.includes('tiền phẫu') || svcName.includes('tầm soát')) {
-                  noticeEl.className = 'text-success small mt-1';
-                  noticeEl.innerHTML = '<i class="bi bi-gift-fill me-1"></i>Chi phí khám này dùng để giữ chỗ lịch hẹn và <b>được khấu trừ 100% vào chi phí ca mổ</b> nếu quý khách tiến hành phẫu thuật.';
-                } else {
-                  noticeEl.className = 'text-muted small mt-1';
-                  noticeEl.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>Chi phí dịch vụ trọn gói dùng để xác nhận và giữ chỗ khung giờ tiếp đón với bác sĩ chuyên khoa.';
+              if (balance > 0) {
+                if (labelEl) labelEl.textContent = 'Tiền cọc giữ chỗ & khám tiền phẫu:';
+                if (amountEl) amountEl.textContent = fee.toLocaleString('vi-VN') + ' ₫';
+                if (badgeEl) {
+                  badgeEl.className = 'badge bg-warning bg-opacity-10 text-dark border border-warning';
+                  badgeEl.textContent = 'Đặt cọc & Khám tiền phẫu';
+                }
+                if (noticeEl) {
+                  noticeEl.style.display = 'block';
+                  noticeEl.className = 'small mt-2 p-2 rounded-3 bg-light border';
+                  noticeEl.innerHTML =
+                    '<div class="d-flex justify-content-between mb-1"><span>Tổng chi phí gói phẫu thuật:</span> <strong class="text-dark">' + price.toLocaleString('vi-VN') + ' ₫</strong></div>' +
+                    '<div class="d-flex justify-content-between text-danger mb-1"><span>Chi phí còn lại (thanh toán khi phẫu thuật):</span> <strong>' + balance.toLocaleString('vi-VN') + ' ₫</strong></div>' +
+                    '<div class="text-success"><i class="bi bi-gift-fill me-1"></i>Tiền cọc khám tiền phẫu ban đầu được khấu trừ 100% vào chi phí ca mổ nếu tiến hành phẫu thuật.</div>';
+                }
+              } else {
+                if (labelEl) labelEl.textContent = 'Chi phí dịch vụ (Thanh toán giữ chỗ):';
+                if (amountEl) amountEl.textContent = fee.toLocaleString('vi-VN') + ' ₫';
+                if (badgeEl) {
+                  badgeEl.className = 'badge bg-success bg-opacity-10 text-success border border-success';
+                  badgeEl.textContent = 'Thanh toán giữ chỗ lịch hẹn 100%';
+                }
+                if (noticeEl) {
+                  noticeEl.style.display = 'block';
+                   // Ưu tiên dùng data-is-preop-service (từ bGroup server-side),
+                   // fallback dùng tên dịch vụ nếu admin thêm dịch vụ mới có tên chứa 'tiền phẫu'/'tầm soát'
+                   if (isPreopService || svcName.includes('tiền phẫu') || svcName.includes('tầm soát')) {
+                    noticeEl.className = 'text-success small mt-1';
+                    noticeEl.innerHTML = '<i class="bi bi-gift-fill me-1"></i>Chi phí khám này dùng để giữ chỗ lịch hẹn và <b>được khấu trừ 100% vào chi phí ca mổ</b> nếu quý khách tiến hành phẫu thuật.';
+                  } else {
+                    noticeEl.className = 'text-muted small mt-1';
+                    noticeEl.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>Chi phí dịch vụ trọn gói dùng để xác nhận và giữ chỗ khung giờ tiếp đón với bác sĩ chuyên khoa.';
+                  }
                 }
               }
             }
