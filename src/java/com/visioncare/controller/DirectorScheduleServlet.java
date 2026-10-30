@@ -65,8 +65,18 @@ public class DirectorScheduleServlet extends HttpServlet {
             // Ensure realistic schedules exist for doctors, specialists, and staff
             workScheduleDAO.ensureRealisticSchedules();
 
+            // Load counts across all roles for header tabs
+            List<User> allDoctors = workScheduleDAO.getEmployeesByRoleType("doctor");
+            List<User> allSpecialists = workScheduleDAO.getEmployeesByRoleType("specialist");
+            List<User> allStaffs = workScheduleDAO.getEmployeesByRoleType("staff");
+
+            int doctorCount = (allDoctors != null) ? allDoctors.size() : 0;
+            int specialistCount = (allSpecialists != null) ? allSpecialists.size() : 0;
+            int staffCount = (allStaffs != null) ? allStaffs.size() : 0;
+
             // Get list of employees for selected type
-            List<User> employeeList = workScheduleDAO.getEmployeesByRoleType(employeeType);
+            List<User> employeeList = "specialist".equalsIgnoreCase(employeeType) ? allSpecialists
+                    : ("staff".equalsIgnoreCase(employeeType) ? allStaffs : allDoctors);
 
             // Determine which employee's schedule to view
             String empIdParam = request.getParameter("empId");
@@ -184,18 +194,28 @@ public class DirectorScheduleServlet extends HttpServlet {
             }
 
             int totalWeeklySlots = 0;
+            int totalBookedSlots = 0;
+            int totalLeaveSlots = 0;
             for (ScheduleDayDTO day : weekDays) {
                 int daySlotsCount = 0;
                 for (ScheduleSlotDTO slot : slots) {
                     String key = day.getFullDate() + "_" + slot.getId();
                     ScheduleCellDTO cell = scheduleMatrix.get(key);
-                    if (cell != null && !cell.isOff() && !cell.isOnLeave() && !cell.isClosed()) {
-                        daySlotsCount++;
-                        totalWeeklySlots++;
+                    if (cell != null) {
+                        if (!cell.isOff() && !cell.isOnLeave() && !cell.isClosed()) {
+                            daySlotsCount++;
+                            totalWeeklySlots++;
+                            if (cell.isBooked()) {
+                                totalBookedSlots++;
+                            }
+                        } else if (cell.isOnLeave()) {
+                            totalLeaveSlots++;
+                        }
                     }
                 }
                 day.setTotalSlotsCount(daySlotsCount);
             }
+            int totalAvailableSlots = Math.max(0, totalWeeklySlots - totalBookedSlots);
             double totalWeeklyHours = totalWeeklySlots * 0.5;
 
             int prevWeek = selectedWeek - 1;
@@ -221,6 +241,10 @@ public class DirectorScheduleServlet extends HttpServlet {
             request.setAttribute("pendingLeaveCount", leaveStats.get("pending"));
             request.setAttribute("pendingRefundCount", refundStats.get("pending"));
 
+            request.setAttribute("doctorCount", doctorCount);
+            request.setAttribute("specialistCount", specialistCount);
+            request.setAttribute("staffCount", staffCount);
+
             request.setAttribute("employeeType", employeeType);
             request.setAttribute("employeeList", employeeList);
             request.setAttribute("selectedEmployee", selectedEmployee);
@@ -239,6 +263,9 @@ public class DirectorScheduleServlet extends HttpServlet {
             request.setAttribute("slots", slots);
             request.setAttribute("scheduleMatrix", scheduleMatrix);
             request.setAttribute("totalWeeklySlots", totalWeeklySlots);
+            request.setAttribute("totalBookedSlots", totalBookedSlots);
+            request.setAttribute("totalAvailableSlots", totalAvailableSlots);
+            request.setAttribute("totalLeaveSlots", totalLeaveSlots);
             request.setAttribute("totalWeeklyHours", totalWeeklyHours);
 
             String sessionFilter = request.getParameter("session");

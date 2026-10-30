@@ -163,6 +163,103 @@ public class DatabaseInitializerListener implements ServletContextListener {
                 System.err.println("[VisionCare] Note on Invoice_Checkout tables init: " + e.getMessage());
             }
 
+            // 7. Cấu hình linh hoạt Quy trình khám (Workflow Steps) & Tiền phẫu (Prerequisite Services) cho Service_Catalog
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("IF COL_LENGTH('dbo.Service_Catalog', 'Requires_Pre_Op') IS NULL "
+                           + "ALTER TABLE dbo.Service_Catalog ADD Requires_Pre_Op BIT NOT NULL DEFAULT 0");
+                stmt.execute("IF COL_LENGTH('dbo.Service_Catalog', 'Prerequisite_Service_ID') IS NULL "
+                           + "ALTER TABLE dbo.Service_Catalog ADD Prerequisite_Service_ID INT NULL REFERENCES dbo.Service_Catalog(Service_ID)");
+                stmt.execute("IF COL_LENGTH('dbo.Service_Catalog', 'Allow_Direct_Booking') IS NULL "
+                           + "ALTER TABLE dbo.Service_Catalog ADD Allow_Direct_Booking BIT NOT NULL DEFAULT 1");
+
+                stmt.execute("IF OBJECT_ID('dbo.Service_Workflow_Step', 'U') IS NULL "
+                           + "CREATE TABLE dbo.Service_Workflow_Step ("
+                           + "  Step_ID INT IDENTITY(1,1) NOT NULL PRIMARY KEY, "
+                           + "  Service_ID INT NOT NULL REFERENCES dbo.Service_Catalog(Service_ID) ON DELETE CASCADE, "
+                           + "  Step_Name NVARCHAR(255) NOT NULL, "
+                           + "  Step_Stage VARCHAR(20) NOT NULL DEFAULT 'PRE_EXAM', "
+                           + "  Step_Order INT NOT NULL DEFAULT 1, "
+                           + "  Description NVARCHAR(500) NULL "
+                           + ")");
+
+                // ===================================================================
+                // CHÍNH SÁCH ĐẶT LỊCH THEO TỪNG DỊCH VỤ (Áp dụng mỗi lần khởi động)
+                // ===================================================================
+
+                // TRƯỜNG HỢP 1: Cho phép đặt trực tiếp, không yêu cầu tiền phẫu
+                // Gồm: dịch vụ khám, chẩn đoán, tầm soát không xâm lấn;
+                // các gói tiền phẫu (LS-03, TT-05) — bản thân chúng cho đặt trực tiếp;
+                // TP-LEO, TP-LEDAO — bệnh nhân tự nhận biết triệu chứng (cục u mí mắt,
+                // chảy nước mắt sống), phòng có phòng tiểu phẫu đặt slot trực tiếp được.
+                stmt.execute("UPDATE Service_Catalog "
+                           + "SET Allow_Direct_Booking = 1, Requires_Pre_Op = 0, Prerequisite_Service_ID = NULL "
+                           + "WHERE Service_Code IN ('NK-01','KX-02','KX-MAY','PE-04','GL-06','OCT-DM','KM-CVS','KM-DM','LS-03','TT-05','TP-LEO','TP-LEDAO')");
+
+                // TRƯỜNG HỢP 2: Cho phép đặt trực tiếp + Bắt buộc qua tiền phẫu trước
+                // PT-LASIK & PT-SMILE: phẫu thuật giác mạc xâm lấn, bắt buộc đo Pentacam & bản đồ giác mạc trước
+                stmt.execute("UPDATE Service_Catalog "
+                           + "SET Allow_Direct_Booking = 1, Requires_Pre_Op = 1, "
+                           + "Prerequisite_Service_ID = (SELECT TOP 1 Service_ID FROM Service_Catalog WHERE Service_Code = 'LS-03') "
+                           + "WHERE Service_Code IN ('PT-LASIK','PT-SMILE')");
+
+                // PT-PHACO: phẫu thuật thay thủy tinh thể, bắt buộc đo công suất IOL & kiểm tra tim mạch/đường huyết trước
+                stmt.execute("UPDATE Service_Catalog "
+                           + "SET Allow_Direct_Booking = 1, Requires_Pre_Op = 1, "
+                           + "Prerequisite_Service_ID = (SELECT TOP 1 Service_ID FROM Service_Catalog WHERE Service_Code = 'TT-05') "
+                           + "WHERE Service_Code = 'PT-PHACO'");
+
+                // TRƯỜNG HỢP 3: Ẩn hoàn toàn khỏi trang đặt lịch, chỉ qua chỉ định Bác sĩ
+                // TP-YAG: Laser YAG bao sau đục — tiêu chí: bệnh nhân KHÔNG THỂ tự biết mình cần dịch vụ này.
+                // Đây là biến chứng sau phẫu thuật Phaco (bao sau bị đục lại). Bệnh nhân chỉ
+                // biết "mắt mờ trở lại", họ book tái khám. Bác sĩ mới phát hiện và ra chỉ định TP-YAG.
+                // Không có bệnh nhân nào tự tìm "Laser YAG bao sau đục" trên web để đặt lịch.
+                stmt.execute("UPDATE Service_Catalog "
+                           + "SET Allow_Direct_Booking = 0, Requires_Pre_Op = 0, Prerequisite_Service_ID = NULL "
+                           + "WHERE Service_Code = 'TP-YAG'");
+
+                // Thêm các bước quy trình mẫu nếu bảng Service_Workflow_Step đang trống
+                stmt.execute("IF NOT EXISTS (SELECT 1 FROM dbo.Service_Workflow_Step) "
+                           + "BEGIN "
+                           + "  DECLARE @lasikId INT = (SELECT TOP 1 Service_ID FROM dbo.Service_Catalog WHERE Service_Code = 'PT-LASIK'); "
+                           + "  IF @lasikId IS NOT NULL BEGIN "
+                           + "    INSERT INTO dbo.Service_Workflow_Step (Service_ID, Step_Name, Step_Stage, Step_Order, Description) VALUES "
+                           + "    (@lasikId, N'Lấy máu xét nghiệm đông máu & kiểm tra sinh hiệu', 'PRE_EXAM', 1, N'Kiểm tra công thức máu và các chỉ số sinh hóa trước mổ'), "
+                           + "    (@lasikId, N'Đo khúc xạ máy Pentacam & chụp bản đồ giác mạc', 'PRE_EXAM', 2, N'Khảo sát độ dày, cấu trúc và bản đồ giác mạc chuyên sâu'), "
+                           + "    (@lasikId, N'Khám tiền phẫu & kết luận điều kiện mổ với Bác sĩ', 'IN_EXAM', 3, N'Bác sĩ phẫu thuật kết luận mắt đủ tiêu chuẩn mổ Femto-LASIK'), "
+                           + "    (@lasikId, N'Thực hiện phẫu thuật tại phòng mổ vô khuẩn', 'POST_EXAM', 4, N'Ca mổ 15 phút với hệ thống Laser Femtosecond hiện đại'), "
+                           + "    (@lasikId, N'Nghỉ ngơi hồi tỉnh & hẹn lịch tái khám định kỳ', 'POST_EXAM', 5, N'Theo dõi 30 phút sau mổ và phát kính bảo vệ mắt'); "
+                           + "  END "
+                           + "  DECLARE @smileId INT = (SELECT TOP 1 Service_ID FROM dbo.Service_Catalog WHERE Service_Code = 'PT-SMILE'); "
+                           + "  IF @smileId IS NOT NULL BEGIN "
+                           + "    INSERT INTO dbo.Service_Workflow_Step (Service_ID, Step_Name, Step_Stage, Step_Order, Description) VALUES "
+                           + "    (@smileId, N'Lấy máu xét nghiệm & tầm soát bệnh lý toàn thân', 'PRE_EXAM', 1, N'Xét nghiệm máu an toàn trước can thiệp'), "
+                           + "    (@smileId, N'Đo nhãn áp & phân tích cơ sinh học giác mạc Corvis', 'PRE_EXAM', 2, N'Đánh giá độ bền và độ giãn lồi của giác mạc'), "
+                           + "    (@smileId, N'Bác sĩ chuyên khoa khúc xạ khám & duyệt phác đồ mổ', 'IN_EXAM', 3, N'Lập trình thông số phẫu thuật trên máy VisuMax'), "
+                           + "    (@smileId, N'Phẫu thuật ReLEx SMILE rút lõi mô giác mạc 2mm', 'POST_EXAM', 4, N'Phẫu thuật không tạo vạt, hạn chế tối đa khô mắt'), "
+                           + "    (@smileId, N'Kiểm tra mắt sau mổ, cấp kính bảo hộ và thuốc nhỏ', 'POST_EXAM', 5, N'Hướng dẫn chăm sóc mắt và tái khám sau 24 giờ'); "
+                           + "  END "
+                           + "  DECLARE @phacoId INT = (SELECT TOP 1 Service_ID FROM dbo.Service_Catalog WHERE Service_Code = 'PT-PHACO'); "
+                           + "  IF @phacoId IS NOT NULL BEGIN "
+                           + "    INSERT INTO dbo.Service_Workflow_Step (Service_ID, Step_Name, Step_Stage, Step_Order, Description) VALUES "
+                           + "    (@phacoId, N'Xét nghiệm máu, đo điện tâm đồ & kiểm tra đường huyết', 'PRE_EXAM', 1, N'Tầm soát an toàn tim mạch và tiểu đường trước mổ'), "
+                           + "    (@phacoId, N'Siêu âm mắt & đo công suất kính nội nhãn IOL', 'PRE_EXAM', 2, N'Đo chính xác độ khúc xạ của thủy tinh thể nhân tạo'), "
+                           + "    (@phacoId, N'Bác sĩ khám lâm sàng & tư vấn chọn loại kính IOL', 'IN_EXAM', 3, N'Lựa chọn kính đơn tiêu, đa tiêu hoặc toric phù hợp'), "
+                           + "    (@phacoId, N'Phẫu thuật Phaco tán nhuyễn và thay thủy tinh thể', 'POST_EXAM', 4, N'Ca mổ đường rạch siêu nhỏ 2.2mm, không đau'), "
+                           + "    (@phacoId, N'Băng mắt bảo vệ, theo dõi hậu phẫu & hẹn tái khám', 'POST_EXAM', 5, N'Theo dõi 1-2 tiếng tại phòng hồi tỉnh trước khi xuất viện'); "
+                           + "  END "
+                           + "  DECLARE @generalId INT = (SELECT TOP 1 Service_ID FROM dbo.Service_Catalog WHERE Service_Code = 'NK-01'); "
+                           + "  IF @generalId IS NOT NULL BEGIN "
+                           + "    INSERT INTO dbo.Service_Workflow_Step (Service_ID, Step_Name, Step_Stage, Step_Order, Description) VALUES "
+                           + "    (@generalId, N'Đo thị lực & đo khúc xạ máy tự động', 'PRE_EXAM', 1, N'Kiểm tra thị lực ban đầu và độ khúc xạ cơ bản'), "
+                           + "    (@generalId, N'Đo nhãn áp không tiếp xúc', 'PRE_EXAM', 2, N'Tầm soát áp lực nhãn cầu phòng ngừa Glaucoma'), "
+                           + "    (@generalId, N'Bác sĩ khám sinh hiển vi & soi đáy mắt trực tiếp', 'IN_EXAM', 3, N'Khám toàn diện kết giác mạc, tiền phòng và võng mạc'), "
+                           + "    (@generalId, N'Tư vấn toa thuốc & hướng dẫn chăm sóc mắt', 'POST_EXAM', 4, N'Kê đơn thuốc hoặc tư vấn chuyển phòng chuyên khoa nếu cần'); "
+                           + "  END "
+                           + "END");
+            } catch (Exception e) {
+                System.err.println("[VisionCare] Note on Service_Workflow_Step & PreOp migration: " + e.getMessage());
+            }
+
             System.out.println("[VisionCare] Database check completed successfully!");
             System.out.println("==================================================================");
 

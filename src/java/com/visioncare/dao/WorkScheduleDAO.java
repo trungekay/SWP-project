@@ -537,4 +537,39 @@ public class WorkScheduleDAO {
         ps.setString(8, slot);
         ps.executeUpdate();
     }
+
+    /**
+     * Trả về map {ngày (yyyy-MM-dd) → Set<doctorEmployeeId>} cho các bác sĩ có
+     * ít nhất một ca làm việc đang hoạt động (không bị hủy) trong khoảng ngày cho trước.
+     * Dùng để pre-load lịch làm việc 7 ngày lên JSP, tránh N+1 AJAX call khi đổi ngày.
+     *
+     * @param startDate ngày bắt đầu dạng "yyyy-MM-dd"
+     * @param endDate   ngày kết thúc dạng "yyyy-MM-dd"
+     * @return LinkedHashMap sắp xếp theo thứ tự ngày tăng dần
+     */
+    public Map<String, Set<Integer>> getDoctorWorkingDays(String startDate, String endDate) {
+        Map<String, Set<Integer>> result = new LinkedHashMap<>();
+        String sql = "SELECT CONVERT(varchar(10), Work_Date, 120) AS work_date, Doctor_Employee_ID " +
+                     "FROM Work_Schedule " +
+                     "WHERE Work_Date BETWEEN ? AND ? " +
+                     "AND Doctor_Employee_ID IS NOT NULL " +
+                     "AND Status NOT IN ('Canceled', 'On_Leave', 'Inactive', 'Disabled', 'Closed') " +
+                     "GROUP BY Work_Date, Doctor_Employee_ID " +
+                     "ORDER BY Work_Date";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, startDate);
+            ps.setString(2, endDate);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String date = rs.getString("work_date");
+                    int docId = rs.getInt("Doctor_Employee_ID");
+                    result.computeIfAbsent(date, k -> new HashSet<>()).add(docId);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
 }
