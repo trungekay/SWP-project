@@ -11,19 +11,13 @@
 </style>
 <!-- Director Sidebar -->
 <aside class="sidebar">
-    <a href="${pageContext.request.contextPath}/director/dashboard" class="sidebar-brand">
+    <a href="${pageContext.request.contextPath}/director/revenue" class="sidebar-brand">
         <span class="logo-mark"><i class="bi bi-eye"></i></span>
         <span class="brand-text">VisionCare</span>
     </a>
 
     <ul class="sidebar-menu">
         <div class="sidebar-menu-header">BAN ĐIỀU HÀNH</div>
-        <li>
-            <a href="${pageContext.request.contextPath}/director/dashboard" class="${param.activeNav == 'dashboard' ? 'active' : ''}">
-                <i class="bi bi-speedometer2"></i>
-                <span>Tổng quan Giám đốc</span>
-            </a>
-        </li>
         <li>
             <a href="${pageContext.request.contextPath}/director/revenue" class="${param.activeNav == 'revenue' ? 'active' : ''}">
                 <i class="bi bi-graph-up"></i>

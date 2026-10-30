@@ -27,7 +27,7 @@ public class HomeServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/admin/users");
                 return;
             } else if (roleId == 2 || "director".equalsIgnoreCase(role)) {
-                response.sendRedirect(request.getContextPath() + "/director/dashboard");
+                response.sendRedirect(request.getContextPath() + "/director/revenue");
                 return;
             } else if (roleId == 3 || "doctor".equalsIgnoreCase(role)
                     || roleId == 4 || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)

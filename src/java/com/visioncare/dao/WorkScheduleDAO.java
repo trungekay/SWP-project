@@ -542,10 +542,6 @@ public class WorkScheduleDAO {
      * Trả về map {ngày (yyyy-MM-dd) → Set<doctorEmployeeId>} cho các bác sĩ có
      * ít nhất một ca làm việc đang hoạt động (không bị hủy) trong khoảng ngày cho trước.
      * Dùng để pre-load lịch làm việc 7 ngày lên JSP, tránh N+1 AJAX call khi đổi ngày.
-     *
-     * @param startDate ngày bắt đầu dạng "yyyy-MM-dd"
-     * @param endDate   ngày kết thúc dạng "yyyy-MM-dd"
-     * @return LinkedHashMap sắp xếp theo thứ tự ngày tăng dần
      */
     public Map<String, Set<Integer>> getDoctorWorkingDays(String startDate, String endDate) {
         Map<String, Set<Integer>> result = new LinkedHashMap<>();
@@ -571,5 +567,47 @@ public class WorkScheduleDAO {
             e.printStackTrace();
         }
         return result;
+    }
+
+    /**
+     * Lấy thống kê số ca trực và số lịch hẹn của tất cả nhân sự thuộc 1 role trong khoảng ngày (tuần).
+     * Trả về Map<ActorId, int[]{totalSlots, bookedSlots}>
+     */
+    public Map<Integer, int[]> getWeeklyEmployeeSlotStats(String roleType, String startDate, String endDate) {
+        Map<Integer, int[]> stats = new HashMap<>();
+        String colName = "Doctor_Employee_ID";
+        if ("specialist".equalsIgnoreCase(roleType) || "medical_specialist".equalsIgnoreCase(roleType)) {
+            colName = "Specialist_Employee_ID";
+        } else if ("staff".equalsIgnoreCase(roleType)) {
+            colName = "Staff_Employee_ID";
+        }
+
+        String sql = "SELECT " + colName + " AS actor_id, " +
+                     "SUM(CASE WHEN ws.Status NOT IN ('Canceled', 'On_Leave', 'Closed') THEN 1 ELSE 0 END) AS total_slots, " +
+                     "SUM(CASE WHEN a.Appointment_ID IS NOT NULL AND a.Status NOT IN ('Canceled', 'Rejected') THEN 1 ELSE 0 END) AS booked_slots " +
+                     "FROM Work_Schedule ws " +
+                     "LEFT JOIN Appointment a ON ( " +
+                     "  (a.Doctor_Employee_ID = ws.Doctor_Employee_ID AND ws.Doctor_Employee_ID IS NOT NULL) OR " +
+                     "  (a.Specialist_Employee_ID = ws.Specialist_Employee_ID AND ws.Specialist_Employee_ID IS NOT NULL) " +
+                     ") AND a.Appointment_Date = ws.Work_Date AND a.Time_Slot = ws.Slot " +
+                     "WHERE ws." + colName + " IS NOT NULL AND ws.Work_Date BETWEEN ? AND ? " +
+                     "GROUP BY ws." + colName;
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, startDate);
+            ps.setString(2, endDate);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int actorId = rs.getInt("actor_id");
+                    int totalSlots = rs.getInt("total_slots");
+                    int bookedSlots = rs.getInt("booked_slots");
+                    stats.put(actorId, new int[]{totalSlots, bookedSlots});
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return stats;
     }
 }

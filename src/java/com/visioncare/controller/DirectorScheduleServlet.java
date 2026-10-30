@@ -78,8 +78,10 @@ public class DirectorScheduleServlet extends HttpServlet {
             List<User> employeeList = "specialist".equalsIgnoreCase(employeeType) ? allSpecialists
                     : ("staff".equalsIgnoreCase(employeeType) ? allStaffs : allDoctors);
 
-            // Determine which employee's schedule to view
+            // Determine view mode: "list" (Danh sách nhân sự) vs "schedule" (Lịch chi tiết theo tuần)
+            String viewMode = request.getParameter("view");
             String empIdParam = request.getParameter("empId");
+
             int selectedEmpId = -1;
             if (empIdParam != null && !empIdParam.trim().isEmpty()) {
                 try {
@@ -87,7 +89,16 @@ public class DirectorScheduleServlet extends HttpServlet {
                 } catch (NumberFormatException ignored) {}
             }
 
-            // Ensure selectedEmpId belongs to the current employeeList (avoid cross-role invalid IDs)
+            // If empId is explicitly passed, default to "schedule" mode unless specified otherwise
+            if (viewMode == null || viewMode.isEmpty()) {
+                if (empIdParam != null && !empIdParam.trim().isEmpty()) {
+                    viewMode = "schedule";
+                } else {
+                    viewMode = "list";
+                }
+            }
+
+            // Ensure selectedEmpId belongs to current employeeList
             boolean idFoundInList = false;
             if (selectedEmpId > 0 && employeeList != null) {
                 for (User u : employeeList) {
@@ -97,8 +108,6 @@ public class DirectorScheduleServlet extends HttpServlet {
                     }
                 }
             }
-
-            // Fallback to first employee if not specified, not found or invalid
             if (!idFoundInList && employeeList != null && !employeeList.isEmpty()) {
                 selectedEmpId = employeeList.get(0).getActorId();
             }
@@ -234,6 +243,11 @@ public class DirectorScheduleServlet extends HttpServlet {
                     nextWeek = weekOptions.size();
                 }
             }
+
+            // Load weekly slots and booked stats for all employees in current employeeList
+            Map<Integer, int[]> employeeSlotStats = workScheduleDAO.getWeeklyEmployeeSlotStats(employeeType, startDateStr, endDateStr);
+            request.setAttribute("employeeSlotStats", employeeSlotStats);
+            request.setAttribute("viewMode", viewMode);
 
             // Pending badges
             Map<String, Integer> leaveStats = leaveCancelRequestDAO.getStats();
