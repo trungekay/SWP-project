@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
   <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
     <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
     <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
@@ -246,11 +246,11 @@
           }
         </style>
 
-        <main class="main bg-light py-5">
-          <div class="container">
+        <main class="main bg-light py-4">
+          <div class="container-fluid px-3 px-md-4">
 
-            <div class="row justify-content-center">
-              <div class="col-lg-10 col-xl-9">
+            <div class="row">
+              <div class="col-12">
 
                 <%-- THÔNG BÁO LỖI (NẾU CÓ) --%>
                   <c:if test="${not empty error}">
