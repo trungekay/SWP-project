@@ -78,6 +78,9 @@
                     </a>
                 </li>
 
+        <c:if test="${sessionScope.user.roleId == 3 or sessionScope.user.roleId == 4}">
+            <li><a href="${pageContext.request.contextPath}/employee/leave-requests" class="${param.activeNav == 'leave-requests' ? 'active' : ''}"><i class="bi bi-calendar2-minus"></i><span>Xin nghỉ / Lịch sử yêu cầu</span></a></li>
+        </c:if>
                 <c:if test="${fn:toLowerCase(sessionScope.user.role) == 'medical_specialist' || fn:toLowerCase(sessionScope.user.role) == 'specialist' || sessionScope.user.roleId == 4 || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2}">
                     <li>
                         <a href="${pageContext.request.contextPath}/specialist/waiting-list" class="${param.activeNav == 'waiting-list' || param.activeNav == 'specialist-waiting-list' ? 'active' : ''}">
@@ -137,7 +140,7 @@
                 </c:if>
             </c:otherwise>
         </c:choose>
-<c:if test="${sessionScope.user.roleId == 2 || fn:toLowerCase(sessionScope.user.role) == 'director'}">
+<c:if test="${sessionScope.user.roleId == 2}">
 <li class="sidebar-dropdown">
 <a href="javascript:void(0);" onclick="toggleSubmenu('request-submenu', this);" class="${param.activeNav == 'refunds' ? 'active' : ''}"><div class="d-flex align-items-center gap-2"><i class="bi bi-inbox"></i><span>Quản lý yêu cầu</span></div><i class="bi bi-chevron-down"></i></a>
 <ul id="request-submenu" class="sidebar-submenu ${param.activeNav == 'refunds' ? 'show' : ''}">
