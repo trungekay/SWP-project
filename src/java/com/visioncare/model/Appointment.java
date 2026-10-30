@@ -37,6 +37,11 @@ public class Appointment {
     private int queueNumber;
     private String doctorCompletedAt;
 
+    public boolean isCanReschedule() {
+        if(!"Confirmed".equals(status)||checkinTime!=null&&!checkinTime.isBlank()||hasRefundRequest||appointmentDate==null||timeSlot==null||!("Paid".equals(invoiceStatus)||"Partial_Paid".equals(invoiceStatus)))return false;
+        try{return appointmentDate.toLocalDate().atTime(java.time.LocalTime.parse(timeSlot.substring(0,5))).isAfter(java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")));}catch(Exception e){return false;}
+    }
+
     public Appointment() {
     }
 

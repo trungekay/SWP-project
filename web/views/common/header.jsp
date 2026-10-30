@@ -33,6 +33,7 @@
       <!-- Main CSS File -->
       <link href="${pageContext.request.contextPath}/assets/css/main.css" rel="stylesheet">
       <link href="${pageContext.request.contextPath}/assets/css/dentalcare-public.css" rel="stylesheet">
+      <c:if test="${param.fullWidth == 'true'}"><link href="${pageContext.request.contextPath}/assets/css/screen-layout.css?v=20261030-wide" rel="stylesheet"></c:if>
       <c:if test="${param.bodyClass == 'admin-catalog-page'}">
         <link href="${pageContext.request.contextPath}/assets/css/admin-catalog.css" rel="stylesheet">
       </c:if>

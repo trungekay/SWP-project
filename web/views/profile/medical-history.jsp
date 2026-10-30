@@ -5,7 +5,8 @@
       <jsp:include page="/views/common/header.jsp">
         <jsp:param name="pageTitle" value="Hồ sơ y tế & Thanh toán" />
         <jsp:param name="pageDescription" value="Hồ sơ y tế & Thanh toán VisionCare" />
-        <jsp:param name="bodyClass" value="starter-page-page" />
+        <jsp:param name="bodyClass" value="starter-page-page screen-wide patient-wide" />
+        <jsp:param name="fullWidth" value="true" />
         <jsp:param name="activeNav" value="" />
       </jsp:include>
 
@@ -179,7 +180,7 @@
 
         <div class="page-title">
           <div class="heading">
-            <div class="container">
+            <div class="container-fluid screen-fluid">
               <div class="row d-flex justify-content-center text-center">
                 <div class="col-lg-8">
                   <h1>Lịch sử khám bệnh</h1>
@@ -189,7 +190,7 @@
             </div>
           </div>
           <nav class="breadcrumbs">
-            <div class="container">
+            <div class="container-fluid screen-fluid">
               <ol>
                 <li><a href="${pageContext.request.contextPath}/home">Trang chủ</a></li>
                 <li><a href="${pageContext.request.contextPath}/views/profile/manage.jsp">Hồ sơ cá nhân</a></li>
@@ -200,8 +201,8 @@
         </div>
 
         <section class="section pt-4">
-          <div class="container">
-            <div class="row">
+          <div class="container-fluid screen-fluid">
+            <div class="row profile-screen-grid">
               <div class="col-lg-3">
                 <div class="content-card text-center border-0 mb-4 mb-lg-0" style="padding: 30px 20px;">
                   <div class="mb-3">
@@ -256,6 +257,7 @@
                   <p class="text-muted small mb-4">Xem chi tiết lịch sử khám, hồ sơ y tế và hóa đơn thanh toán của bạn
                   </p>
 
+                  <c:if test="${not empty errorMessage}"><div class="alert alert-warning"><c:out value="${errorMessage}" /></div></c:if>
                   <div class="content-card mb-5">
                     <div class="table-responsive">
                       <table class="custom-table">
@@ -300,7 +302,7 @@
                                         <i class="bi bi-file-earmark-medical me-1"></i>Xem hồ sơ
                                       </a>
                                       <c:choose>
-                                        <c:when test="${not empty record.invoiceId && record.invoiceId > 0}">
+                                        <c:when test="${record.invoiceVisible}">
                                           <a href="${pageContext.request.contextPath}/profile/invoice-detail?id=${record.invoiceId}"
                                             class="action-btn text-teal" title="Xem hóa đơn" style="color: #008b74;">
                                             <i class="bi bi-receipt"></i>
