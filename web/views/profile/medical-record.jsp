@@ -7,8 +7,9 @@
 <jsp:include page="/views/common/header.jsp">
     <jsp:param name="pageTitle" value="Hồ sơ khám bệnh" />
     <jsp:param name="pageDescription" value="Chi tiết hồ sơ bệnh án ngoại trú VisionCare Clinic" />
-    <jsp:param name="bodyClass" value="starter-page-page" />
-    <jsp:param name="activeNav" value="" />
+    <jsp:param name="bodyClass" value="starter-page-page screen-wide patient-wide" />
+    <jsp:param name="fullWidth" value="true" />
+        <jsp:param name="activeNav" value="" />
 </jsp:include>
 
 <!-- Link to Doctor Unified Detail & Forms Stylesheets -->
@@ -110,7 +111,7 @@
     <!-- Page Title & Breadcrumbs -->
     <div class="page-title">
         <div class="heading">
-            <div class="container">
+            <div class="container-fluid screen-fluid">
                 <div class="row d-flex justify-content-center text-center">
                     <div class="col-lg-8">
                         <h1>Chi tiết hồ sơ khám</h1>
@@ -120,7 +121,7 @@
             </div>
         </div>
         <nav class="breadcrumbs">
-            <div class="container">
+            <div class="container-fluid screen-fluid">
                 <ol>
                     <li><a href="${pageContext.request.contextPath}/home">Trang chủ</a></li>
                     <li><a href="${pageContext.request.contextPath}/views/profile/medical-history.jsp">Lịch sử khám bệnh</a></li>
@@ -131,7 +132,7 @@
     </div>
 
     <section class="section pt-3">
-        <div class="container">
+        <div class="container-fluid screen-fluid">
             <div class="patient-medical-record-wrapper">
 
                 <!-- Breadcrumb navigation (Doctor style) -->
@@ -298,10 +299,13 @@
                                     <dd>
                                         <c:choose>
                                             <c:when test="${not empty record.invoiceId}">
-                                                <a href="${pageContext.request.contextPath}/profile/invoice-detail?id=${record.invoiceId}" class="text-teal text-decoration-none fw-semibold">
+                                                <c:choose><c:when test="${sessionScope.user.roleId == 6 && record.invoiceVisible}"><a href="${pageContext.request.contextPath}/profile/invoice-detail?id=${record.invoiceId}" class="text-teal text-decoration-none fw-semibold">
                                                     <i class="bi bi-receipt me-1"></i><c:out value="${record.formattedInvoiceId}" /> - Tổng tiền: <strong class="text-danger"><c:out value="${record.invoiceAmountFmt}" /></strong>
                                                     <span class="badge bg-success-subtle text-success ms-2 border px-2 py-0.5" style="font-size: 11px;">${record.invoiceStatus}</span>
-                                                </a>
+                                                </a></c:when><c:when test="${sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2 || sessionScope.user.roleId == 5}"><a href="${pageContext.request.contextPath}/staff/invoices/detail?id=${record.invoiceId}" class="text-teal text-decoration-none fw-semibold">
+                                                    <i class="bi bi-receipt me-1"></i><c:out value="${record.formattedInvoiceId}" /> - Tổng tiền: <strong class="text-danger"><c:out value="${record.invoiceAmountFmt}" /></strong>
+                                                    <span class="badge bg-success-subtle text-success ms-2 border px-2 py-0.5" style="font-size: 11px;">${record.invoiceStatus}</span>
+                                                </a></c:when><c:otherwise><c:out value="${record.formattedInvoiceId}" /></c:otherwise></c:choose>
                                             </c:when>
                                             <c:otherwise>
                                                 <span class="text-muted">Chưa phát sinh hóa đơn</span>

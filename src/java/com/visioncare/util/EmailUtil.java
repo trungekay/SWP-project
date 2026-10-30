@@ -128,4 +128,55 @@ public class EmailUtil {
             }
         }).start();
     }
+
+    public static String rescheduleEmailBody(com.visioncare.dao.PatientRescheduleDAO.Change change) {
+        var previous=change.previous();var updated=change.updated();
+        StringBuilder html=new StringBuilder("<div style='font-family:Arial,sans-serif;line-height:1.6;color:#334155'><h2>Xác nhận đổi lịch khám</h2><p>Kính gửi ");
+        html.append(WorkflowTokens.html((String)updated.get("patientName"))).append(",</p><p>Lịch khám #APT-").append(updated.get("id")).append(" đã được thay đổi thành công.</p>");
+        for(var entry:java.util.List.of(java.util.Map.entry("Lịch cũ",previous),java.util.Map.entry("Lịch mới đã xác nhận",updated))) {
+            var visit=entry.getValue();
+            String date=((java.sql.Date)visit.get("date")).toLocalDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            html.append("<h3>").append(entry.getKey()).append("</h3><p>Bác sĩ: ").append(WorkflowTokens.html((String)visit.get("doctorName")))
+                .append("<br>Ngày khám: ").append(date).append("<br>Ca khám: ").append(visit.get("time")).append(" - ").append(visit.get("endTime")).append(" (giờ Việt Nam)</p>");
+        }
+        return html.append("<p>Phí khám đã thanh toán được giữ nguyên; quý khách không cần thanh toán lại phí khám cho lần đổi này.</p><p>Vui lòng đến trước giờ hẹn 10–15 phút để làm thủ tục tiếp đón.</p><p>Trân trọng,<br>VisionCare</p></div>").toString();
+    }
+
+    public static void sendRescheduleConfirmationEmail(com.visioncare.dao.PatientRescheduleDAO.Change change)throws Exception {
+        String recipient=(String)change.updated().get("email");
+        if(recipient==null||recipient.isBlank())throw new IllegalArgumentException("Bệnh nhân chưa có email nhận thông báo.");
+        Properties props=new Properties();
+        props.put("mail.smtp.auth","true");props.put("mail.smtp.starttls.enable","true");
+        props.put("mail.smtp.host","smtp.gmail.com");props.put("mail.smtp.port","587");
+        props.put("mail.smtp.connectiontimeout","10000");props.put("mail.smtp.timeout","10000");props.put("mail.smtp.writetimeout","10000");
+        Session session=Session.getInstance(props,new Authenticator(){@Override protected PasswordAuthentication getPasswordAuthentication(){return new PasswordAuthentication(SENDER_EMAIL,SENDER_PASSWORD);}});
+        MimeMessage message=new MimeMessage(session);
+        message.setFrom(new InternetAddress(SENDER_EMAIL,"VisionCare","UTF-8"));
+        message.setRecipient(Message.RecipientType.TO,new InternetAddress(recipient));
+        message.setSubject("VisionCare - Xác nhận đổi lịch khám #APT-"+change.updated().get("id"),"UTF-8");
+        message.setContent(rescheduleEmailBody(change),"text/html; charset=UTF-8");
+        Transport.send(message);
+    }
+
+    /** Synchronous send: the persisted outbox owns retries, not a detached thread. */
+    public static void sendRefundDecisionEmail(java.util.Map<String,Object> mail) throws Exception {sendRefundMail(mail,false);}
+    public static void sendRefundDecisionTestEmail(java.util.Map<String,Object> mail) throws Exception {sendRefundMail(mail,true);}
+    private static void sendRefundMail(java.util.Map<String,Object> mail,boolean test) throws Exception {
+        String recipient=(String)mail.get("email");
+        if(recipient==null||recipient.isBlank())throw new IllegalArgumentException("Bệnh nhân chưa có email nhận thông báo.");
+        boolean approved=Boolean.TRUE.equals(mail.get("approved"));
+        Properties props=new Properties();
+        props.put("mail.smtp.auth","true");props.put("mail.smtp.starttls.enable","true");
+        props.put("mail.smtp.host","smtp.gmail.com");props.put("mail.smtp.port","587");
+        props.put("mail.smtp.connectiontimeout","10000");props.put("mail.smtp.timeout","10000");props.put("mail.smtp.writetimeout","10000");
+        Session session=Session.getInstance(props,new Authenticator(){@Override protected PasswordAuthentication getPasswordAuthentication(){return new PasswordAuthentication(SENDER_EMAIL,SENDER_PASSWORD);}});
+        MimeMessage message=new MimeMessage(session);
+        message.setFrom(new InternetAddress(SENDER_EMAIL,"VisionCare","UTF-8"));
+        message.setRecipient(Message.RecipientType.TO,new InternetAddress(recipient));
+        message.setSubject((test?"[KIỂM THỬ] ":"")+(approved?"VisionCare - Yêu cầu hoàn tiền đã được duyệt":"VisionCare - Kết quả yêu cầu hoàn tiền"),"UTF-8");
+        String text="<p>Xin chào "+WorkflowTokens.html((String)mail.get("name"))+",</p>";
+        if(test){text+="<h3>EMAIL KIỂM THỬ KÊNH THÔNG BÁO HOÀN TIỀN</h3><p>Thư này chỉ kiểm tra khả năng gửi email của yêu cầu #REF-"+mail.get("id")+". Đây không phải quyết định phê duyệt hoặc xác nhận đã chi trả.</p><p>Trạng thái thực tế tại thời điểm kiểm thử: "+WorkflowTokens.html((String)mail.get("currentStatus"))+".</p><p>Nội dung thông báo sau khi được duyệt: Phòng khám sẽ thực hiện hoàn tiền trong vòng 1 tuần. Nếu bị từ chối, email thông báo sẽ kèm lý do của director.</p>";}
+        else{text+="<p>Yêu cầu hoàn tiền #REF-"+mail.get("id")+" ";text+=approved?"đã được duyệt. Phòng khám sẽ thực hiện hoàn tiền trong vòng 1 tuần.</p>":"không được phê duyệt.</p><p>Lý do: "+WorkflowTokens.html((String)mail.get("note"))+"</p>";}
+        message.setContent(text+"<p>Trân trọng,<br>VisionCare</p>","text/html; charset=UTF-8");Transport.send(message);
+    }
 }

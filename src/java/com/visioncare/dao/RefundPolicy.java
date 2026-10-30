@@ -28,5 +28,5 @@ public final class RefundPolicy {
         + "AND EXISTS (SELECT 1 FROM Medical_Record mr WHERE mr.Appointment_ID = a.Appointment_ID "
         + "AND mr.conclusion LIKE N'" + APPROVED + "%') ";
     public static final String NO_ACTIVE_REQUEST = "NOT EXISTS (SELECT 1 FROM Refund_Request rr "
-        + "WHERE rr.Invoice_ID = i.Invoice_ID AND rr.Status IN ('Pending', 'Approved', 'Success')) ";
+        + "WHERE rr.Invoice_ID = i.Invoice_ID AND rr.Status IN ('Pending', 'Approved', 'Completed', 'Success')) ";
 }

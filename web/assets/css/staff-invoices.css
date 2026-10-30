@@ -6,3 +6,12 @@
 .invoice-status-unpaid{background:#fff0f0;color:#b42318}.invoice-status-partial{background:#fff4ce;color:#855600}.invoice-status-examined{background:#e7efff;color:#234db5}.invoice-status-completed{background:#dcfce7;color:#166534}.invoice-status-canceled{background:#f1f3f5;color:#4b5563}.invoice-status-refunded{background:#f3e8ff;color:#7e22ce}.invoice-status-missing{background:#ecfeff;color:#0e7490}
 
 .invoice-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;min-width:150px}.invoice-actions .btn{white-space:nowrap}
+.invoice-status-refund-pending{background:#ffedd5;color:#9a3412}
+
+.invoice-detail-stack{display:flex;flex-direction:column;gap:24px}.invoice-payment-cell{vertical-align:top!important;min-width:180px;background:#fafcfc!important}.invoice-payment-entry{min-height:86px;padding:0 0 14px;margin-bottom:14px;border-bottom:1px solid #e7edef}.invoice-payment-entry:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}.invoice-summary-bottom{width:100%}.invoice-summary-bottom>div:not(.invoice-qr){max-width:720px;margin-left:auto}.invoice-summary-bottom form,.invoice-summary-bottom>a,.invoice-summary-bottom>p{max-width:720px;margin-left:auto}.invoice-summary-bottom .alert{display:block!important}.invoice-summary-bottom .invoice-qr{max-width:230px}.invoice-detail-stack .invoice-table{min-width:980px}
+
+/* Requested invoice screens use the whole working area, leaving the staff sidebar intact. */
+.invoice-fullscreen .invoice-workspace{max-width:none;width:100%;margin:0;padding:clamp(16px,2.2vw,40px)}
+@media screen{.invoice-print-body .invoice-print-toolbar{width:auto;max-width:none;margin:24px clamp(16px,2.2vw,40px);gap:16px;flex-wrap:wrap}.invoice-print-body .invoice-print-sheet{width:auto;max-width:none;margin:24px clamp(16px,2.2vw,40px);padding:clamp(20px,3vw,48px);border-radius:14px}.invoice-print-body .invoice-print-table{display:table}.invoice-print-body .invoice-print-header{gap:18px}}
+@media screen and (max-width:600px){.invoice-print-body .invoice-print-header{flex-direction:column}.invoice-print-body .invoice-print-header>div:last-child{text-align:left}.invoice-print-body .invoice-print-table th,.invoice-print-body .invoice-print-table td{padding:10px 4px;font-size:12px}}
+@media print{.invoice-print-sheet{width:100%;border-radius:0}}

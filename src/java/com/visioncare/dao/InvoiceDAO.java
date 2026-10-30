@@ -6,6 +6,9 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class InvoiceDAO {
+    private final StaffInvoiceDAO.Connections connections;
+    public InvoiceDAO(){this(DBContext::getConnection);}
+    public InvoiceDAO(StaffInvoiceDAO.Connections c){connections=c;}
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
     private final SimpleDateFormat dateOnlyFormat = new SimpleDateFormat("dd/MM/yyyy");
@@ -42,6 +45,10 @@ public class InvoiceDAO {
     /**
      * Get billing overview statistics for Admin Dashboard/Billing
      */
+    private String revenueSource() {
+        return "WITH Revenue AS (SELECT i.*,CASE WHEN gross.Amount-COALESCE(ref.Amount,0)>0 THEN gross.Amount-COALESCE(ref.Amount,0) ELSE 0 END AS Net_Revenue FROM Master_Invoice i LEFT JOIN Invoice_Checkout co ON co.Invoice_ID=i.Invoice_ID OUTER APPLY(SELECT SUM(t.Amount) AS Amount FROM Payment_Transaction t WHERE t.Invoice_ID=i.Invoice_ID AND t.Gateway_Status='Success') tx OUTER APPLY(SELECT SUM(r.Refund_Amount) AS Amount FROM Refund_Request r WHERE r.Invoice_ID=i.Invoice_ID AND r.Status='Completed') ref CROSS APPLY(SELECT CASE WHEN co.Invoice_ID IS NOT NULL THEN COALESCE(tx.Amount,0)+co.Opening_Paid WHEN COALESCE(tx.Amount,0)>CASE WHEN i.Status IN ('Paid','Refunded') THEN i.Total_Amount WHEN i.Status='Partial_Paid' THEN i.Total_Amount-i.Balance_Due ELSE 0 END THEN COALESCE(tx.Amount,0) ELSE CASE WHEN i.Status IN ('Paid','Refunded') THEN i.Total_Amount WHEN i.Status='Partial_Paid' THEN i.Total_Amount-i.Balance_Due ELSE 0 END END AS Amount) gross) ";
+    }
+
     public Map<String, Object> getBillingStats() {
         return getBillingStats(null, null);
     }
@@ -50,20 +57,20 @@ public class InvoiceDAO {
         Map<String, Object> stats = new HashMap<>();
 
         // 1. Overall & Preset metrics: Today, Current Month, All-Time
-        String sqlOverview = 
+        String sqlOverview = revenueSource() +
             "SELECT " +
-            "    ISNULL(SUM(CASE WHEN Status = 'Paid' AND CAST(Create_At AS DATE) = CAST(GETDATE() AS DATE) THEN Total_Amount ELSE 0 END), 0) AS Today_Revenue, " +
+            "    ISNULL(SUM(CASE WHEN CAST(Create_At AS DATE) = CAST(GETDATE() AS DATE) THEN Net_Revenue ELSE 0 END), 0) AS Today_Revenue, " +
             "    COUNT(CASE WHEN Status = 'Paid' AND CAST(Create_At AS DATE) = CAST(GETDATE() AS DATE) THEN 1 END) AS Today_Paid_Count, " +
-            "    ISNULL(SUM(CASE WHEN Status = 'Paid' AND YEAR(Create_At) = YEAR(GETDATE()) AND MONTH(Create_At) = MONTH(GETDATE()) THEN Total_Amount ELSE 0 END), 0) AS Month_Revenue, " +
+            "    ISNULL(SUM(CASE WHEN YEAR(Create_At) = YEAR(GETDATE()) AND MONTH(Create_At) = MONTH(GETDATE()) THEN Net_Revenue ELSE 0 END), 0) AS Month_Revenue, " +
             "    COUNT(CASE WHEN Status = 'Paid' AND YEAR(Create_At) = YEAR(GETDATE()) AND MONTH(Create_At) = MONTH(GETDATE()) THEN 1 END) AS Month_Paid_Count, " +
-            "    ISNULL(SUM(CASE WHEN Status = 'Paid' THEN Total_Amount ELSE 0 END), 0) AS AllTime_Revenue, " +
+            "    ISNULL(SUM(Net_Revenue), 0) AS AllTime_Revenue, " +
             "    COUNT(CASE WHEN Status = 'Paid' THEN 1 END) AS AllTime_Paid_Count, " +
             "    COUNT(CASE WHEN Status = 'Refunded' THEN 1 END) AS AllTime_Refunded_Count, " +
             "    COUNT(CASE WHEN Status != 'Paid' AND Status != 'Refunded' THEN 1 END) AS AllTime_Unpaid_Count, " +
             "    COUNT(*) AS AllTime_Total_Count " +
-            "FROM Master_Invoice";
+            "FROM Revenue";
 
-        try (Connection conn = DBContext.getConnection();
+        try (Connection conn = connections.open();
              PreparedStatement ps = conn.prepareStatement(sqlOverview);
              ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
@@ -97,14 +104,14 @@ public class InvoiceDAO {
         }
 
         // 2. Period metrics based on dateFrom and dateTo
-        StringBuilder sqlPeriod = new StringBuilder(
+        StringBuilder sqlPeriod = new StringBuilder(revenueSource() +
             "SELECT " +
-            "    ISNULL(SUM(CASE WHEN Status = 'Paid' THEN Total_Amount ELSE 0 END), 0) AS Period_Revenue, " +
+            "    ISNULL(SUM(Net_Revenue), 0) AS Period_Revenue, " +
             "    COUNT(CASE WHEN Status = 'Paid' THEN 1 END) AS Period_Paid_Count, " +
             "    COUNT(CASE WHEN Status != 'Paid' AND Status != 'Refunded' THEN 1 END) AS Period_Unpaid_Count, " +
             "    COUNT(CASE WHEN Status = 'Refunded' THEN 1 END) AS Period_Refunded_Count, " +
             "    COUNT(*) AS Period_Total_Count " +
-            "FROM Master_Invoice WHERE 1=1 "
+            "FROM Revenue WHERE 1=1 "
         );
 
         List<Object> params = new ArrayList<>();
@@ -117,7 +124,7 @@ public class InvoiceDAO {
             params.add(dateTo.trim());
         }
 
-        try (Connection conn = DBContext.getConnection();
+        try (Connection conn = connections.open();
              PreparedStatement ps = conn.prepareStatement(sqlPeriod.toString())) {
             for (int k = 0; k < params.size(); k++) {
                 ps.setObject(k + 1, params.get(k));
@@ -200,7 +207,7 @@ public class InvoiceDAO {
 
         sql.append("ORDER BY i.Invoice_ID DESC");
 
-        try (Connection conn = DBContext.getConnection();
+        try (Connection conn = connections.open();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             for (int k = 0; k < params.size(); k++) {
                 ps.setObject(k + 1, params.get(k));
@@ -262,7 +269,7 @@ public class InvoiceDAO {
                         "LEFT JOIN Medical_Record m ON a.Appointment_ID = m.Appointment_ID " +
                         "WHERE i.Invoice_ID = ?";
 
-        try (Connection conn = DBContext.getConnection();
+        try (Connection conn = connections.open();
              PreparedStatement ps = conn.prepareStatement(sqlInv)) {
             ps.setInt(1, invoiceId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -375,7 +382,7 @@ public class InvoiceDAO {
         List<Map<String, Object>> transactions = new ArrayList<>();
         String sqlTrans = "SELECT Transaction_ID, Amount, Gateway_Status, Payment_Gateway, Trans_Date " +
                           "FROM Payment_Transaction WHERE Invoice_ID = ? ORDER BY Transaction_ID DESC";
-        try (Connection conn = DBContext.getConnection();
+        try (Connection conn = connections.open();
              PreparedStatement ps = conn.prepareStatement(sqlTrans)) {
             ps.setInt(1, invoiceId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -424,19 +431,20 @@ public class InvoiceDAO {
      * Update invoice payment status (e.g. from Admin billing screen)
      */
     public boolean updateInvoiceStatus(int invoiceId, String newStatus, String paymentGateway, long amount) {
-        String updateInv = "UPDATE Master_Invoice SET Status = ?, Balance_Due = 0, Close_At = DATEADD(HOUR, 7, SYSUTCDATETIME()) WHERE Invoice_ID = ?";
+        if("Refunded".equalsIgnoreCase(newStatus))return false; // Only the audited staff payout can record a refund.
+        String updateInv = "UPDATE Master_Invoice SET Status = ?, Balance_Due = 0, Close_At = DATEADD(HOUR, 7, SYSUTCDATETIME()) WHERE Invoice_ID = ? AND Status<>'Refunded' AND NOT EXISTS(SELECT 1 FROM Refund_Request r WHERE r.Invoice_ID=Master_Invoice.Invoice_ID AND r.Status IN ('Pending','Approved','Completed'))";
         String insertTx = "INSERT INTO Payment_Transaction (Invoice_ID, Amount, Gateway_Status, Payment_Gateway, Trans_Date) " +
                           "VALUES (?, ?, 'Success', ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
 
         Connection conn = null;
         try {
-            conn = DBContext.getConnection();
+            conn = connections.open();
             conn.setAutoCommit(false);
 
             try (PreparedStatement ps = conn.prepareStatement(updateInv)) {
                 ps.setString(1, newStatus);
                 ps.setInt(2, invoiceId);
-                ps.executeUpdate();
+                if(ps.executeUpdate()!=1){conn.rollback();return false;}
             }
 
             if ("Paid".equalsIgnoreCase(newStatus) && amount > 0) {
@@ -474,10 +482,10 @@ public class InvoiceDAO {
                      "FROM Master_Invoice i " +
                      "JOIN Appointment a ON i.Appointment_ID = a.Appointment_ID " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
-                     "LEFT JOIN Refund_Request r ON i.Invoice_ID = r.Invoice_ID AND r.Status IN ('Pending', 'Approved', 'Success') " +
+                     "LEFT JOIN Refund_Request r ON i.Invoice_ID = r.Invoice_ID AND r.Status IN ('Pending', 'Approved', 'Completed', 'Success') " +
                      "WHERE p.Account_ID = ? AND i.Status = 'Paid' " +
                      "ORDER BY i.Invoice_ID DESC";
-        try (Connection conn = DBContext.getConnection();
+        try (Connection conn = connections.open();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, accountId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -518,8 +526,8 @@ public class InvoiceDAO {
      * Check if invoice has an active refund request (Pending, Approved, Success)
      */
     public boolean hasActiveRefundRequest(int invoiceId) {
-        String sql = "SELECT COUNT(*) FROM Refund_Request WHERE Invoice_ID = ? AND Status IN ('Pending', 'Approved', 'Success')";
-        try (Connection conn = DBContext.getConnection();
+        String sql = "SELECT COUNT(*) FROM Refund_Request WHERE Invoice_ID = ? AND Status IN ('Pending', 'Approved', 'Completed', 'Success')";
+        try (Connection conn = connections.open();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, invoiceId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -547,7 +555,7 @@ public class InvoiceDAO {
         String findStaff = "SELECT TOP 1 Employee_ID FROM Employee_Profile";
         String insertSql = "INSERT INTO Refund_Request (Invoice_ID, created_by_employee_id, Patient_ID, Refund_Amount, Reason, Status, Created_At, Update_At) " +
                            "VALUES (?, ?, ?, ?, ?, 'Pending', DATEADD(HOUR, 7, SYSUTCDATETIME()), DATEADD(HOUR, 7, SYSUTCDATETIME()))";
-        try (Connection conn = DBContext.getConnection()) {
+        try (Connection conn = connections.open()) {
             int patientId = 0;
             try (PreparedStatement psP = conn.prepareStatement(findPatient)) {
                 psP.setInt(1, accountId);
@@ -588,7 +596,7 @@ public class InvoiceDAO {
                      "FROM Master_Invoice mi " +
                      "JOIN Appointment a ON mi.Appointment_ID = a.Appointment_ID " +
                      "WHERE a.Appointment_ID = ?";
-        try (Connection conn = DBContext.getConnection();
+        try (Connection conn = connections.open();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, appointmentId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -609,7 +617,7 @@ public class InvoiceDAO {
 
         if (invoiceId <= 0) {
             String sqlCreateInv = "INSERT INTO Master_Invoice (Appointment_ID, Total_Amount, Deposit_Amount, Balance_Due, Status, Create_At) VALUES (?, ?, ?, 0, 'Paid', DATEADD(HOUR, 7, SYSUTCDATETIME()))";
-            try (Connection conn = DBContext.getConnection();
+            try (Connection conn = connections.open();
                  PreparedStatement ps = conn.prepareStatement(sqlCreateInv, Statement.RETURN_GENERATED_KEYS)) {
                 long defAmt = amount > 0 ? amount : 200000;
                 ps.setInt(1, appointmentId);
@@ -628,7 +636,7 @@ public class InvoiceDAO {
 
         if (patientId <= 0) {
             String findPatient = "SELECT Patient_ID FROM Patient WHERE Account_ID = ?";
-            try (Connection conn = DBContext.getConnection();
+            try (Connection conn = connections.open();
                  PreparedStatement psP = conn.prepareStatement(findPatient)) {
                 psP.setInt(1, accountId);
                 try (ResultSet rsP = psP.executeQuery()) {
@@ -640,7 +648,7 @@ public class InvoiceDAO {
 
         int staffId = 1;
         String findStaff = "SELECT TOP 1 Employee_ID FROM Employee_Profile";
-        try (Connection conn = DBContext.getConnection();
+        try (Connection conn = connections.open();
              PreparedStatement psE = conn.prepareStatement(findStaff);
              ResultSet rsE = psE.executeQuery()) {
             if (rsE.next()) staffId = rsE.getInt(1);
@@ -648,7 +656,7 @@ public class InvoiceDAO {
 
         String insertSql = "INSERT INTO Refund_Request (Invoice_ID, created_by_employee_id, Patient_ID, Refund_Amount, Reason, Status, Created_At, Update_At) " +
                            "VALUES (?, ?, ?, ?, ?, 'Pending', DATEADD(HOUR, 7, SYSUTCDATETIME()), DATEADD(HOUR, 7, SYSUTCDATETIME()))";
-        try (Connection conn = DBContext.getConnection();
+        try (Connection conn = connections.open();
              PreparedStatement psIns = conn.prepareStatement(insertSql)) {
             psIns.setInt(1, invoiceId);
             psIns.setInt(2, staffId);

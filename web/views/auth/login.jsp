@@ -5,13 +5,14 @@
 <jsp:include page="/views/common/header.jsp">
   <jsp:param name="pageTitle" value="Đăng nhập" />
   <jsp:param name="pageDescription" value="Đăng nhập vào hệ thống VisionCare" />
-  <jsp:param name="bodyClass" value="starter-page-page" />
+  <jsp:param name="bodyClass" value="starter-page-page screen-wide auth-wide" />
+  <jsp:param name="fullWidth" value="true" />
   <jsp:param name="activeNav" value="login" />
 </jsp:include>
 
   <style>
     .login-container {
-      max-width: 480px;
+      width: 100%;
       margin: 0 auto;
     }
     .login-card {
@@ -56,7 +57,7 @@
 
     <div class="page-title">
       <nav class="breadcrumbs">
-        <div class="container">
+        <div class="container-fluid screen-fluid">
           <ol>
             <li><a href="${pageContext.request.contextPath}/home">Trang chủ</a></li>
             <li class="current">Đăng nhập</li>
@@ -66,8 +67,9 @@
     </div>
 
     <section class="section pt-4 pb-5">
-      <div class="container">
-        <div class="login-container">
+      <div class="container-fluid screen-fluid">
+        <div class="login-container auth-layout">
+          <jsp:include page="/views/auth/layout/auth-intro.jsp"><jsp:param name="screenTitle" value="Chào mừng bạn quay lại" /><jsp:param name="screenDescription" value="Đăng nhập để tiếp tục quản lý lịch khám, hồ sơ và các thông tin của bạn." /></jsp:include>
           <div class="login-card">
             <div class="text-center">
               <div class="logo-icon"><i class="bi bi-eye"></i></div>

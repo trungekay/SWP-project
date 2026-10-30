@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet(name = "DirectorRefundServlet", urlPatterns = {"/director/refunds", "/director/reschedule-requests"})
+@WebServlet(name = "DirectorRefundServlet", urlPatterns = {"/director/refunds", "/director/refunds/detail", "/director/reschedule-requests"})
 public class DirectorRefundServlet extends HttpServlet {
 
     private final RefundDAO refundDAO = new RefundDAO();
@@ -36,12 +36,18 @@ public class DirectorRefundServlet extends HttpServlet {
             return;
         }
 
+        // Patient rescheduling is immediate after availability validation; no director approval queue.
+        if ("/director/reschedule-requests".equals(request.getServletPath())) {
+            response.sendRedirect(request.getContextPath() + "/director/dashboard");
+            return;
+        }
+        com.visioncare.util.WorkflowTokens.ensure(session);
         String statusFilter = request.getParameter("status");
         if (statusFilter == null || statusFilter.isEmpty()) {
             statusFilter = "all";
         }
 
-        List<Map<String, Object>> refunds = refundDAO.getAllRefundRequests(statusFilter);
+        List<Map<String, Object>> refunds = "/director/refunds/detail".equals(request.getServletPath()) ? List.of() : refundDAO.getAllRefundRequests(statusFilter);
         Map<String, Object> stats = refundDAO.getRefundStats();
 
         // Flash messages
@@ -63,9 +69,14 @@ public class DirectorRefundServlet extends HttpServlet {
         request.setAttribute("stats", stats);
         request.setAttribute("currentStatus", statusFilter);
 
-        String view = "/director/reschedule-requests".equals(request.getServletPath())
-                ? "/views/employee/reschedule-requests.jsp" : "/views/director/refund-requests.jsp";
-        request.getRequestDispatcher(view).forward(request, response);
+        if("/director/refunds/detail".equals(request.getServletPath())){
+            int id;try{id=Integer.parseInt(request.getParameter("id"));}catch(Exception e){response.sendError(400);return;}
+            Map<String,Object> refund=refundDAO.getRefundRequest(id);if(refund==null){response.sendError(404);return;}
+            request.setAttribute("refund",refund);
+            request.getRequestDispatcher("/views/director/refund-detail.jsp").forward(request,response);return;
+        }
+
+        request.getRequestDispatcher("/views/director/refund-requests.jsp").forward(request, response);
     }
 
     @Override
@@ -94,12 +105,14 @@ public class DirectorRefundServlet extends HttpServlet {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Tài khoản chưa có hồ sơ nhân viên để duyệt yêu cầu.");
             return;
         }
+        if(!com.visioncare.util.WorkflowTokens.valid(request)){response.sendError(403);return;}
         String action = request.getParameter("action");
 
         try {
-            if ("approve".equalsIgnoreCase(action)) {
+            if("retry-email".equals(action)){new com.visioncare.dao.RefundMailDAO().retry(Integer.parseInt(request.getParameter("refundId")));}
+            else if ("approve".equalsIgnoreCase(action)) {
                 int refundId = Integer.parseInt(request.getParameter("refundId"));
-                boolean ok = refundDAO.approveRefund(refundId, directorEmployeeId);
+                boolean ok = new com.visioncare.dao.RefundLifecycleDAO().decide(refundId, directorEmployeeId,true,request.getParameter("approvalNote"));
                 if (ok) {
                     session.setAttribute("successMessage", "Giám đốc đã phê duyệt yêu cầu hoàn tiền #REF-" + refundId + " thành công!");
                 } else {
@@ -108,7 +121,7 @@ public class DirectorRefundServlet extends HttpServlet {
             } else if ("reject".equalsIgnoreCase(action)) {
                 int refundId = Integer.parseInt(request.getParameter("refundId"));
                 String note = request.getParameter("rejectNote");
-                boolean ok = refundDAO.rejectRefund(refundId, directorEmployeeId, note);
+                boolean ok = new com.visioncare.dao.RefundLifecycleDAO().decide(refundId, directorEmployeeId,false,note);
                 if (ok) {
                     session.setAttribute("successMessage", "Đã từ chối yêu cầu hoàn tiền #REF-" + refundId + ".");
                 } else {
@@ -120,7 +133,9 @@ public class DirectorRefundServlet extends HttpServlet {
             session.setAttribute("errorMessage", "Đã xảy ra lỗi: " + e.getMessage());
         }
 
-        response.sendRedirect(request.getContextPath() + "/director/refunds");
+        String returnPath="/director/refunds";
+        if("yes".equals(request.getParameter("returnToDetail"))){try{returnPath+="/detail?id="+Integer.parseInt(request.getParameter("refundId"));}catch(NumberFormatException ignored){}}
+        response.sendRedirect(request.getContextPath() + returnPath);
     }
     private int getEmployeeId(int accountId) {
         try (java.sql.Connection conn = com.visioncare.dao.DBContext.getConnection();

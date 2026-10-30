@@ -7,8 +7,8 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <jsp:include page="/views/admin/layout/admin-css.jsp" />
-<link href="${pageContext.request.contextPath}/assets/css/staff-invoices.css?v=20261025-5" rel="stylesheet">
-</head><body><jsp:include page="/views/employee/layout/employee-sidebar.jsp"><jsp:param name="activeNav" value="invoices" /></jsp:include>
+<link href="${pageContext.request.contextPath}/assets/css/staff-invoices.css?v=20261030-wide" rel="stylesheet">
+</head><body class="invoice-fullscreen"><jsp:include page="/views/employee/layout/employee-sidebar.jsp"><jsp:param name="activeNav" value="invoices" /></jsp:include>
 <main class="main-wrapper"><jsp:include page="/views/admin/layout/admin-header.jsp" /><div class="invoice-workspace">
 
 <div class="invoice-heading"><div><div class="eyebrow">THU NGÂN &amp; THANH TOÁN</div><h2>Quản lý hóa đơn &amp; thanh toán</h2><p>Tìm lịch hẹn, đối chiếu khoản thu và thanh toán cho bệnh nhân.</p></div><span class="invoice-count"><c:out value="${rows.size()}" /> lịch hẹn</span></div>
@@ -22,15 +22,17 @@
 <option value="Examined" ${param.status == 'Examined' ? 'selected' : ''}>Khám xong</option>
 <option value="Completed" ${param.status == 'Completed' ? 'selected' : ''}>Hoàn thành</option>
 <option value="Canceled" ${param.status == 'Canceled' ? 'selected' : ''}>Đã hủy</option>
+<option value="PendingRefund" ${param.status == 'PendingRefund' ? 'selected' : ''}>Chờ hoàn tiền</option>
 <option value="Refunded" ${param.status == 'Refunded' ? 'selected' : ''}>Đã hoàn tiền</option>
 <option value="NoInvoice" ${param.status == 'NoInvoice' ? 'selected' : ''}>Chưa có hóa đơn</option></select></div>
 <button class="btn btn-teal" type="submit"><i class="bi bi-search me-1"></i>Tra cứu</button><a class="btn btn-light border" href="${pageContext.request.contextPath}/staff/invoices">Đặt lại</a>
 </form>
+<c:if test="${param.status == 'PendingRefund'}"><div class="alert alert-warning">Các yêu cầu đã được director duyệt và staff chưa xác nhận chi trả. Chọn <strong>Xử lý hoàn tiền</strong> để xem quyết định, đính kèm ảnh giao dịch và xác nhận sau khi đã hoàn tiền bên ngoài. Bộ lọc ngày khám và ô tìm kiếm vẫn áp dụng nếu được chọn.</div></c:if>
 <p class="small text-muted mb-3">Thanh toán phí khám → Thanh toán một phần. Bác sĩ kết thúc khám → Khám xong. Staff đối chiếu, chốt hóa đơn và xác nhận thanh toán đủ → Hoàn thành. Không mua thêm vẫn giữ Khám xong cho đến khi staff chốt hóa đơn.</p>
 <div class="invoice-card table-responsive"><table class="table invoice-table"><thead><tr><th>Mã lịch hẹn</th><th>Bệnh nhân</th><th>Ngày khám</th><th>Hóa đơn tổng</th><th>Trạng thái ghi nhận</th><th class="text-end">Thao tác</th></tr></thead><tbody>
 <c:forEach var="row" items="${rows}"><tr><td><span class="invoice-code">#APT-${row.appointmentId}</span></td><td><strong><c:out value="${row.patient}" /></strong><div class="small text-muted"><c:out value="${row.phone}" /></div></td><td><c:out value="${row.date}" /></td><td><c:choose><c:when test="${row.invoiceId > 0}">#INV-<fmt:formatNumber value="${row.invoiceId}" pattern="00000" groupingUsed="false" /></c:when><c:otherwise>Chưa có hóa đơn</c:otherwise></c:choose></td>
 <td><span class="invoice-pill invoice-status-${row.progressColor}"><c:out value="${row.progressLabel}" /></span></td>
-<td class="text-end"><div class="invoice-actions"><c:if test="${row.invoiceId > 0}"><a class="btn btn-sm btn-outline-teal" href="${pageContext.request.contextPath}/staff/invoices/detail?id=${row.invoiceId}"><i class="bi bi-receipt me-1"></i>Xem hóa đơn</a>
+<td class="text-end"><div class="invoice-actions"><c:if test="${row.invoiceId > 0}"><a class="btn btn-sm ${row.refundPending ? 'btn-teal' : 'btn-outline-teal'}" href="${pageContext.request.contextPath}/staff/invoices/detail?id=${row.invoiceId}${row.refundPending ? '#refund-settlement' : ''}"><i class="bi bi-receipt me-1"></i>${row.refundPending ? 'Xử lý hoàn tiền' : 'Xem hóa đơn'}</a>
 <c:if test="${row.canOpenCheckout}"><a class="btn btn-sm btn-teal" href="${pageContext.request.contextPath}/staff/invoices/checkout?id=${row.invoiceId}"><i class="bi bi-credit-card me-1"></i>Thanh toán / Chốt hóa đơn</a></c:if>
 <c:if test="${row.progress == 'Completed'}"><a class="btn btn-sm btn-outline-teal" href="${pageContext.request.contextPath}/staff/invoices/export?id=${row.invoiceId}"><i class="bi bi-printer me-1"></i>Xuất hóa đơn</a></c:if>
 </c:if></div></td></tr></c:forEach>

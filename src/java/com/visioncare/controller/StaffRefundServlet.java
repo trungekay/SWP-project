@@ -58,6 +58,7 @@ public class StaffRefundServlet extends HttpServlet {
         }
 
         String action = request.getParameter("action");
+        if("approve".equalsIgnoreCase(action)||"reject".equalsIgnoreCase(action)){response.sendError(405);return;}
         boolean creating = "create".equalsIgnoreCase(action);
         boolean management = currentUser.getRoleId() == 1 || currentUser.getRoleId() == 2;
         if ((creating && currentUser.getRoleId() != 5 && !management) || (!creating && !management)

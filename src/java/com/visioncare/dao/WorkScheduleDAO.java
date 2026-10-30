@@ -323,11 +323,7 @@ public class WorkScheduleDAO {
                      "       END AS Is_Past " +
                      "FROM Work_Schedule ws " +
                      "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? " +
-                     "  AND ( " +
-                     "        (CAST(ws.Start_Time AS TIME) >= '08:00:00' AND CAST(ws.Start_Time AS TIME) < '11:00:00') " + // Ca sáng: slot cuối 10:30 (10:30-11:00), 11:00-11:30 làm backup
-                     "        OR " +
-                     "        (CAST(ws.Start_Time AS TIME) >= '13:30:00' AND CAST(ws.Start_Time AS TIME) < '17:00:00') " + // Ca chiều: từ 13:30 đến 17:00, slot cuối 16:30 (16:30-17:00)
-                     "      ) " +
+                     " AND " + com.visioncare.util.BookingAvailability.WINDOW + " " +
                      "  AND ws.Status NOT IN ('Canceled', 'On_Leave', 'Inactive', 'Disabled', 'Closed') " +
                      "ORDER BY ws.Start_Time ASC";
         try (Connection conn = DBContext.getConnection();
