@@ -410,7 +410,7 @@
 <c:if test="${not empty activeAppointmentRefunds[appt.id]}">
     <c:set var="existingRefund" value="${activeAppointmentRefunds[appt.id]}" />
     <button type="button" class="action-btn" title="${existingRefund.code}: ${existingRefund.statusLabel}" aria-label="Xem yêu cầu hoàn tiền hiện có"
-        data-bs-toggle="modal" data-bs-target="#existingRefundModal" data-refund-code="${existingRefund.code}"
+        data-bs-toggle="modal" data-bs-target="#existingRefundModal" data-refund-code="${existingRefund.code}" data-invoice-id="${existingRefund.invoiceId}"
         data-invoice-code="${existingRefund.invoiceCode}" data-status="${existingRefund.statusLabel}"
         data-amount="${existingRefund.amountLabel}" data-reason="${fn:escapeXml(existingRefund.reason)}">
         <i class="bi bi-receipt"></i>

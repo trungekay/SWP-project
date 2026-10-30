@@ -139,10 +139,9 @@
         </c:choose>
 <c:if test="${sessionScope.user.roleId == 2 || fn:toLowerCase(sessionScope.user.role) == 'director'}">
 <li class="sidebar-dropdown">
-<a href="javascript:void(0);" onclick="toggleSubmenu('request-submenu', this);" class="${param.activeNav == 'refunds' || param.activeNav == 'reschedule-requests' ? 'active' : ''}"><div class="d-flex align-items-center gap-2"><i class="bi bi-inbox"></i><span>Quản lý yêu cầu</span></div><i class="bi bi-chevron-down"></i></a>
-<ul id="request-submenu" class="sidebar-submenu ${param.activeNav == 'refunds' || param.activeNav == 'reschedule-requests' ? 'show' : ''}">
+<a href="javascript:void(0);" onclick="toggleSubmenu('request-submenu', this);" class="${param.activeNav == 'refunds' ? 'active' : ''}"><div class="d-flex align-items-center gap-2"><i class="bi bi-inbox"></i><span>Quản lý yêu cầu</span></div><i class="bi bi-chevron-down"></i></a>
+<ul id="request-submenu" class="sidebar-submenu ${param.activeNav == 'refunds' ? 'show' : ''}">
 <li><a href="${pageContext.request.contextPath}/director/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}"><i class="bi bi-cash-coin"></i><span>Quản lý yêu cầu hoàn tiền</span></a></li>
-<li><a href="${pageContext.request.contextPath}/director/reschedule-requests" class="${param.activeNav == 'reschedule-requests' ? 'active' : ''}"><i class="bi bi-calendar2-week"></i><span>Quản lý yêu cầu đổi lịch</span></a></li>
 </ul></li></c:if>
     </ul>
 </aside>

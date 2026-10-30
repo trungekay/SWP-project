@@ -56,18 +56,15 @@
             </a>
         </li>
         <li>
-            <button type="button" class="director-request-toggle ${param.activeNav == 'refunds' || param.activeNav == 'reschedule-requests' ? 'active' : ''}"
-                    aria-controls="director-request-menu" aria-expanded="${param.activeNav == 'refunds' || param.activeNav == 'reschedule-requests'}"
+            <button type="button" class="director-request-toggle ${param.activeNav == 'refunds' ? 'active' : ''}"
+                    aria-controls="director-request-menu" aria-expanded="${param.activeNav == 'refunds'}"
                     onclick="var menu=document.getElementById('director-request-menu'); menu.hidden=!menu.hidden; this.setAttribute('aria-expanded', String(!menu.hidden));">
                 <i class="bi bi-inbox"></i><span>Quản lý yêu cầu</span><i class="bi bi-chevron-down ms-auto"></i>
             </button>
-            <ul id="director-request-menu" class="director-request-menu" ${param.activeNav == 'refunds' || param.activeNav == 'reschedule-requests' ? '' : 'hidden'}>
+            <ul id="director-request-menu" class="director-request-menu" ${param.activeNav == 'refunds' ? '' : 'hidden'}>
                 <li><a href="${pageContext.request.contextPath}/director/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}">
                     <i class="bi bi-cash-coin"></i><span>Quản lý yêu cầu hoàn tiền</span>
                     <c:if test="${not empty pendingRefundCount && pendingRefundCount > 0}"><span class="badge bg-warning text-dark rounded-pill ms-auto">${pendingRefundCount}</span></c:if>
-                </a></li>
-                <li><a href="${pageContext.request.contextPath}/director/reschedule-requests" class="${param.activeNav == 'reschedule-requests' ? 'active' : ''}">
-                    <i class="bi bi-calendar2-week"></i><span>Quản lý yêu cầu đổi lịch</span>
                 </a></li>
             </ul>
         </li>

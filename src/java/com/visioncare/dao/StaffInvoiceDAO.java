@@ -12,8 +12,41 @@ public class StaffInvoiceDAO {
  private final Connections connections;
  public StaffInvoiceDAO(){this(DBContext::getConnection);}
  public StaffInvoiceDAO(Connections connections){this.connections=connections;}
+ /** Close only past-day consultation-only visits. Never collect money or invent a cashier. */
+ public boolean closeConsultationAtDayEnd(int id,java.time.LocalDate today)throws Exception {
+  try(Connection c=connections.open()){
+   c.setAutoCommit(false);c.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+   try {
+    StaffInvoice inv=load(c,id,true);
+    boolean onlyConsultation=inv.items.size()==1&&"CONSULT".equals(inv.items.get(0).key)
+     &&!inv.items.get(0).declined&&inv.baseAmount>0;
+    if(!java.time.LocalDate.parse(inv.date).isBefore(today)||!onlyConsultation
+     ||!inv.isCanCheckout()||inv.getOutstanding()!=0||inv.paid!=inv.baseAmount
+     ||inv.recordedTotal!=inv.baseAmount||inv.refundedAmount!=0
+     ||!("Paid".equals(inv.invoiceStatus)||"Partial_Paid".equals(inv.invoiceStatus))){c.rollback();return false;}
+    try(PreparedStatement p=c.prepareStatement("SELECT COALESCE((SELECT SUM(Amount) FROM Payment_Transaction WHERE Invoice_ID=? AND Gateway_Status='Success'),0)+COALESCE((SELECT Opening_Paid FROM Invoice_Checkout WHERE Invoice_ID=?),0)")){
+     p.setInt(1,id);p.setInt(2,id);try(ResultSet r=p.executeQuery()){r.next();if(r.getLong(1)!=inv.baseAmount){c.rollback();return false;}}
+    }
+    // Keep historical/refund lines and ambiguous payment attempts for staff reconciliation.
+    try(PreparedStatement p=c.prepareStatement("SELECT 1 WHERE EXISTS(SELECT 1 FROM Refund_Request WHERE Invoice_ID=? AND Status<>'Rejected') OR EXISTS(SELECT 1 FROM Invoice_Checkout_Item WHERE Invoice_ID=? AND Item_Key<>'CONSULT') OR EXISTS(SELECT 1 FROM Payment_Transaction WHERE Invoice_ID=? AND (Gateway_Status IS NULL OR Gateway_Status NOT IN ('Success','Failed','Cancelled','Canceled')))")){
+     for(int n=1;n<=3;n++)p.setInt(n,id);
+     try(ResultSet r=p.executeQuery()){if(r.next()){c.rollback();return false;}}
+    }
+    finalizeInvoice(c,inv,null,lastPaidMethod(c,id),0,null);
+    c.commit();return true;
+   }catch(Exception e){c.rollback();throw e;}
+  }
+ }
+ public List<Integer> dayEndCandidates(java.time.LocalDate today)throws Exception {
+  List<Integer> ids=new ArrayList<>();
+  String sql="SELECT i.Invoice_ID FROM Master_Invoice i JOIN Appointment a ON a.Appointment_ID=i.Appointment_ID JOIN Work_Schedule ws ON ws.Schedule_ID=a.Schedule_ID LEFT JOIN Invoice_Checkout co ON co.Invoice_ID=i.Invoice_ID WHERE a.Status='Completed' AND i.Status IN ('Paid','Partial_Paid') AND ws.Work_Date<? AND co.Finalized_At IS NULL ORDER BY i.Invoice_ID";
+  try(Connection c=connections.open();PreparedStatement p=c.prepareStatement(sql)){
+   p.setDate(1,java.sql.Date.valueOf(today));try(ResultSet r=p.executeQuery()){while(r.next())ids.add(r.getInt(1));}
+  }return ids;
+ }
  public List<Map<String,Object>> list(String search,String status,String date) throws Exception {
   String sql="SELECT a.Appointment_ID,p.Full_Name,p.Phone,ws.Work_Date,a.Status AS Appointment_Status,i.Invoice_ID,i.Status,i.Total_Amount,i.Balance_Due,co.Finalized_At,CASE WHEN EXISTS(SELECT 1 FROM Refund_Request rr WHERE rr.Invoice_ID=i.Invoice_ID AND rr.Status IN ('Pending','Approved')) THEN 1 ELSE 0 END AS Has_Refund,CASE WHEN EXISTS(SELECT 1 FROM Payment_Transaction pt WHERE pt.Invoice_ID=i.Invoice_ID AND pt.Gateway_Status='Success' AND pt.Amount>0) OR co.Opening_Paid>0 THEN 1 ELSE 0 END AS Has_Payment "
+   +",COALESCE((SELECT SUM(rr.Refund_Amount) FROM Refund_Request rr WHERE rr.Invoice_ID=i.Invoice_ID AND rr.Status='Completed'),0) AS Refund_Total,(SELECT TOP 1 rr.Status FROM Refund_Request rr WHERE rr.Invoice_ID=i.Invoice_ID ORDER BY rr.Refund_ID DESC) AS Refund_Status "
    +"FROM Appointment a JOIN Patient p ON p.Patient_ID=a.Patient_ID JOIN Work_Schedule ws ON ws.Schedule_ID=a.Schedule_ID "
    +"LEFT JOIN Master_Invoice i ON i.Appointment_ID=a.Appointment_ID LEFT JOIN Invoice_Checkout co ON co.Invoice_ID=i.Invoice_ID WHERE 1=1 ";
   List<Object> params=new ArrayList<>();
@@ -26,9 +59,13 @@ public class StaffInvoiceDAO {
    String financial=r.getString("Status");
    boolean collected="Paid".equals(financial)||"Partial_Paid".equals(financial)||r.getBoolean("Has_Payment");
    InvoiceProgress progress=InvoiceProgress.resolve(r.getInt("Invoice_ID")>0,r.getString("Appointment_Status"),financial,r.getTimestamp("Finalized_At")!=null,collected);
-   m.put("progress",progress.name());m.put("progressLabel",progress.getLabel());m.put("progressColor",progress.getColor());
+   boolean refundPending="Approved".equals(r.getString("Refund_Status")) && !"Refunded".equals(financial);
+   boolean partialRefund=!"Refunded".equals(financial)&&r.getLong("Refund_Total")>0;
+   String displayedProgress=refundPending?"PendingRefund":partialRefund?"PartialRefund":progress.name();
+   m.put("refundPending",refundPending);
+   m.put("progress",displayedProgress);m.put("progressLabel",refundPending?"Chờ hoàn tiền":partialRefund?"Đã hoàn tiền một phần":progress.getLabel());m.put("progressColor",refundPending?"refund-pending":partialRefund?"refunded":progress.getColor());
    m.put("canOpenCheckout",progress==InvoiceProgress.Examined && !r.getBoolean("Has_Refund"));
-   if(status==null||status.isBlank()||"all".equals(status)||progress.name().equals(status))rows.add(m);
+   if(status==null||status.isBlank()||"all".equals(status)||displayedProgress.equals(status)||"Refunded".equals(status)&&partialRefund)rows.add(m);
   }}}return rows;
  }
  public int invoiceForAppointment(int appointmentId)throws Exception {
@@ -36,12 +73,12 @@ public class StaffInvoiceDAO {
  }
  public StaffInvoice get(int id) throws Exception {try(Connection c=connections.open()){return load(c,id,false);}}
  private StaffInvoice load(Connection c,int id,boolean lock) throws Exception {
-  String sql="SELECT i.*,a.Status AS Appointment_Status,p.Full_Name,p.Phone,ws.Work_Date,co.Base_Amount,co.Opening_Paid,co.Finalized_At,(SELECT ce.Full_Name FROM Employee_Profile ce WHERE ce.Employee_ID=co.Finalized_By) AS Cashier_Name, "
+  String sql="SELECT i.*,a.Status AS Appointment_Status,p.Full_Name,p.Phone,ws.Work_Date,co.Base_Amount,co.Opening_Paid,co.Finalized_At,co.Finalized_By,(SELECT ce.Full_Name FROM Employee_Profile ce WHERE ce.Employee_ID=co.Finalized_By) AS Cashier_Name, "
    +"CASE WHEN EXISTS(SELECT 1 FROM Refund_Request rr WHERE rr.Invoice_ID=i.Invoice_ID AND rr.Status IN ('Pending','Approved')) THEN 1 ELSE 0 END AS Has_Refund "
    +"FROM Master_Invoice i "+(lock?"WITH(UPDLOCK,HOLDLOCK) ":"")+"JOIN Appointment a "+(lock?"WITH(UPDLOCK,HOLDLOCK) ":"")+"ON a.Appointment_ID=i.Appointment_ID JOIN Patient p ON p.Patient_ID=a.Patient_ID JOIN Work_Schedule ws ON ws.Schedule_ID=a.Schedule_ID "
    +"LEFT JOIN Invoice_Checkout co ON co.Invoice_ID=i.Invoice_ID WHERE i.Invoice_ID=?";
   StaffInvoice inv=new StaffInvoice();boolean hasSnapshot=false;long recognizedPaid=0;
-  try(PreparedStatement ps=c.prepareStatement(sql)){ps.setInt(1,id);try(ResultSet r=ps.executeQuery()){if(!r.next())throw new IllegalArgumentException("Không tìm thấy hóa đơn.");inv.id=id;inv.appointmentId=r.getInt("Appointment_ID");inv.appointmentStatus=r.getString("Appointment_Status");inv.invoiceStatus=r.getString("Status");inv.recordedTotal=r.getLong("Total_Amount");inv.patientName=r.getString("Full_Name");inv.phone=r.getString("Phone");inv.date=String.valueOf(r.getDate("Work_Date"));inv.hasActiveRefund=r.getBoolean("Has_Refund");inv.finalized=r.getTimestamp("Finalized_At")!=null;inv.cashierName=r.getString("Cashier_Name");inv.finalizedAt=inv.finalized?r.getTimestamp("Finalized_At").toLocalDateTime().plusHours(7).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")):null;hasSnapshot=r.getObject("Base_Amount")!=null;inv.priorPaid=r.getLong("Opening_Paid");recognizedPaid="Paid".equals(inv.invoiceStatus)?inv.recordedTotal:"Partial_Paid".equals(inv.invoiceStatus)?Math.max(0,inv.recordedTotal-r.getLong("Balance_Due")):0;inv.baseAmount=r.getObject("Base_Amount")!=null?r.getLong("Base_Amount"):(r.getLong("Deposit_Amount")>0?r.getLong("Deposit_Amount"):r.getLong("Total_Amount"));}}
+  try(PreparedStatement ps=c.prepareStatement(sql)){ps.setInt(1,id);try(ResultSet r=ps.executeQuery()){if(!r.next())throw new IllegalArgumentException("Không tìm thấy hóa đơn.");inv.id=id;inv.appointmentId=r.getInt("Appointment_ID");inv.appointmentStatus=r.getString("Appointment_Status");inv.invoiceStatus=r.getString("Status");inv.recordedTotal=r.getLong("Total_Amount");inv.patientName=r.getString("Full_Name");inv.phone=r.getString("Phone");inv.date=String.valueOf(r.getDate("Work_Date"));inv.hasActiveRefund=r.getBoolean("Has_Refund");inv.finalized=r.getTimestamp("Finalized_At")!=null;inv.cashierName=r.getString("Cashier_Name");if(inv.finalized&&r.getObject("Finalized_By")==null)inv.cashierName="Hệ thống tự chốt cuối ngày";inv.finalizedAt=inv.finalized?r.getTimestamp("Finalized_At").toLocalDateTime().plusHours(7).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")):null;hasSnapshot=r.getObject("Base_Amount")!=null;inv.priorPaid=r.getLong("Opening_Paid");recognizedPaid="Paid".equals(inv.invoiceStatus)?inv.recordedTotal:"Partial_Paid".equals(inv.invoiceStatus)?Math.max(0,inv.recordedTotal-r.getLong("Balance_Due")):0;inv.baseAmount=r.getObject("Base_Amount")!=null?r.getLong("Base_Amount"):(r.getLong("Deposit_Amount")>0?r.getLong("Deposit_Amount"):r.getLong("Total_Amount"));}}
   try(PreparedStatement ps=c.prepareStatement("SELECT Transaction_ID,Amount,Gateway_Status,Payment_Gateway,Trans_Date FROM Payment_Transaction WHERE Invoice_ID=? ORDER BY Transaction_ID")){ps.setInt(1,id);try(ResultSet r=ps.executeQuery()){while(r.next()){long amount=r.getLong("Amount");if("Success".equals(r.getString("Gateway_Status")))inv.paid=Math.addExact(inv.paid,amount);Map<String,Object> tx=new HashMap<>();tx.put("id",r.getInt("Transaction_ID"));tx.put("amount",amount);tx.put("status",r.getString("Gateway_Status"));tx.put("method",r.getString("Payment_Gateway"));tx.put("date",r.getTimestamp("Trans_Date"));inv.transactions.add(tx);}}}
   if(!hasSnapshot)inv.priorPaid=Math.max(0,recognizedPaid-inv.paid);
   inv.paid=Math.addExact(inv.paid,inv.priorPaid);
@@ -56,8 +93,11 @@ public class StaffInvoiceDAO {
    sql="SELECT pd.Detail_ID,pd.Medicine_Name,pd.Quantity,pd.Is_Custom_Medicine,ms.Price FROM Prescription_Detail pd JOIN Prescription pr ON pr.Prescription_ID=pd.Prescription_ID JOIN Medical_Record mr ON mr.Record_ID=pr.Record_ID OUTER APPLY(SELECT TOP 1 Price FROM Medical_Supply s WHERE s.Supply_Name=pd.Medicine_Name ORDER BY s.Supply_ID) ms WHERE mr.Appointment_ID=? ORDER BY pd.Detail_ID";
    try(PreparedStatement ps=c.prepareStatement(sql)){ps.setInt(1,inv.appointmentId);try(ResultSet r=ps.executeQuery()){while(r.next())inv.items.add(new Item("MEDICINE:"+r.getInt("Detail_ID"),r.getString("Medicine_Name"),"Thuốc / Vật tư",r.getInt("Quantity"),r.getLong("Price"),true,r.getObject("Price")==null,false));}}
    Set<String> live=new HashSet<>();for(Item i:inv.items){live.add(i.key);Item old=saved.get(i.key);if(old!=null&&old.declined)i.declined=true;}
-   for(Item i:saved.values())if(i.declined&&!live.contains(i.key))inv.items.add(i);
+   Set<String> refundKeys=new HashSet<>();try(PreparedStatement p=c.prepareStatement("SELECT DISTINCT ri.Item_Key FROM Refund_Request_Item ri JOIN Refund_Request rr ON rr.Refund_ID=ri.Refund_ID WHERE rr.Invoice_ID=?")){p.setInt(1,id);try(ResultSet r=p.executeQuery()){while(r.next())refundKeys.add(r.getString(1));}}
+   for(Item i:saved.values())if(!live.contains(i.key)&&(i.declined||refundKeys.contains(i.key)))inv.items.add(i);
   }
+  inv.refundedAmount=ItemRefundDAO.refunded(c,id);
+  try(PreparedStatement p=c.prepareStatement("SELECT ri.Item_Key,SUM(ri.Quantity),SUM(ri.Quantity*ri.Unit_Price) FROM Refund_Request_Item ri JOIN Refund_Request rr ON rr.Refund_ID=ri.Refund_ID WHERE rr.Invoice_ID=? AND rr.Status='Completed' GROUP BY ri.Item_Key")){p.setInt(1,id);try(ResultSet r=p.executeQuery()){while(r.next())for(Item item:inv.items)if(item.key.equals(r.getString(1))){item.refundedQuantity=r.getInt(2);item.refundedAmount=r.getLong(3);}}}
   inv.activePayment=active(c,id);
   return inv;
  }
@@ -69,10 +109,10 @@ public class StaffInvoiceDAO {
  private void expect(StaffInvoice inv,String expected){if(expected==null||!inv.fingerprint().equals(expected))throw new IllegalStateException("Hóa đơn đã thay đổi. Hãy tải lại và kiểm tra số tiền trước khi tiếp tục.");}
  private void editable(StaffInvoice inv){if(!inv.isCanEdit())throw new IllegalStateException("Chỉ cập nhật hóa đơn khi đã kết thúc khám, không có yêu cầu hoàn tiền hoặc QR đang chờ xử lý.");}
  private void ready(StaffInvoice inv){editable(inv);if(!inv.isCanCheckout())throw new IllegalStateException("Hãy xử lý khoản chưa định giá, dịch vụ chưa thực hiện hoặc tiền thu thừa trước khi thanh toán.");}
- private void snapshot(Connection c,StaffInvoice inv,int employee)throws Exception {
+ private void snapshot(Connection c,StaffInvoice inv,Integer employee)throws Exception {
   try(PreparedStatement ps=c.prepareStatement("IF NOT EXISTS(SELECT 1 FROM Invoice_Checkout WHERE Invoice_ID=?) INSERT INTO Invoice_Checkout(Invoice_ID,Base_Amount,Opening_Paid) VALUES(?,?,?)")){ps.setInt(1,inv.id);ps.setInt(2,inv.id);ps.setLong(3,inv.baseAmount);ps.setLong(4,inv.priorPaid);ps.executeUpdate();}
   try(PreparedStatement ps=c.prepareStatement("DELETE FROM Invoice_Checkout_Item WHERE Invoice_ID=?")){ps.setInt(1,inv.id);ps.executeUpdate();}
-  try(PreparedStatement ps=c.prepareStatement("INSERT INTO Invoice_Checkout_Item(Invoice_ID,Item_Key,Item_Name,Item_Type,Quantity,Unit_Price,Removable,Declined,Unpriced,Changed_By) VALUES(?,?,?,?,?,?,?,?,?,?)")){for(Item item:inv.items){ps.setInt(1,inv.id);ps.setString(2,item.key);ps.setString(3,item.name);ps.setString(4,item.type);ps.setInt(5,item.quantity);ps.setLong(6,item.unitPrice);ps.setBoolean(7,item.removable);ps.setBoolean(8,item.declined);ps.setBoolean(9,item.unpriced);ps.setInt(10,employee);ps.addBatch();}ps.executeBatch();}
+  try(PreparedStatement ps=c.prepareStatement("INSERT INTO Invoice_Checkout_Item(Invoice_ID,Item_Key,Item_Name,Item_Type,Quantity,Unit_Price,Removable,Declined,Unpriced,Changed_By) VALUES(?,?,?,?,?,?,?,?,?,?)")){for(Item item:inv.items){ps.setInt(1,inv.id);ps.setString(2,item.key);ps.setString(3,item.name);ps.setString(4,item.type);ps.setInt(5,item.quantity);ps.setLong(6,item.unitPrice);ps.setBoolean(7,item.removable);ps.setBoolean(8,item.declined);ps.setBoolean(9,item.unpriced);ps.setObject(10,employee,Types.INTEGER);ps.addBatch();}ps.executeBatch();}
  }
  private void updateTotal(Connection c,StaffInvoice inv)throws Exception {
   try(PreparedStatement ps=c.prepareStatement("UPDATE Master_Invoice SET Total_Amount=?, Deposit_Amount=CASE WHEN COALESCE(Deposit_Amount,0)>? THEN ? ELSE Deposit_Amount END,Balance_Due=?,Status=?,Close_At=CASE WHEN ?=0 THEN Close_At ELSE NULL END WHERE Invoice_ID=?")){long total=inv.getTotal();ps.setLong(1,total);ps.setLong(2,total);ps.setLong(3,total);ps.setLong(4,inv.getDue());ps.setString(5,inv.getDue()==0?"Paid":inv.paid>0?"Partial_Paid":"Unpaid");ps.setLong(6,inv.getDue());ps.setInt(7,inv.id);ps.executeUpdate();}
@@ -82,13 +122,13 @@ public class StaffInvoiceDAO {
    if(key.startsWith("PROCEDURE:")){try(PreparedStatement ps=c.prepareStatement("UPDATE Procedure_Order SET Status='Cancelled' WHERE Order_ID=? AND Status='Pending' AND NOT EXISTS(SELECT 1 FROM Procedure_Payment_Request pr WHERE pr.Order_ID=Procedure_Order.Order_ID AND pr.Status='Paid')")){ps.setInt(1,Integer.parseInt(key.substring(10)));if(ps.executeUpdate()!=1)throw new IllegalStateException("Dịch vụ đã được xử lý. Hãy tải lại hóa đơn.");}}
    snapshot(c,inv,employee);updateTotal(c,inv);c.commit();}catch(Exception e){c.rollback();throw e;}}
  }
- private void finalizeInvoice(Connection c,StaffInvoice inv,int employee,String method,long amount,Long order)throws Exception {
+ private void finalizeInvoice(Connection c,StaffInvoice inv,Integer employee,String method,long amount,Long order)throws Exception {
   if(amount>0){int tx;try(PreparedStatement ps=c.prepareStatement("INSERT INTO Payment_Transaction(Invoice_ID,Amount,Gateway_Status,Payment_Gateway,Trans_Date) VALUES(?,?,'Success',?,SYSUTCDATETIME())",Statement.RETURN_GENERATED_KEYS)){ps.setInt(1,inv.id);ps.setLong(2,amount);ps.setString(3,method);ps.executeUpdate();try(ResultSet r=ps.getGeneratedKeys()){r.next();tx=r.getInt(1);}}
    if(order!=null)try(PreparedStatement ps=c.prepareStatement("UPDATE Invoice_Checkout_Payment SET Status='Paid',Transaction_ID=?,Updated_At=SYSUTCDATETIME() WHERE Order_Code=? AND Status='Pending'")){ps.setInt(1,tx);ps.setLong(2,order);if(ps.executeUpdate()!=1)throw new IllegalStateException("Yêu cầu QR đã được xử lý.");}
   }
   snapshot(c,inv,employee);
   try(PreparedStatement ps=c.prepareStatement("UPDATE Master_Invoice SET Total_Amount=?,Deposit_Amount=?,Balance_Due=0,Status='Paid',Close_At=SYSUTCDATETIME() WHERE Invoice_ID=?")){ps.setLong(1,inv.getTotal());ps.setLong(2,inv.getTotal());ps.setInt(3,inv.id);ps.executeUpdate();}
-  try(PreparedStatement ps=c.prepareStatement("UPDATE Invoice_Checkout SET Finalized_At=SYSUTCDATETIME(),Finalized_By=?,Payment_Method=? WHERE Invoice_ID=? AND Finalized_At IS NULL")){ps.setInt(1,employee);ps.setString(2,method);ps.setInt(3,inv.id);if(ps.executeUpdate()!=1)throw new IllegalStateException("Hóa đơn đã được chốt.");}
+  try(PreparedStatement ps=c.prepareStatement("UPDATE Invoice_Checkout SET Finalized_At=SYSUTCDATETIME(),Finalized_By=?,Payment_Method=? WHERE Invoice_ID=? AND Finalized_At IS NULL")){ps.setObject(1,employee,Types.INTEGER);ps.setString(2,method);ps.setInt(3,inv.id);if(ps.executeUpdate()!=1)throw new IllegalStateException("Hóa đơn đã được chốt.");}
  }
  private String lastPaidMethod(Connection c,int invoiceId)throws Exception {
   try(PreparedStatement ps=c.prepareStatement("SELECT TOP 1 Payment_Gateway FROM Payment_Transaction WHERE Invoice_ID=? AND Gateway_Status='Success' ORDER BY Transaction_ID DESC")){

@@ -15,121 +15,8 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <!-- Layout CSS -->
   <link href="${pageContext.request.contextPath}/assets/css/employee.css" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f8fafc;
-      color: #1e293b;
-    }
-    .stat-card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 14px;
-      padding: 20px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-      transition: all 0.2s ease;
-      height: 100%;
-    }
-    .stat-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
-    }
-    .filter-tab {
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-weight: 500;
-      font-size: 0.875rem;
-      text-decoration: none;
-      color: #64748b;
-      background: #f1f5f9;
-      transition: all 0.2s;
-      display: inline-block;
-    }
-    .filter-tab:hover {
-      background: #e2e8f0;
-      color: #1e293b;
-    }
-    .filter-tab.active {
-      background: #0d9488;
-      color: #ffffff !important;
-      box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25);
-    }
-    .content-card {
-      background: #ffffff;
-      border-radius: 14px;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-      overflow: hidden;
-    }
-    .custom-table th {
-      background-color: #f8fafc;
-      color: #64748b;
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 14px 16px;
-      border-bottom: 1px solid #e2e8f0;
-    }
-    .custom-table td {
-      padding: 16px;
-      border-bottom: 1px solid #f1f5f9;
-      vertical-align: middle;
-      font-size: 14px;
-    }
-    .badge-soft-teal { background-color: #ccfbf1; color: #0d9488; }
-    .badge-soft-primary { background-color: #e0f2fe; color: #0284c7; }
-    .badge-soft-success { background-color: #dcfce7; color: #16a34a; }
-    .btn-action-approve {
-      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-      color: #ffffff;
-      border: none;
-      padding: 6px 16px;
-      border-radius: 50px;
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.2px;
-      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.28);
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .btn-action-approve:hover {
-      background: linear-gradient(135deg, #047857 0%, #059669 100%);
-      color: #ffffff;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.42);
-      transform: translateY(-1.5px);
-    }
-    .btn-action-approve:active {
-      transform: translateY(0);
-      box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
-    }
-    .btn-action-reject {
-      background-color: #fff1f2;
-      color: #e11d48;
-      border: 1px solid #fecdd3;
-      padding: 6px 16px;
-      border-radius: 50px;
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.2px;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .btn-action-reject:hover {
-      background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
-      color: #ffffff;
-      border-color: transparent;
-      box-shadow: 0 4px 12px rgba(225, 29, 72, 0.35);
-      transform: translateY(-1.5px);
-    }
-    .btn-action-reject:active {
-      transform: translateY(0);
-    }
-  </style>
+  <link href="${pageContext.request.contextPath}/assets/css/director-refunds.css?v=20261030-2" rel="stylesheet">
+  <link href="${pageContext.request.contextPath}/assets/css/director-leave.css?v=20261030-2" rel="stylesheet">
 </head>
 <body>
 
@@ -144,7 +31,7 @@
     <jsp:include page="/views/employee/layout/employee-header.jsp" />
 
     <!-- Page Content -->
-    <div class="page-content">
+    <div class="page-content refund-page leave-page">
 
       <!-- Page Title -->
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
@@ -171,14 +58,14 @@
       <!-- KPI Summary Stats -->
       <div class="row g-3 mb-4">
         <div class="col-6 col-xl-3">
-          <div class="stat-card">
+          <div class="refund-card leave-stat">
             <span class="text-muted small fw-semibold">Tổng số yêu cầu</span>
             <h3 class="fw-bold mt-2 mb-0">${stats.total}</h3>
             <small class="text-muted">Đơn từ nhân sự</small>
           </div>
         </div>
         <div class="col-6 col-xl-3">
-          <div class="stat-card border-warning">
+          <div class="refund-card leave-stat border-warning">
             <div class="d-flex justify-content-between align-items-center">
               <span class="text-warning small fw-bold">Chờ Giám đốc duyệt</span>
               <span class="badge bg-warning text-dark">${stats.pending}</span>
@@ -188,14 +75,14 @@
           </div>
         </div>
         <div class="col-6 col-xl-3">
-          <div class="stat-card">
+          <div class="refund-card leave-stat">
             <span class="text-muted small fw-semibold">Đã chấp thuận</span>
             <h3 class="fw-bold text-success mt-2 mb-0">${stats.approved}</h3>
             <small class="text-muted">Đã chuyển trạng thái ca</small>
           </div>
         </div>
         <div class="col-6 col-xl-3">
-          <div class="stat-card">
+          <div class="refund-card leave-stat">
             <span class="text-muted small fw-semibold">Đã từ chối</span>
             <h3 class="fw-bold text-secondary mt-2 mb-0">${stats.rejected}</h3>
             <small class="text-muted">Yêu cầu không được duyệt</small>
@@ -204,7 +91,7 @@
       </div>
 
       <!-- Filters & Actions -->
-      <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+      <div class="refund-card refund-filters d-block">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
           <!-- Status Filters -->
           <div class="d-flex flex-wrap gap-2 align-items-center">
@@ -234,19 +121,19 @@
       </div>
 
       <!-- Requests Table -->
-      <div class="content-card">
+      <div class="refund-card p-0 overflow-hidden">
         <div class="table-responsive">
-          <table class="custom-table table table-hover mb-0">
+          <table class="table refund-table leave-table mb-0">
+            <colgroup><col style="width:7%"><col style="width:23%"><col style="width:20%"><col style="width:20%"><col style="width:14%"><col style="width:16%"></colgroup>
             <thead>
               <tr>
-                <th style="width: 80px;">Mã đơn</th>
+                <th>Mã đơn</th>
                 <th>Nhân sự gửi yêu cầu</th>
                 <th>Ca trực xin hủy</th>
                 <th>Lý do xin nghỉ</th>
                 <th>Thời gian gửi</th>
-                <th>Người duyệt</th>
-                <th>Trạng thái</th>
-                <th class="text-end" style="width: 190px;">Thao tác Giám đốc</th>
+                <th>Thao tác</th>
+
               </tr>
             </thead>
             <tbody>
@@ -255,9 +142,10 @@
                   <c:forEach var="r" items="${requests}">
                     <tr>
                       <td class="fw-bold font-monospace text-teal">#LR-${r.requestId}</td>
+
                       <td>
                         <div class="fw-bold text-dark">${r.requesterName}</div>
-                        <div class="d-flex align-items-center gap-2 mt-1">
+                        <div class="leave-person-meta">
                           <span class="badge ${r.requesterRole == 'doctor' ? 'badge-soft-primary' : (r.requesterRole == 'staff' ? 'badge-soft-teal' : 'badge-soft-success')} small" style="font-size: 11px;">
                             ${r.requesterRoleName}
                           </span>
@@ -273,40 +161,24 @@
                         <small class="text-muted">Mã ca: #WS-${r.scheduleId}</small>
                       </td>
                       <td>
-                        <div class="p-2 rounded bg-light border text-dark" style="max-width: 250px; font-size: 13px;">
+                        <div class="leave-reason">
                           ${r.reason}
                         </div>
                       </td>
                       <td>
                         <small class="text-muted d-block">${r.createdAt}</small>
                       </td>
-                      <td>
-                        <c:choose>
-                          <c:when test="${not empty r.approvedByEmployeeId}">
-                            <div class="fw-semibold text-dark">${r.approverName}</div>
-                            <small class="text-muted">${r.approvedAt}</small>
-                          </c:when>
-                          <c:otherwise>
-                            <span class="text-muted small">---</span>
-                          </c:otherwise>
-                        </c:choose>
-                      </td>
-                      <td>
-                        <span class="badge ${r.statusBadgeClass} px-3 py-2 rounded-pill font-monospace" style="font-size: 12px;">
-                          ${r.statusVn}
-                        </span>
-                      </td>
-                      <td class="text-end">
+                      <td class="refund-action">
                         <c:choose>
                           <c:when test="${r.requestStatus == 'Pending'}">
-                            <div class="d-flex justify-content-end gap-2">
+                            <div class="leave-actions">
                               <!-- Nút Chấp thuận -->
-                              <button type="button" class="btn btn-action-approve"
+                              <button type="button" class="btn btn-sm btn-outline-success"
                                       onclick="openApproveModal(${r.requestId}, '${fn:escapeXml(r.requesterName)}', '${r.leaveDate}', '${r.slotName}')">
                                 <i class="bi bi-check-circle-fill"></i>Duyệt
                               </button>
                               <!-- Nút Từ chối -->
-                              <button type="button" class="btn btn-action-reject"
+                              <button type="button" class="btn btn-sm btn-outline-danger"
                                       onclick="openRejectModal(${r.requestId}, '${fn:escapeXml(r.requesterName)}')">
                                 <i class="bi bi-x-circle-fill"></i>Từ chối
                               </button>
@@ -322,7 +194,7 @@
                 </c:when>
                 <c:otherwise>
                   <tr>
-                    <td colspan="8" class="text-center py-5 text-muted">
+                    <td colspan="6" class="text-center py-5 text-muted">
                       <i class="bi bi-inbox fs-1 d-block mb-2 text-muted opacity-50"></i>
                       Không tìm thấy yêu cầu hủy lịch trực nào phù hợp với bộ lọc hiện tại.
                     </td>
@@ -361,7 +233,7 @@
           </div>
           <div class="modal-footer border-0 pt-0">
             <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Hủy</button>
-            <button type="submit" class="btn btn-action-approve px-4 py-2" style="font-size: 14px;">
+            <button type="submit" class="btn btn-success px-4 py-2" style="font-size: 14px;">
               <i class="bi bi-check-circle-fill"></i> Xác nhận chấp thuận
             </button>
           </div>
@@ -393,7 +265,7 @@
           </div>
           <div class="modal-footer border-0 pt-0">
             <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Đóng</button>
-            <button type="submit" class="btn btn-action-reject px-4 py-2" style="font-size: 14px; background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); color: #fff; border: none; box-shadow: 0 4px 12px rgba(225, 29, 72, 0.35);">
+            <button type="submit" class="btn btn-danger px-4 py-2">
               <i class="bi bi-x-circle-fill"></i> Xác nhận từ chối
             </button>
           </div>
