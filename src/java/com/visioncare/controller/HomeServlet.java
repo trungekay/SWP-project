@@ -41,10 +41,15 @@ public class HomeServlet extends HttpServlet {
             request.setAttribute("doctors", doctors);
             List<CatalogService> catalogServices = catalogDAO.listServices();
             request.setAttribute("catalogServices", catalogServices);
+            // Truyền ID của dịch vụ Khám tổng quát (NK-01) động từ DB —
+            // dùng cho nút CTA "Đặt lịch Khám tổng quát trước" tại trang chủ
+            // cho các dịch vụ Case 3 (chỉ nhận qua chỉ định bác sĩ).
             if (catalogServices != null) {
                 for (CatalogService s : catalogServices) {
-                    if ("LS-03".equalsIgnoreCase(s.getCode())) request.setAttribute("lasikPreopId", s.getId());
-                    if ("TT-05".equalsIgnoreCase(s.getCode())) request.setAttribute("phacoPreopId", s.getId());
+                    if ("NK-01".equalsIgnoreCase(s.getCode())) {
+                        request.setAttribute("generalExamServiceId", s.getId());
+                        break;
+                    }
                 }
             }
             com.visioncare.dao.ClinicGalleryDAO galleryDAO = new com.visioncare.dao.ClinicGalleryDAO();

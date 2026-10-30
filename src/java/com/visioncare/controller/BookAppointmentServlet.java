@@ -23,6 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @WebServlet(name = "BookAppointmentServlet", urlPatterns = {"/book-appointment"})
 public class BookAppointmentServlet extends HttpServlet {
@@ -329,11 +331,29 @@ public class BookAppointmentServlet extends HttpServlet {
             }
 
             if (serviceParam != null && !serviceParam.isEmpty()) {
-                request.setAttribute("selectedServiceId", serviceParam);
+                String effectiveServiceParam = serviceParam;
+                try {
+                    int sId = Integer.parseInt(serviceParam);
+                    CatalogService requestedSvc = catalogDAO.getService(sId);
+                    if (requestedSvc != null && !requestedSvc.isAllowDirectBooking()) {
+                        if (requestedSvc.isRequiresPreOp() && requestedSvc.getPrerequisiteServiceId() != null && requestedSvc.getPrerequisiteServiceId() > 0) {
+                            effectiveServiceParam = String.valueOf(requestedSvc.getPrerequisiteServiceId());
+                            request.setAttribute("serviceNotice", "Gói '" + requestedSvc.getName() + "' bắt buộc phải khám tiền phẫu trước. Hệ thống đã tự động chuyển sang gói tiền phẫu: " + requestedSvc.getPrerequisiteServiceName() + ".");
+                        } else {
+                            effectiveServiceParam = null;
+                            request.setAttribute("serviceNotice", "Dịch vụ '" + requestedSvc.getName() + "' chỉ tiếp nhận theo chỉ định trực tiếp từ Bác sĩ, không cho phép đặt lịch trực tiếp. Quý khách vui lòng chọn một gói khám lâm sàng bên dưới.");
+                        }
+                    }
+                } catch (Exception ignored) {}
+
+                if (effectiveServiceParam != null) {
+                    request.setAttribute("selectedServiceId", effectiveServiceParam);
+                }
                 // Nếu chưa có doctorId, tự động tìm bác sĩ đầu tiên thuộc đúng chuyên khoa của dịch vụ này
                 if (docParam == null || docParam.isEmpty()) {
                     try {
-                        int sId = Integer.parseInt(serviceParam);
+                        String sIdStr = (String) request.getAttribute("selectedServiceId");
+                        int sId = (sIdStr != null && !sIdStr.isEmpty()) ? Integer.parseInt(sIdStr) : Integer.parseInt(serviceParam);
                         CatalogService targetSvc = null;
                         if (services != null) {
                             for (CatalogService cs : services) {
@@ -610,6 +630,11 @@ public class BookAppointmentServlet extends HttpServlet {
                 try {
                     cs = catalogDAO.getService(serviceId);
                     if (cs != null) {
+                        if (!cs.isAllowDirectBooking()) {
+                            request.setAttribute("error", "Dịch vụ '" + cs.getName() + "' chỉ tiếp nhận theo chỉ định trực tiếp từ Bác sĩ sau khi thăm khám, không cho phép đặt lịch trực tiếp trên Website.");
+                            repopulateAndForward(request, response, appointment);
+                            return;
+                        }
                         appointment.setServiceName(cs.getName());
                     }
                 } catch (Exception ignored) {}
@@ -617,11 +642,13 @@ public class BookAppointmentServlet extends HttpServlet {
             long totalServicePrice = (cs != null && cs.getPrice() != null) ? cs.getPrice().longValue() : 200000;
             appointment.setTotalAmount(totalServicePrice);
 
-            // Quy định thu phí:
-            // - Dịch vụ đặt lịch trực tuyến là các gói Khám & Tiền phẫu: thu đúng 100% chi phí khám của gói đó.
-            // - balanceDue = 0 (trọn gói phí khám). Nếu là khám tiền phẫu, phí này sẽ được khấu trừ 100% vào ca mổ khi phẫu thuật.
-            long fee = totalServicePrice > 0 ? totalServicePrice : 200000;
-            long balanceDue = 0;
+            // Quy định thu phí đặt lịch trực tuyến:
+            // - Dịch vụ có tiền phẫu (requiresPreOp) hoặc chi phí phẫu thuật lớn (> 2.000.000đ):
+            //   Tiền cọc đặt lịch online chỉ thu mức phí khám tiền phẫu ban đầu (500.000đ hoặc giá gói tiền phẫu liên kết).
+            //   Số tiền còn lại (balanceDue) được ghi nhận trong hóa đơn để thanh toán khi hoàn tất bước tiền phẫu và tiến hành phẫu thuật.
+            // - Dịch vụ khám thông thường / thủ thuật ngoại trú (<= 2.000.000đ): thu đúng 100% trọn gói, balanceDue = 0.
+            long fee = cs != null ? cs.getOnlineDepositFee() : 200000;
+            long balanceDue = cs != null ? cs.getOnlineBalanceDue() : 0;
             appointment.setFee(fee);
             appointment.setBalanceDue(balanceDue);
 
@@ -692,25 +719,35 @@ public class BookAppointmentServlet extends HttpServlet {
     }
 
     private void prepareFormData(HttpServletRequest request) throws Exception {
-        // Tải danh mục bệnh lý / dịch vụ khám & tư vấn hoàn toàn từ Database (Service_Catalog)
-        List<CatalogService> allServices = catalogDAO.listServices();
-        List<CatalogService> bookingServices = new java.util.ArrayList<>();
-        if (allServices != null) {
-            for (CatalogService cs : allServices) {
-                // Hiển thị các gói Khám & Tư vấn, Kiểm tra & Chẩn đoán, và Thủ thuật ngoại trú (TP-LEO, TP-LEDAO, TP-YAG)
-                // Chỉ loại trừ các ca đại phẫu thuật lớn (PT-LASIK, PT-SMILE, PT-PHACO) vì bắt buộc phải đăng ký khám tiền phẫu trước
-                String c = cs.getCode() != null ? cs.getCode().toUpperCase(java.util.Locale.ROOT).trim() : "";
-                boolean isMajorSurgery = c.startsWith("PT-");
-                if (!isMajorSurgery) {
-                    bookingServices.add(cs);
-                }
-            }
-        }
-        request.setAttribute("services", bookingServices);
+        // Chỉ tải các dịch vụ cho phép bệnh nhân đặt lịch trực tiếp trên Website (Allow_Direct_Booking = 1)
+        List<CatalogService> allServices = catalogDAO.listBookableServices();
+        request.setAttribute("services", allServices);
 
         // Tải danh sách bác sĩ hoàn toàn từ Database (Employee_Profile)
         List<Doctor> doctors = doctorDAO.getAll();
         request.setAttribute("doctors", doctors);
+
+        // Pre-load lịch làm việc 7 ngày tới để client-side filter bác sĩ theo ngày (Option C)
+        // Tránh N+1 AJAX call khi bệnh nhân đổi ngày trong form đặt lịch
+        String today = LocalDate.now().toString();
+        String weekEnd = LocalDate.now().plusDays(6).toString();
+        Map<String, Set<Integer>> scheduleMap = workScheduleDAO.getDoctorWorkingDays(today, weekEnd);
+        StringBuilder scheduleJson = new StringBuilder("{");
+        boolean firstDate = true;
+        for (Map.Entry<String, Set<Integer>> entry : scheduleMap.entrySet()) {
+            if (!firstDate) scheduleJson.append(",");
+            firstDate = false;
+            scheduleJson.append("\"").append(entry.getKey()).append("\":[");
+            boolean firstId = true;
+            for (Integer docId : entry.getValue()) {
+                if (!firstId) scheduleJson.append(",");
+                firstId = false;
+                scheduleJson.append(docId);
+            }
+            scheduleJson.append("]");
+        }
+        scheduleJson.append("}");
+        request.setAttribute("doctorScheduleMapJson", scheduleJson.toString());
 
         // Tự động điền thông tin nếu bệnh nhân đã đăng nhập
         HttpSession session = request.getSession(false);
