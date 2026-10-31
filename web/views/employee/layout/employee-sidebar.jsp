@@ -23,7 +23,7 @@
     <ul class="sidebar-menu">
         <c:choose>
             <%-- ==================== GIAO DIỆN DÀNH CHO STAFF / LỄ TÂN ==================== --%>
-            <c:when test="${empty sessionScope.user || fn:toLowerCase(sessionScope.user.role) == 'staff' || sessionScope.user.roleId == 5 || (fn:toLowerCase(sessionScope.user.role) != 'doctor' && fn:toLowerCase(sessionScope.user.role) != 'medical_specialist' && fn:toLowerCase(sessionScope.user.role) != 'specialist' && sessionScope.user.roleId != 3 && sessionScope.user.roleId != 4 && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'payments' || param.activeNav == 'invoices'))}">
+            <c:when test="${empty sessionScope.user || fn:toLowerCase(sessionScope.user.role) == 'staff' || sessionScope.user.roleId == 5 || (fn:toLowerCase(sessionScope.user.role) != 'doctor' && fn:toLowerCase(sessionScope.user.role) != 'medical_specialist' && fn:toLowerCase(sessionScope.user.role) != 'specialist' && sessionScope.user.roleId != 3 && sessionScope.user.roleId != 4 && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'payments' || param.activeNav == 'invoices' || param.activeNav == 'patients'))}">
                 <div class="sidebar-menu-header">Bàn làm việc Nhân viên</div>
 
                 <!-- 1. Màn hình đặt lịch -->
@@ -59,7 +59,22 @@
                     </ul>
                 </li>
 
+                <!-- 3. Quản lý Bệnh nhân -->
+                <li>
+                    <a href="${pageContext.request.contextPath}/staff/patients" class="${param.activeNav == 'patients' ? 'active' : ''}">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Quản lý Bệnh nhân</span>
+                    </a>
+                </li>
+
                 <li><a href="${pageContext.request.contextPath}/staff/invoices" class="${param.activeNav == 'invoices' || param.activeNav == 'payments' ? 'active' : ''}"><i class="bi bi-receipt"></i><span>Quản lý hóa đơn &amp; thanh toán</span></a></li>
+
+                <li>
+                    <a href="${pageContext.request.contextPath}/staff/refund-request" class="${param.activeNav == 'refund-request' ? 'active' : ''}">
+                        <i class="bi bi-cash-coin"></i>
+                        <span>Tạo yêu cầu hoàn tiền</span>
+                    </a>
+                </li>
 
             </c:when>
 
@@ -97,7 +112,7 @@
                 </c:if>
 
                 <%-- Fallback cho Admin xem trang Tiếp đón / Lễ tân --%>
-                <c:if test="${(fn:toLowerCase(sessionScope.user.role) == 'admin' || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2) && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'payments' || param.activeNav == 'invoices')}">
+                <c:if test="${(fn:toLowerCase(sessionScope.user.role) == 'admin' || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2) && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'payments' || param.activeNav == 'invoices' || param.activeNav == 'patients')}">
                     <div class="sidebar-menu-header mt-3">Tiếp đón & Lễ tân</div>
                     <li>
                         <a href="${pageContext.request.contextPath}/employee/schedule" class="${param.activeNav == 'schedule' ? 'active' : ''}">
@@ -127,6 +142,12 @@
                                 </a>
                             </li>
                         </ul>
+                    </li>
+                    <li>
+                        <a href="${pageContext.request.contextPath}/staff/patients" class="${param.activeNav == 'patients' ? 'active' : ''}">
+                            <i class="bi bi-people-fill"></i>
+                            <span>Quản lý Bệnh nhân</span>
+                        </a>
                     </li>
                     <li>
                         <a href="${pageContext.request.contextPath}/staff/invoices" class="${param.activeNav == 'payments' ? 'active' : ''}">
