@@ -6,33 +6,37 @@ import java.util.*;
 
 public class RefundDAO {
 
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+
 
     /**
      * Get all refund requests for staff/admin management
      */
-    public List<Map<String, Object>> getAllRefundRequests(String statusFilter) {
+    public List<Map<String, Object>> getAllRefundRequests(String statusFilter) {return requests(statusFilter,null);}
+    public Map<String,Object> getRefundRequest(int id) {List<Map<String,Object>> rows=requests("all",id);return rows.isEmpty()?null:rows.get(0);}
+    private List<Map<String, Object>> requests(String statusFilter,Integer refundIdFilter) {
         List<Map<String, Object>> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
-            "SELECT r.Refund_ID, r.Invoice_ID, r.Refund_Amount, r.Reason, r.Status, r.Created_At, r.Update_At, " +
+            "SELECT r.Refund_ID, r.Invoice_ID, r.Refund_Amount, r.Reason, r.Status, r.Created_At, r.Update_At, r.Decision_Note,r.Notification_Status,r.Request_Kind,r.Notification_Attempts,r.Notification_Sent_At,r.Decision_At,patientAccount.Email AS Patient_Email,a.Status AS Appointment_Status,a.checkin_time, " +
             "p.Patient_ID, p.Full_Name AS Patient_Name, p.Phone AS Patient_Phone, " +
             "i.Appointment_ID, i.Total_Amount, i.Status AS Invoice_Status, " +
             "e1.Full_Name AS Creator_Name, e2.Full_Name AS Approver_Name " +
             "FROM Refund_Request r " +
             "JOIN Patient p ON r.Patient_ID = p.Patient_ID " +
-            "LEFT JOIN Master_Invoice i ON r.Invoice_ID = i.Invoice_ID " +
+            "LEFT JOIN Master_Invoice i ON r.Invoice_ID = i.Invoice_ID LEFT JOIN Appointment a ON a.Appointment_ID=i.Appointment_ID LEFT JOIN Account patientAccount ON patientAccount.Account_ID=p.Account_ID " +
             "LEFT JOIN Employee_Profile e1 ON r.created_by_employee_id = e1.Employee_ID " +
             "LEFT JOIN Employee_Profile e2 ON r.approved_by_employee_id = e2.Employee_ID "
         );
 
-        if (statusFilter != null && !statusFilter.isEmpty() && !"all".equalsIgnoreCase(statusFilter)) {
+        if(refundIdFilter!=null)sql.append("WHERE r.Refund_ID=? ");
+        else if (statusFilter != null && !statusFilter.isEmpty() && !"all".equalsIgnoreCase(statusFilter)) {
             sql.append("WHERE r.Status = ? ");
         }
         sql.append("ORDER BY r.Refund_ID DESC");
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-            if (statusFilter != null && !statusFilter.isEmpty() && !"all".equalsIgnoreCase(statusFilter)) {
+            if(refundIdFilter!=null)ps.setInt(1,refundIdFilter);
+            else if (statusFilter != null && !statusFilter.isEmpty() && !"all".equalsIgnoreCase(statusFilter)) {
                 ps.setString(1, statusFilter);
             }
             try (ResultSet rs = ps.executeQuery()) {
@@ -55,14 +59,27 @@ public class RefundDAO {
                     item.put("patientId", rs.getInt("Patient_ID"));
                     item.put("patientName", rs.getString("Patient_Name"));
                     item.put("patientPhone", rs.getString("Patient_Phone"));
+                    item.put("patientEmail",rs.getString("Patient_Email"));
+                    item.put("appointmentStatus",rs.getString("Appointment_Status"));
+                    item.put("checkin",rs.getTimestamp("checkin_time"));
+                    item.put("invoiceStatus",rs.getString("Invoice_Status"));
+                    item.put("notificationAttempts",rs.getInt("Notification_Attempts"));
+                    item.put("notificationSentAt",rs.getTimestamp("Notification_Sent_At"));
+                    item.put("decisionAt",rs.getTimestamp("Decision_At"));
+                    String mailStatus=rs.getString("Notification_Status");
+                    item.put("notificationLabel",switch(mailStatus==null?"":mailStatus){case "Sent"->"Máy chủ email đã chấp nhận";case "Failed"->"Gửi thất bại";case "Pending"->"Chờ gửi tự động";case "Sending"->"Đang gửi";default->"Chưa có thông báo quyết định mới";});
                     item.put("amount", amount);
                     item.put("amountFmt", String.format("%,d đ", amount));
                     item.put("reason", rs.getString("Reason") != null ? rs.getString("Reason") : "Không có lý do");
+                    item.put("kind",rs.getString("Request_Kind"));
+                    item.put("lines",ItemRefundDAO.lines(conn,refundId));
+                    item.put("decisionNote",rs.getString("Decision_Note"));
+                    item.put("notificationStatus",rs.getString("Notification_Status"));
                     item.put("status", st);
                     item.put("statusVn", getStatusVn(st));
                     item.put("badgeClass", getBadgeClass(st));
-                    item.put("createdAt", createdAt != null ? dateFormat.format(createdAt) : "");
-                    item.put("updatedAt", updatedAt != null ? dateFormat.format(updatedAt) : "");
+                    item.put("createdAt", createdAt != null ? createdAt.toLocalDateTime().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "");
+                    item.put("updatedAt", updatedAt != null ? updatedAt.toLocalDateTime().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "");
                     item.put("creatorName", rs.getString("Creator_Name") != null ? rs.getString("Creator_Name") : "Hệ thống");
                     item.put("approverName", rs.getString("Approver_Name") != null ? rs.getString("Approver_Name") : "Chưa duyệt");
 
@@ -80,7 +97,7 @@ public class RefundDAO {
      */
     public Map<String, Object> getRefundStats() {
         Map<String, Object> stats = new HashMap<>();
-        int total = 0, pending = 0, approved = 0, rejected = 0;
+        int total = 0, pending = 0, approved = 0, rejected = 0, completed = 0;
         long totalApprovedAmount = 0;
 
         String sql = "SELECT Status, COUNT(*) AS Cnt, SUM(Refund_Amount) AS SumAmt FROM Refund_Request GROUP BY Status";
@@ -97,6 +114,8 @@ public class RefundDAO {
                 } else if ("Approved".equalsIgnoreCase(st)) {
                     approved = cnt;
                     totalApprovedAmount += sum;
+                } else if ("Completed".equalsIgnoreCase(st)) {
+                    completed=cnt;
                 } else if ("Rejected".equalsIgnoreCase(st)) {
                     rejected = cnt;
                 }
@@ -105,6 +124,7 @@ public class RefundDAO {
             e.printStackTrace();
         }
 
+        stats.put("completed",completed);
         stats.put("total", total);
         stats.put("pending", pending);
         stats.put("approved", approved);
@@ -115,105 +135,18 @@ public class RefundDAO {
     }
 
     /**
-     * Staff/Admin approve refund request
+     * Director approves a refund request; staff payout is separate.
      * - Refund_Request -> Approved
-     * - Master_Invoice -> Refunded
+     * - Master_Invoice changes only after actual staff payout.
      * - Only staff-approved pre-check-in cancellations are eligible; appointment stays canceled
      */
-    public boolean approveRefund(int refundId, int employeeId) {
-        String sqlFindDetails = "SELECT r.Invoice_ID, i.Appointment_ID " +
-                                "FROM Refund_Request r " +
-                                "LEFT JOIN Master_Invoice i ON r.Invoice_ID = i.Invoice_ID " +
-                                "WHERE r.Refund_ID = ?";
-        String sqlUpdateRefund = "UPDATE Refund_Request SET Status = 'Approved', approved_by_employee_id = ?, Update_At = SYSUTCDATETIME() WHERE Refund_ID = ? AND Status = 'Pending'";
-        String sqlUpdateInvoice = "UPDATE Master_Invoice SET Status = 'Refunded' WHERE Invoice_ID = ?";
-
-        try (Connection conn = DBContext.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                int invoiceId = 0;
-                try (PreparedStatement psFind = conn.prepareStatement(sqlFindDetails)) {
-                    psFind.setInt(1, refundId);
-                    try (ResultSet rs = psFind.executeQuery()) {
-                        if (rs.next()) {
-                            invoiceId = rs.getInt("Invoice_ID");
-                        }
-                    }
-                }
-
-                if (!isEligibleForApproval(conn, invoiceId, refundId)) {
-                    conn.rollback();
-                    return false;
-                }
-
-                try (PreparedStatement psR = conn.prepareStatement(sqlUpdateRefund)) {
-                    psR.setInt(1, employeeId);
-                    psR.setInt(2, refundId);
-                    if (psR.executeUpdate() != 1) {
-                        conn.rollback();
-                        return false;
-                    }
-                }
-
-                if (invoiceId > 0) {
-                    try (PreparedStatement psI = conn.prepareStatement(sqlUpdateInvoice)) {
-                        psI.setInt(1, invoiceId);
-                        psI.executeUpdate();
-                    }
-                }
-
-                conn.commit();
-                return true;
-            } catch (Exception e) {
-                conn.rollback();
-                throw e;
-            } finally {
-                conn.setAutoCommit(true);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    public boolean approveRefund(int id,int employee) {
+        try{return new RefundLifecycleDAO().decide(id,employee,true,null);}catch(Exception e){e.printStackTrace();return false;}
+    }
+    public boolean rejectRefund(int id,int employee,String note) {
+        try{return new RefundLifecycleDAO().decide(id,employee,false,note);}catch(Exception e){e.printStackTrace();return false;}
     }
 
-    /**
-     * Staff/Admin reject refund request
-     * - Refund_Request -> Rejected
-     * - Cancellation remains in force when a refund is rejected
-     */
-    public boolean rejectRefund(int refundId, int employeeId, String note) {
-        String sql = "UPDATE Refund_Request SET Status = 'Rejected', approved_by_employee_id = ?, " +
-                     "Reason = CASE WHEN ? IS NOT NULL AND LEN(?) > 0 THEN Reason + N' [Từ chối: ' + ? + N']' ELSE Reason END, " +
-                     "Update_At = SYSUTCDATETIME() WHERE Refund_ID = ? AND Status = 'Pending'";
-        try (Connection conn = DBContext.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                    ps.setInt(1, employeeId);
-                    ps.setString(2, note);
-                    ps.setString(3, note);
-                    ps.setString(4, note);
-                    ps.setInt(5, refundId);
-                    if (ps.executeUpdate() != 1) { conn.rollback(); return false; }
-                }
-
-                conn.commit();
-                return true;
-            } catch (Exception e) {
-                conn.rollback();
-                throw e;
-            } finally {
-                conn.setAutoCommit(true);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    /**
-     * Staff creates a new refund request on behalf of a patient (Create Refund Request)
-     */
     public boolean createRefundByStaff(int invoiceId, int employeeId, int patientId, long amount, String reason, String initialStatus) {
         String status = "Pending";
         String sql = "INSERT INTO Refund_Request (Invoice_ID, created_by_employee_id, approved_by_employee_id, Patient_ID, Refund_Amount, Reason, Status, Created_At, Update_At) " +
@@ -333,8 +266,7 @@ public class RefundDAO {
         String sql = "SELECT i.Appointment_ID, i.Invoice_ID, r.Refund_ID, r.Status, r.Refund_Amount, r.Reason "
                 + "FROM Refund_Request r JOIN Master_Invoice i ON i.Invoice_ID = r.Invoice_ID "
                 + "JOIN Appointment a ON a.Appointment_ID = i.Appointment_ID "
-                + "WHERE a.Status = 'Canceled' AND a.checkin_time IS NULL "
-                + "AND r.Status IN ('Pending', 'Approved') ORDER BY r.Refund_ID DESC";
+                + "WHERE r.Status IN ('Pending', 'Approved', 'Rejected', 'Completed') ORDER BY r.Refund_ID DESC";
         try (Connection conn = DBContext.getConnection(); PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -343,9 +275,10 @@ public class RefundDAO {
                 Map<String, Object> refund = new HashMap<>();
                 refund.put("id", rs.getInt("Refund_ID"));
                 refund.put("code", String.format("#REF-%03d", rs.getInt("Refund_ID")));
+                refund.put("invoiceId",rs.getInt("Invoice_ID"));
                 refund.put("invoiceCode", String.format("#INV-%05d", rs.getInt("Invoice_ID")));
                 refund.put("status", rs.getString("Status"));
-                refund.put("statusLabel", "Pending".equals(rs.getString("Status")) ? "Chờ giám đốc duyệt" : "Đã duyệt hoàn tiền");
+                refund.put("statusLabel", getStatusVn(rs.getString("Status")));
                 refund.put("amount", rs.getLong("Refund_Amount"));
                 refund.put("amountLabel", String.format("%,d đ", rs.getLong("Refund_Amount")));
                 refund.put("reason", rs.getString("Reason"));
@@ -357,7 +290,8 @@ public class RefundDAO {
 
     private String getStatusVn(String st) {
         if ("Pending".equalsIgnoreCase(st)) return "Chờ duyệt";
-        if ("Approved".equalsIgnoreCase(st)) return "Đã xác nhận";
+        if ("Approved".equalsIgnoreCase(st)) return "Đã duyệt · Chờ staff hoàn tiền";
+        if ("Completed".equalsIgnoreCase(st)) return "Đã hoàn tiền";
         if ("Rejected".equalsIgnoreCase(st)) return "Từ chối";
         return st != null ? st : "";
     }

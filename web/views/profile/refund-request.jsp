@@ -5,7 +5,8 @@
       <jsp:include page="/views/common/header.jsp">
         <jsp:param name="pageTitle" value="Yêu cầu hoàn tiền" />
         <jsp:param name="pageDescription" value="Yêu cầu hoàn tiền VisionCare" />
-        <jsp:param name="bodyClass" value="starter-page-page" />
+        <jsp:param name="bodyClass" value="starter-page-page screen-wide patient-wide" />
+        <jsp:param name="fullWidth" value="true" />
         <jsp:param name="activeNav" value="" />
       </jsp:include>
 
@@ -347,7 +348,7 @@
 
         <div class="page-title">
           <div class="heading">
-            <div class="container">
+            <div class="container-fluid screen-fluid">
               <div class="row d-flex justify-content-center text-center">
                 <div class="col-lg-8">
                   <h1>Hồ sơ cá nhân</h1>
@@ -357,7 +358,7 @@
             </div>
           </div>
           <nav class="breadcrumbs">
-            <div class="container">
+            <div class="container-fluid screen-fluid">
               <ol>
                 <li><a href="${pageContext.request.contextPath}/home">Trang chủ</a></li>
                 <li class="current">Yêu cầu hoàn tiền</li>
@@ -367,8 +368,8 @@
         </div>
 
         <section class="section pt-4">
-          <div class="container">
-            <div class="row">
+          <div class="container-fluid screen-fluid">
+            <div class="row profile-screen-grid">
               <div class="col-lg-3">
                 <div class="content-card text-center border-0 mb-4 mb-lg-0" style="padding: 30px 20px;">
                   <div class="mb-3">
@@ -470,11 +471,7 @@
                                       '#REF-'.concat(refund.id)}</span>
                                   </td>
                                   <td>
-                                    <a href="${pageContext.request.contextPath}/profile/invoice-detail?id=${refund.invoiceId}"
-                                      class="invoice-link" title="Xem chi tiết hóa đơn">
-                                      ${not empty refund.formattedInvoiceId ? refund.formattedInvoiceId :
-                                      '#INV-'.concat(refund.invoiceId)}
-                                    </a>
+                                    <span class="invoice-link"><c:out value="${refund.formattedInvoiceId}" /></span>
                                     <c:if test="${not empty refund.formattedApptId && refund.formattedApptId != 'N/A'}">
                                       <span class="appt-subtle-badge" title="Lịch hẹn liên kết">
                                         <i class="bi bi-calendar-x me-1"></i>${refund.formattedApptId}
@@ -494,9 +491,9 @@
                                         </span>
                                       </c:when>
                                       <c:when
-                                        test="${refund.status == 'Approved' || refund.status == 'Đã hoàn tiền' || refund.statusVn == 'Đã hoàn tiền' || refund.status == 'Đã xác nhận' || refund.statusVn == 'Đã xác nhận'}">
+                                        test="${refund.status == 'Completed' || refund.status == 'Approved' || refund.status == 'Đã hoàn tiền' || refund.statusVn == 'Đã hoàn tiền' || refund.status == 'Đã xác nhận' || refund.statusVn == 'Đã xác nhận'}">
                                         <span class="badge-status badge-approved">
-                                          <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Đã xác nhận
+                                          <i class="bi bi-circle-fill" style="font-size: 6px;"></i> <c:out value="${refund.statusVn}" />
                                         </span>
                                       </c:when>
                                       <c:otherwise>
@@ -521,6 +518,7 @@
                                     refund.amount.concat(' đ')}"
                                     data-reason="
                                     <c:out value="${refund.reason}" />"
+                                    data-decision="<c:out value="${refund.decisionNote}" />"
                                     data-status="${refund.status}"
                                     data-status-vn="${not empty refund.statusVn ? refund.statusVn : refund.status}"
                                     data-created-at="${refund.createdAt}"
@@ -787,7 +785,7 @@
 
             const invLink = document.getElementById('patDetailModalInvoiceLink');
             invLink.innerText = invoiceCode;
-            invLink.href = '${pageContext.request.contextPath}/profile/invoice-detail?id=' + invoiceId;
+            invLink.removeAttribute('href');
 
             const apptContainer = document.getElementById('patDetailModalApptBadge');
             if (apptCode && apptCode !== 'N/A') {
@@ -811,13 +809,15 @@
                 '</span>' +
                 '<span class="text-muted small">Yêu cầu hoàn tiền đang chờ nhân viên kiểm tra và xử lý.</span>' +
                 '</div>';
-            } else if (status === 'Approved' || status === 'Đã hoàn tiền' || status === 'Đã xác nhận') {
+            } else if (status === 'Completed') {
+              statusSection.textContent = 'Đã hoàn tiền: staff đã xác nhận chi trả.';
+            } else if (status === 'Approved' || status === 'Đã xác nhận') {
               statusSection.innerHTML =
                 '<div class="d-flex align-items-center gap-2 flex-wrap">' +
                 '<span class="badge-status badge-approved">' +
-                '<i class="bi bi-circle-fill" style="font-size: 6px;"></i> Đã xác nhận' +
+                '<i class="bi bi-circle-fill" style="font-size: 6px;"></i> Đã duyệt · Chờ hoàn tiền' +
                 '</span>' +
-                '<span class="text-muted small">Yêu cầu hoàn tiền đã được nhân viên xác nhận và đang tiến hành xử lý hoàn cọc.</span>' +
+                '<span class="text-muted small">Yêu cầu đã được director duyệt. Phòng khám sẽ thực hiện hoàn tiền trong vòng 1 tuần.</span>' +
                 '</div>';
             } else {
               statusSection.innerHTML =
@@ -829,6 +829,7 @@
                 '</div>';
             }
 
+            if (btn.dataset.decision) { const note=document.createElement('p');note.className='mt-2';note.textContent='Ý kiến director: '+btn.dataset.decision;statusSection.appendChild(note); }
             const modal = new bootstrap.Modal(document.getElementById('patientRefundDetailModal'));
             modal.show();
           }

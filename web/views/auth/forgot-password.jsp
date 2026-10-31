@@ -6,13 +6,14 @@
 <jsp:include page="/views/common/header.jsp">
   <jsp:param name="pageTitle" value="Quên mật khẩu" />
   <jsp:param name="pageDescription" value="Khôi phục mật khẩu tài khoản VisionCare" />
-  <jsp:param name="bodyClass" value="starter-page-page" />
+  <jsp:param name="bodyClass" value="starter-page-page screen-wide auth-wide" />
+  <jsp:param name="fullWidth" value="true" />
   <jsp:param name="activeNav" value="login" />
 </jsp:include>
 
   <style>
     .auth-container {
-      max-width: 480px;
+      width: 100%;
       margin: 0 auto;
     }
     .auth-card {
@@ -52,7 +53,7 @@
   <main class="main bg-light">
     <div class="page-title">
       <div class="heading">
-        <div class="container">
+        <div class="container-fluid screen-fluid">
           <div class="row d-flex justify-content-center text-center">
             <div class="col-lg-8">
               <h1>Quên mật khẩu</h1>
@@ -63,8 +64,9 @@
     </div>
 
     <section class="section pt-4 pb-5">
-      <div class="container">
-        <div class="auth-container">
+      <div class="container-fluid screen-fluid">
+        <div class="auth-container auth-layout">
+          <jsp:include page="/views/auth/layout/auth-intro.jsp"><jsp:param name="screenTitle" value="Khôi phục quyền truy cập" /><jsp:param name="screenDescription" value="Nhập email đã đăng ký để nhận mã xác minh và đặt lại mật khẩu." /></jsp:include>
           <div class="auth-card">
             <div class="text-center">
               <div class="logo-icon"><i class="bi bi-key"></i></div>

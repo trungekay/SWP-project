@@ -27,6 +27,8 @@ public class AuthenticationFilter implements Filter {
                 
                 // 2. Fix Authorization Bypass for Admin
                 String uri = httpRequest.getRequestURI();
+                if (java.util.Set.of("/views/profile/invoice-detail.jsp","/views/profile/reschedule.jsp","/views/director/refund-detail.jsp").contains(uri.substring(httpRequest.getContextPath().length()))) {httpResponse.sendError(404);return;}
+
                 if (java.util.Set.of("/views/staff/invoice-list.jsp", "/views/staff/invoice-detail.jsp", "/views/staff/invoice-export.jsp")
                         .contains(uri.substring(httpRequest.getContextPath().length()))) {
                     httpResponse.sendRedirect(httpRequest.getContextPath() + "/staff/invoices");

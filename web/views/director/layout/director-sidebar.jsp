@@ -11,19 +11,13 @@
 </style>
 <!-- Director Sidebar -->
 <aside class="sidebar">
-    <a href="${pageContext.request.contextPath}/director/dashboard" class="sidebar-brand">
+    <a href="${pageContext.request.contextPath}/director/revenue" class="sidebar-brand">
         <span class="logo-mark"><i class="bi bi-eye"></i></span>
         <span class="brand-text">VisionCare</span>
     </a>
 
     <ul class="sidebar-menu">
         <div class="sidebar-menu-header">BAN ĐIỀU HÀNH</div>
-        <li>
-            <a href="${pageContext.request.contextPath}/director/dashboard" class="${param.activeNav == 'dashboard' ? 'active' : ''}">
-                <i class="bi bi-speedometer2"></i>
-                <span>Tổng quan Giám đốc</span>
-            </a>
-        </li>
         <li>
             <a href="${pageContext.request.contextPath}/director/revenue" class="${param.activeNav == 'revenue' ? 'active' : ''}">
                 <i class="bi bi-graph-up"></i>
@@ -62,18 +56,15 @@
             </a>
         </li>
         <li>
-            <button type="button" class="director-request-toggle ${param.activeNav == 'refunds' || param.activeNav == 'reschedule-requests' ? 'active' : ''}"
-                    aria-controls="director-request-menu" aria-expanded="${param.activeNav == 'refunds' || param.activeNav == 'reschedule-requests'}"
+            <button type="button" class="director-request-toggle ${param.activeNav == 'refunds' ? 'active' : ''}"
+                    aria-controls="director-request-menu" aria-expanded="${param.activeNav == 'refunds'}"
                     onclick="var menu=document.getElementById('director-request-menu'); menu.hidden=!menu.hidden; this.setAttribute('aria-expanded', String(!menu.hidden));">
                 <i class="bi bi-inbox"></i><span>Quản lý yêu cầu</span><i class="bi bi-chevron-down ms-auto"></i>
             </button>
-            <ul id="director-request-menu" class="director-request-menu" ${param.activeNav == 'refunds' || param.activeNav == 'reschedule-requests' ? '' : 'hidden'}>
+            <ul id="director-request-menu" class="director-request-menu" ${param.activeNav == 'refunds' ? '' : 'hidden'}>
                 <li><a href="${pageContext.request.contextPath}/director/refunds" class="${param.activeNav == 'refunds' ? 'active' : ''}">
                     <i class="bi bi-cash-coin"></i><span>Quản lý yêu cầu hoàn tiền</span>
                     <c:if test="${not empty pendingRefundCount && pendingRefundCount > 0}"><span class="badge bg-warning text-dark rounded-pill ms-auto">${pendingRefundCount}</span></c:if>
-                </a></li>
-                <li><a href="${pageContext.request.contextPath}/director/reschedule-requests" class="${param.activeNav == 'reschedule-requests' ? 'active' : ''}">
-                    <i class="bi bi-calendar2-week"></i><span>Quản lý yêu cầu đổi lịch</span>
                 </a></li>
             </ul>
         </li>

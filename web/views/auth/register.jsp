@@ -5,13 +5,14 @@
 <jsp:include page="/views/common/header.jsp">
   <jsp:param name="pageTitle" value="Đăng ký" />
   <jsp:param name="pageDescription" value="Đăng ký tài khoản VisionCare" />
-  <jsp:param name="bodyClass" value="starter-page-page" />
+  <jsp:param name="bodyClass" value="starter-page-page screen-wide auth-wide" />
+  <jsp:param name="fullWidth" value="true" />
   <jsp:param name="activeNav" value="login" />
 </jsp:include>
 
   <style>
     .auth-container {
-      max-width: 600px;
+      width: 100%;
       margin: 0 auto;
     }
     .auth-card {
@@ -56,7 +57,7 @@
 
     <div class="page-title">
       <div class="heading">
-        <div class="container">
+        <div class="container-fluid screen-fluid">
           <div class="row d-flex justify-content-center text-center">
             <div class="col-lg-8">
               <h1>Đăng ký tài khoản</h1>
@@ -66,7 +67,7 @@
         </div>
       </div>
       <nav class="breadcrumbs">
-        <div class="container">
+        <div class="container-fluid screen-fluid">
           <ol>
             <li><a href="${pageContext.request.contextPath}/home">Trang chủ</a></li>
             <li class="current">Đăng ký</li>
@@ -76,8 +77,9 @@
     </div>
 
     <section class="section pt-4 pb-5">
-      <div class="container">
-        <div class="auth-container">
+      <div class="container-fluid screen-fluid">
+        <div class="auth-container auth-layout">
+          <jsp:include page="/views/auth/layout/auth-intro.jsp"><jsp:param name="screenTitle" value="Tạo tài khoản VisionCare" /><jsp:param name="screenDescription" value="Đăng ký thông tin và xác minh email để bắt đầu sử dụng tài khoản của bạn." /></jsp:include>
           <div class="auth-card">
             <div class="text-center">
               <div class="logo-icon"><i class="bi bi-person-plus"></i></div>

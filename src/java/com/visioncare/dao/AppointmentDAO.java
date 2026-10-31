@@ -20,6 +20,8 @@ public class AppointmentDAO {
                 scheduleId = getOrCreateSchedule(conn, a);
             }
 
+            if(!com.visioncare.util.BookingAvailability.available(conn,scheduleId)){conn.rollback();return -1;}
+
             // Check if slot is already booked, taken, or in the past
             int pendingHoldMinutes = TimeSlotDAO.getPendingHoldMinutes();
             String checkSlotSql = "SELECT ws.Status, ws.Work_Date, ws.Start_Time, " +
@@ -874,7 +876,7 @@ public class AppointmentDAO {
                      "       p.Full_Name, p.Phone, p.DOB, ws.Start_Time, ws.Doctor_Employee_ID, p.Account_ID, ws.Work_Date, e.Full_Name AS Doctor_Name, " +
                      "       i.Invoice_ID, i.Deposit_Amount, i.Total_Amount, i.Balance_Due, i.Status AS Invoice_Status, " +
                      "       mr.Clinical_Diagnosis, mr.conclusion, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
-                     "       CASE WHEN EXISTS (SELECT 1 FROM Refund_Request r WHERE r.Invoice_ID = i.Invoice_ID AND r.Status IN ('Pending', 'Approved')) THEN 1 ELSE 0 END AS Has_Refund_Request " +
+                     "       CASE WHEN EXISTS (SELECT 1 FROM Refund_Request r WHERE r.Invoice_ID = i.Invoice_ID AND r.Status IN ('Pending', 'Approved', 'Completed')) THEN 1 ELSE 0 END AS Has_Refund_Request " +
                      "FROM Appointment a " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
                      "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
