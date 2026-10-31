@@ -274,19 +274,15 @@
                 }
               </style>
 
-              <c:set var="countKham" value="0" />
-              <c:set var="countChandoan" value="0" />
+              <c:set var="countKhamChandoan" value="0" />
               <c:set var="countDieutri" value="0" />
               <c:forEach items="${catalogServices}" var="s">
                 <c:choose>
-                  <c:when test="${s.category == 'Kiểm tra và chẩn đoán'}">
-                    <c:set var="countChandoan" value="${countChandoan + 1}" />
-                  </c:when>
                   <c:when test="${s.category == 'Điều trị và thủ thuật'}">
                     <c:set var="countDieutri" value="${countDieutri + 1}" />
                   </c:when>
                   <c:otherwise>
-                    <c:set var="countKham" value="${countKham + 1}" />
+                    <c:set var="countKhamChandoan" value="${countKhamChandoan + 1}" />
                   </c:otherwise>
                 </c:choose>
               </c:forEach>
@@ -304,12 +300,8 @@
                     <span class="badge rounded-pill bg-light text-secondary ms-1">${fn:length(catalogServices)}</span>
                   </button>
                   <button type="button" class="btn svc-filter-btn" data-filter="kham" onclick="filterServices('kham', this)">
-                    <i class="bi bi-person-check-fill me-1"></i> Khám &amp; Tư vấn
-                    <span class="badge rounded-pill bg-light text-secondary ms-1">${countKham}</span>
-                  </button>
-                  <button type="button" class="btn svc-filter-btn" data-filter="chandoan" onclick="filterServices('chandoan', this)">
-                    <i class="bi bi-clipboard2-pulse-fill me-1"></i> Kiểm tra &amp; Chẩn đoán
-                    <span class="badge rounded-pill bg-light text-secondary ms-1">${countChandoan}</span>
+                    <i class="bi bi-person-check-fill me-1"></i> Khám &amp; Chẩn đoán
+                    <span class="badge rounded-pill bg-light text-secondary ms-1">${countKhamChandoan}</span>
                   </button>
                   <button type="button" class="btn svc-filter-btn" data-filter="dieutri" onclick="filterServices('dieutri', this)">
                     <i class="bi bi-hospital-fill me-1"></i> Phẫu thuật &amp; Thủ thuật
@@ -321,9 +313,6 @@
                   <c:forEach items="${catalogServices}" var="service">
                     <c:set var="svcCatGroup" value="kham" />
                     <c:choose>
-                      <c:when test="${service.category == 'Kiểm tra và chẩn đoán'}">
-                        <c:set var="svcCatGroup" value="chandoan" />
-                      </c:when>
                       <c:when test="${service.category == 'Điều trị và thủ thuật'}">
                         <c:set var="svcCatGroup" value="dieutri" />
                       </c:when>
@@ -356,11 +345,6 @@
                               <c:when test="${svcCatGroup == 'dieutri'}">
                                 <span class="badge rounded-pill px-3 py-2 fw-semibold shadow-sm" style="background: rgba(239, 68, 68, 0.9); color: #ffffff;">
                                   <i class="bi bi-shield-plus me-1"></i>${service.category}
-                                </span>
-                              </c:when>
-                              <c:when test="${svcCatGroup == 'chandoan'}">
-                                <span class="badge rounded-pill px-3 py-2 fw-semibold shadow-sm" style="background: rgba(59, 130, 246, 0.9); color: #ffffff;">
-                                  <i class="bi bi-clipboard2-pulse me-1"></i>${service.category}
                                 </span>
                               </c:when>
                               <c:otherwise>

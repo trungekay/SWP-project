@@ -94,7 +94,7 @@ public class AppointmentDAO {
                     diag += (diag.isEmpty() ? "" : " | ") + "Lý do khám: " + a.getReason().trim();
                 }
                 if (!diag.isEmpty()) {
-                    String sqlRecord = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, Created_At) VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
+                    String sqlRecord = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Staff_Notes, Created_At) VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
                     try (PreparedStatement psRec = conn.prepareStatement(sqlRecord)) {
                         psRec.setInt(1, appointmentId);
                         psRec.setInt(2, a.getDoctorId());
@@ -559,7 +559,7 @@ public class AppointmentDAO {
             if (diag.isEmpty()) {
                 diag = "Khách vãng lai: Khám mắt tổng quát";
             }
-            String sqlMR = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, Created_At) " +
+            String sqlMR = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Staff_Notes, Created_At) " +
                            "VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
             try (PreparedStatement psMR = conn.prepareStatement(sqlMR)) {
                 psMR.setInt(1, appointmentId);
@@ -1003,7 +1003,7 @@ public class AppointmentDAO {
             "doc.Full_Name AS Doctor_Name, doc.Specialty AS Doctor_Specialty, " +
             "rm.Room_Name, " +
             "stf.Full_Name AS Staff_Name, " +
-            "mr.Clinical_Diagnosis AS Medical_Notes, " +
+            "mr.Staff_Notes AS Medical_Notes, " +
             "mr.conclusion AS Cancel_Reason, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
             "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, " +
             "mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status, " +
@@ -1093,7 +1093,7 @@ public class AppointmentDAO {
                      "doc.Full_Name AS Doctor_Name, doc.Specialty AS Doctor_Specialty, " +
                      "rm.Room_Name, " +
                      "stf.Full_Name AS Staff_Name, " +
-                     "mr.Clinical_Diagnosis AS Medical_Notes, " +
+                     "mr.Staff_Notes AS Medical_Notes, " +
                      "mr.conclusion AS Cancel_Reason, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
                      "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status, " +
                      "(SELECT TOP 1 pr.Status FROM Procedure_Order po JOIN Procedure_Payment_Request pr ON po.Order_ID = pr.Order_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC) AS Procedure_Payment_Status, " +
@@ -1468,18 +1468,18 @@ public class AppointmentDAO {
                 }
             }
             if (exists) {
-                String updateSql = "UPDATE Medical_Record SET Clinical_Diagnosis = ? WHERE Appointment_ID = ?";
+                String updateSql = "UPDATE Medical_Record SET Staff_Notes = ? WHERE Appointment_ID = ?";
                 try (PreparedStatement psUp = conn.prepareStatement(updateSql)) {
-                    psUp.setString(1, notes);
+                    psUp.setNString(1, notes);
                     psUp.setInt(2, appointmentId);
                     return psUp.executeUpdate() > 0;
                 }
             } else {
-                String insertSql = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, Created_At) VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
+                String insertSql = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Staff_Notes, Created_At) VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
                 try (PreparedStatement psIns = conn.prepareStatement(insertSql)) {
                     psIns.setInt(1, appointmentId);
                     psIns.setInt(2, doctorId);
-                    psIns.setString(3, notes);
+                    psIns.setNString(3, notes);
                     return psIns.executeUpdate() > 0;
                 }
             }
@@ -1513,7 +1513,7 @@ public class AppointmentDAO {
             "doc.Full_Name AS Doctor_Name, doc.Specialty AS Doctor_Specialty, " +
             "rm.Room_Name, " +
             "stf.Full_Name AS Staff_Name, " +
-            "mr.Clinical_Diagnosis AS Medical_Notes, " +
+            "mr.Staff_Notes AS Medical_Notes, " +
             "mr.conclusion AS Cancel_Reason, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
             "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status, " +
             "(SELECT TOP 1 pr.Status FROM Procedure_Order po JOIN Procedure_Payment_Request pr ON po.Order_ID = pr.Order_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC) AS Procedure_Payment_Status, " +

@@ -28,6 +28,7 @@ public final class DoctorFormValidator {
         optional(values, "osCorrected", "Thị lực có kính OS", 20, errors);
         optional(values, "anteriorFindings", "Bán phần trước", 2000, errors);
         optional(values, "posteriorFindings", "Bán phần sau", 2000, errors);
+        optional(values, "surgeryIndication", "Chỉ định phẫu thuật", 2000, errors);
         decimal(values, "odIop", "Nhãn áp OD", "0", "80", 1, errors);
         decimal(values, "osIop", "Nhãn áp OS", "0", "80", 1, errors);
         date(values, "followUpDate", "Ngày tái khám", errors);
