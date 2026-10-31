@@ -12,7 +12,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
   <link href="${pageContext.request.contextPath}/assets/css/admin-layout.css" rel="stylesheet">
-  <link href="${pageContext.request.contextPath}/assets/css/admin-dashboard.css?v=20261031-7" rel="stylesheet">
+  <link href="${pageContext.request.contextPath}/assets/css/admin-dashboard.css?v=20261031-8" rel="stylesheet">
 </head>
 <body>
 <jsp:include page="/views/admin/layout/admin-sidebar.jsp"><jsp:param name="activeNav" value="dashboard" /></jsp:include>

@@ -32,7 +32,7 @@
 .dashboard-chart-legend{display:flex;gap:18px;align-items:center;margin-top:16px;font-size:11px;color:#55736e}
 .dashboard-chart-legend span{display:inline-flex;align-items:center;gap:6px}
 .dashboard-legend-dot{display:inline-block;width:9px;height:9px;border-radius:2px}
-.dashboard-legend-dot.surgery{background:#18a05e}.dashboard-legend-dot.exam{background:#14b8a6}
+.dashboard-legend-dot.surgery{background:#18a05e}.dashboard-legend-dot.exam{background:#d8e8e3}
 .dashboard-chart-scroll{overflow-x:auto}
 .dashboard-chart{height:220px;display:grid;gap:20px;align-items:end;padding:22px 12px 0;background:linear-gradient(to top,#eaf0ef 1px,transparent 1px) 0 0/100% 25%;margin-top:18px}
 .dashboard-bar-group{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0}
@@ -40,7 +40,7 @@
 .dashboard-bar-track{height:170px;width:min(64%,58px);display:flex;align-items:flex-end}
 .dashboard-bar{width:100%;display:flex;flex-direction:column-reverse;overflow:hidden;border-radius:5px 5px 0 0}
 .dashboard-bar-surgery{width:100%;flex:none;background:#18a05e}
-.dashboard-bar-exam{width:100%;flex:1;background:#14b8a6}
+.dashboard-bar-exam{width:100%;flex:1;background:#d8e8e3}
 .dashboard-bar-label{font-size:10px;color:#68837d;margin-top:7px}
 .dashboard-source{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #edf2f0;padding:13px 0;font-size:12px}
 .dashboard-source span{color:#57736d}.dashboard-source strong{color:#135249;white-space:nowrap}

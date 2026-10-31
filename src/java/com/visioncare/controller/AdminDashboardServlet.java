@@ -17,7 +17,7 @@ import java.time.temporal.ChronoUnit;
 import java.text.NumberFormat;
 import java.util.*;
 
-@WebServlet(name = "AdminDashboardServlet", urlPatterns = {"/admin/dashboard", "/admin/conversion-report"})
+@WebServlet(name = "AdminDashboardServlet", urlPatterns = {"/admin/dashboard"})
 public class AdminDashboardServlet extends HttpServlet {
 
     private final AdminDashboardDAO dashboardDAO = new AdminDashboardDAO();
@@ -33,11 +33,6 @@ public class AdminDashboardServlet extends HttpServlet {
         }
         if (currentUser.getRoleId() != 1 && currentUser.getRoleId() != 2) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
-            return;
-        }
-
-        if ("/admin/conversion-report".equals(request.getServletPath())) {
-            request.getRequestDispatcher("/views/admin/conversion-report.jsp").forward(request, response);
             return;
         }
 
