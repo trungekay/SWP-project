@@ -42,6 +42,7 @@
         </div>
       </div>
 
+      <c:if test="${currentUser.roleId == 3 or currentUser.roleId == 4}"><a class="btn btn-outline-danger mb-3" href="${pageContext.request.contextPath}/employee/leave-requests">Gửi yêu cầu nghỉ / xem lịch sử duyệt</a></c:if>
       <div class="schedule-container">
 
         <!-- Flash Messages (Sau khi dang ky hoac cap nhat lich) -->

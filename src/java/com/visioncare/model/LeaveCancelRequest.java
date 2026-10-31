@@ -1,6 +1,9 @@
 package com.visioncare.model;
 
 public class LeaveCancelRequest {
+    private int affectedCount;
+    public int getAffectedCount() { return affectedCount; }
+    public void setAffectedCount(int value) { affectedCount=value; }
     private int requestId;
     private int scheduleId;
     private int requesterEmployeeId;

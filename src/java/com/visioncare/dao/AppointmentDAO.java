@@ -14,10 +14,24 @@ public class AppointmentDAO {
             conn = DBContext.getConnection();
             conn.setAutoCommit(false);
 
-            int patientId = getOrCreatePatient(conn, a);
             int scheduleId = a.getScheduleId();
             if (scheduleId <= 0) {
-                scheduleId = getOrCreateSchedule(conn, a);
+                // Patient bookings can only use a schedule the doctor registered.
+                String findSql = "SELECT Schedule_ID FROM Work_Schedule WITH (UPDLOCK, HOLDLOCK) "
+                        + "WHERE Doctor_Employee_ID = ? AND Work_Date = ? "
+                        + "AND CONVERT(VARCHAR(5), Start_Time, 108) = ? AND Status = 'Available'";
+                try (PreparedStatement ps = conn.prepareStatement(findSql)) {
+                    ps.setInt(1, a.getDoctorId());
+                    ps.setDate(2, a.getAppointmentDate());
+                    ps.setString(3, a.getTimeSlot());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) scheduleId = rs.getInt("Schedule_ID");
+                    }
+                }
+                if (scheduleId <= 0) {
+                    conn.rollback();
+                    return -1;
+                }
             }
 
             if(!com.visioncare.util.BookingAvailability.available(conn,scheduleId)){conn.rollback();return -1;}
@@ -28,10 +42,15 @@ public class AppointmentDAO {
                                   "       (SELECT COUNT(*) FROM Appointment ap WHERE ap.Schedule_ID = ws.Schedule_ID " +
                                   "        AND (ap.Status IN ('Confirmed', 'In_Progress', 'Completed') " +
                                   "             OR (ap.Status = 'Pending' AND DATEDIFF(MINUTE, ap.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) < ?))) AS ActiveAppts " +
-                                  "FROM Work_Schedule ws WHERE ws.Schedule_ID = ?";
+                                  "FROM Work_Schedule ws WITH (UPDLOCK, HOLDLOCK) WHERE ws.Schedule_ID = ? " +
+                                  "AND ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? " +
+                                  "AND CONVERT(VARCHAR(5), ws.Start_Time, 108) = ?";
             try (PreparedStatement psCheck = conn.prepareStatement(checkSlotSql)) {
                 psCheck.setInt(1, pendingHoldMinutes);
                 psCheck.setInt(2, scheduleId);
+                psCheck.setInt(3, a.getDoctorId());
+                psCheck.setDate(4, a.getAppointmentDate());
+                psCheck.setString(5, a.getTimeSlot());
                 try (ResultSet rsCheck = psCheck.executeQuery()) {
                     if (rsCheck.next()) {
                         String st = rsCheck.getString("Status");
@@ -49,14 +68,18 @@ public class AppointmentDAO {
                             }
                         }
 
-                        if ("Booked".equalsIgnoreCase(st) || count > 0) {
+                        if (!"Available".equalsIgnoreCase(st) || count > 0) {
                             conn.rollback();
                             return -1; // Slot already booked
                         }
+                    } else {
+                        conn.rollback();
+                        return -1;
                     }
                 }
             }
 
+            int patientId = getOrCreatePatient(conn, a);
             // Insert Appointment as Pending
             String sqlAppt = "INSERT INTO Appointment (Patient_ID, Schedule_ID, Status, created_at) VALUES (?, ?, 'Pending', DATEADD(HOUR, 7, SYSUTCDATETIME()))";
             int appointmentId = -1;
@@ -127,6 +150,20 @@ public class AppointmentDAO {
         try {
             conn = DBContext.getConnection();
             conn.setAutoCommit(false);
+
+            // Recheck under a lock: leave may have been approved after booking.
+            String availabilitySql = "SELECT ws.Status FROM Work_Schedule ws WITH (UPDLOCK, HOLDLOCK) "
+                    + "JOIN Appointment a ON a.Schedule_ID = ws.Schedule_ID WHERE a.Appointment_ID = ?";
+            try (PreparedStatement ps = conn.prepareStatement(availabilitySql)) {
+                ps.setInt(1, appointmentId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next() || !("Available".equalsIgnoreCase(rs.getString("Status"))
+                            || "Booked".equalsIgnoreCase(rs.getString("Status")))) {
+                        conn.rollback();
+                        return false;
+                    }
+                }
+            }
 
             // 1. Get Master_Invoice
             int invoiceId = -1;
