@@ -61,25 +61,4 @@
         <url-pattern>/staff/refunds</url-pattern>
     </servlet-mapping>
 
-    <!-- Patient Reschedule Form Screen -->
-    <servlet>
-        <servlet-name>PatientRescheduleServlet</servlet-name>
-        <servlet-class>com.visioncare.controller.PatientRescheduleServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>PatientRescheduleServlet</servlet-name>
-        <url-pattern>/staff/reschedule</url-pattern>
-    </servlet-mapping>
-    <servlet-mapping>
-        <servlet-name>PatientRescheduleServlet</servlet-name>
-        <url-pattern>/staff/patient-reschedule</url-pattern>
-    </servlet-mapping>
-    <servlet-mapping>
-        <servlet-name>PatientRescheduleServlet</servlet-name>
-        <url-pattern>/patient/reschedule</url-pattern>
-    </servlet-mapping>
-    <servlet-mapping>
-        <servlet-name>PatientRescheduleServlet</servlet-name>
-        <url-pattern>/appointment/reschedule</url-pattern>
-    </servlet-mapping>
 </web-app>
