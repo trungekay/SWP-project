@@ -77,8 +77,9 @@
                                     <i class="bi bi-person-plus-fill"></i>
                                     <span>Tiếp đón khách vãng lai</span>
                                 </button>
-                                <a href="${pageContext.request.contextPath}/staff/waiting-list" class="btn btn-teal-outline">
-                                    <i class="bi bi-people-fill"></i> Xem Hàng đợi phòng khám
+                                <a href="${pageContext.request.contextPath}/staff/refund-request" class="btn btn-teal-outline shadow-sm d-flex align-items-center gap-2">
+                                    <i class="bi bi-cash-coin"></i>
+                                    <span>Tạo yêu cầu hoàn tiền</span>
                                 </a>
                             </div>
                         </div>
@@ -406,7 +407,8 @@
                                                                     <i class="bi bi-pencil"></i>
                                                                 </a>
 
-<c:if test="${refundEligible[appt.id]}"><button type="button" class="action-btn" title="Tạo yêu cầu hoàn tiền" aria-label="Tạo yêu cầu hoàn tiền" data-bs-toggle="modal" data-bs-target="#createRefundModal" data-appointment-id="${appt.id}"><i class="bi bi-cash-coin"></i></button></c:if>
+<c:if test="${appt.status == 'Confirmed' && empty appt.checkinTime && !isPastAppt}"><a href="${pageContext.request.contextPath}/staff/reschedule?appointmentId=${appt.id}" class="action-btn" title="Đổi lịch khám cho bệnh nhân" aria-label="Đổi lịch khám cho bệnh nhân" data-bs-toggle="tooltip"><i class="bi bi-calendar2-range"></i></a></c:if>
+<c:if test="${refundEligible[appt.id]}"><a href="${pageContext.request.contextPath}/staff/refund-request?appointmentId=${appt.id}" class="action-btn warning" title="Tạo yêu cầu hoàn tiền" aria-label="Tạo yêu cầu hoàn tiền" data-bs-toggle="tooltip"><i class="bi bi-cash-coin"></i></a></c:if>
 <c:if test="${not empty activeAppointmentRefunds[appt.id]}">
     <c:set var="existingRefund" value="${activeAppointmentRefunds[appt.id]}" />
     <button type="button" class="action-btn" title="${existingRefund.code}: ${existingRefund.statusLabel}" aria-label="Xem yêu cầu hoàn tiền hiện có"
@@ -417,10 +419,18 @@
     </button>
 </c:if>
 <c:if test="${appt.cancellationRequested}">
-<form action="${pageContext.request.contextPath}/staff/appointments" method="post" class="d-inline">
-<input type="hidden" name="action" value="approveCancellation"><input type="hidden" name="appointmentId" value="${appt.id}">
-<button type="submit" class="action-btn" title="Duyệt yêu cầu hủy lịch" aria-label="Duyệt yêu cầu hủy lịch"><i class="bi bi-check2-circle"></i></button>
-</form></c:if>
+<button type="button" class="action-btn" title="Duyệt yêu cầu hủy lịch" aria-label="Duyệt yêu cầu hủy lịch"
+    data-bs-toggle="modal" data-bs-target="#confirmApproveCancelModal"
+    data-appointment-id="${appt.id}"
+    data-patient-name="${fn:escapeXml(appt.patientName)}"
+    data-patient-phone="${fn:escapeXml(appt.phone)}"
+    data-doctor-name="${fn:escapeXml(appt.doctorName)}"
+    data-reason="${fn:escapeXml(appt.reason)}"
+    data-date="${appt.appointmentDate}"
+    data-time="${appt.timeSlot}">
+    <i class="bi bi-check2-circle"></i>
+</button>
+</c:if>
 
                                                                 <!-- Các thao tác tiếp đón & hủy: Chỉ hiển thị khi ca khám CHƯA qua ngày -->
                                                                 <c:if test="${!isPastAppt}">
@@ -2193,5 +2203,97 @@
 
             <jsp:include page="/views/staff/refund-create-modal.jsp" />
             <jsp:include page="/views/staff/refund-status-modal.jsp" />
+
+            <!-- Modal: Xác nhận Duyệt Yêu Cầu Hủy Lịch Khám -->
+            <div class="modal fade" id="confirmApproveCancelModal" tabindex="-1" aria-labelledby="confirmApproveCancelLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+                    <div class="modal-content border-0 shadow" style="border-radius: 16px; overflow: hidden;">
+                        <div class="modal-header border-0 pb-0 pt-4 px-4 d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(13, 148, 136, 0.12); color: #0d9488; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                    <i class="bi bi-calendar-x"></i>
+                                </div>
+                                <div>
+                                    <h5 class="modal-title fw-bold text-dark mb-0" id="confirmApproveCancelLabel" style="font-size: 16px;">Duyệt yêu cầu hủy lịch</h5>
+                                    <small class="text-secondary" style="font-size: 12px;">Mã lịch hẹn: <span class="fw-bold font-monospace text-teal" id="approveModalApptId">#APT-00</span></small>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                        </div>
+                        <form action="${pageContext.request.contextPath}/staff/appointments" method="post" class="m-0">
+                            <input type="hidden" name="action" value="approveCancellation">
+                            <input type="hidden" name="appointmentId" id="approveModalApptIdInput" value="">
+                            <div class="modal-body p-4">
+                                <div class="alert alert-warning border-warning-subtle d-flex align-items-start gap-2.5 py-2.5 px-3 rounded-3 mb-3" style="font-size: 12.5px; background-color: #fffbeb;">
+                                    <i class="bi bi-exclamation-triangle-fill text-warning flex-shrink-0 mt-0.5" style="font-size: 15px;"></i>
+                                    <div class="text-secondary">
+                                        Bệnh nhân đã gửi yêu cầu hủy lịch khám trước giờ tiếp đón. Khi bạn duyệt, lịch hẹn sẽ chuyển sang trạng thái <strong>Đã hủy</strong> và đủ điều kiện để thực hiện hoàn phí.
+                                    </div>
+                                </div>
+
+                                <!-- Tóm tắt thông tin lịch hẹn -->
+                                <div class="bg-light p-3 rounded-3 small border mb-3" style="font-size: 13px;">
+                                    <div class="d-flex justify-content-between py-1.5 border-bottom">
+                                        <span class="text-muted">Bệnh nhân:</span>
+                                        <span class="fw-bold text-dark text-end" id="approveModalPatientName">---</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1.5 border-bottom">
+                                        <span class="text-muted">Số điện thoại:</span>
+                                        <span class="font-monospace text-dark text-end" id="approveModalPhone">---</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1.5 border-bottom">
+                                        <span class="text-muted">Ca khám:</span>
+                                        <span class="fw-semibold text-dark text-end" id="approveModalDateTime">---</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between py-1.5 border-bottom">
+                                        <span class="text-muted">Bác sĩ:</span>
+                                        <span class="fw-semibold text-teal text-end" id="approveModalDoctor">---</span>
+                                    </div>
+                                    <div class="pt-2">
+                                        <span class="text-muted d-block mb-1">Lý do xin hủy của bệnh nhân:</span>
+                                        <div class="p-2.5 bg-white border rounded-2 text-danger fw-medium text-break" style="font-size: 12.5px;" id="approveModalReason">
+                                            ---
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer border-0 pt-0 px-4 pb-4 gap-2">
+                                <button type="button" class="btn btn-light border px-3 rounded-pill fw-medium" data-bs-dismiss="modal" style="font-size: 13.5px;">
+                                    Đóng
+                                </button>
+                                <button type="submit" class="btn btn-teal px-4 rounded-pill fw-semibold shadow-sm" style="font-size: 13.5px; background: #0d9488; color: white;">
+                                    <i class="bi bi-check2-circle me-1"></i> Xác nhận duyệt hủy
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var modalEl = document.getElementById('confirmApproveCancelModal');
+                if (modalEl) {
+                    modalEl.addEventListener('show.bs.modal', function(event) {
+                        var btn = event.relatedTarget;
+                        if (!btn) return;
+                        var d = btn.dataset;
+                        var id = d.appointmentId || '';
+                        document.getElementById('approveModalApptIdInput').value = id;
+                        document.getElementById('approveModalApptId').textContent = id ? ('#APT-' + id) : '---';
+                        document.getElementById('approveModalPatientName').textContent = d.patientName || '---';
+                        document.getElementById('approveModalPhone').textContent = d.patientPhone || '---';
+                        document.getElementById('approveModalDateTime').textContent = (d.date || '') + (d.time ? (' (' + d.time + ')') : '');
+                        document.getElementById('approveModalDoctor').textContent = d.doctorName || '---';
+
+                        var reason = d.reason || 'Bệnh nhân gửi yêu cầu hủy lịch';
+                        if (reason.indexOf('Yêu cầu hủy lịch: ') === 0) {
+                            reason = reason.substring('Yêu cầu hủy lịch: '.length);
+                        }
+                        document.getElementById('approveModalReason').textContent = reason;
+                    });
+                }
+            });
+            </script>
 </body>
             </html>

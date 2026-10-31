@@ -61,6 +61,80 @@ public class EmailUtil {
         System.out.println("====== CREDENTIALS SENT TO " + recipientEmail + " ======");
     }
 
+    public static void sendAppointmentCancellationEmail(
+            String recipientEmail,
+            String patientName,
+            int appointmentId,
+            String doctorName,
+            String specialty,
+            String appointmentDate,
+            String timeSlot,
+            String cancellationReason) {
+        if (recipientEmail == null || recipientEmail.trim().isEmpty()) {
+            return;
+        }
+        new Thread(() -> {
+            try {
+                Properties properties = new Properties();
+                properties.put("mail.smtp.auth", "true");
+                properties.put("mail.smtp.starttls.enable", "true");
+                properties.put("mail.smtp.host", "smtp.gmail.com");
+                properties.put("mail.smtp.port", "587");
+                Session session = Session.getInstance(properties, new Authenticator() {
+                    @Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(SENDER_EMAIL, SENDER_PASSWORD);
+                    }
+                });
+                MimeMessage message = new MimeMessage(session);
+                message.setFrom(new InternetAddress(SENDER_EMAIL, "Phòng Khám Mắt VisionCare", "UTF-8"));
+                message.setRecipient(Message.RecipientType.TO, new InternetAddress(recipientEmail));
+                message.setSubject("Xác nhận Hủy lịch khám #" + appointmentId + " thành công - VisionCare", "UTF-8");
+
+                String reasonHtml = (cancellationReason != null && !cancellationReason.trim().isEmpty())
+                        ? "<p style='margin: 4px 0;'><b>Lý do hủy:</b> " + cancellationReason.trim() + "</p>"
+                        : "";
+
+                String html = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;'>"
+                        + "<div style='background-color: #e11d48; color: #ffffff; padding: 24px; text-align: center;'>"
+                        + "<h1 style='margin: 0; font-size: 24px;'>VisionCare Eye Clinic</h1>"
+                        + "<p style='margin: 6px 0 0; font-size: 15px;'>Xác Nhận Hủy Lịch Khám Thành Công</p>"
+                        + "</div>"
+                        + "<div style='padding: 24px; background-color: #ffffff; color: #334155; line-height: 1.6;'>"
+                        + "<p>Kính gửi quý khách <b>" + patientName + "</b>,</p>"
+                        + "<p>Yêu cầu hủy lịch khám mắt của quý khách tại <b>VisionCare</b> đã được nhân viên tiếp đón tiếp nhận và <b>duyệt hủy thành công</b>.</p>"
+                        + "<div style='background-color: #fff1f2; border-left: 4px solid #e11d48; padding: 16px; margin: 20px 0; border-radius: 4px;'>"
+                        + "<p style='margin: 4px 0;'><b>Mã lịch hẹn:</b> <span style='color: #e11d48; font-size: 16px; font-weight: bold;'>#APT-" + appointmentId + "</span></p>"
+                        + "<p style='margin: 4px 0;'><b>Bác sĩ khám:</b> " + (doctorName != null ? doctorName : "Bác sĩ phụ trách") + "</p>"
+                        + "<p style='margin: 4px 0;'><b>Chuyên khoa / Dịch vụ:</b> " + (specialty != null ? specialty : "Khám mắt chuyên khoa") + "</p>"
+                        + "<p style='margin: 4px 0;'><b>Ngày khám:</b> " + (appointmentDate != null ? appointmentDate : "") + "</p>"
+                        + "<p style='margin: 4px 0;'><b>Khung giờ:</b> " + (timeSlot != null ? timeSlot : "") + "</p>"
+                        + reasonHtml
+                        + "</div>"
+                        + "<h4 style='color: #0f172a; margin-top: 24px; margin-bottom: 8px;'>Thông tin về việc hoàn phí khám:</h4>"
+                        + "<p style='color: #64748b; font-size: 14px; margin: 0 0 12px;'>"
+                        + "Do lịch hẹn của quý khách đã thanh toán phí khám trước và được hủy hợp lệ trước giờ tiếp đón, quý khách đủ điều kiện để được xử lý hoàn phí theo quy định của phòng khám."
+                        + "</p>"
+                        + "<ul style='padding-left: 20px; color: #64748b; font-size: 14px;'>"
+                        + "<li>Nhân viên lễ tân / kế toán sẽ tiến hành liên hệ hoặc xử lý chuyển khoản hoàn tiền theo thông tin đã đăng ký.</li>"
+                        + "<li>Nếu quý khách muốn đặt lại một lịch hẹn khác phù hợp hơn, vui lòng truy cập website VisionCare để chọn ca khám mới.</li>"
+                        + "</ul>"
+                        + "<p style='margin-top: 24px;'>Nếu cần hỗ trợ thêm, quý khách vui lòng liên hệ hotline: <b>1800 599 988</b>.</p>"
+                        + "</div>"
+                        + "<div style='background-color: #f1f5f9; padding: 16px; text-align: center; color: #94a3b8; font-size: 12px;'>"
+                        + "<p style='margin: 0;'>VisionCare Eye Clinic — 123 Lê Lợi, Quận 1, TP.HCM</p>"
+                        + "</div>"
+                        + "</div>";
+
+                message.setContent(html, "text/html; charset=UTF-8");
+                Transport.send(message);
+                System.out.println("====== APPOINTMENT CANCELLATION EMAIL SENT TO " + recipientEmail + " (Appt #" + appointmentId + ") ======");
+            } catch (Exception e) {
+                System.err.println("sendAppointmentCancellationEmail error: " + e.getMessage());
+            }
+        }).start();
+    }
+
     public static void sendAppointmentConfirmationEmail(
             String recipientEmail,
             String patientName,
@@ -100,7 +174,7 @@ public class EmailUtil {
                         + "<p>Kính gửi quý khách <b>" + patientName + "</b>,</p>"
                         + "<p>Lịch hẹn khám mắt của quý khách tại <b>VisionCare</b> đã được ghi nhận và thanh toán phí khám ban đầu thành công!</p>"
                         + "<div style='background-color: #f8fafc; border-left: 4px solid #18a05e; padding: 16px; margin: 20px 0; border-radius: 4px;'>"
-                        + "<p style='margin: 4px 0;'><b>Mã lịch hẹn:</b> <span style='color: #18a05e; font-size: 16px; font-weight: bold;'>#VC" + appointmentId + "</span></p>"
+                        + "<p style='margin: 4px 0;'><b>Mã lịch hẹn:</b> <span style='color: #18a05e; font-size: 16px; font-weight: bold;'>#APT-" + appointmentId + "</span></p>"
                         + "<p style='margin: 4px 0;'><b>Bác sĩ khám:</b> " + doctorName + "</p>"
                         + "<p style='margin: 4px 0;'><b>Chuyên khoa / Dịch vụ:</b> " + specialty + "</p>"
                         + "<p style='margin: 4px 0;'><b>Ngày khám:</b> " + appointmentDate + "</p>"

@@ -2006,5 +2006,134 @@ public class AppointmentDAO {
         }
         return count;
     }
+
+    /**
+     * Reschedules an appointment to a new schedule slot.
+     * Validates that current appointment is not checked-in and not completed/canceled,
+     * and that the new slot is available.
+     * Updates old schedule to Available, new schedule to Booked, Appointment.Schedule_ID,
+     * and appends reschedule note to Medical_Record.
+     */
+    public boolean rescheduleAppointment(int appointmentId, int newScheduleId, String reason) throws Exception {
+        Connection conn = null;
+        try {
+            conn = DBContext.getConnection();
+            conn.setAutoCommit(false);
+
+            // 1. Verify current appointment can be rescheduled (Chỉ cho phép ca Chờ tiếp đón)
+            String sqlCheckAppt = "SELECT Schedule_ID, Status, checkin_time FROM Appointment WITH (UPDLOCK, HOLDLOCK) "
+                    + "WHERE Appointment_ID = ? AND Status = 'Confirmed' AND checkin_time IS NULL";
+            int oldScheduleId = 0;
+            try (PreparedStatement psCheck = conn.prepareStatement(sqlCheckAppt)) {
+                psCheck.setInt(1, appointmentId);
+                try (ResultSet rs = psCheck.executeQuery()) {
+                    if (!rs.next()) {
+                        conn.rollback();
+                        return false;
+                    }
+                    oldScheduleId = rs.getInt("Schedule_ID");
+                }
+            }
+
+            if (oldScheduleId == newScheduleId) {
+                conn.rollback();
+                return false;
+            }
+
+            // 2. Verify new schedule exists and is Available
+            String sqlCheckNew = "SELECT Doctor_Employee_ID, Work_Date, Slot, Start_Time FROM Work_Schedule WITH (UPDLOCK, HOLDLOCK) "
+                    + "WHERE Schedule_ID = ? AND Status = 'Available' "
+                    + "AND NOT EXISTS (SELECT 1 FROM Appointment WHERE Schedule_ID = ? AND Status <> 'Canceled')";
+            int newDoctorId = 0;
+            String newDateStr = "";
+            String newSlotStr = "";
+            try (PreparedStatement psNew = conn.prepareStatement(sqlCheckNew)) {
+                psNew.setInt(1, newScheduleId);
+                psNew.setInt(2, newScheduleId);
+                try (ResultSet rsNew = psNew.executeQuery()) {
+                    if (!rsNew.next()) {
+                        conn.rollback();
+                        return false;
+                    }
+                    newDoctorId = rsNew.getInt("Doctor_Employee_ID");
+                    java.sql.Date d = rsNew.getDate("Work_Date");
+                    newDateStr = d != null ? new java.text.SimpleDateFormat("dd/MM/yyyy").format(d) : "";
+                    newSlotStr = rsNew.getString("Slot") != null ? rsNew.getString("Slot") : "";
+                }
+            }
+
+            // 3. Release old schedule slot (only if no other active appointment occupies it)
+            String sqlFreeOld = "UPDATE Work_Schedule SET Status = 'Available' WHERE Schedule_ID = ? "
+                    + "AND NOT EXISTS (SELECT 1 FROM Appointment WHERE Schedule_ID = ? AND Appointment_ID <> ? AND Status <> 'Canceled')";
+            try (PreparedStatement psFree = conn.prepareStatement(sqlFreeOld)) {
+                psFree.setInt(1, oldScheduleId);
+                psFree.setInt(2, oldScheduleId);
+                psFree.setInt(3, appointmentId);
+                psFree.executeUpdate();
+            }
+
+            // 4. Reserve new schedule slot
+            String sqlBookNew = "UPDATE Work_Schedule SET Status = 'Booked' WHERE Schedule_ID = ?";
+            try (PreparedStatement psBook = conn.prepareStatement(sqlBookNew)) {
+                psBook.setInt(1, newScheduleId);
+                psBook.executeUpdate();
+            }
+
+            // 5. Update Appointment to new Schedule_ID and reset checkin_time
+            String sqlUpdateAppt = "UPDATE Appointment SET Schedule_ID = ?, checkin_time = NULL WHERE Appointment_ID = ?";
+            try (PreparedStatement psUpAppt = conn.prepareStatement(sqlUpdateAppt)) {
+                psUpAppt.setInt(1, newScheduleId);
+                psUpAppt.setInt(2, appointmentId);
+                psUpAppt.executeUpdate();
+            }
+
+            // 6. Record note in Medical_Record
+            String note = "Đã dời lịch sang ngày " + newDateStr + " (Ca " + newSlotStr + ")";
+            if (reason != null && !reason.trim().isEmpty()) {
+                note += ". Lý do: " + reason.trim();
+            }
+
+            String checkMR = "SELECT Record_ID FROM Medical_Record WHERE Appointment_ID = ?";
+            boolean mrExists = false;
+            try (PreparedStatement psMR = conn.prepareStatement(checkMR)) {
+                psMR.setInt(1, appointmentId);
+                try (ResultSet rsMR = psMR.executeQuery()) {
+                    mrExists = rsMR.next();
+                }
+            }
+
+            if (mrExists) {
+                String sqlUpMR = "UPDATE Medical_Record SET conclusion = CASE WHEN conclusion IS NULL OR LTRIM(RTRIM(conclusion)) = '' "
+                        + "THEN ? ELSE CONCAT(conclusion, CHAR(10), ?) END, "
+                        + "Doctor_Employee_ID = CASE WHEN ? > 0 THEN ? ELSE Doctor_Employee_ID END "
+                        + "WHERE Appointment_ID = ?";
+                try (PreparedStatement psUpMR = conn.prepareStatement(sqlUpMR)) {
+                    psUpMR.setString(1, note);
+                    psUpMR.setString(2, note);
+                    psUpMR.setInt(3, newDoctorId);
+                    psUpMR.setInt(4, newDoctorId);
+                    psUpMR.setInt(5, appointmentId);
+                    psUpMR.executeUpdate();
+                }
+            } else {
+                String sqlInsMR = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, conclusion, Created_At) "
+                        + "VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
+                try (PreparedStatement psInsMR = conn.prepareStatement(sqlInsMR)) {
+                    psInsMR.setInt(1, appointmentId);
+                    psInsMR.setInt(2, newDoctorId);
+                    psInsMR.setString(3, note);
+                    psInsMR.executeUpdate();
+                }
+            }
+
+            conn.commit();
+            return true;
+        } catch (Exception e) {
+            if (conn != null) conn.rollback();
+            throw e;
+        } finally {
+            if (conn != null) conn.setAutoCommit(true);
+        }
+    }
 }
 
