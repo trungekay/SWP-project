@@ -302,7 +302,6 @@ public class WorkScheduleDAO {
 
     public List<com.visioncare.model.TimeSlot> getDoctorSlotsForDate(int doctorId, String dateStr) {
         List<com.visioncare.model.TimeSlot> list = new ArrayList<>();
-        ensureRealisticSchedules();
         int pendingHoldMinutes = TimeSlotDAO.getPendingHoldMinutes();
         String sql = "SELECT ws.Schedule_ID, ws.Doctor_Employee_ID, ws.Work_Date, ws.Slot, " +
                      "       CONVERT(VARCHAR(5), ws.Start_Time, 108) AS Start_Time_Str, " +
@@ -324,7 +323,7 @@ public class WorkScheduleDAO {
                      "FROM Work_Schedule ws " +
                      "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? " +
                      " AND " + com.visioncare.util.BookingAvailability.WINDOW + " " +
-                     "  AND ws.Status NOT IN ('Canceled', 'On_Leave', 'Inactive', 'Disabled', 'Closed') " +
+                     "  AND ws.Status IN ('Available', 'Booked') " +
                      "ORDER BY ws.Start_Time ASC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

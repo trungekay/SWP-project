@@ -37,6 +37,8 @@ public class DirectorLeaveRequestServlet extends HttpServlet {
             return;
         }
 
+        if (session.getAttribute("scheduleCsrf") == null)
+            session.setAttribute("scheduleCsrf", java.util.UUID.randomUUID().toString());
         String statusFilter = request.getParameter("status");
         if (statusFilter == null || statusFilter.isEmpty()) {
             statusFilter = "all";
@@ -48,6 +50,14 @@ public class DirectorLeaveRequestServlet extends HttpServlet {
         }
 
         List<LeaveCancelRequest> requests = leaveCancelRequestDAO.getAllRequests(statusFilter, roleFilter);
+        String selectedId=request.getParameter("requestId");
+        if(selectedId!=null) {
+            try {
+                int id=Integer.parseInt(selectedId);
+                LeaveCancelRequest selected=requests.stream().filter(r->r.getRequestId()==id).findFirst().orElse(null);
+                if(selected!=null)request.setAttribute("affectedAppointments",leaveCancelRequestDAO.getAffectedAppointments(selected.getScheduleId(),selected.getRequesterEmployeeId()));
+            }catch(Exception e){log("Cannot load affected appointments",e);}
+        }
         Map<String, Integer> stats = leaveCancelRequestDAO.getStats();
 
         // Flash messages
@@ -90,7 +100,13 @@ public class DirectorLeaveRequestServlet extends HttpServlet {
             return;
         }
 
-        int directorEmployeeId = currentUser.getActorId() > 0 ? currentUser.getActorId() : 2;
+        Object csrf = session.getAttribute("scheduleCsrf");
+        if (csrf == null || !csrf.equals(request.getParameter("csrfToken"))) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
+        int directorEmployeeId = currentUser.getActorId();
+        if (directorEmployeeId <= 0) { response.sendError(HttpServletResponse.SC_FORBIDDEN); return; }
         String action = request.getParameter("action");
 
         try {

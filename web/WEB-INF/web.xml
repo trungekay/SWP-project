@@ -47,4 +47,18 @@
         <url-pattern>/specialist/procedure-detail</url-pattern>
     </servlet-mapping>
 
+    <!-- Staff Refund Request Screen -->
+    <servlet>
+        <servlet-name>StaffRefundServlet</servlet-name>
+        <servlet-class>com.visioncare.controller.StaffRefundServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>StaffRefundServlet</servlet-name>
+        <url-pattern>/staff/refund-request</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>StaffRefundServlet</servlet-name>
+        <url-pattern>/staff/refunds</url-pattern>
+    </servlet-mapping>
+
 </web-app>

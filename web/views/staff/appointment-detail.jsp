@@ -142,11 +142,16 @@
                                 <div class="d-flex align-items-center gap-2">
                                     <c:choose>
                                                 <c:when test="${appointment.cancellationRequested}">
-                                            <form action="${pageContext.request.contextPath}/staff/appointments" method="post">
-                                                <input type="hidden" name="action" value="approveCancellation">
-                                                <input type="hidden" name="appointmentId" value="${appointment.id}">
-                                                <button type="submit" class="btn btn-teal"><i class="bi bi-check2-circle me-1"></i>Duyệt yêu cầu hủy lịch</button>
-                                            </form>
+                                            <button type="button" class="btn btn-teal" data-bs-toggle="modal" data-bs-target="#confirmApproveCancelModal"
+                                                data-appointment-id="${appointment.id}"
+                                                data-patient-name="${fn:escapeXml(appointment.patientName)}"
+                                                data-patient-phone="${fn:escapeXml(appointment.phone)}"
+                                                data-doctor-name="${fn:escapeXml(appointment.doctorName)}"
+                                                data-reason="${fn:escapeXml(appointment.reason)}"
+                                                data-date="${appointment.appointmentDate}"
+                                                data-time="${appointment.timeSlot}">
+                                                <i class="bi bi-check2-circle me-1"></i>Duyệt yêu cầu hủy lịch
+                                            </button>
                                         </c:when>
                                         <c:when test="${appointment.status == 'Completed'}">
                                             <a href="${pageContext.request.contextPath}/profile/medical-record?id=${appointment.id}"
@@ -177,6 +182,12 @@
                                                 <a href="${pageContext.request.contextPath}/staff/waiting-list"
                                                     class="btn btn-teal-outline">
                                                     <i class="bi bi-people-fill"></i> Xem trong Hàng đợi
+                                                </a>
+                                            </c:if>
+                                            <c:if test="${appointment.status == 'Confirmed' && empty appointment.checkinTime && !isPastAppt}">
+                                                <a href="${pageContext.request.contextPath}/staff/reschedule?appointmentId=${appointment.id}"
+                                                    class="btn btn-teal-outline d-flex align-items-center gap-1">
+                                                    <i class="bi bi-calendar2-range"></i> Đổi lịch khám
                                                 </a>
                                             </c:if>
                                             <c:if test="${appointment.status == 'In_Progress'}">
@@ -934,6 +945,78 @@
                         textarea.focus();
                     }
                 </script>
+                <!-- Modal: Xác nhận Duyệt Yêu Cầu Hủy Lịch Khám -->
+                <div class="modal fade" id="confirmApproveCancelModal" tabindex="-1" aria-labelledby="confirmApproveCancelLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+                        <div class="modal-content border-0 shadow" style="border-radius: 16px; overflow: hidden;">
+                            <div class="modal-header border-0 pb-0 pt-4 px-4 d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(13, 148, 136, 0.12); color: #0d9488; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                        <i class="bi bi-calendar-x"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="modal-title fw-bold text-dark mb-0" id="confirmApproveCancelLabel" style="font-size: 16px;">Duyệt yêu cầu hủy lịch</h5>
+                                        <small class="text-secondary" style="font-size: 12px;">Mã lịch hẹn: <span class="fw-bold font-monospace text-teal" id="approveModalApptId">#APT-${appointment.id}</span></small>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                            </div>
+                            <form action="${pageContext.request.contextPath}/staff/appointments" method="post" class="m-0">
+                                <input type="hidden" name="action" value="approveCancellation">
+                                <input type="hidden" name="appointmentId" id="approveModalApptIdInput" value="${appointment.id}">
+                                <div class="modal-body p-4">
+                                    <div class="alert alert-warning border-warning-subtle d-flex align-items-start gap-2.5 py-2.5 px-3 rounded-3 mb-3" style="font-size: 12.5px; background-color: #fffbeb;">
+                                        <i class="bi bi-exclamation-triangle-fill text-warning flex-shrink-0 mt-0.5" style="font-size: 15px;"></i>
+                                        <div class="text-secondary">
+                                            Bệnh nhân đã gửi yêu cầu hủy lịch khám trước giờ tiếp đón. Khi bạn duyệt, lịch hẹn sẽ chuyển sang trạng thái <strong>Đã hủy</strong> và đủ điều kiện để thực hiện hoàn phí.
+                                        </div>
+                                    </div>
+
+                                    <!-- Tóm tắt thông tin lịch hẹn -->
+                                    <div class="bg-light p-3 rounded-3 small border mb-3" style="font-size: 13px;">
+                                        <div class="d-flex justify-content-between py-1.5 border-bottom">
+                                            <span class="text-muted">Bệnh nhân:</span>
+                                            <span class="fw-bold text-dark text-end" id="approveModalPatientName">${appointment.patientName}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between py-1.5 border-bottom">
+                                            <span class="text-muted">Số điện thoại:</span>
+                                            <span class="font-monospace text-dark text-end" id="approveModalPhone">${appointment.phone}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between py-1.5 border-bottom">
+                                            <span class="text-muted">Ca khám:</span>
+                                            <span class="fw-semibold text-dark text-end" id="approveModalDateTime">${appointment.appointmentDate} (${appointment.timeSlot})</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between py-1.5 border-bottom">
+                                            <span class="text-muted">Bác sĩ:</span>
+                                            <span class="fw-semibold text-teal text-end" id="approveModalDoctor">${appointment.doctorName}</span>
+                                        </div>
+                                        <div class="pt-2">
+                                            <span class="text-muted d-block mb-1">Lý do xin hủy của bệnh nhân:</span>
+                                            <div class="p-2.5 bg-white border rounded-2 text-danger fw-medium text-break" style="font-size: 12.5px;" id="approveModalReason">
+                                                <c:choose>
+                                                    <c:when test="${fn:startsWith(appointment.reason, 'Yêu cầu hủy lịch: ')}">
+                                                        ${fn:substring(appointment.reason, fn:length('Yêu cầu hủy lịch: '), fn:length(appointment.reason))}
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        ${not empty appointment.reason ? appointment.reason : 'Bệnh nhân gửi yêu cầu hủy lịch'}
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-0 pt-0 px-4 pb-4 gap-2">
+                                    <button type="button" class="btn btn-light border px-3 rounded-pill fw-medium" data-bs-dismiss="modal" style="font-size: 13.5px;">
+                                        Đóng
+                                    </button>
+                                    <button type="submit" class="btn btn-teal px-4 rounded-pill fw-semibold shadow-sm" style="font-size: 13.5px; background: #0d9488; color: white;">
+                                        <i class="bi bi-check2-circle me-1"></i> Xác nhận duyệt hủy
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </body>
 
             </html>

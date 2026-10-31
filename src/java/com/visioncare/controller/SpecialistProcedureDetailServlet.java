@@ -204,18 +204,10 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
             }
 
             // Kiểm tra tính hợp lệ khi bấm "Hoàn thành thủ thuật"
-            String procedureSteps = nvl(request.getParameter("procedure_steps"));
             String procedureOutcome = nvl(request.getParameter("procedure_outcome"));
 
             boolean closeVisit = "completeAndClose".equalsIgnoreCase(action);
             if ("complete".equalsIgnoreCase(action) || "updateResults".equalsIgnoreCase(action) || closeVisit) {
-                if (procedureSteps.isEmpty()) {
-                    preserveFormInputs(request, session);
-                    session.setAttribute("errorMessage",
-                            "Vui lòng mô tả Quy trình & Diễn biến kỹ thuật trước khi hoàn thành thủ thuật!");
-                    response.sendRedirect(request.getContextPath() + "/specialist/procedure-detail?orderId=" + orderId);
-                    return;
-                }
                 if (procedureOutcome.isEmpty()) {
                     preserveFormInputs(request, session);
                     session.setAttribute("errorMessage",
@@ -367,7 +359,8 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
         if (procedureEye.isEmpty())
             procedureEye = "OD";
 
-        String procedureSteps = nvl(request.getParameter("procedure_steps"));
+        // This field is no longer editable; retain existing historical report content only.
+        String procedureSteps = extractBlock(nvl(order.getExaminationResult()), "PROC_STEPS");
         String procedureOutcome = nvl(request.getParameter("procedure_outcome"));
         String postCare = nvl(request.getParameter("post_care"));
         String conclusion = nvl(request.getParameter("conclusion"));
@@ -388,7 +381,9 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
         // 2. Phần Biên bản thực hiện thủ thuật của Specialist
         sb.append("[SPECIALIST_PROTOCOL]\n");
         sb.append(String.format("[PROC_EYE:%s]\n", procedureEye));
-        sb.append("<PROC_STEPS>\n").append(procedureSteps).append("\n</PROC_STEPS>\n");
+        if (!procedureSteps.isEmpty()) {
+            sb.append("<PROC_STEPS>\n").append(procedureSteps).append("\n</PROC_STEPS>\n");
+        }
         sb.append("<PROC_OUTCOME>\n").append(procedureOutcome).append("\n</PROC_OUTCOME>\n");
         sb.append("<POST_CARE>\n").append(postCare).append("\n</POST_CARE>\n");
         if (!conclusion.isEmpty()) {
@@ -403,7 +398,9 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
         sb.append("• Kỹ thuật viên / Phẫu thuật viên: ")
                 .append(specialistName != null ? specialistName : "KTV Chuyên khoa").append("\n");
         sb.append("• Mắt thực hiện: ").append(eyeLabel).append("\n");
-        sb.append("\n• DIỄN BIẾN & QUY TRÌNH THỦ THUẬT:\n").append(procedureSteps).append("\n");
+        if (!procedureSteps.isEmpty()) {
+            sb.append("\n• DIỄN BIẾN & QUY TRÌNH THỦ THUẬT:\n").append(procedureSteps).append("\n");
+        }
         sb.append("\n• TÌNH TRẠNG SAU THỦ THUẬT:\n").append(procedureOutcome).append("\n");
         if (!postCare.isEmpty()) {
             sb.append("\n• LỜI DẶN HẬU PHẪU & CHĂM SÓC:\n").append(postCare).append("\n");
@@ -417,7 +414,6 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
         Map<String, String> map = new HashMap<>();
         map.put("doctor_exam_findings", nvl(request.getParameter("doctor_exam_findings")));
         map.put("procedure_eye", nvl(request.getParameter("procedure_eye")));
-        map.put("procedure_steps", nvl(request.getParameter("procedure_steps")));
         map.put("procedure_outcome", nvl(request.getParameter("procedure_outcome")));
         map.put("post_care", nvl(request.getParameter("post_care")));
         map.put("conclusion", nvl(request.getParameter("conclusion")));

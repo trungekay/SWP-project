@@ -8,6 +8,7 @@ import com.visioncare.model.CatalogService;
 import com.visioncare.model.Doctor;
 import com.visioncare.model.Patient;
 import com.visioncare.model.User;
+import com.visioncare.util.EmailUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -239,12 +240,34 @@ public class StaffAppointmentListServlet extends HttpServlet {
         if ("approveCancellation".equals(action)) {
             try {
                 int id = Integer.parseInt(request.getParameter("appointmentId"));
-                Appointment appt = appointmentDAO.getAppointmentById(id);
+                Appointment appt = appointmentDAO.getAppointmentDetailById(id);
+                if (appt == null) {
+                    appt = appointmentDAO.getAppointmentById(id);
+                }
                 boolean ok = appt != null && appt.isCancellationRequested()
                     && appointmentDAO.cancelAppointment(id, "Đã duyệt yêu cầu hủy lịch của bệnh nhân: " + (appt.getReason() != null && appt.getReason().startsWith(com.visioncare.dao.RefundPolicy.REQUESTED)
                         ? appt.getReason().substring(com.visioncare.dao.RefundPolicy.REQUESTED.length()) : "Yêu cầu hủy lịch từ luồng trước"));
+                
+                if (ok && appt != null && appt.getEmail() != null && !appt.getEmail().trim().isEmpty()) {
+                    String cleanReason = appt.getReason();
+                    if (cleanReason != null && cleanReason.startsWith(com.visioncare.dao.RefundPolicy.REQUESTED)) {
+                        cleanReason = cleanReason.substring(com.visioncare.dao.RefundPolicy.REQUESTED.length());
+                    }
+                    String apptDateStr = appt.getAppointmentDate() != null ? new java.text.SimpleDateFormat("dd/MM/yyyy").format(appt.getAppointmentDate()) : "";
+                    EmailUtil.sendAppointmentCancellationEmail(
+                        appt.getEmail(),
+                        appt.getPatientName(),
+                        appt.getId(),
+                        appt.getDoctorName(),
+                        appt.getDepartment(),
+                        apptDateStr,
+                        appt.getTimeSlot(),
+                        cleanReason
+                    );
+                }
+
                 session.setAttribute(ok ? "successMessage" : "errorMessage", ok
-                    ? "Đã duyệt hủy lịch #APT-" + id + ". Có thể tạo yêu cầu hoàn tiền."
+                    ? "Đã duyệt hủy lịch #APT-" + id + ". Đã gửi email xác nhận cho bệnh nhân và có thể tạo yêu cầu hoàn tiền."
                     : "Yêu cầu hủy không hợp lệ hoặc bệnh nhân đã check-in.");
             } catch (Exception e) { session.setAttribute("errorMessage", "Không thể duyệt yêu cầu hủy lịch."); }
             String idFilter = request.getParameter("appointmentId");
