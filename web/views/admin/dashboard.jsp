@@ -82,19 +82,19 @@
                     <div class="dashboard-kpi-top"><span class="dashboard-icon blue"><i class="bi bi-cash-coin"></i></span><span class="dashboard-kpi-period">Hôm nay</span></div>
                     <p class="dashboard-kpi-label">Doanh thu</p>
                     <strong class="dashboard-kpi-value"><c:out value="${stats.todayRevenueFmt}" default="—" /></strong>
-                    <span class="dashboard-kpi-caption">Theo ngày ghi nhận thanh toán</span>
+                    <span class="dashboard-kpi-caption">Theo ngày tạo hóa đơn</span>
                 </article>
                 <article class="dashboard-card dashboard-kpi">
                     <div class="dashboard-kpi-top"><span class="dashboard-icon violet"><i class="bi bi-check2-circle"></i></span><span class="dashboard-kpi-period">Hôm nay</span></div>
-                    <p class="dashboard-kpi-label">Hóa đơn đã thanh toán</p>
+                    <p class="dashboard-kpi-label">Hóa đơn tạo hôm nay đã thanh toán</p>
                     <strong class="dashboard-kpi-value"><c:out value="${stats.todayPaidCount}" default="—" /></strong>
                     <span class="dashboard-kpi-caption">Số hóa đơn, không phải số bệnh nhân</span>
                 </article>
                 <article class="dashboard-card dashboard-kpi">
-                    <div class="dashboard-kpi-top"><span class="dashboard-icon amber"><i class="bi bi-person-check"></i></span><span class="dashboard-kpi-period">Lịch hẹn</span></div>
-                    <p class="dashboard-kpi-label">Tỷ lệ bệnh nhân đến khám</p>
+                    <div class="dashboard-kpi-top"><span class="dashboard-icon amber"><i class="bi bi-person-check"></i></span><span class="dashboard-kpi-period">Tháng này</span></div>
+                    <p class="dashboard-kpi-label">Tỷ lệ lịch hẹn có check-in</p>
                     <c:choose><c:when test="${not empty attendanceRate}"><strong class="dashboard-kpi-value"><c:out value="${attendanceRate}" />%</strong></c:when><c:otherwise><strong class="dashboard-kpi-value dashboard-kpi-pending">Chưa có dữ liệu</strong></c:otherwise></c:choose>
-                    <span class="dashboard-kpi-caption">Số bệnh nhân đã đến / số lịch hẹn</span>
+                    <span class="dashboard-kpi-caption">Lịch đã check-in / lịch hẹn còn hiệu lực</span>
                 </article>
             </div>
 
@@ -117,9 +117,9 @@
                     <p class="dashboard-panel-footnote">Số liệu tính trên toàn thời gian.</p>
                 </section>
                 <section class="dashboard-card dashboard-panel">
-                    <div class="dashboard-panel-heading"><div><span class="dashboard-panel-kicker">LỊCH KHÁM</span><h3>Bệnh nhân đến khám</h3></div><span class="dashboard-icon amber"><i class="bi bi-calendar2-check"></i></span></div>
-                    <p class="dashboard-attendance-copy">Tỷ lệ đến khám = số lịch hẹn có bệnh nhân đã đến / tổng số lịch hẹn trong cùng kỳ.</p>
-                    <c:if test="${empty attendanceRate}"><div class="dashboard-attendance-state"><i class="bi bi-info-circle"></i><span>Dashboard chưa nhận số liệu lịch hẹn để hiển thị tỷ lệ này.</span></div></c:if>
+                    <div class="dashboard-panel-heading"><div><span class="dashboard-panel-kicker">LỊCH KHÁM</span><h3>Lịch hẹn có bệnh nhân đến khám</h3></div><span class="dashboard-icon amber"><i class="bi bi-calendar2-check"></i></span></div>
+                    <p class="dashboard-attendance-copy">Từ đầu tháng đến hôm nay: <strong><c:out value="${attendance.checkedIn}" /></strong> / <strong><c:out value="${attendance.totalAppointments}" /></strong> lịch hẹn còn hiệu lực đã check-in.</p>
+                    <c:if test="${empty attendanceRate}"><div class="dashboard-attendance-state"><i class="bi bi-info-circle"></i><span>Chưa có lịch hẹn còn hiệu lực trong kỳ để tính tỷ lệ.</span></div></c:if>
                     <a class="dashboard-text-link" href="${pageContext.request.contextPath}/staff/appointments">Xem danh sách lịch hẹn <i class="bi bi-arrow-right"></i></a>
                 </section>
             </div>
