@@ -17,7 +17,7 @@ import java.time.temporal.ChronoUnit;
 import java.text.NumberFormat;
 import java.util.*;
 
-@WebServlet(name = "AdminDashboardServlet", urlPatterns = {"/admin/dashboard"})
+@WebServlet(name = "AdminDashboardServlet", urlPatterns = {"/admin/dashboard", "/admin/conversion-report"})
 public class AdminDashboardServlet extends HttpServlet {
 
     private final AdminDashboardDAO dashboardDAO = new AdminDashboardDAO();
@@ -33,6 +33,11 @@ public class AdminDashboardServlet extends HttpServlet {
         }
         if (currentUser.getRoleId() != 1 && currentUser.getRoleId() != 2) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
+
+        if ("/admin/conversion-report".equals(request.getServletPath())) {
+            request.getRequestDispatcher("/views/admin/conversion-report.jsp").forward(request, response);
             return;
         }
 
@@ -52,7 +57,7 @@ public class AdminDashboardServlet extends HttpServlet {
             String search=Optional.ofNullable(request.getParameter("search")).orElse("").trim();
             if(search.length()>80)search=search.substring(0,80);
             String status=request.getParameter("status");
-            if(!"Success".equals(status)&&!"Failed".equals(status))status="all";
+            if(!"Paid".equals(status)&&!"Refunded".equals(status))status="all";
             int page=1;
             try{page=Math.max(1,Math.min(1000,Integer.parseInt(request.getParameter("page"))));}catch(Exception ignored){}
             Map<String,Long> revenue=dashboardDAO.getRevenue(from,to);

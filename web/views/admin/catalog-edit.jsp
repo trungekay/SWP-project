@@ -42,7 +42,7 @@
 
   <div class="container catalog-edit-layout">
     <aside class="catalog-panel catalog-edit-sidebar">
-      <h2>${kind == 'service' ? 'Dịch vụ phòng khám' : (catalogReturnTab == 'consumables' ? 'Vật tư tiêu hao' : 'Thiết bị')}</h2>
+      <h2>${kind == 'service' ? 'Dịch vụ phòng khám' : 'Vật tư tiêu hao'}</h2>
       <p>Chọn mục cần sửa hoặc tạo mục mới.</p>
       <a class="catalog-new-link" href="${pageContext.request.contextPath}/admin/catalog/${kind}?new=1"><i class="bi bi-plus-circle"></i> Thêm mới</a>
       <nav aria-label="Danh mục hiện có">
@@ -52,7 +52,7 @@
       </nav>
     </aside>
     <section class="catalog-panel catalog-edit-panel">
-      <div class="catalog-edit-heading"><div><h1>${empty item.id ? 'Thêm mới' : 'Cập nhật'} ${kind == 'service' ? 'dịch vụ' : (catalogReturnTab == 'consumables' ? 'vật tư tiêu hao' : 'thiết bị')}</h1><p>Nhấn “Lưu thay đổi” để ghi trực tiếp vào database.</p></div><a href="${pageContext.request.contextPath}/admin/catalog?tab=${catalogReturnTab}">← Về danh sách</a></div>
+      <div class="catalog-edit-heading"><div><h1>${empty item.id ? 'Thêm mới' : 'Cập nhật'} ${kind == 'service' ? 'dịch vụ' : 'Vật tư tiêu hao'}</h1><p>Nhấn “Lưu thay đổi” để ghi trực tiếp vào database.</p></div><a href="${pageContext.request.contextPath}/admin/catalog?tab=${catalogReturnTab}">← Về danh sách</a></div>
       <c:if test="${not empty error}"><div class="catalog-form-error" role="alert"><c:out value="${error}" /></div></c:if>
       <form class="catalog-edit-form" action="${pageContext.request.contextPath}/admin/catalog/${kind}" method="post" enctype="multipart/form-data">
         <input type="hidden" name="csrf" value="${sessionScope.catalogCsrf}">
@@ -191,18 +191,18 @@
             </div>
           </c:when>
           <c:otherwise>
-            <label><span class="catalog-label-title">${catalogReturnTab == 'supplies' ? 'Tên thiết bị' : (catalogReturnTab == 'consumables' ? 'Tên vật tư tiêu hao' : 'Tên vật tư / dược phẩm')} <em>*</em></span><input name="name" maxlength="255" required value="${fn:escapeXml(item.name)}"></label>
+            <label><span class="catalog-label-title">Tên vật tư tiêu hao <em>*</em></span><input name="name" maxlength="255" required value="${fn:escapeXml(item.name)}"></label>
             <label><span class="catalog-label-title">Phân loại <em>*</em></span>
               <select name="category" required>
                 <option value="" disabled ${empty item.category ? 'selected' : ''}>Chọn phân loại</option>
                 <c:forEach items="${supplyCategories}" var="category">
-                  <c:if test="${(catalogReturnTab == 'supplies' && category.vietnameseName == 'Khác') || (catalogReturnTab == 'consumables' && category.vietnameseName == 'Vật tư y tế tiêu hao')}">
-                    <option value="${fn:escapeXml(category.vietnameseName)}" ${item.category eq category.vietnameseName ? 'selected' : ''}>${catalogReturnTab == 'supplies' ? 'Thiết bị' : fn:escapeXml(category.vietnameseName)}</option>
+                  <c:if test="${category.vietnameseName == 'Vật tư y tế tiêu hao'}">
+                    <option value="${fn:escapeXml(category.vietnameseName)}" ${item.category eq category.vietnameseName ? 'selected' : ''}>${fn:escapeXml(category.vietnameseName)}</option>
                   </c:if>
                 </c:forEach>
               </select>
             </label>
-            <label><span class="catalog-label-title">${catalogReturnTab == 'supplies' ? 'Giá trị (VNĐ)' : 'Đơn giá (VNĐ)'} <em>*</em></span><input name="price" type="number" min="0" step="1" required value="${fn:escapeXml(item.price)}"></label>
+            <label><span class="catalog-label-title">Đơn giá (VND) <em>*</em></span><input name="price" type="number" min="0" step="1" required value="${fn:escapeXml(item.price)}"></label>
           </c:otherwise>
         </c:choose>
         <div class="catalog-image-field">

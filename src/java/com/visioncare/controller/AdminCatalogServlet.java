@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @WebServlet(name = "AdminCatalogServlet", urlPatterns = {
-    "/admin/catalog", "/admin/catalog/service", "/admin/catalog/supply",
+    "/admin/catalog", "/admin/catalog/service",
     "/admin/catalog/consumable", "/catalog-image"
 })
 @MultipartConfig(maxFileSize = 5 * 1024 * 1024, maxRequestSize = 6 * 1024 * 1024)
@@ -49,25 +49,19 @@ public class AdminCatalogServlet extends HttpServlet {
             }
             if ("/admin/catalog".equals(path)) {
                 request.setAttribute("catalogServices", dao.listServices());
-                request.setAttribute("catalogSupplies", dao.listSupplies("supply"));
-                request.setAttribute("catalogConsumables", dao.listSupplies("consumable"));
+                request.setAttribute("catalogConsumables", dao.listConsumables());
                 request.getRequestDispatcher("/views/admin/catalog.jsp").forward(request, response);
             } else {
                 String kind = kind(path);
-                if ("supply".equals(kind) && "consumables".equals(request.getParameter("returnTab"))) {
-                    response.sendRedirect(request.getContextPath() + "/admin/catalog/consumable" +
-                            (request.getQueryString() == null ? "?new=1" : "?" + request.getQueryString()));
-                    return;
-                }
                 boolean service = "service".equals(kind);
-                List<?> choices = service ? dao.listServices() : dao.listSupplies(kind);
+                List<?> choices = service ? dao.listServices() : dao.listConsumables();
                 int id = optionalId(request.getParameter("id"));
                 if (id == 0 && !"1".equals(request.getParameter("new")) && !choices.isEmpty()) {
                     id = service ? ((CatalogService) choices.get(0)).getId()
                             : ((MedicalSupply) choices.get(0)).getId();
                 }
                 Object item = id == 0 ? new HashMap<String, Object>() :
-                        (service ? dao.getService(id) : dao.getSupply(kind, id));
+                        (service ? dao.getService(id) : dao.getConsumable(id));
                 if (item == null) { response.sendError(HttpServletResponse.SC_NOT_FOUND); return; }
                 request.setAttribute("choices", choices);
                 if (!service) request.setAttribute("supplyCategories", SupplyCategory.values());
@@ -182,8 +176,8 @@ public class AdminCatalogServlet extends HttpServlet {
             } else {
                 String name = field(request, "name", 255, true);
                 String category = field(request, "category", 100, true);
-                validateCategory(kind, category);
-                savedId = dao.saveSupply(kind, id, name, category, price(request),
+                validateCategory(category);
+                savedId = dao.saveConsumable(id, name, category, price(request),
                         upload == null ? null : upload.getBytes(),
                         upload == null ? null : upload.getMimeType());
             }
@@ -208,7 +202,7 @@ public class AdminCatalogServlet extends HttpServlet {
             item.put(key, request.getParameter(key));
         }
         try {
-            request.setAttribute("choices", service ? dao.listServices() : dao.listSupplies(kind));
+            request.setAttribute("choices", service ? dao.listServices() : dao.listConsumables());
             if (!service) request.setAttribute("supplyCategories", SupplyCategory.values());
             if (service) {
                 request.setAttribute("serviceCategories", ServiceCategory.values());
@@ -274,7 +268,7 @@ public class AdminCatalogServlet extends HttpServlet {
             return;
         }
         try {
-            boolean deleted = "service".equals(kind) ? dao.deleteService(id) : dao.deleteSupply(kind, id);
+            boolean deleted = "service".equals(kind) ? dao.deleteService(id) : dao.deleteConsumable(id);
             if (!deleted) {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
                 return;
@@ -324,7 +318,6 @@ public class AdminCatalogServlet extends HttpServlet {
     private String kind(String path) {
         switch (path) {
             case "/admin/catalog/service": return "service";
-            case "/admin/catalog/supply": return "supply";
             case "/admin/catalog/consumable": return "consumable";
             default: throw new IllegalArgumentException("Đường dẫn không hợp lệ.");
         }
@@ -333,7 +326,6 @@ public class AdminCatalogServlet extends HttpServlet {
     private String returnTab(String kind) {
         switch (kind) {
             case "service": return "services";
-            case "supply": return "supplies";
             case "consumable": return "consumables";
             default: throw new IllegalArgumentException("Loại vật tư không hợp lệ.");
         }
@@ -343,11 +335,9 @@ public class AdminCatalogServlet extends HttpServlet {
         return "/admin/catalog?tab=" + returnTab(kind);
     }
 
-    private void validateCategory(String kind, String category) {
+    private void validateCategory(String category) {
         SupplyCategory value = SupplyCategory.fromVietnameseName(category);
-        boolean valid = value != null &&
-                ("supply".equals(kind) && value == SupplyCategory.OTHER ||
-                 "consumable".equals(kind) && value == SupplyCategory.MEDICAL_CONSUMABLES);
+        boolean valid = value == SupplyCategory.MEDICAL_CONSUMABLES;
         if (!valid) throw new IllegalArgumentException("Phân loại vật tư không hợp lệ.");
     }
 

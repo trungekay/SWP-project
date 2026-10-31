@@ -8,19 +8,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Tổng quan doanh thu - VisionCare</title>
+  <title>Tổng quan phòng khám - VisionCare</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
   <link href="${pageContext.request.contextPath}/assets/css/admin-layout.css" rel="stylesheet">
-  <link href="${pageContext.request.contextPath}/assets/css/admin-dashboard.css?v=20261031-4" rel="stylesheet">
+  <link href="${pageContext.request.contextPath}/assets/css/admin-dashboard.css?v=20261031-7" rel="stylesheet">
 </head>
 <body>
 <jsp:include page="/views/admin/layout/admin-sidebar.jsp"><jsp:param name="activeNav" value="dashboard" /></jsp:include>
 <main class="main-wrapper">
   <jsp:include page="/views/admin/layout/admin-header.jsp" />
   <div class="dashboard-page">
+<div class="dashboard-top"><div><h1>Tổng quan phòng khám</h1><p>Theo dõi doanh thu, lịch hẹn và tỷ lệ bệnh nhân đến khám.</p></div></div>
+    <nav class="clinic-report-nav" aria-label="Báo cáo phòng khám">
+      <a href="${pageContext.request.contextPath}/admin/dashboard" class="active"><i class="bi bi-wallet2"></i> Quản lý doanh thu</a>
+      <a href="${pageContext.request.contextPath}/admin/conversion-report" class=""><i class="bi bi-graph-up-arrow"></i> Báo cáo tỷ lệ đến khám</a>
+    </nav>
     <div class="dashboard-top">
-      <div><span class="dashboard-eyebrow">VISIONCARE / QUẢN TRỊ</span><h1>Tổng quan doanh thu</h1><p>Doanh thu và giao dịch của phòng khám theo dữ liệu đã ghi nhận.</p></div>
+      <div><h1>Tổng quan doanh thu</h1><p>Doanh thu và giao dịch của phòng khám theo dữ liệu đã ghi nhận.</p></div>
       <a class="dashboard-action" href="${pageContext.request.contextPath}/admin/billing"><i class="bi bi-receipt"></i> Xem hóa đơn</a>
     </div>
     <form method="get" action="${pageContext.request.contextPath}/admin/dashboard" class="dashboard-filter">
@@ -74,11 +79,11 @@
 
     <section class="dashboard-card dashboard-journal">
       <div class="dashboard-journal-head">
-        <div><h2>Sổ nhật ký thu viện phí &amp; giao dịch</h2><p>Giao dịch trong kỳ đã chọn, mới nhất trước.</p></div>
+        <div><h2>Sổ nhật ký thu viện phí &amp; giao dịch</h2><p>Khoản đã thanh toán và đã hoàn tiền trong kỳ, mới nhất trước.</p></div>
         <form method="get" action="${pageContext.request.contextPath}/admin/dashboard" class="dashboard-journal-filter">
           <input type="hidden" name="period" value="${period}"><input type="hidden" name="from" value="${fromDisplay}"><input type="hidden" name="to" value="${toDisplay}">
           <input type="search" name="search" value="${fn:escapeXml(search)}" placeholder="Tên bệnh nhân, SĐT, mã hóa đơn" aria-label="Tìm giao dịch">
-          <select name="status" aria-label="Trạng thái"><option value="all">Tất cả trạng thái</option><option value="Success" ${status=='Success'?'selected':''}>Thành công</option><option value="Failed" ${status=='Failed'?'selected':''}>Thất bại</option></select>
+          <select name="status" aria-label="Trạng thái"><option value="all">Tất cả trạng thái</option><option value="Paid" ${status=='Paid'?'selected':''}>Đã thanh toán</option><option value="Refunded" ${status=='Refunded'?'selected':''}>Đã hoàn tiền</option></select>
           <button type="submit">Lọc</button>
         </form>
       </div>
@@ -86,13 +91,13 @@
         <thead><tr><th>Mã giao dịch</th><th>Bệnh nhân</th><th>Dịch vụ</th><th>Bác sĩ</th><th>Số tiền</th><th>Phương thức</th><th>Trạng thái</th><th>Thời gian</th></tr></thead>
         <tbody>
         <c:forEach items="${journal}" var="row"><tr>
-          <td class="dashboard-code">#<c:out value="${row.Transaction_ID}"/><small>HĐ #<c:out value="${row.Invoice_ID}"/></small></td>
+          <td class="dashboard-code"><c:out value="${row.Event_Status=='Refunded'?'HT':'TT'}"/> #<c:out value="${row.Event_ID}"/><small>HĐ #<c:out value="${row.Invoice_ID}"/></small></td>
           <td><strong><c:out value="${row.Patient_Name}"/></strong><small><c:out value="${row.Phone}"/></small></td>
-          <td><c:out value="${empty row.Service_Name?'Khám / dịch vụ khác':row.Service_Name}"/></td>
+          <td><c:out value="${row.Event_Status=='Refunded'?'Hoàn tiền':empty row.Service_Name?'Khám / dịch vụ khác':row.Service_Name}"/></td>
           <td><c:out value="${empty row.Doctor_Name?'—':row.Doctor_Name}"/></td>
-          <td class="dashboard-amount"><fmt:formatNumber value="${row.Amount}" groupingUsed="true"/> đ</td>
+          <td class="dashboard-amount ${row.Event_Status=='Refunded'?'refunded':''}"><fmt:formatNumber value="${row.Amount}" groupingUsed="true"/> đ</td>
           <td><c:out value="${row.Payment_Gateway}"/></td>
-          <td><span class="dashboard-badge ${row.Gateway_Status=='Success'?'success':'failed'}"><c:out value="${row.Gateway_Status=='Success'?'Đã thanh toán':row.Gateway_Status}"/></span></td>
+          <td><span class="dashboard-badge ${row.Event_Status=='Paid'?'success':'refunded'}"><c:out value="${row.Event_Status=='Paid'?'Đã thanh toán':'Đã hoàn tiền'}"/></span></td>
           <td><fmt:formatDate value="${row.Event_Time}" pattern="dd/MM/yyyy HH:mm"/></td>
         </tr></c:forEach>
         <c:if test="${empty journal}"><tr><td colspan="8" class="dashboard-empty">Không tìm thấy giao dịch phù hợp.</td></tr></c:if>

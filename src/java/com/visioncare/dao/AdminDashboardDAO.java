@@ -78,16 +78,24 @@ public class AdminDashboardDAO {
     }
 
     public List<Map<String,Object>> getJournal(LocalDate from,LocalDate to,String search,String status,int page,int size) throws Exception {
-        String sql="SELECT t.Transaction_ID,t.Invoice_ID,t.Amount,t.Gateway_Status,t.Payment_Gateway," +
-            "t.Trans_Date Event_Time,p.Full_Name Patient_Name,p.Phone,e.Full_Name Doctor_Name," +
+        String sql="WITH Journal_Events AS (" +
+            "SELECT t.Transaction_ID Event_ID,t.Invoice_ID,CAST(t.Amount AS bigint) Amount," +
+            "'Paid' Event_Status,t.Payment_Gateway,t.Trans_Date Event_Time,t.Transaction_ID " +
+            "FROM Payment_Transaction t WHERE t.Gateway_Status='Success' " +
+            "UNION ALL " +
+            "SELECT r.Refund_ID,r.Invoice_ID,-CAST(r.Refund_Amount AS bigint)," +
+            "'Refunded',N'—',DATEADD(HOUR,7,COALESCE(r.Completed_At,r.Update_At)),NULL " +
+            "FROM Refund_Request r WHERE r.Status='Completed') " +
+            "SELECT j.Event_ID,j.Invoice_ID,j.Amount,j.Event_Status,j.Payment_Gateway," +
+            "j.Event_Time,p.Full_Name Patient_Name,p.Phone,e.Full_Name Doctor_Name," +
             "(SELECT TOP 1 s.Service_Name FROM Procedure_Payment_Request pr JOIN Procedure_Order po ON po.Order_ID=pr.Order_ID " +
-            "JOIN Service_Catalog s ON s.Service_ID=po.Service_ID WHERE pr.Transaction_ID=t.Transaction_ID) Service_Name " +
-            "FROM Payment_Transaction t JOIN Master_Invoice i ON i.Invoice_ID=t.Invoice_ID " +
+            "JOIN Service_Catalog s ON s.Service_ID=po.Service_ID WHERE pr.Transaction_ID=j.Transaction_ID) Service_Name " +
+            "FROM Journal_Events j JOIN Master_Invoice i ON i.Invoice_ID=j.Invoice_ID " +
             "JOIN Appointment a ON a.Appointment_ID=i.Appointment_ID JOIN Patient p ON p.Patient_ID=a.Patient_ID " +
             "JOIN Work_Schedule ws ON ws.Schedule_ID=a.Schedule_ID LEFT JOIN Employee_Profile e ON e.Employee_ID=ws.Doctor_Employee_ID " +
-            "WHERE CAST(t.Trans_Date AS date) BETWEEN ? AND ? " +
-            "AND (?='' OR p.Full_Name LIKE ? OR p.Phone LIKE ? OR CAST(t.Invoice_ID AS varchar(20)) LIKE ?) " +
-            "AND (?='all' OR t.Gateway_Status=?) ORDER BY t.Trans_Date DESC,t.Transaction_ID DESC " +
+            "WHERE CAST(j.Event_Time AS date) BETWEEN ? AND ? " +
+            "AND (?='' OR p.Full_Name LIKE ? OR p.Phone LIKE ? OR CAST(j.Invoice_ID AS varchar(20)) LIKE ?) " +
+            "AND (?='all' OR j.Event_Status=?) ORDER BY j.Event_Time DESC,j.Event_Status,j.Event_ID DESC " +
             "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
         List<Map<String,Object>> rows=new ArrayList<>();
         try(Connection c=DBContext.getConnection();PreparedStatement ps=c.prepareStatement(sql)){
@@ -96,7 +104,7 @@ public class AdminDashboardDAO {
             ps.setString(7,status);ps.setString(8,status);ps.setInt(9,(page-1)*size);ps.setInt(10,size+1);
             try(ResultSet rs=ps.executeQuery()){while(rs.next()){
                 Map<String,Object> row=new HashMap<>();
-                for(String key:new String[]{"Transaction_ID","Invoice_ID","Amount","Gateway_Status","Payment_Gateway","Event_Time","Patient_Name","Phone","Doctor_Name","Service_Name"})
+                for(String key:new String[]{"Event_ID","Invoice_ID","Amount","Event_Status","Payment_Gateway","Event_Time","Patient_Name","Phone","Doctor_Name","Service_Name"})
                     row.put(key,rs.getObject(key));
                 rows.add(row);
             }}
