@@ -1,132 +1,127 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<fmt:setLocale value="vi_VN" />
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tổng quan phòng khám - VisionCare Admin</title>
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
-    <!-- Admin Layout CSS -->
-    <link href="${pageContext.request.contextPath}/assets/css/admin-layout.css" rel="stylesheet">
-    <link href="${pageContext.request.contextPath}/assets/css/admin-dashboard.css" rel="stylesheet">
-
-    <style>
-      .admin-card {
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-        padding: 24px;
-        height: 100%;
-      }
-      .stat-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-      }
-      .bg-light-primary { background: #e0f2fe; color: #0284c7; }
-      .bg-light-success { background: #dcfce7; color: #16a34a; }
-      .bg-light-warning { background: #fef08a; color: #ca8a04; }
-      .page-content { padding: 30px; }
-      .page-title { margin-bottom: 24px; }
-      .page-title h2 { font-size: 24px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
-      .breadcrumbs { font-size: 14px; color: #64748b; }
-      .breadcrumbs ol { list-style: none; padding: 0; margin: 0; display: flex; gap: 8px; }
-      .breadcrumbs ol li.current { color: #0f172a; font-weight: 500; }
-      .breadcrumbs ol li a { color: var(--primary-color); text-decoration: none; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tổng quan doanh thu - VisionCare</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="${pageContext.request.contextPath}/assets/css/admin-layout.css" rel="stylesheet">
+  <link href="${pageContext.request.contextPath}/assets/css/admin-dashboard.css?v=20261031-4" rel="stylesheet">
 </head>
 <body>
+<jsp:include page="/views/admin/layout/admin-sidebar.jsp"><jsp:param name="activeNav" value="dashboard" /></jsp:include>
+<main class="main-wrapper">
+  <jsp:include page="/views/admin/layout/admin-header.jsp" />
+  <div class="dashboard-page">
+    <div class="dashboard-top">
+      <div><span class="dashboard-eyebrow">VISIONCARE / QUẢN TRỊ</span><h1>Tổng quan doanh thu</h1><p>Doanh thu và giao dịch của phòng khám theo dữ liệu đã ghi nhận.</p></div>
+      <a class="dashboard-action" href="${pageContext.request.contextPath}/admin/billing"><i class="bi bi-receipt"></i> Xem hóa đơn</a>
+    </div>
+    <form method="get" action="${pageContext.request.contextPath}/admin/dashboard" class="dashboard-filter">
+      <div class="dashboard-tabs">
+        <button name="period" value="today" class="${period=='today'?'active':''}">Hôm nay</button>
+        <button name="period" value="month" class="${period=='month'?'active':''}">Tháng nay</button>
+        <button name="period" value="year" class="${period=='year'?'active':''}">Năm nay</button>
+      </div>
+      <span class="dashboard-date-field"><input type="text" id="dashboardFrom" name="from" value="${fromDisplay}" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" aria-label="Từ ngày dd/MM/yyyy"><button type="button" class="dashboard-calendar-button" data-picker="dashboardFromPicker" aria-label="Chọn ngày bắt đầu"><i class="bi bi-calendar3"></i></button><input type="date" id="dashboardFromPicker" class="dashboard-native-picker" value="${from}" tabindex="-1" aria-hidden="true"></span>
+      <span>đến</span>
+      <span class="dashboard-date-field"><input type="text" id="dashboardTo" name="to" value="${toDisplay}" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" aria-label="Đến ngày dd/MM/yyyy"><button type="button" class="dashboard-calendar-button" data-picker="dashboardToPicker" aria-label="Chọn ngày kết thúc"><i class="bi bi-calendar3"></i></button><input type="date" id="dashboardToPicker" class="dashboard-native-picker" value="${to}" tabindex="-1" aria-hidden="true"></span>
+      <button name="period" value="custom" class="dashboard-apply">Áp dụng</button>
+    </form>
 
-    <!-- Sidebar Include -->
-    <jsp:include page="/views/admin/layout/admin-sidebar.jsp">
-        <jsp:param name="activeNav" value="dashboard" />
-    </jsp:include>
+    <section class="dashboard-kpis" aria-label="Chỉ số doanh thu">
+      <article class="dashboard-card dashboard-kpi">
+        <div class="dashboard-kpi-head"><span>Tổng doanh thu thực nhận</span><i class="bi bi-wallet2"></i></div>
+        <p>Thanh toán thành công trừ hoàn tiền</p><strong><c:out value="${totalFmt}"/></strong>
+        <small>Trong kỳ đã chọn</small>
+      </article>
+      <article class="dashboard-card dashboard-kpi">
+        <div class="dashboard-kpi-head"><span>Doanh thu khám</span><i class="bi bi-clipboard2-pulse"></i></div>
+        <p>Khám và các khoản ngoài phẫu thuật</p><strong><c:out value="${examFmt}"/></strong>
+        <small>Giao dịch không gắn yêu cầu phẫu thuật</small>
+      </article>
+      <article class="dashboard-card dashboard-kpi">
+        <div class="dashboard-kpi-head"><span>Doanh thu phẫu thuật</span><i class="bi bi-hospital"></i></div>
+        <p>Giao dịch gắn yêu cầu thanh toán thủ thuật</p><strong><c:out value="${surgeryFmt}"/></strong>
+        <small>Đã thu qua giao dịch thành công</small>
+      </article>
+    </section>
 
-    <!-- Main Content -->
-    <main class="main-wrapper">
-        
-        <!-- Header Include -->
-        <jsp:include page="/views/admin/layout/admin-header.jsp" />
+    <div class="dashboard-middle">
+      <section class="dashboard-card dashboard-chart-panel">
+        <div class="dashboard-panel-title"><div><h2><c:out value="${chartTitle}"/></h2><p><c:out value="${chartDescription}"/> · các khoản đã thu, trước hoàn tiền</p></div><i class="bi bi-bar-chart"></i></div>
+        <div class="dashboard-chart-legend"><span><i class="dashboard-legend-dot surgery"></i>Doanh thu tiểu phẫu</span><span><i class="dashboard-legend-dot exam"></i>Doanh thu khám</span></div>
+        <div class="dashboard-chart-scroll"><div class="dashboard-chart" style="grid-template-columns:repeat(${chartCount},minmax(65px,1fr));min-width:${chartCount * 74}px" role="img" aria-label="Doanh thu khám và tiểu phẫu trong kỳ">
+          <c:forEach items="${chartBars}" var="bar">
+            <div class="dashboard-bar-group"><span class="dashboard-bar-value"><c:out value="${bar.value}"/></span><div class="dashboard-bar-track"><div class="dashboard-bar" style="height:${bar.height}%" title="Tiểu phẫu: ${bar.surgeryValue}; Khám: ${bar.examValue}"><div class="dashboard-bar-surgery" style="height:${bar.surgeryShare}%"></div><div class="dashboard-bar-exam"></div></div></div><span class="dashboard-bar-label"><c:out value="${bar.label}"/></span></div>
+          </c:forEach>
+        </div></div>
+      </section>
+      <section class="dashboard-card dashboard-source-panel">
+        <div class="dashboard-panel-title"><div><h2>Cơ cấu nguồn thu</h2><p>Trong kỳ đã chọn</p></div><i class="bi bi-pie-chart"></i></div>
+        <div class="dashboard-source"><span>Doanh thu khám và dịch vụ khác</span><strong><c:out value="${examFmt}"/></strong></div>
+        <div class="dashboard-source"><span>Doanh thu phẫu thuật</span><strong><c:out value="${surgeryFmt}"/></strong></div>
+        <div class="dashboard-source dashboard-refund"><span>Đã hoàn tiền</span><strong>−<c:out value="${refundFmt}"/></strong></div>
+        <div class="dashboard-source dashboard-source-total"><span>Thực nhận</span><strong><c:out value="${totalFmt}"/></strong></div>
+      </section>
+    </div>
 
-        <div class="dashboard-page">
-            <div class="dashboard-heading">
-                <div>
-                    <span class="dashboard-eyebrow">VISIONCARE / QUẢN TRỊ</span>
-                    <h1>Tổng quan phòng khám</h1>
-                    <p>Theo dõi hoạt động khám bệnh và doanh thu tại một nơi.</p>
-                </div>
-                <a class="dashboard-heading-link" href="${pageContext.request.contextPath}/admin/billing"><i class="bi bi-receipt"></i> Xem hóa đơn <i class="bi bi-arrow-up-right"></i></a>
-            </div>
-
-            <div class="dashboard-section-heading"><div><span class="dashboard-section-index">01</span><h2>Chỉ số chính</h2></div><span class="dashboard-section-note">Doanh thu theo dữ liệu thanh toán hiện có</span></div>
-            <div class="dashboard-kpis">
-                <article class="dashboard-card dashboard-kpi">
-                    <div class="dashboard-kpi-top"><span class="dashboard-icon mint"><i class="bi bi-wallet2"></i></span><span class="dashboard-kpi-period">Tháng này</span></div>
-                    <p class="dashboard-kpi-label">Doanh thu</p>
-                    <strong class="dashboard-kpi-value"><c:out value="${stats.monthRevenueFmt}" default="—" /></strong>
-                    <span class="dashboard-kpi-caption">Từ các khoản đã ghi nhận</span>
-                </article>
-                <article class="dashboard-card dashboard-kpi">
-                    <div class="dashboard-kpi-top"><span class="dashboard-icon blue"><i class="bi bi-cash-coin"></i></span><span class="dashboard-kpi-period">Hôm nay</span></div>
-                    <p class="dashboard-kpi-label">Doanh thu</p>
-                    <strong class="dashboard-kpi-value"><c:out value="${stats.todayRevenueFmt}" default="—" /></strong>
-                    <span class="dashboard-kpi-caption">Theo ngày tạo hóa đơn</span>
-                </article>
-                <article class="dashboard-card dashboard-kpi">
-                    <div class="dashboard-kpi-top"><span class="dashboard-icon violet"><i class="bi bi-check2-circle"></i></span><span class="dashboard-kpi-period">Hôm nay</span></div>
-                    <p class="dashboard-kpi-label">Hóa đơn tạo hôm nay đã thanh toán</p>
-                    <strong class="dashboard-kpi-value"><c:out value="${stats.todayPaidCount}" default="—" /></strong>
-                    <span class="dashboard-kpi-caption">Số hóa đơn, không phải số bệnh nhân</span>
-                </article>
-                <article class="dashboard-card dashboard-kpi">
-                    <div class="dashboard-kpi-top"><span class="dashboard-icon amber"><i class="bi bi-person-check"></i></span><span class="dashboard-kpi-period">Tháng này</span></div>
-                    <p class="dashboard-kpi-label">Tỷ lệ lịch hẹn có check-in</p>
-                    <c:choose><c:when test="${not empty attendanceRate}"><strong class="dashboard-kpi-value"><c:out value="${attendanceRate}" />%</strong></c:when><c:otherwise><strong class="dashboard-kpi-value dashboard-kpi-pending">Chưa có dữ liệu</strong></c:otherwise></c:choose>
-                    <span class="dashboard-kpi-caption">Lịch đã check-in / lịch hẹn còn hiệu lực</span>
-                </article>
-            </div>
-
-            <div class="dashboard-section-heading dashboard-second-section"><div><span class="dashboard-section-index">02</span><h2>Hoạt động chi tiết</h2></div></div>
-            <div class="dashboard-details">
-                <section class="dashboard-card dashboard-panel">
-                    <div class="dashboard-panel-heading"><div><span class="dashboard-panel-kicker">TÀI CHÍNH</span><h3>Tổng quan doanh thu</h3></div><span class="dashboard-icon mint"><i class="bi bi-graph-up-arrow"></i></span></div>
-                    <div class="dashboard-revenue-grid">
-                        <div><span>Hôm nay</span><strong><c:out value="${stats.todayRevenueFmt}" default="—" /></strong></div>
-                        <div><span>Tháng này</span><strong><c:out value="${stats.monthRevenueFmt}" default="—" /></strong></div>
-                        <div><span>Toàn thời gian</span><strong><c:out value="${stats.allTimeRevenueFmt}" default="—" /></strong></div>
-                    </div>
-                    <a class="dashboard-text-link" href="${pageContext.request.contextPath}/admin/billing">Xem chi tiết hóa đơn <i class="bi bi-arrow-right"></i></a>
-                </section>
-                <section class="dashboard-card dashboard-panel">
-                    <div class="dashboard-panel-heading"><div><span class="dashboard-panel-kicker">THANH TOÁN</span><h3>Trạng thái hóa đơn</h3></div><span class="dashboard-icon blue"><i class="bi bi-receipt"></i></span></div>
-                    <div class="dashboard-status-row"><span><i class="dashboard-dot paid"></i>Đã thanh toán</span><strong><c:out value="${stats.allTimePaidCount}" default="—" /></strong></div>
-                    <div class="dashboard-status-row"><span><i class="dashboard-dot unpaid"></i>Chưa thanh toán</span><strong><c:out value="${stats.allTimeUnpaidCount}" default="—" /></strong></div>
-                    <div class="dashboard-status-row"><span><i class="dashboard-dot refunded"></i>Đã hoàn tiền</span><strong><c:out value="${stats.allTimeRefundedCount}" default="—" /></strong></div>
-                    <p class="dashboard-panel-footnote">Số liệu tính trên toàn thời gian.</p>
-                </section>
-                <section class="dashboard-card dashboard-panel">
-                    <div class="dashboard-panel-heading"><div><span class="dashboard-panel-kicker">LỊCH KHÁM</span><h3>Lịch hẹn có bệnh nhân đến khám</h3></div><span class="dashboard-icon amber"><i class="bi bi-calendar2-check"></i></span></div>
-                    <p class="dashboard-attendance-copy">Từ đầu tháng đến hôm nay: <strong><c:out value="${attendance.checkedIn}" /></strong> / <strong><c:out value="${attendance.totalAppointments}" /></strong> lịch hẹn còn hiệu lực đã check-in.</p>
-                    <c:if test="${empty attendanceRate}"><div class="dashboard-attendance-state"><i class="bi bi-info-circle"></i><span>Chưa có lịch hẹn còn hiệu lực trong kỳ để tính tỷ lệ.</span></div></c:if>
-                    <a class="dashboard-text-link" href="${pageContext.request.contextPath}/staff/appointments">Xem danh sách lịch hẹn <i class="bi bi-arrow-right"></i></a>
-                </section>
-            </div>
-        </div>
-    </main>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <section class="dashboard-card dashboard-journal">
+      <div class="dashboard-journal-head">
+        <div><h2>Sổ nhật ký thu viện phí &amp; giao dịch</h2><p>Giao dịch trong kỳ đã chọn, mới nhất trước.</p></div>
+        <form method="get" action="${pageContext.request.contextPath}/admin/dashboard" class="dashboard-journal-filter">
+          <input type="hidden" name="period" value="${period}"><input type="hidden" name="from" value="${fromDisplay}"><input type="hidden" name="to" value="${toDisplay}">
+          <input type="search" name="search" value="${fn:escapeXml(search)}" placeholder="Tên bệnh nhân, SĐT, mã hóa đơn" aria-label="Tìm giao dịch">
+          <select name="status" aria-label="Trạng thái"><option value="all">Tất cả trạng thái</option><option value="Success" ${status=='Success'?'selected':''}>Thành công</option><option value="Failed" ${status=='Failed'?'selected':''}>Thất bại</option></select>
+          <button type="submit">Lọc</button>
+        </form>
+      </div>
+      <div class="dashboard-table-wrap"><table class="dashboard-table">
+        <thead><tr><th>Mã giao dịch</th><th>Bệnh nhân</th><th>Dịch vụ</th><th>Bác sĩ</th><th>Số tiền</th><th>Phương thức</th><th>Trạng thái</th><th>Thời gian</th></tr></thead>
+        <tbody>
+        <c:forEach items="${journal}" var="row"><tr>
+          <td class="dashboard-code">#<c:out value="${row.Transaction_ID}"/><small>HĐ #<c:out value="${row.Invoice_ID}"/></small></td>
+          <td><strong><c:out value="${row.Patient_Name}"/></strong><small><c:out value="${row.Phone}"/></small></td>
+          <td><c:out value="${empty row.Service_Name?'Khám / dịch vụ khác':row.Service_Name}"/></td>
+          <td><c:out value="${empty row.Doctor_Name?'—':row.Doctor_Name}"/></td>
+          <td class="dashboard-amount"><fmt:formatNumber value="${row.Amount}" groupingUsed="true"/> đ</td>
+          <td><c:out value="${row.Payment_Gateway}"/></td>
+          <td><span class="dashboard-badge ${row.Gateway_Status=='Success'?'success':'failed'}"><c:out value="${row.Gateway_Status=='Success'?'Đã thanh toán':row.Gateway_Status}"/></span></td>
+          <td><fmt:formatDate value="${row.Event_Time}" pattern="dd/MM/yyyy HH:mm"/></td>
+        </tr></c:forEach>
+        <c:if test="${empty journal}"><tr><td colspan="8" class="dashboard-empty">Không tìm thấy giao dịch phù hợp.</td></tr></c:if>
+        </tbody>
+      </table></div>
+      <div class="dashboard-pagination">
+        <span>Trang <c:out value="${pageNumber}"/></span>
+        <form method="get"><input type="hidden" name="period" value="${period}"><input type="hidden" name="from" value="${fromDisplay}"><input type="hidden" name="to" value="${toDisplay}"><input type="hidden" name="search" value="${fn:escapeXml(search)}"><input type="hidden" name="status" value="${status}"><button name="page" value="${previousPage}" ${pageNumber==1?'disabled':''}>Trước</button><button name="page" value="${nextPage}" ${hasNextPage?'disabled':''}>Sau</button></form>
+      </div>
+    </section>
+  </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  document.querySelectorAll('.dashboard-calendar-button').forEach(button => {
+    const picker = document.getElementById(button.dataset.picker);
+    const display = picker.parentElement.querySelector('input[type="text"]');
+    button.addEventListener('click', () => {
+      const parts = display.value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (parts) picker.value = parts[3] + '-' + parts[2] + '-' + parts[1];
+      if (picker.showPicker) picker.showPicker();
+      else { picker.focus(); picker.click(); }
+    });
+    picker.addEventListener('change', () => {
+      if (!picker.value) return;
+      const parts = picker.value.split('-');
+      display.value = parts[2] + '/' + parts[1] + '/' + parts[0];
+    });
+  });
+</script>
 </body>
 </html>

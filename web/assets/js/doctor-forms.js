@@ -10,6 +10,7 @@
         const medicationToggle = document.querySelector('[data-section-toggle="medication"]');
         if (!selected || !dose) return;
         const active = (!medicationToggle || medicationToggle.checked) && selected.checked;
+        row.classList.toggle("is-selected", selected.checked);
         dose.disabled = !active;
         dose.required = active;
     }

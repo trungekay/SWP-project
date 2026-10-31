@@ -20,7 +20,7 @@
   <!-- Custom Styles for Screen 36 -->
   <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/specialist-procedure-detail.css">
   <!-- Doctor Forms Design System (for Read-only Clinical Screen) -->
-  <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=8">
+  <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=9">
 </head>
 <body>
 
