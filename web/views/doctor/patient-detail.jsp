@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css">
     <jsp:include page="/views/admin/layout/admin-css.jsp" />
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-patient-detail.css?v=5">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-patient-detail.css?v=9">
 </head>
 <body>
     <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
@@ -70,15 +70,11 @@
                                     <i class="bi bi-prescription2" aria-hidden="true"></i> Kê đơn
                                 </a>
                             </c:if>
-                            <c:if test="${appointment.status eq 'In_Progress' && completionReady}">
-                                <button type="button" class="doctor-detail-button doctor-detail-desktop-action"
-                                        onclick="openDoctorCompleteModal()"
-                                        style="background: #059669; color: #fff; border-color: #059669; font-weight: 600;">
-                                    <i class="bi bi-check2-circle" aria-hidden="true"></i> Hoàn tất ca khám
+                            <c:if test="${appointment.status eq 'In_Progress'}">
+                                <button type="button" class="doctor-detail-button doctor-detail-button-complete doctor-detail-desktop-action"
+                                        onclick="openDoctorCompleteModal()">
+                                    <i class="bi bi-check2-circle" aria-hidden="true"></i> Xác nhận hoàn thành khám
                                 </button>
-                            </c:if>
-                            <c:if test="${appointment.status eq 'In_Progress' && not completionReady}">
-                                <span class="doctor-detail-desktop-action small text-muted">Lưu kết quả khám, chẩn đoán và kết luận để hoàn tất.</span>
                             </c:if>
                             </div>
                         </c:if>
@@ -181,9 +177,7 @@
                                 </dd></div>
                             </dl>
                         </section>
-                    </div>
 
-                    <div class="doctor-detail-support-grid">
                     <section class="doctor-detail-card doctor-detail-staff-notes" aria-labelledby="staff-notes-heading">
                         <div class="doctor-detail-card-heading">
                             <span class="doctor-detail-card-icon teal"><i class="bi bi-journal-medical" aria-hidden="true"></i></span>
@@ -276,15 +270,11 @@
                                     <i class="bi bi-prescription2" aria-hidden="true"></i> Kê đơn
                                 </a>
                             </c:if>
-                            <c:if test="${appointment.status eq 'In_Progress' && completionReady}">
-                                <button type="button" class="doctor-detail-button"
-                                        onclick="openDoctorCompleteModal()"
-                                        style="background: #059669; color: #fff; border-color: #059669; font-weight: 600;">
-                                    <i class="bi bi-check2-circle" aria-hidden="true"></i> Hoàn tất ca khám
+                            <c:if test="${appointment.status eq 'In_Progress'}">
+                                <button type="button" class="doctor-detail-button doctor-detail-button-complete"
+                                        onclick="openDoctorCompleteModal()">
+                                    <i class="bi bi-check2-circle" aria-hidden="true"></i> Xác nhận hoàn thành khám
                                 </button>
-                            </c:if>
-                            <c:if test="${appointment.status eq 'In_Progress' && not completionReady}">
-                                <span class="small text-muted">Lưu kết quả khám, chẩn đoán và kết luận để hoàn tất.</span>
                             </c:if>
                         </div>
                     </c:if>
@@ -294,7 +284,7 @@
     </main>
 
     <!-- Modal xác nhận hoàn tất ca khám cho Bác sĩ -->
-    <c:if test="${appointment.status eq 'In_Progress' && completionReady}">
+    <c:if test="${appointment.status eq 'In_Progress'}">
         <div class="modal fade" id="doctorCompleteModal" tabindex="-1" aria-labelledby="doctorCompleteModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
                 <div class="modal-content shadow border-0" style="border-radius: 16px; overflow: hidden;">
@@ -303,11 +293,13 @@
                             <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); color: #059669; display: flex; align-items: center; justify-content: center; font-size: 18px;">
                                 <i class="bi bi-check2-circle"></i>
                             </div>
-                            <h5 class="modal-title fw-bold text-dark mb-0" id="doctorCompleteModalLabel" style="font-size: 16px;">Xác nhận hoàn tất ca khám</h5>
+                            <h5 class="modal-title fw-bold text-dark mb-0" id="doctorCompleteModalLabel" style="font-size: 16px;">${completionReady ? 'Xác nhận hoàn tất ca khám' : 'Chưa thể hoàn tất ca khám'}</h5>
                         </div>
                         <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-4 text-start">
+                        <c:choose>
+                        <c:when test="${completionReady}">
                         <p class="text-secondary small mb-3">
                             Bác sĩ xác nhận đã hoàn thành việc khám bệnh cho bệnh nhân <strong class="text-dark"><c:out value="${appointment.patientName}" /></strong> (#APT-<c:out value="${appointment.id}" />).
                         </p>
@@ -328,9 +320,16 @@
                         <div class="alert alert-info py-2 px-3 small rounded-3 mb-0" style="font-size: 12px;">
                             <i class="bi bi-info-circle-fill me-1"></i> Sau khi hoàn tất, thông tin đơn thuốc và kết quả sẽ tự động đồng bộ sang màn hình của <strong>Lễ tân</strong> để bàn giao và hướng dẫn xuất viện.
                         </div>
+                        </c:when>
+                        <c:otherwise>
+                            <p class="text-secondary small mb-0">Hãy lưu đầy đủ kết quả khám, chẩn đoán và kết luận trong phiếu khám, đồng thời xử lý các chỉ định còn chờ trước khi xác nhận hoàn thành.</p>
+                        </c:otherwise>
+                        </c:choose>
                     </div>
                     <div class="modal-footer px-4 py-3 bg-light border-top d-flex justify-content-between">
-                        <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Đóng</button>
+                        <c:choose>
+                        <c:when test="${completionReady}">
                         <form action="${pageContext.request.contextPath}/doctor/waiting-list" method="post" class="m-0">
                             <input type="hidden" name="action" value="complete">
                             <input type="hidden" name="appointmentId" value="${appointment.id}">
@@ -341,6 +340,11 @@
                                 <i class="bi bi-check2 me-1"></i> Xác nhận hoàn tất
                             </button>
                         </form>
+                        </c:when>
+                        <c:otherwise>
+                            <a class="btn btn-success btn-sm px-3 fw-semibold" href="${pageContext.request.contextPath}/doctor/examination?id=${appointment.id}">Mở phiếu khám</a>
+                        </c:otherwise>
+                        </c:choose>
                     </div>
                 </div>
             </div>

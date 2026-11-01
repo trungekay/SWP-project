@@ -1,9 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
   const tabs = [...document.querySelectorAll('.catalog-tab')];
   const servicesView = document.getElementById('servicesView');
-  const suppliesView = document.getElementById('suppliesView');
   const consumablesView = document.getElementById('consumablesView');
-  if (servicesView && suppliesView) {
+  if (servicesView && consumablesView) {
   const cards = [...document.querySelectorAll('.catalog-service')];
   const successToast = document.getElementById('catalogSuccessToast');
   if (successToast) {
@@ -40,8 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function setTab(tab, updateUrl = true) {
-    tab = ['services', 'supplies', 'consumables'].includes(tab) ? tab : 'services';
-    const views = { services: servicesView, supplies: suppliesView, consumables: consumablesView };
+    tab = ['services', 'consumables'].includes(tab) ? tab : 'services';
+    const views = { services: servicesView, consumables: consumablesView };
     Object.entries(views).forEach(([name, view]) => { view.hidden = name !== tab; });
     tabs.forEach((button) => {
       const active = button.dataset.tab === tab;
@@ -94,7 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
   filterServices();
 
   [
-    ['suppliesView', 'supplySearch', 'supplyEmpty'],
     ['consumablesView', 'consumableSearch', 'consumableEmpty']
   ].forEach(([viewId, searchId, emptyId]) => {
     const rows = [...document.querySelectorAll(`#${viewId} .catalog-table tbody tr`)];

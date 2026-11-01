@@ -765,6 +765,21 @@
                 '</div>' +
             '</div>';
 
+            const transactions = Array.isArray(inv.transactions) ? inv.transactions : [];
+            let transactionRows = transactions.map(tx =>
+                '<tr><td>#' + esc(tx.id) + '</td>' +
+                '<td>' + esc(tx.date) + '</td>' +
+                '<td class="text-end">' + esc(tx.amountFmt) + '</td>' +
+                '<td>' + esc(tx.gateway) + '</td>' +
+                '<td>' + esc(tx.status) + '</td></tr>'
+            ).join('');
+            if (!transactionRows) {
+                transactionRows = '<tr><td colspan="5" class="text-center text-muted py-3">Chưa có giao dịch thanh toán được ghi riêng cho hóa đơn này.</td></tr>';
+            }
+            html += '<div class="mt-4"><h6 class="fw-bold mb-3">Lịch sử giao dịch thanh toán</h6>' +
+                '<div class="table-responsive"><table class="table table-sm table-bordered align-middle">' +
+                '<thead class="table-light"><tr><th>Mã GD</th><th>Thời gian</th><th class="text-end">Số tiền</th><th>Phương thức</th><th>Trạng thái</th></tr></thead>' +
+                '<tbody>' + transactionRows + '</tbody></table></div></div>';
             body.innerHTML = html;
         }
 

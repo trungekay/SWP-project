@@ -277,15 +277,11 @@ public class CatalogDAO {
         }
     }
 
-    private String supplyCategoryFilter(String kind) {
-        return "consumable".equals(kind) ? "Category = ?" : "Category <> ?";
-    }
-
-    public List<MedicalSupply> listSupplies(String kind) throws Exception {
+    public List<MedicalSupply> listConsumables() throws Exception {
         List<MedicalSupply> items = new ArrayList<>();
         String sql = "SELECT Supply_ID, Supply_Name, Category, Price, "
                 + "CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image "
-                + "FROM Medical_Supply WHERE " + supplyCategoryFilter(kind)
+                + "FROM Medical_Supply WHERE Category = ?"
                 + " ORDER BY Supply_Name";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -297,10 +293,10 @@ public class CatalogDAO {
         return items;
     }
 
-    public MedicalSupply getSupply(String kind, int id) throws Exception {
+    public MedicalSupply getConsumable(int id) throws Exception {
         String sql = "SELECT Supply_ID, Supply_Name, Category, Price, "
                 + "CASE WHEN Image_Data IS NULL THEN 0 ELSE 1 END AS Has_Image "
-                + "FROM Medical_Supply WHERE Supply_ID = ? AND " + supplyCategoryFilter(kind);
+                + "FROM Medical_Supply WHERE Supply_ID = ? AND Category = ?";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
@@ -311,13 +307,13 @@ public class CatalogDAO {
         }
     }
 
-    public int saveSupply(String kind, int id, String name, String category,
+    public int saveConsumable(int id, String name, String category,
             BigDecimal price, byte[] imageData, String imageMimeType) throws Exception {
         boolean create = id == 0;
         String sql = create
             ? "INSERT INTO Medical_Supply (Supply_Name, Category, Price, Image_Data, Image_Mime_Type) VALUES (?, ?, ?, ?, ?)"
             : "UPDATE Medical_Supply SET Supply_Name = ?, Category = ?, Price = ?" +
-              (imageData == null ? "" : ", Image_Data = ?, Image_Mime_Type = ?") + " WHERE Supply_ID = ? AND " + supplyCategoryFilter(kind);
+              (imageData == null ? "" : ", Image_Data = ?, Image_Mime_Type = ?") + " WHERE Supply_ID = ? AND Category = ?";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             int column = 1;
@@ -341,8 +337,8 @@ public class CatalogDAO {
         }
     }
 
-    public boolean deleteSupply(String kind, int id) throws Exception {
-        String sql = "DELETE FROM Medical_Supply WHERE Supply_ID = ? AND " + supplyCategoryFilter(kind);
+    public boolean deleteConsumable(int id) throws Exception {
+        String sql = "DELETE FROM Medical_Supply WHERE Supply_ID = ? AND Category = ?";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
@@ -385,11 +381,10 @@ public class CatalogDAO {
 
     public ImageData getImage(String kind, int id) throws Exception {
         boolean service = "service".equals(kind);
-        if (!service && !"supply".equals(kind) && !"consumable".equals(kind)) return null;
+        if (!service && !"consumable".equals(kind)) return null;
         String sql = service
                 ? "SELECT Image_Data, Image_Mime_Type FROM Service_Catalog WHERE Service_ID = ?"
-                : "SELECT Image_Data, Image_Mime_Type FROM Medical_Supply WHERE Supply_ID = ? AND "
-                    + supplyCategoryFilter(kind);
+                : "SELECT Image_Data, Image_Mime_Type FROM Medical_Supply WHERE Supply_ID = ? AND Category = ?";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);

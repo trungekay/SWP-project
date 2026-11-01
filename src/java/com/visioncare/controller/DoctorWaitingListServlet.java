@@ -159,7 +159,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
             Date clinicDate = Date.valueOf(LocalDate.now(CLINIC_ZONE));
             boolean updated;
             if ("start".equals(action)) {
-                updated = doctorQueueDAO.startExamination(appointmentId, doctor.getActorId(), LocalDateTime.now(CLINIC_ZONE));
+                updated = doctorQueueDAO.startExamination(appointmentId, doctor.getActorId());
             } else if ("cancel".equals(action)) {
                 String reason = request.getParameter("reason");
                 if (reason == null || reason.trim().isEmpty() || reason.trim().length() > 500) {
@@ -167,7 +167,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
                     response.sendRedirect(returnToQueue(request));
                     return;
                 }
-                updated = doctorQueueDAO.cancelExamination(appointmentId, doctor.getActorId(), LocalDateTime.now(CLINIC_ZONE), reason);
+                updated = doctorQueueDAO.cancelExamination(appointmentId, doctor.getActorId(), reason);
             } else {
                 updated = doctorQueueDAO.completeExamination(appointmentId, doctor.getActorId(), clinicDate);
             }
@@ -184,16 +184,15 @@ public class DoctorWaitingListServlet extends HttpServlet {
                 String message = "Không thể cập nhật ca khám này. Hãy làm mới danh sách và kiểm tra trạng thái hiện tại.";
                 if ("start".equals(action)) {
                     Appointment appointment = appointmentDAO.getAppointmentById(appointmentId);
-                    if (appointment != null && appointment.getDoctorId() == doctor.getActorId()) {
-                        String state = ExaminationWindow.startState(appointment, LocalDateTime.now(CLINIC_ZONE));
-                        if ("early".equals(state)) message = "Chưa đến giờ khám. Chỉ có thể bắt đầu trong vòng 1 giờ trước giờ hẹn.";
-                        if ("late".equals(state)) message = "Đã quá giờ khám. Chỉ có thể bắt đầu trong vòng 1 giờ sau giờ hẹn.";
+                    if (appointment != null && appointment.getDoctorId() == doctor.getActorId()
+                            && "invalid".equals(ExaminationWindow.startState(appointment, LocalDateTime.now(CLINIC_ZONE)))) {
+                        message = "Không xác định được giờ hẹn. Vui lòng liên hệ bộ phận tiếp nhận để kiểm tra lịch hẹn.";
                     }
                 } else if ("cancel".equals(action)) {
                     Appointment appointment = appointmentDAO.getAppointmentById(appointmentId);
                     message = appointment == null
                             ? "Ca khám #APT-" + appointmentId + " không còn trong hệ thống. Hãy tải lại danh sách."
-                            : "Chỉ bác sĩ phụ trách được dừng ca đang khám hoặc hủy ca chờ khám quá 1 giờ sau giờ hẹn.";
+                            : "Chỉ bác sĩ phụ trách được dừng ca đang khám hoặc hủy ca chờ khám.";
                 } else if ("complete".equals(action)
                         && !doctorQueueDAO.readyForCompletion(doctor.getActorId(), clinicDate).contains(appointmentId)) {
                     message = "Chưa thể hoàn tất. Hãy lưu đủ phiếu khám và xử lý các chỉ định còn chờ thực hiện.";
