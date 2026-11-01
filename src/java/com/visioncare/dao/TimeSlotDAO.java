@@ -93,18 +93,61 @@ public class TimeSlotDAO {
                     + "    Description NVARCHAR(255) NULL "
                     + "); "
                     + "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
-                    + "VALUES ('MIN_WORK_HOURS_PER_WEEK', '30.0', N'Số giờ làm việc tối thiểu mỗi tuần'); "
+                    + "VALUES ('MIN_WORK_HOURS_PER_WEEK', '30.0', N'Sá»‘ giá» lÃ m viá»‡c tá»‘i thiá»ƒu má»—i tuáº§n'); "
                     + "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
-                    + "VALUES ('BOOKING_PENDING_HOLD_MINUTES', '15', N'Thời gian giữ chỗ tối đa cho lịch hẹn Pending chờ thanh toán (phút)'); "
+                    + "VALUES ('BOOKING_PENDING_HOLD_MINUTES', '15', N'Thá»i gian giá»¯ chá»— tá»‘i Ä‘a cho lá»‹ch háº¹n Pending chá» thanh toÃ¡n (phÃºt)'); "
+                    + "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
+                    + "VALUES ('SESSION_END_BUFFER_ENABLED', 'false', N'DÃ nh riÃªng 30 phÃºt cuá»‘i má»—i ca (11:00-11:30 vÃ  16:30-17:00) lÃ m ca Ä‘á»‡m bÃ¹ giá» phÃ¡t sinh'); "
                     + "END "
-                    + "ELSE IF NOT EXISTS (SELECT 1 FROM Clinic_Setting WHERE Setting_Key = 'BOOKING_PENDING_HOLD_MINUTES') "
+                    + "ELSE "
                     + "BEGIN "
+                    + "IF NOT EXISTS (SELECT 1 FROM Clinic_Setting WHERE Setting_Key = 'BOOKING_PENDING_HOLD_MINUTES') "
                     + "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
-                    + "VALUES ('BOOKING_PENDING_HOLD_MINUTES', '15', N'Thời gian giữ chỗ tối đa cho lịch hẹn Pending chờ thanh toán (phút)'); "
+                    + "VALUES ('BOOKING_PENDING_HOLD_MINUTES', '15', N'Thá»i gian giá»¯ chá»— tá»‘i Ä‘a cho lá»‹ch háº¹n Pending chá» thanh toÃ¡n (phÃºt)'); "
+                    + "IF NOT EXISTS (SELECT 1 FROM Clinic_Setting WHERE Setting_Key = 'SESSION_END_BUFFER_ENABLED') "
+                    + "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
+                    + "VALUES ('SESSION_END_BUFFER_ENABLED', 'false', N'DÃ nh riÃªng 30 phÃºt cuá»‘i má»—i ca (11:00-11:30 vÃ  16:30-17:00) lÃ m ca Ä‘á»‡m bÃ¹ giá» phÃ¡t sinh'); "
                     + "END";
             st.execute(createTableSql);
         } catch (Exception e) {
             System.err.println("Error ensuring Clinic_Setting table: " + e.getMessage());
+        }
+    }
+
+    public static boolean isSessionEndBufferEnabled() {
+        String sql = "SELECT Setting_Value FROM Clinic_Setting WHERE Setting_Key = 'SESSION_END_BUFFER_ENABLED'";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                String val = rs.getString("Setting_Value");
+                return "true".equalsIgnoreCase(val) || "1".equals(val);
+            }
+        } catch (Exception e) {
+            // default false
+        }
+        return false;
+    }
+
+    public boolean updateSessionEndBufferEnabled(boolean enabled) {
+        ensureSettingTable();
+        String sql = "UPDATE Clinic_Setting SET Setting_Value = ? WHERE Setting_Key = 'SESSION_END_BUFFER_ENABLED'";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, enabled ? "true" : "false");
+            int rows = ps.executeUpdate();
+            if (rows == 0) {
+                String insertSql = "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
+                        + "VALUES ('SESSION_END_BUFFER_ENABLED', ?, N'DÃ nh riÃªng 30 phÃºt cuá»‘i má»—i ca (11:00-11:30 vÃ  16:30-17:00) lÃ m ca Ä‘á»‡m bÃ¹ giá» phÃ¡t sinh')";
+                try (PreparedStatement psIns = conn.prepareStatement(insertSql)) {
+                    psIns.setString(1, enabled ? "true" : "false");
+                    return psIns.executeUpdate() > 0;
+                }
+            }
+            return rows > 0;
+        } catch (Exception e) {
+            System.err.println("Error updateSessionEndBufferEnabled: " + e.getMessage());
+            return false;
         }
     }
 

@@ -52,8 +52,7 @@ public class WorkScheduleDAO {
                     cell.setPatientName(rs.getString("Patient_Name"));
                     cell.setPatientPhone(rs.getString("Patient_Phone"));
                     cell.setAppointmentStatus(rs.getString("Appointment_Status"));
-                    String key = cell.getWorkDate() + "_" + cell.getSlot();
-                    matrix.put(key, cell);
+                    putCellWithAliases(matrix, cell);
                 }
             }
         } catch (Exception e) {
@@ -61,9 +60,74 @@ public class WorkScheduleDAO {
         }
         return matrix;
     }
+
+    private void putCellWithAliases(Map<String, ScheduleCellDTO> map, ScheduleCellDTO cell) {
+        if (cell == null || cell.getWorkDate() == null) return;
+        String workDate = cell.getWorkDate();
+        String slot = cell.getSlot();
+        String startTime = cell.getStartTime();
+        String endTime = cell.getEndTime();
+
+        if (slot != null && !slot.trim().isEmpty()) {
+            map.put(workDate + "_" + slot.trim(), cell);
+        }
+
+        String sTime = (startTime != null && startTime.length() >= 5) ? startTime.substring(0, 5) : null;
+        String eTime = (endTime != null && endTime.length() >= 5) ? endTime.substring(0, 5) : null;
+
+        if (sTime != null) {
+            map.put(workDate + "_" + sTime, cell);
+            if (startTime.length() >= 8) {
+                map.put(workDate + "_" + startTime.substring(0, 8), cell);
+            }
+        }
+
+        if (slot != null) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\d+").matcher(slot);
+            if (m.find()) {
+                String num = m.group();
+                map.put(workDate + "_Slot " + num, cell);
+                map.put(workDate + "_Ca " + num, cell);
+                if (sTime != null && eTime != null) {
+                    map.put(workDate + "_Ca " + num + " (" + sTime + " - " + eTime + ")", cell);
+                    map.put(workDate + "_Slot " + num + " (" + sTime + " - " + eTime + ")", cell);
+                }
+            }
+        }
+    }
+
+    private void addKeyAliases(Set<String> set, String workDate, String slotRaw, String startTime, String endTime) {
+        if (workDate == null) return;
+        if (slotRaw != null && !slotRaw.trim().isEmpty()) {
+            set.add(workDate + "_" + slotRaw.trim());
+        }
+
+        String sTime = (startTime != null && startTime.length() >= 5) ? startTime.substring(0, 5) : null;
+        String eTime = (endTime != null && endTime.length() >= 5) ? endTime.substring(0, 5) : null;
+
+        if (sTime != null) {
+            set.add(workDate + "_" + sTime);
+            if (startTime.length() >= 8) {
+                set.add(workDate + "_" + startTime.substring(0, 8));
+            }
+        }
+
+        if (slotRaw != null) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\d+").matcher(slotRaw);
+            if (m.find()) {
+                String num = m.group();
+                set.add(workDate + "_Slot " + num);
+                set.add(workDate + "_Ca " + num);
+                if (sTime != null && eTime != null) {
+                    set.add(workDate + "_Ca " + num + " (" + sTime + " - " + eTime + ")");
+                    set.add(workDate + "_Slot " + num + " (" + sTime + " - " + eTime + ")");
+                }
+            }
+        }
+    }
     public Set<String> getRegisteredSlotKeys(int actorId, String role, String startDate, String endDate) {
         Set<String> set = new HashSet<>();
-        StringBuilder sql = new StringBuilder("SELECT Work_Date, Slot FROM Work_Schedule WHERE Work_Date BETWEEN ? AND ? ");
+        StringBuilder sql = new StringBuilder("SELECT Work_Date, Slot, Start_Time, End_Time FROM Work_Schedule WHERE Work_Date BETWEEN ? AND ? ");
         if ("doctor".equalsIgnoreCase(role)) {
             sql.append("AND Doctor_Employee_ID = ? ");
         } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
@@ -84,7 +148,8 @@ public class WorkScheduleDAO {
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    set.add(rs.getString("Work_Date") + "_" + rs.getString("Slot"));
+                    addKeyAliases(set, rs.getString("Work_Date"), rs.getString("Slot"),
+                            rs.getString("Start_Time"), rs.getString("End_Time"));
                 }
             }
         } catch (Exception e) {
@@ -95,7 +160,7 @@ public class WorkScheduleDAO {
 
     public Set<String> getClosedSlotKeys(int actorId, String role, String startDate, String endDate) {
         Set<String> set = new HashSet<>();
-        StringBuilder sql = new StringBuilder("SELECT Work_Date, Slot FROM Work_Schedule WHERE Work_Date BETWEEN ? AND ? ");
+        StringBuilder sql = new StringBuilder("SELECT Work_Date, Slot, Start_Time, End_Time FROM Work_Schedule WHERE Work_Date BETWEEN ? AND ? ");
         if ("doctor".equalsIgnoreCase(role)) {
             sql.append("AND Doctor_Employee_ID = ? ");
         } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
@@ -116,7 +181,8 @@ public class WorkScheduleDAO {
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    set.add(rs.getString("Work_Date") + "_" + rs.getString("Slot"));
+                    addKeyAliases(set, rs.getString("Work_Date"), rs.getString("Slot"),
+                            rs.getString("Start_Time"), rs.getString("End_Time"));
                 }
             }
         } catch (Exception e) {
@@ -322,7 +388,7 @@ public class WorkScheduleDAO {
                      "       END AS Is_Past " +
                      "FROM Work_Schedule ws " +
                      "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? " +
-                     " AND " + com.visioncare.util.BookingAvailability.WINDOW + " " +
+                     " AND " + com.visioncare.util.BookingAvailability.getWindowCondition() + " " +
                      "  AND ws.Status IN ('Available', 'Booked') " +
                      "ORDER BY ws.Start_Time ASC";
         try (Connection conn = DBContext.getConnection();
@@ -406,7 +472,8 @@ public class WorkScheduleDAO {
                 {"Slot 3", "09:00:00", "09:30:00"},
                 {"Slot 4", "09:30:00", "10:00:00"},
                 {"Slot 5", "10:00:00", "10:30:00"},
-                {"Slot 6", "10:30:00", "11:00:00"}
+                {"Slot 6", "10:30:00", "11:00:00"},
+                {"Slot 7", "11:00:00", "11:30:00"}
             };
             // Mẫu slot ca chiều (13:30 - 17:00)
             String[][] afternoonSlots = {
