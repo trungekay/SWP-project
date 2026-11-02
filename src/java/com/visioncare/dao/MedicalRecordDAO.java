@@ -245,7 +245,7 @@ public class MedicalRecordDAO {
 
     private void loadPrescription(Connection conn, int recordId, Map<String, Object> record) {
         List<Map<String, Object>> medicines = new ArrayList<>();
-        String doctorNotes = "Chưa có lời dặn của bác sĩ.";
+        String doctorNotes = null;
         Timestamp presCreated = null;
 
         String sqlPres = "SELECT Prescription_ID, Doctor_Notes, created_at FROM Prescription WHERE Record_ID = ? ORDER BY Prescription_ID DESC";

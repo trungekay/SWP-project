@@ -7,6 +7,7 @@ import java.security.MessageDigest;
 /** Monetary values are integer VND; all totals are computed on the server. */
 public class StaffInvoice {
  public int id, appointmentId;
+ public Integer finalizedBy;
  public String patientName, phone, date, appointmentStatus, invoiceStatus, finalizedAt, cashierName;
  public long baseAmount, paid, recordedTotal, priorPaid, refundedAmount;
  public boolean finalized, hasActiveRefund;
@@ -31,6 +32,7 @@ public class StaffInvoice {
  public String getPatientName(){return patientName;} public String getPhone(){return phone;} public String getDate(){return date;}
  public String getAppointmentStatus(){return appointmentStatus;} public String getInvoiceStatus(){return invoiceStatus;}
  public String getFinalizedAt(){return finalizedAt;} public String getCashierName(){return cashierName;}
+ public boolean isCashierConfirmed(){return finalized && finalizedBy!=null;}
  public boolean isFinalized(){return finalized;} public long getPaid(){return paid;} public long getPriorPaid(){return priorPaid;}
  public List<Item> getItems(){return items;} public List<Map<String,Object>> getTransactions(){return transactions;}
  public Map<String,Object> getActivePayment(){return activePayment;}
