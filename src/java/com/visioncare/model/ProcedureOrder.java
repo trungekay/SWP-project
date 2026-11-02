@@ -13,6 +13,9 @@ public class ProcedureOrder {
     private int serviceId;
     private String status; // 'Pending', 'Completed', 'Cancelled'
     private String referralNotes;
+    private String requesterName;
+    public String getRequesterName() { return requesterName; }
+    public void setRequesterName(String value) { requesterName=value; }
     private String serviceCode;
     private String paymentStatus;
 

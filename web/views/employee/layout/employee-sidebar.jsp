@@ -60,6 +60,13 @@
                 </li>
 
                 <!-- 3. Quản lý Bệnh nhân -->
+                <c:if test="${sessionScope.user.roleId == 5}">
+                    <li>
+                        <a href="${pageContext.request.contextPath}/staff/procedure-requests" class="${param.activeNav == 'procedure-requests' ? 'active' : ''}">
+                            <i class="bi bi-send"></i><span>Chuyển ca sang BSPT</span>
+                        </a>
+                    </li>
+                </c:if>
                 <li>
                     <a href="${pageContext.request.contextPath}/staff/patients" class="${param.activeNav == 'patients' ? 'active' : ''}">
                         <i class="bi bi-people-fill"></i>
