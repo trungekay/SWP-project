@@ -364,6 +364,7 @@ CREATE TABLE [dbo].[Medical_Record](
 	[Clinical_Diagnosis] [nvarchar](max) NULL,
 	[examination_result] [nvarchar](max) NULL,
 	[conclusion] [nvarchar](max) NULL,
+	[Staff_Notes] [nvarchar](max) NULL,
 	[Created_At] [datetime2](7) NOT NULL,
 PRIMARY KEY CLUSTERED 
 (
@@ -559,6 +560,21 @@ CREATE TABLE [dbo].[Refund_Request](
 	[Status] [nvarchar](50) NOT NULL,
 	[Created_At] [datetime2](7) NOT NULL,
 	[Update_At] [datetime2](7) NOT NULL,
+	[Decision_Note] [nvarchar](1000) NULL,
+	[Decision_At] [datetime2](7) NULL,
+	[Completed_At] [datetime2](7) NULL,
+	[Completed_By] [int] NULL,
+	[Completion_Note] [nvarchar](1000) NULL,
+	[Evidence_Image] [varbinary](max) NULL,
+	[Evidence_Type] [varchar](30) NULL,
+	[Notification_Status] [varchar](20) NOT NULL CONSTRAINT [DF_Refund_Mail] DEFAULT ('NotRequired'),
+	[Notification_Attempts] [int] NOT NULL CONSTRAINT [DF_Refund_Attempts] DEFAULT ((0)),
+	[Notification_Claimed_At] [datetime2](7) NULL,
+	[Notification_Sent_At] [datetime2](7) NULL,
+	[Notification_Last_Error] [nvarchar](500) NULL,
+	[Request_Kind] [varchar](20) NOT NULL CONSTRAINT [DF_Refund_Request_Kind] DEFAULT ('Appointment'),
+	[Unused_Checked_By] [int] NULL,
+	[Unused_Checked_At] [datetime2](7) NULL,
 PRIMARY KEY CLUSTERED 
 (
 	[Refund_ID] ASC
@@ -570,7 +586,7 @@ ALTER TABLE [dbo].[Refund_Request] ADD  DEFAULT (sysutcdatetime()) FOR [Created_
 ALTER TABLE [dbo].[Refund_Request] ADD  DEFAULT (sysutcdatetime()) FOR [Update_At]
 ALTER TABLE [dbo].[Refund_Request]  WITH CHECK ADD  CONSTRAINT [CHK_Refund_Amount] CHECK  (([Refund_Amount]>(0)))
 ALTER TABLE [dbo].[Refund_Request] CHECK CONSTRAINT [CHK_Refund_Amount]
-ALTER TABLE [dbo].[Refund_Request]  WITH CHECK ADD  CONSTRAINT [CHK_Refund_Status] CHECK  (([Status]=N'Rejected' OR [Status]=N'Approved' OR [Status]=N'Pending'))
+ALTER TABLE [dbo].[Refund_Request]  WITH CHECK ADD  CONSTRAINT [CHK_Refund_Status] CHECK  (([Status]=N'Rejected' OR [Status]=N'Approved' OR [Status]=N'Pending' OR [Status]=N'Completed'))
 ALTER TABLE [dbo].[Refund_Request] CHECK CONSTRAINT [CHK_Refund_Status]
 GO
 
@@ -2095,7 +2111,7 @@ GO
 -- -----------------------------------------------------
 INSERT [dbo].[Clinic_Setting] ([Setting_Key], [Setting_Value], [Description]) VALUES (N'MIN_WORK_HOURS_PER_WEEK', N'30.0', N'Số giờ làm việc tối thiểu mỗi tuần')
 INSERT [dbo].[Clinic_Setting] ([Setting_Key], [Setting_Value], [Description]) VALUES (N'BOOKING_PENDING_HOLD_MINUTES', N'15', N'Thời gian giữ chỗ tối đa cho lịch hẹn Pending chờ thanh toán (phút)')
-INSERT [dbo].[Clinic_Setting] ([Setting_Key], [Setting_Value], [Description]) VALUES (N'SESSION_END_BUFFER_ENABLED', N'false', N'DÃ nh riÃªng 30 phÃºt cuá»‘i má»—i ca (11:00-11:30 vÃ  16:30-17:00) lÃ m ca Ä‘á»‡m bÃ¹ giá» phÃ¡t sinh')
+INSERT [dbo].[Clinic_Setting] ([Setting_Key], [Setting_Value], [Description]) VALUES (N'SESSION_END_BUFFER_ENABLED', N'false', N'Dành riêng 30 phút cuối mỗi ca (11:00-11:30 và 16:30-17:00) làm ca đệm bù giờ phát sinh')
 GO
 
 -- Demo checked-in queue for doctor Tinh on 2026-10-21.
