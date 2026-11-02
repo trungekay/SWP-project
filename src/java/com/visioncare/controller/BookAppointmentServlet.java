@@ -250,10 +250,12 @@ public class BookAppointmentServlet extends HttpServlet {
                 appointmentDAO.autoCancelExpiredPendingAppointments();
                 List<TimeSlot> slots = workScheduleDAO.getDoctorSlotsForDate(doctorId, dateStr);
                 String shift = workScheduleDAO.getDoctorWorkShiftSummary(doctorId, dateStr);
+                boolean bufferEnabled = com.visioncare.dao.TimeSlotDAO.isSessionEndBufferEnabled();
 
                 StringBuilder json = new StringBuilder();
                 json.append("{");
                 json.append("\"shiftSummary\":\"").append(shift).append("\",");
+                json.append("\"sessionEndBufferEnabled\":").append(bufferEnabled).append(",");
                 json.append("\"slots\":[");
                 for (int i = 0; i < slots.size(); i++) {
                     TimeSlot s = slots.get(i);
@@ -748,6 +750,7 @@ public class BookAppointmentServlet extends HttpServlet {
         }
         scheduleJson.append("}");
         request.setAttribute("doctorScheduleMapJson", scheduleJson.toString());
+        request.setAttribute("sessionEndBufferEnabled", com.visioncare.dao.TimeSlotDAO.isSessionEndBufferEnabled());
 
         // Tự động điền thông tin nếu bệnh nhân đã đăng nhập
         HttpSession session = request.getSession(false);

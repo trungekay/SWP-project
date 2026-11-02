@@ -489,33 +489,25 @@ public class WorkScheduleDAO {
             java.time.LocalDate baseDate = java.time.LocalDate.now();
 
             // 1. Kiểm tra và bổ sung lịch Bác sĩ (ID 3 đến 8)
-            String docCheckSql = "SELECT COUNT(*) FROM Work_Schedule WHERE Doctor_Employee_ID IS NOT NULL AND Work_Date >= CAST(GETDATE() AS DATE)";
-            boolean needDocSeed = false;
-            try (Statement st = conn.createStatement();
-                 ResultSet rs = st.executeQuery(docCheckSql)) {
-                if (rs.next() && rs.getInt(1) < 30) {
-                    needDocSeed = true;
-                }
-            }
-            if (needDocSeed) {
-                String insertDocSql = "IF NOT EXISTS (SELECT 1 FROM Work_Schedule WHERE Doctor_Employee_ID = ? AND Work_Date = ? AND Slot = ?) " +
-                                      "INSERT INTO Work_Schedule (Doctor_Employee_ID, Work_Date, Start_Time, End_Time, Slot, Status) VALUES (?, ?, ?, ?, ?, 'Available')";
-                try (PreparedStatement ps = conn.prepareStatement(insertDocSql)) {
-                    int[] fullDocs = {3, 6};
-                    int[] morningDocs = {4, 7};
-                    int[] afternoonDocs = {5, 8};
-                    for (int dayOffset = 0; dayOffset < 14; dayOffset++) {
-                        String dateStr = baseDate.plusDays(dayOffset).toString();
-                        for (int docId : fullDocs) {
-                            for (String[] s : morningSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
-                            for (String[] s : afternoonSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
-                        }
-                        for (int docId : morningDocs) {
-                            for (String[] s : morningSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
-                        }
-                        for (int docId : afternoonDocs) {
-                            for (String[] s : afternoonSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
-                        }
+            String insertDocSql = "IF NOT EXISTS (SELECT 1 FROM Work_Schedule WHERE Doctor_Employee_ID = ? AND Work_Date = ? AND Slot = ?) " +
+                                  "INSERT INTO Work_Schedule (Doctor_Employee_ID, Work_Date, Start_Time, End_Time, Slot, Status) VALUES (?, ?, ?, ?, ?, 'Available')";
+            try (PreparedStatement ps = conn.prepareStatement(insertDocSql)) {
+                int[] fullDocs = {3, 6};
+                int[] morningDocs = {4, 7};
+                int[] afternoonDocs = {5, 8};
+                for (int dayOffset = 0; dayOffset < 14; dayOffset++) {
+                    java.time.LocalDate workDate = baseDate.plusDays(dayOffset);
+                    if (workDate.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) continue;
+                    String dateStr = workDate.toString();
+                    for (int docId : fullDocs) {
+                        for (String[] s : morningSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
+                        for (String[] s : afternoonSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
+                    }
+                    for (int docId : morningDocs) {
+                        for (String[] s : morningSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
+                    }
+                    for (int docId : afternoonDocs) {
+                        for (String[] s : afternoonSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
                     }
                 }
             }
@@ -644,14 +636,11 @@ public class WorkScheduleDAO {
             colName = "Staff_Employee_ID";
         }
 
-        String sql = "SELECT " + colName + " AS actor_id, " +
+        String sql = "SELECT ws." + colName + " AS actor_id, " +
                      "SUM(CASE WHEN ws.Status NOT IN ('Canceled', 'On_Leave', 'Closed') THEN 1 ELSE 0 END) AS total_slots, " +
                      "SUM(CASE WHEN a.Appointment_ID IS NOT NULL AND a.Status NOT IN ('Canceled', 'Rejected') THEN 1 ELSE 0 END) AS booked_slots " +
                      "FROM Work_Schedule ws " +
-                     "LEFT JOIN Appointment a ON ( " +
-                     "  (a.Doctor_Employee_ID = ws.Doctor_Employee_ID AND ws.Doctor_Employee_ID IS NOT NULL) OR " +
-                     "  (a.Specialist_Employee_ID = ws.Specialist_Employee_ID AND ws.Specialist_Employee_ID IS NOT NULL) " +
-                     ") AND a.Appointment_Date = ws.Work_Date AND a.Time_Slot = ws.Slot " +
+                     "LEFT JOIN Appointment a ON ws.Schedule_ID = a.Schedule_ID " +
                      "WHERE ws." + colName + " IS NOT NULL AND ws.Work_Date BETWEEN ? AND ? " +
                      "GROUP BY ws." + colName;
 
