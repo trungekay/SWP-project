@@ -13,11 +13,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.Date;
 import java.util.*;
+
 @WebServlet(name = "DoctorScheduleServlet", urlPatterns = {"/doctor-schedules"})
 public class DoctorScheduleServlet extends HttpServlet {
     private final DoctorDAO doctorDAO = new DoctorDAO();
     private final DepartmentDAO departmentDAO = new DepartmentDAO();
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -54,6 +56,7 @@ public class DoctorScheduleServlet extends HttpServlet {
             request.setAttribute("doctorShiftSummary", doctorShiftSummary);
             request.setAttribute("selectedDate", selectedDate.toString());
             request.setAttribute("selectedSpecialty", specialty != null ? specialty : "all");
+            request.setAttribute("sessionEndBufferEnabled", com.visioncare.dao.TimeSlotDAO.isSessionEndBufferEnabled());
             request.getRequestDispatcher("/views/doctor/doctor-schedules.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();

@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -342,16 +343,194 @@ public class TimeSlotDAO {
                     if(id>0) ps.setInt(5,id);
                     ps.executeUpdate();
                 }
+                if ("Available".equals(status)) {
+                    syncWorkScheduleSlots(conn);
+                }
                 conn.commit(); return true;
             } catch(Exception e) { conn.rollback(); throw e; }
         }
     }
 
     public boolean deleteTimeSlot(int id) throws Exception {
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement("DELETE FROM Time_Slot_Config WHERE Slot_ID=?")) {
-            ps.setInt(1, id);
-            return ps.executeUpdate() > 0;
+        try (Connection conn = DBContext.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                // Check if any active appointment exists for this slot on or after today
+                String checkAppSql = "SELECT COUNT(*) FROM Appointment a "
+                        + "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID "
+                        + "JOIN Time_Slot_Config cfg ON ws.Start_Time = cfg.Start_Time AND ws.End_Time = cfg.End_Time "
+                        + "WHERE cfg.Slot_ID = ? AND ws.Work_Date >= CAST(GETDATE() AS DATE) "
+                        + "  AND a.Status NOT IN ('Canceled', 'Rejected')";
+                try (PreparedStatement psCheck = conn.prepareStatement(checkAppSql)) {
+                    psCheck.setInt(1, id);
+                    try (ResultSet rs = psCheck.executeQuery()) {
+                        if (rs.next() && rs.getInt(1) > 0) {
+                            conn.rollback();
+                            return false;
+                        }
+                    }
+                }
+
+                // Delete unbooked future work schedule slots for this slot time
+                String delWsSql = "DELETE ws FROM Work_Schedule ws "
+                        + "JOIN Time_Slot_Config cfg ON ws.Start_Time = cfg.Start_Time AND ws.End_Time = cfg.End_Time "
+                        + "WHERE cfg.Slot_ID = ? AND ws.Work_Date >= CAST(GETDATE() AS DATE) "
+                        + "  AND NOT EXISTS (SELECT 1 FROM Appointment a WHERE a.Schedule_ID = ws.Schedule_ID)";
+                try (PreparedStatement psDelWs = conn.prepareStatement(delWsSql)) {
+                    psDelWs.setInt(1, id);
+                    psDelWs.executeUpdate();
+                }
+
+                // Delete the time slot config
+                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM Time_Slot_Config WHERE Slot_ID = ?")) {
+                    ps.setInt(1, id);
+                    int affected = ps.executeUpdate();
+                    if (affected > 0) {
+                        conn.commit();
+                        return true;
+                    } else {
+                        conn.rollback();
+                        return false;
+                    }
+                }
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Synchronize available configured slots into Work_Schedule for personnel already scheduled on upcoming dates.
+     */
+    public void syncWorkScheduleSlots(Connection conn) throws SQLException {
+        String syncDocMorning = "INSERT INTO Work_Schedule (Doctor_Employee_ID, Work_Date, Start_Time, End_Time, Slot, Status) "
+                + "SELECT DISTINCT ws.Doctor_Employee_ID, ws.Work_Date, cfg.Start_Time, cfg.End_Time, cfg.Slot_Name, 'Available' "
+                + "FROM Work_Schedule ws "
+                + "CROSS JOIN Time_Slot_Config cfg "
+                + "WHERE cfg.Status = 'Available' AND cfg.Start_Time < '11:30:00' "
+                + "  AND ws.Work_Date >= CAST(GETDATE() AS DATE) "
+                + "  AND ws.Doctor_Employee_ID IS NOT NULL "
+                + "  AND EXISTS ("
+                + "      SELECT 1 FROM Work_Schedule m "
+                + "      WHERE m.Doctor_Employee_ID = ws.Doctor_Employee_ID "
+                + "        AND m.Work_Date = ws.Work_Date "
+                + "        AND m.Start_Time < '11:30:00'"
+                + "  ) "
+                + "  AND NOT EXISTS ("
+                + "      SELECT 1 FROM Work_Schedule ex "
+                + "      WHERE ex.Doctor_Employee_ID = ws.Doctor_Employee_ID "
+                + "        AND ex.Work_Date = ws.Work_Date "
+                + "        AND ex.Start_Time = cfg.Start_Time"
+                + "  )";
+
+        String syncDocAfternoon = "INSERT INTO Work_Schedule (Doctor_Employee_ID, Work_Date, Start_Time, End_Time, Slot, Status) "
+                + "SELECT DISTINCT ws.Doctor_Employee_ID, ws.Work_Date, cfg.Start_Time, cfg.End_Time, cfg.Slot_Name, 'Available' "
+                + "FROM Work_Schedule ws "
+                + "CROSS JOIN Time_Slot_Config cfg "
+                + "WHERE cfg.Status = 'Available' AND cfg.Start_Time >= '13:30:00' AND cfg.Start_Time < '17:00:00' "
+                + "  AND ws.Work_Date >= CAST(GETDATE() AS DATE) "
+                + "  AND ws.Doctor_Employee_ID IS NOT NULL "
+                + "  AND EXISTS ("
+                + "      SELECT 1 FROM Work_Schedule a "
+                + "      WHERE a.Doctor_Employee_ID = ws.Doctor_Employee_ID "
+                + "        AND a.Work_Date = ws.Work_Date "
+                + "        AND a.Start_Time >= '13:30:00' AND a.Start_Time < '17:00:00'"
+                + "  ) "
+                + "  AND NOT EXISTS ("
+                + "      SELECT 1 FROM Work_Schedule ex "
+                + "      WHERE ex.Doctor_Employee_ID = ws.Doctor_Employee_ID "
+                + "        AND ex.Work_Date = ws.Work_Date "
+                + "        AND ex.Start_Time = cfg.Start_Time"
+                + "  )";
+
+        String syncSpecMorning = "INSERT INTO Work_Schedule (Specialist_Employee_ID, Work_Date, Start_Time, End_Time, Slot, Status) "
+                + "SELECT DISTINCT ws.Specialist_Employee_ID, ws.Work_Date, cfg.Start_Time, cfg.End_Time, cfg.Slot_Name, 'Available' "
+                + "FROM Work_Schedule ws "
+                + "CROSS JOIN Time_Slot_Config cfg "
+                + "WHERE cfg.Status = 'Available' AND cfg.Start_Time < '11:30:00' "
+                + "  AND ws.Work_Date >= CAST(GETDATE() AS DATE) "
+                + "  AND ws.Specialist_Employee_ID IS NOT NULL "
+                + "  AND EXISTS ("
+                + "      SELECT 1 FROM Work_Schedule m "
+                + "      WHERE m.Specialist_Employee_ID = ws.Specialist_Employee_ID "
+                + "        AND m.Work_Date = ws.Work_Date "
+                + "        AND m.Start_Time < '11:30:00'"
+                + "  ) "
+                + "  AND NOT EXISTS ("
+                + "      SELECT 1 FROM Work_Schedule ex "
+                + "      WHERE ex.Specialist_Employee_ID = ws.Specialist_Employee_ID "
+                + "        AND ex.Work_Date = ws.Work_Date "
+                + "        AND ex.Start_Time = cfg.Start_Time"
+                + "  )";
+
+        String syncSpecAfternoon = "INSERT INTO Work_Schedule (Specialist_Employee_ID, Work_Date, Start_Time, End_Time, Slot, Status) "
+                + "SELECT DISTINCT ws.Specialist_Employee_ID, ws.Work_Date, cfg.Start_Time, cfg.End_Time, cfg.Slot_Name, 'Available' "
+                + "FROM Work_Schedule ws "
+                + "CROSS JOIN Time_Slot_Config cfg "
+                + "WHERE cfg.Status = 'Available' AND cfg.Start_Time >= '13:30:00' AND cfg.Start_Time < '17:00:00' "
+                + "  AND ws.Work_Date >= CAST(GETDATE() AS DATE) "
+                + "  AND ws.Specialist_Employee_ID IS NOT NULL "
+                + "  AND EXISTS ("
+                + "      SELECT 1 FROM Work_Schedule a "
+                + "      WHERE a.Specialist_Employee_ID = ws.Specialist_Employee_ID "
+                + "        AND a.Work_Date = ws.Work_Date "
+                + "        AND a.Start_Time >= '13:30:00' AND a.Start_Time < '17:00:00'"
+                + "  ) "
+                + "  AND NOT EXISTS ("
+                + "      SELECT 1 FROM Work_Schedule ex "
+                + "      WHERE ex.Specialist_Employee_ID = ws.Specialist_Employee_ID "
+                + "        AND ex.Work_Date = ws.Work_Date "
+                + "        AND ex.Start_Time = cfg.Start_Time"
+                + "  )";
+
+        String syncStaffMorning = "INSERT INTO Work_Schedule (Staff_Employee_ID, Work_Date, Start_Time, End_Time, Slot, Status) "
+                + "SELECT DISTINCT ws.Staff_Employee_ID, ws.Work_Date, cfg.Start_Time, cfg.End_Time, cfg.Slot_Name, 'Available' "
+                + "FROM Work_Schedule ws "
+                + "CROSS JOIN Time_Slot_Config cfg "
+                + "WHERE cfg.Status = 'Available' AND cfg.Start_Time < '11:30:00' "
+                + "  AND ws.Work_Date >= CAST(GETDATE() AS DATE) "
+                + "  AND ws.Staff_Employee_ID IS NOT NULL "
+                + "  AND EXISTS ("
+                + "      SELECT 1 FROM Work_Schedule m "
+                + "      WHERE m.Staff_Employee_ID = ws.Staff_Employee_ID "
+                + "        AND m.Work_Date = ws.Work_Date "
+                + "        AND m.Start_Time < '11:30:00'"
+                + "  ) "
+                + "  AND NOT EXISTS ("
+                + "      SELECT 1 FROM Work_Schedule ex "
+                + "      WHERE ex.Staff_Employee_ID = ws.Staff_Employee_ID "
+                + "        AND ex.Work_Date = ws.Work_Date "
+                + "        AND ex.Start_Time = cfg.Start_Time"
+                + "  )";
+
+        String syncStaffAfternoon = "INSERT INTO Work_Schedule (Staff_Employee_ID, Work_Date, Start_Time, End_Time, Slot, Status) "
+                + "SELECT DISTINCT ws.Staff_Employee_ID, ws.Work_Date, cfg.Start_Time, cfg.End_Time, cfg.Slot_Name, 'Available' "
+                + "FROM Work_Schedule ws "
+                + "CROSS JOIN Time_Slot_Config cfg "
+                + "WHERE cfg.Status = 'Available' AND cfg.Start_Time >= '13:30:00' AND cfg.Start_Time < '17:00:00' "
+                + "  AND ws.Work_Date >= CAST(GETDATE() AS DATE) "
+                + "  AND ws.Staff_Employee_ID IS NOT NULL "
+                + "  AND EXISTS ("
+                + "      SELECT 1 FROM Work_Schedule a "
+                + "      WHERE a.Staff_Employee_ID = ws.Staff_Employee_ID "
+                + "        AND a.Work_Date = ws.Work_Date "
+                + "        AND a.Start_Time >= '13:30:00' AND a.Start_Time < '17:00:00'"
+                + "  ) "
+                + "  AND NOT EXISTS ("
+                + "      SELECT 1 FROM Work_Schedule ex "
+                + "      WHERE ex.Staff_Employee_ID = ws.Staff_Employee_ID "
+                + "        AND ex.Work_Date = ws.Work_Date "
+                + "        AND ex.Start_Time = cfg.Start_Time"
+                + "  )";
+
+        try (Statement st = conn.createStatement()) {
+            st.executeUpdate(syncDocMorning);
+            st.executeUpdate(syncDocAfternoon);
+            st.executeUpdate(syncSpecMorning);
+            st.executeUpdate(syncSpecAfternoon);
+            st.executeUpdate(syncStaffMorning);
+            st.executeUpdate(syncStaffAfternoon);
         }
     }
 
@@ -415,6 +594,9 @@ public class TimeSlotDAO {
                 st.executeUpdate("UPDATE ws SET Slot = cfg.Slot_Name FROM Work_Schedule ws "
                         + "JOIN Time_Slot_Config cfg ON cfg.Start_Time = ws.Start_Time AND cfg.End_Time = ws.End_Time "
                         + "WHERE cfg.Status = 'Available'");
+
+                // 6. Synchronize missing standard slots into Work_Schedule
+                syncWorkScheduleSlots(conn);
 
                 conn.commit();
                 return true;
