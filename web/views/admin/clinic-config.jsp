@@ -232,7 +232,7 @@
             }
             @media (max-width: 1100px) { .room-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
             @media (max-width: 768px) { .room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-            @media (max-width: 480px) { .room-grid { grid-template-columns: 1fr; } } }
+            @media (max-width: 480px) { .room-grid { grid-template-columns: 1fr; } } 
             .room-card {
                 background: #ffffff;
                 border: 1.5px solid #e8edf2;
