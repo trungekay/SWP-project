@@ -12,7 +12,7 @@
 #request-submenu a { display: flex; align-items: center; gap: 8px; padding: 10px 12px; font-size: 13px; border-radius: 8px; text-decoration: none; color: #64748b; }
 #request-submenu a.active { color: #008b74; background: #f0f7f6; font-weight: 600; }
 #request-submenu a:hover:not(.active) { color: #64748b !important; background: transparent !important; font-weight: normal !important; }
-.sidebar-dropdown:has(#request-submenu) > a { display: flex; justify-content: space-between; align-items: center; }
+.sidebar-dropdown > a { display: flex; justify-content: space-between; align-items: center; }
 </style>
 <!-- Employee Work Sidebar -->
 <aside class="sidebar">

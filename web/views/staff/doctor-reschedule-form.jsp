@@ -26,7 +26,8 @@
         .schedule-slot { border:2px solid #d1fae5; background:#f0fdfa; border-radius:10px; text-align:center; padding:12px 8px; color:#115e59; cursor:pointer; }
         .schedule-slot.booked { border-color:#e2e8f0; background:#f8fafc; color:#475569; }
         .schedule-slot.past { opacity:.6; cursor:not-allowed; }
-        .schedule-slot:has(input:checked) { border-color:#008B74; background:#ccfbf1; box-shadow:0 0 0 1px #008B74; }
+        .schedule-slot.selected,
+        .schedule-slot:focus-within { border-color:#008B74; background:#ccfbf1; box-shadow:0 0 0 1px #008B74; }
         .schedule-slot input { margin-bottom:5px; accent-color:#008B74; }
         .schedule-slot small { display:block; font-size:12px; margin-top:2px; }
         .plan-preview { background:#f0fdfa; border:1px solid #99f6e4; border-radius:10px; padding:16px; }
@@ -271,6 +272,15 @@ changeForm.addEventListener('submit', function (event) {
                 || targetDateInput.value < targetDateInput.min || targetDateInput.value > targetDateInput.max)) {
         event.preventDefault();
         showPlanError('Hãy chọn bác sĩ thay thế, ngày và khung giờ còn trống hợp lệ.');
+    }
+});
+
+document.addEventListener('change', function (e) {
+    if (e.target && e.target.type === 'radio' && e.target.closest('.schedule-slot')) {
+        document.querySelectorAll('input[name="' + e.target.name + '"]').forEach(function (r) {
+            var label = r.closest('.schedule-slot');
+            if (label) label.classList.toggle('selected', r.checked);
+        });
     }
 });
 </script>
