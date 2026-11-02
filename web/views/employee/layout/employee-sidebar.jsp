@@ -12,7 +12,7 @@
 #request-submenu a { display: flex; align-items: center; gap: 8px; padding: 10px 12px; font-size: 13px; border-radius: 8px; text-decoration: none; color: #64748b; }
 #request-submenu a.active { color: #008b74; background: #f0f7f6; font-weight: 600; }
 #request-submenu a:hover:not(.active) { color: #64748b !important; background: transparent !important; font-weight: normal !important; }
-.sidebar-dropdown:has(#request-submenu) > a { display: flex; justify-content: space-between; align-items: center; }
+.sidebar-dropdown > a { display: flex; justify-content: space-between; align-items: center; }
 </style>
 <!-- Employee Work Sidebar -->
 <aside class="sidebar">
@@ -36,14 +36,14 @@
 
                 <!-- 2. Quản lý Lịch hẹn (Sổ xuống) -->
                 <li class="sidebar-dropdown">
-                    <a href="javascript:void(0);" onclick="toggleSubmenu('appt-sub-emp', this);" class="${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'active' : ''}">
+                    <a href="javascript:void(0);" onclick="toggleSubmenu('appt-sub-emp', this);" class="${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'doctor-reschedule' ? 'active' : ''}">
                         <div class="d-flex align-items-center gap-2">
                             <i class="bi bi-calendar2-check"></i>
                             <span>Quản lý Lịch hẹn</span>
                         </div>
-                        <i class="bi ${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'bi-chevron-up' : 'bi-chevron-down'}" style="font-size: 11px;"></i>
+                        <i class="bi ${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'doctor-reschedule' ? 'bi-chevron-up' : 'bi-chevron-down'}" style="font-size: 11px;"></i>
                     </a>
-                    <ul class="sidebar-submenu ${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' ? 'show' : ''}" id="appt-sub-emp">
+                    <ul class="sidebar-submenu ${param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'doctor-reschedule' ? 'show' : ''}" id="appt-sub-emp">
                         <li>
                             <a href="${pageContext.request.contextPath}/staff/appointments" class="${param.activeNav == 'appointments' ? 'active' : ''}">
                                 <i class="bi bi-list-task"></i>
@@ -54,6 +54,12 @@
                             <a href="${pageContext.request.contextPath}/staff/waiting-list" class="${param.activeNav == 'waiting-list' ? 'active' : ''}">
                                 <i class="bi bi-people"></i>
                                 <span>Hàng đợi phòng khám</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="${pageContext.request.contextPath}/staff/doctor-reschedule" class="${param.activeNav == 'doctor-reschedule' ? 'active' : ''}">
+                                <i class="bi bi-calendar2-range"></i>
+                                <span>Quản lý lịch làm việc bác sĩ</span>
                             </a>
                         </li>
                     </ul>
@@ -122,7 +128,7 @@
                 </c:if>
 
                 <%-- Fallback cho Admin xem trang Tiếp đón / Lễ tân --%>
-                <c:if test="${(fn:toLowerCase(sessionScope.user.role) == 'admin' || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2) && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'payments' || param.activeNav == 'invoices' || param.activeNav == 'patients')}">
+                <c:if test="${(fn:toLowerCase(sessionScope.user.role) == 'admin' || sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2) && (param.activeNav == 'appointments' || param.activeNav == 'waiting-list' || param.activeNav == 'payments' || param.activeNav == 'invoices' || param.activeNav == 'patients' || param.activeNav == 'doctor-reschedule')}">
                     <div class="sidebar-menu-header mt-3">Tiếp đón & Lễ tân</div>
                     <li>
                         <a href="${pageContext.request.contextPath}/employee/schedule" class="${param.activeNav == 'schedule' ? 'active' : ''}">
@@ -149,6 +155,12 @@
                                 <a href="${pageContext.request.contextPath}/staff/waiting-list" class="${param.activeNav == 'waiting-list' ? 'active' : ''}">
                                     <i class="bi bi-people"></i>
                                     <span>Hàng đợi phòng khám</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="${pageContext.request.contextPath}/staff/doctor-reschedule" class="${param.activeNav == 'doctor-reschedule' ? 'active' : ''}">
+                                    <i class="bi bi-calendar2-range"></i>
+                                    <span>Quản lý lịch làm việc bác sĩ</span>
                                 </a>
                             </li>
                         </ul>

@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+
 @WebServlet(name = "AdminTimeSlotConfigServlet", urlPatterns = {"/admin/timeslot-config"})
 public class AdminTimeSlotConfigServlet extends HttpServlet {
     private final TimeSlotDAO timeSlotDAO = new TimeSlotDAO();
@@ -96,7 +97,21 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
             request.getSession().setAttribute("errorMsg", "Lỗi cấu hình: " + e.getMessage());
         }
 
-        if ("update_min_hours".equals(action) || "update_pending_hold_minutes".equals(action) || "update_session_buffer".equals(action)) {
+        String returnTab = request.getParameter("returnTab");
+        if (returnTab != null && !returnTab.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=" + returnTab.trim());
+            return;
+        }
+
+        if ("update_session_buffer".equals(action)) {
+            response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=buffer");
+            return;
+        }
+        if ("update_pending_hold_minutes".equals(action)) {
+            response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=holdtime");
+            return;
+        }
+        if ("update_min_hours".equals(action)) {
             response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=rules");
             return;
         }

@@ -184,7 +184,7 @@
                                 <label for="doctorSelect" class="form-label small fw-bold text-dark">Bác sĩ phụ trách <span class="text-danger">*</span></label>
                                 <select class="form-select form-select-lg" id="doctorSelect" name="doctorId" onchange="onDoctorOrDateChange()" required>
                                     <c:forEach var="doc" items="${doctors}">
-                                        <c:set var="isCurrentDoctor" value="${doc.id == appointment.employeeId || doc.fullName == appointment.doctorName}" />
+                                        <c:set var="isCurrentDoctor" value="${doc.id == appointment.doctorId}" />
                                         <option value="${doc.id}" 
                                                 data-doctor-name="${doc.fullName}" 
                                                 data-specialty="${doc.specialty}"

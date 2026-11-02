@@ -55,7 +55,7 @@ public class LoginServlet extends HttpServlet {
                     int roleId = user.getRoleId();
                     String role = user.getRole();
                     if (roleId == 1 || "admin".equalsIgnoreCase(role)) {
-                        response.sendRedirect(request.getContextPath() + "/admin/users");
+                        response.sendRedirect(request.getContextPath() + "/admin/dashboard");
                     } else if (roleId == 2 || "director".equalsIgnoreCase(role)) {
                         response.sendRedirect(request.getContextPath() + "/director/revenue");
                     } else if (roleId == 3 || "doctor".equalsIgnoreCase(role)
