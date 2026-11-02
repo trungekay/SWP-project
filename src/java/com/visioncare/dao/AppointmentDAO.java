@@ -473,14 +473,11 @@ public class AppointmentDAO {
             }
 
             // 4. Tạo Appointment: Nếu thanh toán QR thì tạo Pending, ngược lại tạo Confirmed và check-in ngay
-            String sqlAppt;
-            if (isPendingPayment) {
-                sqlAppt = "INSERT INTO Appointment (Patient_ID, Schedule_ID, Staff_Employee_ID, Status, created_at) " +
-                          "VALUES (?, ?, ?, 'Pending', DATEADD(HOUR, 7, SYSUTCDATETIME()))";
-            } else {
-                sqlAppt = "INSERT INTO Appointment (Patient_ID, Schedule_ID, Staff_Employee_ID, Status, checkin_time, created_at) " +
-                          "VALUES (?, ?, ?, 'Confirmed', DATEADD(HOUR, 7, SYSUTCDATETIME()), DATEADD(HOUR, 7, SYSUTCDATETIME()))";
-            }
+            // Cash walk-in: Status='Confirmed', checkin_time=NULL (staff phai check-in thu cong)
+            // QR/Bank:      Status='Pending',   checkin_time=NULL (cho xac nhan thanh toan)
+            String apptStatus = isPendingPayment ? "Pending" : "Confirmed";
+            String sqlAppt = "INSERT INTO Appointment (Patient_ID, Schedule_ID, Staff_Employee_ID, Status, created_at) " +
+                             "VALUES (?, ?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
             int appointmentId = -1;
             try (PreparedStatement psAppt = conn.prepareStatement(sqlAppt, Statement.RETURN_GENERATED_KEYS)) {
                 psAppt.setInt(1, patientId);
@@ -490,6 +487,7 @@ public class AppointmentDAO {
                 } else {
                     psAppt.setNull(3, Types.INTEGER);
                 }
+                psAppt.setString(4, apptStatus);
                 psAppt.executeUpdate();
                 try (ResultSet keys = psAppt.getGeneratedKeys()) {
                     if (keys.next()) {

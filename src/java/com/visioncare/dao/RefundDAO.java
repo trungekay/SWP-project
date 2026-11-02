@@ -345,7 +345,7 @@ public class RefundDAO {
         String sql = "SELECT i.Appointment_ID, i.Invoice_ID, r.Refund_ID, r.Status, r.Refund_Amount, r.Reason "
                 + "FROM Refund_Request r JOIN Master_Invoice i ON i.Invoice_ID = r.Invoice_ID "
                 + "JOIN Appointment a ON a.Appointment_ID = i.Appointment_ID "
-                + "WHERE a.Status = 'Canceled' AND a.checkin_time IS NULL "
+                + "WHERE a.Status = 'Canceled' "
                 + "AND r.Status IN ('Pending', 'Approved') ORDER BY r.Refund_ID DESC";
         try (Connection conn = DBContext.getConnection(); PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {

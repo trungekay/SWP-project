@@ -7,7 +7,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Patient Reschedule Form Screen - Đổi Lịch Khám Cho Bệnh Nhân</title>
+    <title>Đổi lịch khám cho bệnh nhân - VisionCare</title>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -136,15 +136,9 @@
         <div class="page-content">
 
             <!-- Breadcrumbs -->
-            <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+            <div class="page-header d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
                 <div>
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb mb-1">
-                            <li class="breadcrumb-item"><a href="${pageContext.request.contextPath}/staff/appointments" class="text-teal text-decoration-none">Quản lý lịch hẹn</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">Đổi lịch khám cho bệnh nhân</li>
-                        </ol>
-                    </nav>
-                    <h4 class="fw-bold mb-0 text-dark">Staff Patient Reschedule Form Screen</h4>
+                    <h2 class="mb-1 fw-bold text-dark">Đổi lịch khám cho bệnh nhân</h2>
                     <p class="text-muted small mb-0">Hỗ trợ dời ngày, giờ hoặc bác sĩ khám cho ca hẹn của bệnh nhân</p>
                 </div>
                 <div>
@@ -165,7 +159,7 @@
             </c:if>
 
             <!-- Form Container -->
-            <form action="${pageContext.request.contextPath}/staff/reschedule" method="POST" id="rescheduleForm" onsubmit="return validateForm();">
+            <form action="${pageContext.request.contextPath}/staff/reschedule" method="POST" id="rescheduleForm" onsubmit="return validateForm();" novalidate>
                 <input type="hidden" name="appointmentId" value="${appointment.id}">
                 <input type="hidden" name="newScheduleId" id="newScheduleIdInput" value="">
 
@@ -184,7 +178,7 @@
                                 <label for="doctorSelect" class="form-label small fw-bold text-dark">Bác sĩ phụ trách <span class="text-danger">*</span></label>
                                 <select class="form-select form-select-lg" id="doctorSelect" name="doctorId" onchange="onDoctorOrDateChange()" required>
                                     <c:forEach var="doc" items="${doctors}">
-                                        <c:set var="isCurrentDoctor" value="${doc.id == appointment.employeeId || doc.fullName == appointment.doctorName}" />
+                                        <c:set var="isCurrentDoctor" value="${doc.id == appointment.doctorId}" />
                                         <option value="${doc.id}" 
                                                 data-doctor-name="${doc.fullName}" 
                                                 data-specialty="${doc.specialty}"
@@ -210,9 +204,6 @@
                                 <label for="dateInput" class="form-label small fw-bold text-dark">Ngày hẹn mới <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control form-control-lg fw-semibold" id="dateInput" name="newDate" 
                                        min="${minDate}" max="${maxDate}" onchange="onDoctorOrDateChange()" required>
-                                <div class="form-text small text-muted">
-                                    Hỗ trợ dời lịch trong vòng 30 ngày tới. Phòng khám làm việc từ Thứ 2 đến Chủ nhật.
-                                </div>
                             </div>
                         </div>
 
@@ -360,6 +351,30 @@
         </div>
     </main>
 
+    <div class="modal fade" id="validationModal" tabindex="-1"
+         aria-labelledby="validationModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow">
+                <div class="modal-header bg-warning-subtle">
+                    <h5 class="modal-title fw-bold" id="validationModalTitle">
+                        <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                        Vui lòng kiểm tra thông tin
+                    </h5>
+                    <button type="button" class="btn-close"
+                            data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Bạn cần bổ sung hoặc chỉnh sửa:</p>
+                    <ul id="validationErrors" class="mb-0"></ul>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-teal"
+                            data-bs-dismiss="modal">Đã hiểu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -475,19 +490,48 @@
         }
 
         function validateForm() {
+            const doctor = document.getElementById('doctorSelect');
+            const date = document.getElementById('dateInput');
             const scheduleId = document.getElementById('newScheduleIdInput').value;
+            const reason = document.getElementById('reasonInput');
+            const errors = [];
+
+            if (!doctor.value) {
+                errors.push('Chọn bác sĩ phụ trách.');
+            }
+            if (!date.value) {
+                errors.push('Chọn ngày hẹn mới.');
+            } else if (!date.validity.valid) {
+                errors.push('Chọn ngày hẹn trong khoảng thời gian được phép.');
+            }
             if (!scheduleId) {
-                alert('Vui lòng chọn một khung giờ khám còn trống (Bước 3).');
+                errors.push('Chọn một khung giờ khám còn trống ở Bước 3.');
+            }
+            if (!reason.value.trim()) {
+                errors.push('Nhập lý do đổi lịch khám.');
+            }
+
+            if (errors.length > 0) {
+                const list = document.getElementById('validationErrors');
+                list.replaceChildren();
+
+                errors.forEach(function (message) {
+                    const item = document.createElement('li');
+                    item.textContent = message;
+                    list.appendChild(item);
+                });
+
+                bootstrap.Modal.getOrCreateInstance(
+                    document.getElementById('validationModal')
+                ).show();
                 return false;
             }
 
-            const reason = document.getElementById('reasonInput').value.trim();
-            if (!reason) {
-                alert('Vui lòng nhập lý do đổi lịch khám.');
-                return false;
-            }
-
-            return confirm('Xác nhận dời lịch khám sang ngày ' + document.getElementById('summaryNewDate').innerText + ' (' + selectedSlotLabel + ')?');
+            return confirm(
+                'Xác nhận dời lịch khám sang ngày '
+                + document.getElementById('summaryNewDate').innerText
+                + ' (' + selectedSlotLabel + ')?'
+            );
         }
 
         document.addEventListener('DOMContentLoaded', function() {
