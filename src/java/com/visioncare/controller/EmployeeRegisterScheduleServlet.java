@@ -188,8 +188,6 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             if (actorProfile == null) {
                 actorProfile = currentUser;
             }
-            boolean isShiftOnlyRole = !"doctor".equalsIgnoreCase(role);
-            request.setAttribute("isShiftOnlyRole", isShiftOnlyRole);
             request.setAttribute("actorProfile", actorProfile);
             request.setAttribute("selectedYear", selectedYear);
             request.setAttribute("availableYears", availableYears);
@@ -290,56 +288,10 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             DateTimeFormatter dbFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             Set<String> existingKeys = workScheduleDAO.getRegisteredSlotKeys(actorId, role, startOfWeek.format(dbFmt), endOfWeek.format(dbFmt));
 
-            boolean isShiftOnlyRole = !"doctor".equalsIgnoreCase(role);
-            if (isShiftOnlyRole) {
-                Map<String, List<ScheduleRegistrationDTO>> shiftGroups = new HashMap<>();
-                for (ScheduleRegistrationDTO item : registrationList) {
-                    String groupKey = item.getWorkDate() + "#" + item.getSession();
-                    shiftGroups.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(item);
-                }
-
-                Set<String> closedKeys = workScheduleDAO.getClosedSlotKeys(actorId, role, startOfWeek.format(dbFmt), endOfWeek.format(dbFmt));
-
-                List<TimeSlotConfig> allConfiguredSlots = timeSlotDAO.getConfiguredSlots();
-                Map<String, List<String>> sessionSlotMap = new HashMap<>();
-                for (TimeSlotConfig sc : allConfiguredSlots) {
-                    String sess = sc.getSession();
-                    if (sess != null && "Available".equals(sc.getStatus())) {
-                        sessionSlotMap.computeIfAbsent(sess.toLowerCase(), k -> new ArrayList<>()).add(sc.getSlotName());
-                    }
-                }
-
-                for (Map.Entry<String, List<ScheduleRegistrationDTO>> entry : shiftGroups.entrySet()) {
-                    String[] parts = entry.getKey().split("#");
-                    String date = parts[0];
-                    String sessionType = parts[1];
-                    List<ScheduleRegistrationDTO> shiftItems = entry.getValue();
-
-                    List<String> expectedSlots = sessionSlotMap.get(sessionType.toLowerCase());
-                    if (expectedSlots == null || expectedSlots.isEmpty()) {
-                        continue;
-                    }
-
-                    Set<String> submittedSlots = new HashSet<>();
-                    for (ScheduleRegistrationDTO s : shiftItems) {
-                        submittedSlots.add(s.getSlot());
-                    }
-
-                    for (String slotName : expectedSlots) {
-                        String slotKey = date + "_" + slotName;
-                        boolean isSubmitted = submittedSlots.contains(slotName);
-                        boolean isAlreadyRegistered = existingKeys.contains(slotKey);
-                        boolean isClosed = closedKeys.contains(slotKey);
-
-                        if (!isSubmitted && !isAlreadyRegistered && !isClosed) {
-                            session.setAttribute("errorMessage", "Quy định bắt buộc: Chuyên viên và Nhân viên phải đăng ký trọn vẹn theo buổi (Ca Sáng hoặc Ca Chiều)! Vui lòng không chọn lẻ từng slot.");
-                            response.sendRedirect(request.getContextPath() + "/employee/register-schedule?year=" + yearParam + "&week=" + weekParam);
-                            return;
-                        }
-                    }
-                }
-            }
-
+            Set<String> closedKeys = workScheduleDAO.getClosedSlotKeys(
+                    actorId, role, startOfWeek.format(dbFmt), endOfWeek.format(dbFmt));
+            validateWholeShifts(
+                    registrationList, new ArrayList<>(activeSlots.values()), existingKeys, closedKeys);
             Set<String> allKeysThisWeek = new HashSet<>(existingKeys);
             for (ScheduleRegistrationDTO item : registrationList) {
                 allKeysThisWeek.add(item.getWorkDate() + "_" + item.getSlot());
@@ -355,7 +307,7 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
 
             boolean success = workScheduleDAO.registerScheduleBatch(actorId, role, registrationList);
             if (success) {
-                session.setAttribute("successMessage", "Đăng ký thành công " + registrationList.size() + " ca làm việc mới!");
+                session.setAttribute("successMessage", "Đăng ký lịch làm việc theo buổi thành công!");
                 response.sendRedirect(request.getContextPath() + "/employee/schedule?year=" + yearParam + "&week=" + weekParam);
             } else {
                 session.setAttribute("errorMessage", "Có lỗi xảy ra trong quá trình lưu lịch làm việc. Vui lòng thử lại!");
@@ -366,6 +318,32 @@ public class EmployeeRegisterScheduleServlet extends HttpServlet {
             HttpSession session = request.getSession();
             session.setAttribute("errorMessage", "Lỗi hệ thống: " + e.getMessage());
             response.sendRedirect(request.getContextPath() + "/employee/register-schedule");
+        }
+    }
+
+    static void validateWholeShifts(List<ScheduleRegistrationDTO> selected, List<TimeSlotConfig> configured,
+                                Set<String> registered, Set<String> closed) {
+        Map<String, Set<String>> required = new HashMap<>();
+        for (TimeSlotConfig slot : configured) {
+            if ("Available".equals(slot.getStatus())
+                    && ("Morning".equals(slot.getSession()) || "Afternoon".equals(slot.getSession()))) {
+                required.computeIfAbsent(slot.getSession(), key -> new HashSet<>()).add(slot.getSlotName());
+            }
+        }
+        Map<String, Set<String>> groups = new HashMap<>();
+        for (ScheduleRegistrationDTO item : selected) {
+            if (!required.containsKey(item.getSession()) || !required.get(item.getSession()).contains(item.getSlot()))
+                throw new IllegalArgumentException("Chỉ được đăng ký buổi sáng hoặc buổi chiều đang mở.");
+            groups.computeIfAbsent(item.getWorkDate() + "|" + item.getSession(), key -> new HashSet<>())
+                    .add(item.getSlot());
+        }
+        for (Map.Entry<String, Set<String>> group : groups.entrySet()) {
+            String[] key = group.getKey().split("\\|");
+            for (String slot : required.get(key[1])) {
+                String existingKey = key[0] + "_" + slot;
+                if (!group.getValue().contains(slot) && !registered.contains(existingKey) && !closed.contains(existingKey))
+                    throw new IllegalArgumentException("Tất cả nhân viên, kể cả bác sĩ, phải đăng ký trọn buổi sáng hoặc chiều; không chọn slot lẻ.");
+            }
         }
     }
 }

@@ -138,6 +138,7 @@ public class EmployeeScheduleServlet extends HttpServlet {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            workScheduleDAO.ensureRealisticSchedules();
             String startDateStr = startOfSelectedWeek.format(fullFormatter);
             String endDateStr = endOfSelectedWeek.format(fullFormatter);
             Map<String, ScheduleCellDTO> scheduleMatrix = workScheduleDAO.getScheduleMatrix(
@@ -156,6 +157,9 @@ public class EmployeeScheduleServlet extends HttpServlet {
                 for (ScheduleSlotDTO slot : slots) {
                     String key = day.getFullDate() + "_" + slot.getId();
                     ScheduleCellDTO cell = scheduleMatrix.get(key);
+                    if (cell == null && slot.getTimeRange() != null && slot.getTimeRange().length() >= 5) {
+                        cell = scheduleMatrix.get(day.getFullDate() + "_" + slot.getTimeRange().substring(0, 5));
+                    }
                     if (cell != null && !cell.isOff() && !cell.isOnLeave() && !cell.isClosed()) {
                         daySlotsCount++;
                         totalWeeklySlots++;

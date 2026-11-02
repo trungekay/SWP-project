@@ -42,6 +42,7 @@
         </div>
       </div>
 
+      <c:if test="${currentUser.roleId == 3 or currentUser.roleId == 4}"><a class="btn btn-outline-danger mb-3" href="${pageContext.request.contextPath}/employee/leave-requests">Gửi yêu cầu nghỉ / xem lịch sử duyệt</a></c:if>
       <div class="schedule-container">
 
         <!-- Flash Messages (Sau khi dang ky hoac cap nhat lich) -->
@@ -246,6 +247,9 @@
                           <!-- Lấy cell tương ứng từ Map DB theo key: "yyyy-MM-dd_SlotId" -->
                           <c:set var="cellKey" value="${day.fullDate}_${slot.id}" />
                           <c:set var="cell" value="${scheduleMatrix[cellKey]}" />
+                          <c:if test="${empty cell and not empty slot.timeRange and slot.timeRange.length() >= 5}">
+                            <c:set var="cell" value="${scheduleMatrix[day.fullDate.concat('_').concat(slot.timeRange.substring(0, 5))]}" />
+                          </c:if>
                           <c:set var="isSlotGloballyClosed"
                             value="${slotStatusMap[slot.id] == 'Canceled' || slotStatusMap[slot.id] == 'Inactive' || slotStatusMap[slot.id] == 'Disabled'}" />
 

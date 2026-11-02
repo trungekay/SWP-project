@@ -14,11 +14,27 @@ public class AppointmentDAO {
             conn = DBContext.getConnection();
             conn.setAutoCommit(false);
 
-            int patientId = getOrCreatePatient(conn, a);
             int scheduleId = a.getScheduleId();
             if (scheduleId <= 0) {
-                scheduleId = getOrCreateSchedule(conn, a);
+                // Patient bookings can only use a schedule the doctor registered.
+                String findSql = "SELECT Schedule_ID FROM Work_Schedule WITH (UPDLOCK, HOLDLOCK) "
+                        + "WHERE Doctor_Employee_ID = ? AND Work_Date = ? "
+                        + "AND CONVERT(VARCHAR(5), Start_Time, 108) = ? AND Status = 'Available'";
+                try (PreparedStatement ps = conn.prepareStatement(findSql)) {
+                    ps.setInt(1, a.getDoctorId());
+                    ps.setDate(2, a.getAppointmentDate());
+                    ps.setString(3, a.getTimeSlot());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) scheduleId = rs.getInt("Schedule_ID");
+                    }
+                }
+                if (scheduleId <= 0) {
+                    conn.rollback();
+                    return -1;
+                }
             }
+
+            if(!com.visioncare.util.BookingAvailability.available(conn,scheduleId)){conn.rollback();return -1;}
 
             // Check if slot is already booked, taken, or in the past
             int pendingHoldMinutes = TimeSlotDAO.getPendingHoldMinutes();
@@ -26,10 +42,15 @@ public class AppointmentDAO {
                                   "       (SELECT COUNT(*) FROM Appointment ap WHERE ap.Schedule_ID = ws.Schedule_ID " +
                                   "        AND (ap.Status IN ('Confirmed', 'In_Progress', 'Completed') " +
                                   "             OR (ap.Status = 'Pending' AND DATEDIFF(MINUTE, ap.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) < ?))) AS ActiveAppts " +
-                                  "FROM Work_Schedule ws WHERE ws.Schedule_ID = ?";
+                                  "FROM Work_Schedule ws WITH (UPDLOCK, HOLDLOCK) WHERE ws.Schedule_ID = ? " +
+                                  "AND ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? " +
+                                  "AND CONVERT(VARCHAR(5), ws.Start_Time, 108) = ?";
             try (PreparedStatement psCheck = conn.prepareStatement(checkSlotSql)) {
                 psCheck.setInt(1, pendingHoldMinutes);
                 psCheck.setInt(2, scheduleId);
+                psCheck.setInt(3, a.getDoctorId());
+                psCheck.setDate(4, a.getAppointmentDate());
+                psCheck.setString(5, a.getTimeSlot());
                 try (ResultSet rsCheck = psCheck.executeQuery()) {
                     if (rsCheck.next()) {
                         String st = rsCheck.getString("Status");
@@ -47,14 +68,18 @@ public class AppointmentDAO {
                             }
                         }
 
-                        if ("Booked".equalsIgnoreCase(st) || count > 0) {
+                        if (!"Available".equalsIgnoreCase(st) || count > 0) {
                             conn.rollback();
                             return -1; // Slot already booked
                         }
+                    } else {
+                        conn.rollback();
+                        return -1;
                     }
                 }
             }
 
+            int patientId = getOrCreatePatient(conn, a);
             // Insert Appointment as Pending
             String sqlAppt = "INSERT INTO Appointment (Patient_ID, Schedule_ID, Status, created_at) VALUES (?, ?, 'Pending', DATEADD(HOUR, 7, SYSUTCDATETIME()))";
             int appointmentId = -1;
@@ -94,7 +119,7 @@ public class AppointmentDAO {
                     diag += (diag.isEmpty() ? "" : " | ") + "Lý do khám: " + a.getReason().trim();
                 }
                 if (!diag.isEmpty()) {
-                    String sqlRecord = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, Created_At) VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
+                    String sqlRecord = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Staff_Notes, Created_At) VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
                     try (PreparedStatement psRec = conn.prepareStatement(sqlRecord)) {
                         psRec.setInt(1, appointmentId);
                         psRec.setInt(2, a.getDoctorId());
@@ -125,6 +150,20 @@ public class AppointmentDAO {
         try {
             conn = DBContext.getConnection();
             conn.setAutoCommit(false);
+
+            // Recheck under a lock: leave may have been approved after booking.
+            String availabilitySql = "SELECT ws.Status FROM Work_Schedule ws WITH (UPDLOCK, HOLDLOCK) "
+                    + "JOIN Appointment a ON a.Schedule_ID = ws.Schedule_ID WHERE a.Appointment_ID = ?";
+            try (PreparedStatement ps = conn.prepareStatement(availabilitySql)) {
+                ps.setInt(1, appointmentId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next() || !("Available".equalsIgnoreCase(rs.getString("Status"))
+                            || "Booked".equalsIgnoreCase(rs.getString("Status")))) {
+                        conn.rollback();
+                        return false;
+                    }
+                }
+            }
 
             // 1. Get Master_Invoice
             int invoiceId = -1;
@@ -557,7 +596,7 @@ public class AppointmentDAO {
             if (diag.isEmpty()) {
                 diag = "Khách vãng lai: Khám mắt tổng quát";
             }
-            String sqlMR = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, Created_At) " +
+            String sqlMR = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Staff_Notes, Created_At) " +
                            "VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
             try (PreparedStatement psMR = conn.prepareStatement(sqlMR)) {
                 psMR.setInt(1, appointmentId);
@@ -872,7 +911,7 @@ public class AppointmentDAO {
                      "       p.Full_Name, p.Phone, p.DOB, ws.Start_Time, ws.Doctor_Employee_ID, p.Account_ID, ws.Work_Date, e.Full_Name AS Doctor_Name, " +
                      "       i.Invoice_ID, i.Deposit_Amount, i.Total_Amount, i.Balance_Due, i.Status AS Invoice_Status, " +
                      "       mr.Clinical_Diagnosis, mr.conclusion, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
-                     "       CASE WHEN EXISTS (SELECT 1 FROM Refund_Request r WHERE r.Invoice_ID = i.Invoice_ID AND r.Status IN ('Pending', 'Approved')) THEN 1 ELSE 0 END AS Has_Refund_Request " +
+                     "       CASE WHEN EXISTS (SELECT 1 FROM Refund_Request r WHERE r.Invoice_ID = i.Invoice_ID AND r.Status IN ('Pending', 'Approved', 'Completed')) THEN 1 ELSE 0 END AS Has_Refund_Request " +
                      "FROM Appointment a " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
                      "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
@@ -1001,7 +1040,7 @@ public class AppointmentDAO {
             "doc.Full_Name AS Doctor_Name, doc.Specialty AS Doctor_Specialty, " +
             "rm.Room_Name, " +
             "stf.Full_Name AS Staff_Name, " +
-            "mr.Clinical_Diagnosis AS Medical_Notes, " +
+            "mr.Staff_Notes AS Medical_Notes, " +
             "mr.conclusion AS Cancel_Reason, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
             "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, " +
             "mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status, " +
@@ -1091,7 +1130,7 @@ public class AppointmentDAO {
                      "doc.Full_Name AS Doctor_Name, doc.Specialty AS Doctor_Specialty, " +
                      "rm.Room_Name, " +
                      "stf.Full_Name AS Staff_Name, " +
-                     "mr.Clinical_Diagnosis AS Medical_Notes, " +
+                     "mr.Staff_Notes AS Medical_Notes, " +
                      "mr.conclusion AS Cancel_Reason, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
                      "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status, " +
                      "(SELECT TOP 1 pr.Status FROM Procedure_Order po JOIN Procedure_Payment_Request pr ON po.Order_ID = pr.Order_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC) AS Procedure_Payment_Status, " +
@@ -1466,18 +1505,18 @@ public class AppointmentDAO {
                 }
             }
             if (exists) {
-                String updateSql = "UPDATE Medical_Record SET Clinical_Diagnosis = ? WHERE Appointment_ID = ?";
+                String updateSql = "UPDATE Medical_Record SET Staff_Notes = ? WHERE Appointment_ID = ?";
                 try (PreparedStatement psUp = conn.prepareStatement(updateSql)) {
-                    psUp.setString(1, notes);
+                    psUp.setNString(1, notes);
                     psUp.setInt(2, appointmentId);
                     return psUp.executeUpdate() > 0;
                 }
             } else {
-                String insertSql = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Clinical_Diagnosis, Created_At) VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
+                String insertSql = "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Staff_Notes, Created_At) VALUES (?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
                 try (PreparedStatement psIns = conn.prepareStatement(insertSql)) {
                     psIns.setInt(1, appointmentId);
                     psIns.setInt(2, doctorId);
-                    psIns.setString(3, notes);
+                    psIns.setNString(3, notes);
                     return psIns.executeUpdate() > 0;
                 }
             }
@@ -1511,7 +1550,7 @@ public class AppointmentDAO {
             "doc.Full_Name AS Doctor_Name, doc.Specialty AS Doctor_Specialty, " +
             "rm.Room_Name, " +
             "stf.Full_Name AS Staff_Name, " +
-            "mr.Clinical_Diagnosis AS Medical_Notes, " +
+            "mr.Staff_Notes AS Medical_Notes, " +
             "mr.conclusion AS Cancel_Reason, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
             "mi.Total_Amount AS Invoice_Total, mi.Deposit_Amount AS Invoice_Deposit, mi.Balance_Due AS Invoice_Balance_Due, mi.Status AS Invoice_Status, " +
             "(SELECT TOP 1 pr.Status FROM Procedure_Order po JOIN Procedure_Payment_Request pr ON po.Order_ID = pr.Order_ID WHERE po.Record_ID = mr.Record_ID AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC) AS Procedure_Payment_Status, " +

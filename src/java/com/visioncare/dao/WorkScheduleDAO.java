@@ -52,8 +52,7 @@ public class WorkScheduleDAO {
                     cell.setPatientName(rs.getString("Patient_Name"));
                     cell.setPatientPhone(rs.getString("Patient_Phone"));
                     cell.setAppointmentStatus(rs.getString("Appointment_Status"));
-                    String key = cell.getWorkDate() + "_" + cell.getSlot();
-                    matrix.put(key, cell);
+                    putCellWithAliases(matrix, cell);
                 }
             }
         } catch (Exception e) {
@@ -61,9 +60,74 @@ public class WorkScheduleDAO {
         }
         return matrix;
     }
+
+    private void putCellWithAliases(Map<String, ScheduleCellDTO> map, ScheduleCellDTO cell) {
+        if (cell == null || cell.getWorkDate() == null) return;
+        String workDate = cell.getWorkDate();
+        String slot = cell.getSlot();
+        String startTime = cell.getStartTime();
+        String endTime = cell.getEndTime();
+
+        if (slot != null && !slot.trim().isEmpty()) {
+            map.put(workDate + "_" + slot.trim(), cell);
+        }
+
+        String sTime = (startTime != null && startTime.length() >= 5) ? startTime.substring(0, 5) : null;
+        String eTime = (endTime != null && endTime.length() >= 5) ? endTime.substring(0, 5) : null;
+
+        if (sTime != null) {
+            map.put(workDate + "_" + sTime, cell);
+            if (startTime.length() >= 8) {
+                map.put(workDate + "_" + startTime.substring(0, 8), cell);
+            }
+        }
+
+        if (slot != null) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\d+").matcher(slot);
+            if (m.find()) {
+                String num = m.group();
+                map.put(workDate + "_Slot " + num, cell);
+                map.put(workDate + "_Ca " + num, cell);
+                if (sTime != null && eTime != null) {
+                    map.put(workDate + "_Ca " + num + " (" + sTime + " - " + eTime + ")", cell);
+                    map.put(workDate + "_Slot " + num + " (" + sTime + " - " + eTime + ")", cell);
+                }
+            }
+        }
+    }
+
+    private void addKeyAliases(Set<String> set, String workDate, String slotRaw, String startTime, String endTime) {
+        if (workDate == null) return;
+        if (slotRaw != null && !slotRaw.trim().isEmpty()) {
+            set.add(workDate + "_" + slotRaw.trim());
+        }
+
+        String sTime = (startTime != null && startTime.length() >= 5) ? startTime.substring(0, 5) : null;
+        String eTime = (endTime != null && endTime.length() >= 5) ? endTime.substring(0, 5) : null;
+
+        if (sTime != null) {
+            set.add(workDate + "_" + sTime);
+            if (startTime.length() >= 8) {
+                set.add(workDate + "_" + startTime.substring(0, 8));
+            }
+        }
+
+        if (slotRaw != null) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\d+").matcher(slotRaw);
+            if (m.find()) {
+                String num = m.group();
+                set.add(workDate + "_Slot " + num);
+                set.add(workDate + "_Ca " + num);
+                if (sTime != null && eTime != null) {
+                    set.add(workDate + "_Ca " + num + " (" + sTime + " - " + eTime + ")");
+                    set.add(workDate + "_Slot " + num + " (" + sTime + " - " + eTime + ")");
+                }
+            }
+        }
+    }
     public Set<String> getRegisteredSlotKeys(int actorId, String role, String startDate, String endDate) {
         Set<String> set = new HashSet<>();
-        StringBuilder sql = new StringBuilder("SELECT Work_Date, Slot FROM Work_Schedule WHERE Work_Date BETWEEN ? AND ? ");
+        StringBuilder sql = new StringBuilder("SELECT Work_Date, Slot, Start_Time, End_Time FROM Work_Schedule WHERE Work_Date BETWEEN ? AND ? ");
         if ("doctor".equalsIgnoreCase(role)) {
             sql.append("AND Doctor_Employee_ID = ? ");
         } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
@@ -84,7 +148,8 @@ public class WorkScheduleDAO {
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    set.add(rs.getString("Work_Date") + "_" + rs.getString("Slot"));
+                    addKeyAliases(set, rs.getString("Work_Date"), rs.getString("Slot"),
+                            rs.getString("Start_Time"), rs.getString("End_Time"));
                 }
             }
         } catch (Exception e) {
@@ -95,7 +160,7 @@ public class WorkScheduleDAO {
 
     public Set<String> getClosedSlotKeys(int actorId, String role, String startDate, String endDate) {
         Set<String> set = new HashSet<>();
-        StringBuilder sql = new StringBuilder("SELECT Work_Date, Slot FROM Work_Schedule WHERE Work_Date BETWEEN ? AND ? ");
+        StringBuilder sql = new StringBuilder("SELECT Work_Date, Slot, Start_Time, End_Time FROM Work_Schedule WHERE Work_Date BETWEEN ? AND ? ");
         if ("doctor".equalsIgnoreCase(role)) {
             sql.append("AND Doctor_Employee_ID = ? ");
         } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
@@ -116,7 +181,8 @@ public class WorkScheduleDAO {
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    set.add(rs.getString("Work_Date") + "_" + rs.getString("Slot"));
+                    addKeyAliases(set, rs.getString("Work_Date"), rs.getString("Slot"),
+                            rs.getString("Start_Time"), rs.getString("End_Time"));
                 }
             }
         } catch (Exception e) {
@@ -302,7 +368,6 @@ public class WorkScheduleDAO {
 
     public List<com.visioncare.model.TimeSlot> getDoctorSlotsForDate(int doctorId, String dateStr) {
         List<com.visioncare.model.TimeSlot> list = new ArrayList<>();
-        ensureRealisticSchedules();
         int pendingHoldMinutes = TimeSlotDAO.getPendingHoldMinutes();
         String sql = "SELECT ws.Schedule_ID, ws.Doctor_Employee_ID, ws.Work_Date, ws.Slot, " +
                      "       CONVERT(VARCHAR(5), ws.Start_Time, 108) AS Start_Time_Str, " +
@@ -323,12 +388,8 @@ public class WorkScheduleDAO {
                      "       END AS Is_Past " +
                      "FROM Work_Schedule ws " +
                      "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? " +
-                     "  AND ( " +
-                     "        (CAST(ws.Start_Time AS TIME) >= '08:00:00' AND CAST(ws.Start_Time AS TIME) < '11:00:00') " + // Ca sáng: slot cuối 10:30 (10:30-11:00), 11:00-11:30 làm backup
-                     "        OR " +
-                     "        (CAST(ws.Start_Time AS TIME) >= '13:30:00' AND CAST(ws.Start_Time AS TIME) < '17:00:00') " + // Ca chiều: từ 13:30 đến 17:00, slot cuối 16:30 (16:30-17:00)
-                     "      ) " +
-                     "  AND ws.Status NOT IN ('Canceled', 'On_Leave', 'Inactive', 'Disabled', 'Closed') " +
+                     " AND " + com.visioncare.util.BookingAvailability.getWindowCondition() + " " +
+                     "  AND ws.Status IN ('Available', 'Booked') " +
                      "ORDER BY ws.Start_Time ASC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -411,7 +472,8 @@ public class WorkScheduleDAO {
                 {"Slot 3", "09:00:00", "09:30:00"},
                 {"Slot 4", "09:30:00", "10:00:00"},
                 {"Slot 5", "10:00:00", "10:30:00"},
-                {"Slot 6", "10:30:00", "11:00:00"}
+                {"Slot 6", "10:30:00", "11:00:00"},
+                {"Slot 7", "11:00:00", "11:30:00"}
             };
             // Mẫu slot ca chiều (13:30 - 17:00)
             String[][] afternoonSlots = {
@@ -427,33 +489,25 @@ public class WorkScheduleDAO {
             java.time.LocalDate baseDate = java.time.LocalDate.now();
 
             // 1. Kiểm tra và bổ sung lịch Bác sĩ (ID 3 đến 8)
-            String docCheckSql = "SELECT COUNT(*) FROM Work_Schedule WHERE Doctor_Employee_ID IS NOT NULL AND Work_Date >= CAST(GETDATE() AS DATE)";
-            boolean needDocSeed = false;
-            try (Statement st = conn.createStatement();
-                 ResultSet rs = st.executeQuery(docCheckSql)) {
-                if (rs.next() && rs.getInt(1) < 30) {
-                    needDocSeed = true;
-                }
-            }
-            if (needDocSeed) {
-                String insertDocSql = "IF NOT EXISTS (SELECT 1 FROM Work_Schedule WHERE Doctor_Employee_ID = ? AND Work_Date = ? AND Slot = ?) " +
-                                      "INSERT INTO Work_Schedule (Doctor_Employee_ID, Work_Date, Start_Time, End_Time, Slot, Status) VALUES (?, ?, ?, ?, ?, 'Available')";
-                try (PreparedStatement ps = conn.prepareStatement(insertDocSql)) {
-                    int[] fullDocs = {3, 6};
-                    int[] morningDocs = {4, 7};
-                    int[] afternoonDocs = {5, 8};
-                    for (int dayOffset = 0; dayOffset < 14; dayOffset++) {
-                        String dateStr = baseDate.plusDays(dayOffset).toString();
-                        for (int docId : fullDocs) {
-                            for (String[] s : morningSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
-                            for (String[] s : afternoonSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
-                        }
-                        for (int docId : morningDocs) {
-                            for (String[] s : morningSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
-                        }
-                        for (int docId : afternoonDocs) {
-                            for (String[] s : afternoonSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
-                        }
+            String insertDocSql = "IF NOT EXISTS (SELECT 1 FROM Work_Schedule WHERE Doctor_Employee_ID = ? AND Work_Date = ? AND Slot = ?) " +
+                                  "INSERT INTO Work_Schedule (Doctor_Employee_ID, Work_Date, Start_Time, End_Time, Slot, Status) VALUES (?, ?, ?, ?, ?, 'Available')";
+            try (PreparedStatement ps = conn.prepareStatement(insertDocSql)) {
+                int[] fullDocs = {3, 6};
+                int[] morningDocs = {4, 7};
+                int[] afternoonDocs = {5, 8};
+                for (int dayOffset = 0; dayOffset < 14; dayOffset++) {
+                    java.time.LocalDate workDate = baseDate.plusDays(dayOffset);
+                    if (workDate.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) continue;
+                    String dateStr = workDate.toString();
+                    for (int docId : fullDocs) {
+                        for (String[] s : morningSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
+                        for (String[] s : afternoonSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
+                    }
+                    for (int docId : morningDocs) {
+                        for (String[] s : morningSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
+                    }
+                    for (int docId : afternoonDocs) {
+                        for (String[] s : afternoonSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
                     }
                 }
             }
@@ -536,5 +590,75 @@ public class WorkScheduleDAO {
         ps.setString(7, end);
         ps.setString(8, slot);
         ps.executeUpdate();
+    }
+
+    /**
+     * Trả về map {ngày (yyyy-MM-dd) → Set<doctorEmployeeId>} cho các bác sĩ có
+     * ít nhất một ca làm việc đang hoạt động (không bị hủy) trong khoảng ngày cho trước.
+     * Dùng để pre-load lịch làm việc 7 ngày lên JSP, tránh N+1 AJAX call khi đổi ngày.
+     */
+    public Map<String, Set<Integer>> getDoctorWorkingDays(String startDate, String endDate) {
+        Map<String, Set<Integer>> result = new LinkedHashMap<>();
+        String sql = "SELECT CONVERT(varchar(10), Work_Date, 120) AS work_date, Doctor_Employee_ID " +
+                     "FROM Work_Schedule " +
+                     "WHERE Work_Date BETWEEN ? AND ? " +
+                     "AND Doctor_Employee_ID IS NOT NULL " +
+                     "AND Status NOT IN ('Canceled', 'On_Leave', 'Inactive', 'Disabled', 'Closed') " +
+                     "GROUP BY Work_Date, Doctor_Employee_ID " +
+                     "ORDER BY Work_Date";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, startDate);
+            ps.setString(2, endDate);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String date = rs.getString("work_date");
+                    int docId = rs.getInt("Doctor_Employee_ID");
+                    result.computeIfAbsent(date, k -> new HashSet<>()).add(docId);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    /**
+     * Lấy thống kê số ca trực và số lịch hẹn của tất cả nhân sự thuộc 1 role trong khoảng ngày (tuần).
+     * Trả về Map<ActorId, int[]{totalSlots, bookedSlots}>
+     */
+    public Map<Integer, int[]> getWeeklyEmployeeSlotStats(String roleType, String startDate, String endDate) {
+        Map<Integer, int[]> stats = new HashMap<>();
+        String colName = "Doctor_Employee_ID";
+        if ("specialist".equalsIgnoreCase(roleType) || "medical_specialist".equalsIgnoreCase(roleType)) {
+            colName = "Specialist_Employee_ID";
+        } else if ("staff".equalsIgnoreCase(roleType)) {
+            colName = "Staff_Employee_ID";
+        }
+
+        String sql = "SELECT ws." + colName + " AS actor_id, " +
+                     "SUM(CASE WHEN ws.Status NOT IN ('Canceled', 'On_Leave', 'Closed') THEN 1 ELSE 0 END) AS total_slots, " +
+                     "SUM(CASE WHEN a.Appointment_ID IS NOT NULL AND a.Status NOT IN ('Canceled', 'Rejected') THEN 1 ELSE 0 END) AS booked_slots " +
+                     "FROM Work_Schedule ws " +
+                     "LEFT JOIN Appointment a ON ws.Schedule_ID = a.Schedule_ID " +
+                     "WHERE ws." + colName + " IS NOT NULL AND ws.Work_Date BETWEEN ? AND ? " +
+                     "GROUP BY ws." + colName;
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, startDate);
+            ps.setString(2, endDate);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int actorId = rs.getInt("actor_id");
+                    int totalSlots = rs.getInt("total_slots");
+                    int bookedSlots = rs.getInt("booked_slots");
+                    stats.put(actorId, new int[]{totalSlots, bookedSlots});
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return stats;
     }
 }

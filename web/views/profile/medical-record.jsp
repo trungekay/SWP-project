@@ -7,13 +7,14 @@
 <jsp:include page="/views/common/header.jsp">
     <jsp:param name="pageTitle" value="Hồ sơ khám bệnh" />
     <jsp:param name="pageDescription" value="Chi tiết hồ sơ bệnh án ngoại trú VisionCare Clinic" />
-    <jsp:param name="bodyClass" value="starter-page-page" />
-    <jsp:param name="activeNav" value="" />
+    <jsp:param name="bodyClass" value="starter-page-page screen-wide patient-wide" />
+    <jsp:param name="fullWidth" value="true" />
+        <jsp:param name="activeNav" value="" />
 </jsp:include>
 
 <!-- Link to Doctor Unified Detail & Forms Stylesheets -->
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-patient-detail.css?v=6">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=8">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=9">
 
 <style>
     .patient-medical-record-wrapper {
@@ -30,7 +31,7 @@
     .border-teal-subtle {
         border-color: #cbece4 !important;
     }
-    
+
     /* Result Display Boxes inside Clinical Detail */
     .clinical-result-box {
         background: #f8fcfa;
@@ -59,7 +60,7 @@
         font-size: 14px;
         line-height: 1.6;
     }
-    
+
     /* Matrix Display Values */
     .matrix-display-value {
         font-size: 13.5px;
@@ -110,7 +111,7 @@
     <!-- Page Title & Breadcrumbs -->
     <div class="page-title">
         <div class="heading">
-            <div class="container">
+            <div class="container-fluid screen-fluid">
                 <div class="row d-flex justify-content-center text-center">
                     <div class="col-lg-8">
                         <h1>Chi tiết hồ sơ khám</h1>
@@ -120,7 +121,7 @@
             </div>
         </div>
         <nav class="breadcrumbs">
-            <div class="container">
+            <div class="container-fluid screen-fluid">
                 <ol>
                     <li><a href="${pageContext.request.contextPath}/home">Trang chủ</a></li>
                     <li><a href="${pageContext.request.contextPath}/views/profile/medical-history.jsp">Lịch sử khám bệnh</a></li>
@@ -131,7 +132,7 @@
     </div>
 
     <section class="section pt-3">
-        <div class="container">
+        <div class="container-fluid screen-fluid">
             <div class="patient-medical-record-wrapper">
 
                 <!-- Breadcrumb navigation (Doctor style) -->
@@ -298,10 +299,13 @@
                                     <dd>
                                         <c:choose>
                                             <c:when test="${not empty record.invoiceId}">
-                                                <a href="${pageContext.request.contextPath}/profile/invoice-detail?id=${record.invoiceId}" class="text-teal text-decoration-none fw-semibold">
+                                                <c:choose><c:when test="${sessionScope.user.roleId == 6 && record.invoiceVisible}"><a href="${pageContext.request.contextPath}/profile/invoice-detail?id=${record.invoiceId}" class="text-teal text-decoration-none fw-semibold">
                                                     <i class="bi bi-receipt me-1"></i><c:out value="${record.formattedInvoiceId}" /> - Tổng tiền: <strong class="text-danger"><c:out value="${record.invoiceAmountFmt}" /></strong>
                                                     <span class="badge bg-success-subtle text-success ms-2 border px-2 py-0.5" style="font-size: 11px;">${record.invoiceStatus}</span>
-                                                </a>
+                                                </a></c:when><c:when test="${sessionScope.user.roleId == 1 || sessionScope.user.roleId == 2 || sessionScope.user.roleId == 5}"><a href="${pageContext.request.contextPath}/staff/invoices/detail?id=${record.invoiceId}" class="text-teal text-decoration-none fw-semibold">
+                                                    <i class="bi bi-receipt me-1"></i><c:out value="${record.formattedInvoiceId}" /> - Tổng tiền: <strong class="text-danger"><c:out value="${record.invoiceAmountFmt}" /></strong>
+                                                    <span class="badge bg-success-subtle text-success ms-2 border px-2 py-0.5" style="font-size: 11px;">${record.invoiceStatus}</span>
+                                                </a></c:when><c:otherwise><c:out value="${record.formattedInvoiceId}" /></c:otherwise></c:choose>
                                             </c:when>
                                             <c:otherwise>
                                                 <span class="text-muted">Chưa phát sinh hóa đơn</span>
@@ -326,9 +330,9 @@
                         </div>
 
                         <!-- 3.1 Lý do đến khám & Tiền sử -->
-                        <c:if test="${not empty record.chiefComplaint or not empty record.medicalHistory}">
+                        <c:if test="${not empty fn:trim(record.chiefComplaint) or not empty fn:trim(record.medicalHistory)}">
                             <div class="doctor-form-fields mb-4">
-                                <c:if test="${not empty record.chiefComplaint}">
+                                <c:if test="${not empty fn:trim(record.chiefComplaint)}">
                                     <div class="doctor-detail-field-wide">
                                         <div class="clinical-result-box mb-0">
                                             <div class="clinical-result-label"><i class="bi bi-chat-left-text text-teal"></i> Lý do đến khám &amp; Triệu chứng chính</div>
@@ -336,7 +340,7 @@
                                         </div>
                                     </div>
                                 </c:if>
-                                <c:if test="${not empty record.medicalHistory}">
+                                <c:if test="${not empty fn:trim(record.medicalHistory)}">
                                     <div class="doctor-detail-field-wide">
                                         <div class="clinical-result-box mb-0">
                                             <div class="clinical-result-label"><i class="bi bi-clock-history text-teal"></i> Tiền sử mắt &amp; Bệnh sử liên quan</div>
@@ -348,7 +352,7 @@
                         </c:if>
 
                         <!-- 3.2 Bảng Ma trận Thị lực & Nhãn áp (Chuẩn Doctor Form) -->
-                        <div class="mb-4">
+                        <c:if test="${not empty fn:trim(record.odUncorrected) or not empty fn:trim(record.osUncorrected) or not empty fn:trim(record.odCorrected) or not empty fn:trim(record.osCorrected) or not empty fn:trim(record.odIop) or not empty fn:trim(record.osIop)}"><div class="mb-4">
                             <div class="d-flex align-items-center gap-2 mb-2">
                                 <span class="fw-bold text-dark" style="font-size: 14px;"><i class="bi bi-eye text-teal me-1.5"></i>Thị lực và nhãn áp</span>
                                 <small class="text-muted">(Mắt phải OD / Mắt trái OS)</small>
@@ -363,41 +367,41 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
+                                        <c:if test="${not empty fn:trim(record.odUncorrected) or not empty fn:trim(record.osUncorrected)}"><tr>
                                             <th scope="row">Thị lực không kính</th>
-                                            <td><div class="matrix-display-value"><c:out value="${record.odUncorrected}" default="—" /></div></td>
-                                            <td><div class="matrix-display-value"><c:out value="${record.osUncorrected}" default="—" /></div></td>
-                                        </tr>
-                                        <tr>
+                                            <td><div class="matrix-display-value"><c:out value="${record.odUncorrected}" /></div></td>
+                                            <td><div class="matrix-display-value"><c:out value="${record.osUncorrected}" /></div></td>
+                                        </tr></c:if>
+                                        <c:if test="${not empty fn:trim(record.odCorrected) or not empty fn:trim(record.osCorrected)}"><tr>
                                             <th scope="row">Thị lực có kính</th>
-                                            <td><div class="matrix-display-value"><c:out value="${record.odCorrected}" default="—" /></div></td>
-                                            <td><div class="matrix-display-value"><c:out value="${record.osCorrected}" default="—" /></div></td>
-                                        </tr>
-                                        <tr>
+                                            <td><div class="matrix-display-value"><c:out value="${record.odCorrected}" /></div></td>
+                                            <td><div class="matrix-display-value"><c:out value="${record.osCorrected}" /></div></td>
+                                        </tr></c:if>
+                                        <c:if test="${not empty fn:trim(record.odIop) or not empty fn:trim(record.osIop)}"><tr>
                                             <th scope="row">Nhãn áp (mmHg)</th>
-                                            <td><div class="matrix-display-value"><c:out value="${record.odIop}" default="—" /></div></td>
-                                            <td><div class="matrix-display-value"><c:out value="${record.osIop}" default="—" /></div></td>
-                                        </tr>
+                                            <td><div class="matrix-display-value"><c:out value="${record.odIop}" /></div></td>
+                                            <td><div class="matrix-display-value"><c:out value="${record.osIop}" /></div></td>
+                                        </tr></c:if>
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
+                        </div></c:if>
 
                         <!-- 3.3 Khám thực thể (Bán phần trước & Đáy mắt) -->
-                        <c:if test="${not empty record.anteriorFindings or not empty record.posteriorFindings}">
+                        <c:if test="${not empty fn:trim(record.anteriorFindings) or not empty fn:trim(record.posteriorFindings)}">
                             <div class="row g-3 mb-4">
-                                <div class="col-md-6">
+                                <c:if test="${not empty fn:trim(record.anteriorFindings)}"><div class="col-md-6">
                                     <div class="clinical-result-box mb-0 h-100">
                                         <div class="clinical-result-label"><i class="bi bi-circle text-teal"></i> Bán phần trước</div>
-                                        <div class="clinical-result-content"><c:out value="${record.anteriorFindings}" default="Giác mạc trong, tiền phòng sâu, đồng tử phản xạ tốt." /></div>
+                                        <div class="clinical-result-content"><c:out value="${record.anteriorFindings}" /></div>
                                     </div>
-                                </div>
-                                <div class="col-md-6">
+                                </div></c:if>
+                                <c:if test="${not empty fn:trim(record.posteriorFindings)}"><div class="col-md-6">
                                     <div class="clinical-result-box mb-0 h-100">
                                         <div class="clinical-result-label"><i class="bi bi-circle-half text-teal"></i> Đáy mắt / Bán phần sau</div>
-                                        <div class="clinical-result-content"><c:out value="${record.posteriorFindings}" default="Võng mạc bình thường, gai thị hồng rõ bờ, hoàng điểm bình thường." /></div>
+                                        <div class="clinical-result-content"><c:out value="${record.posteriorFindings}" /></div>
                                     </div>
-                                </div>
+                                </div></c:if>
                             </div>
                         </c:if>
 
@@ -429,7 +433,7 @@
                             <div class="clinical-result-content">
                                 <c:out value="${record.conclusion}" default="Chưa cập nhật kết luận" />
                             </div>
-                            <c:if test="${not empty record.followUpDate}">
+                            <c:if test="${not empty fn:trim(record.followUpDate)}">
                                 <div class="mt-3 pt-2 border-top d-flex align-items-center gap-2 small">
                                     <span class="text-muted"><i class="bi bi-calendar-event text-teal me-1"></i>Ngày tái khám dự kiến:</span>
                                     <strong class="text-dark"><c:out value="${record.followUpDate}" /></strong>
@@ -504,7 +508,7 @@
                     <!-- ======================================================== -->
                     <!-- 5. ĐƠN KÍNH THUỐC (Chuẩn Doctor Glasses Table)           -->
                     <!-- ======================================================== -->
-                    <c:if test="${record.hasGlasses}">
+                    <c:if test="${record.hasGlasses and (not empty fn:trim(record.eyeglass.odSph) or not empty fn:trim(record.eyeglass.osSph) or not empty fn:trim(record.eyeglass.odCyl) or not empty fn:trim(record.eyeglass.osCyl) or not empty fn:trim(record.eyeglass.odAxis) or not empty fn:trim(record.eyeglass.osAxis) or not empty fn:trim(record.eyeglass.odAdd) or not empty fn:trim(record.eyeglass.osAdd) or not empty fn:trim(record.eyeglass.pd) or not empty fn:trim(record.eyeglass.lensType) or not empty fn:trim(record.eyeglass.glassesNotes))}">
                         <section class="doctor-detail-card mb-4" aria-labelledby="glasses-heading">
                             <div class="doctor-detail-card-heading">
                                 <span class="doctor-detail-card-icon violet"><i class="bi bi-eyeglasses" aria-hidden="true"></i></span>
@@ -514,55 +518,32 @@
                                 </div>
                             </div>
 
-                            <div class="doctor-form-table-wrap mb-3">
-                                <table class="doctor-form-matrix doctor-form-glasses-table">
-                                    <thead>
-                                        <tr>
-                                            <th scope="col" style="width: 20%;">Mắt</th>
-                                            <th scope="col" style="width: 20%;">SPH</th>
-                                            <th scope="col" style="width: 20%;">CYL</th>
-                                            <th scope="col" style="width: 20%;">AXIS</th>
-                                            <th scope="col" style="width: 20%;">ADD</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <th scope="row">Phải (OD)</th>
-                                            <td><div class="matrix-display-value"><c:out value="${record.eyeglass.odSph}" default="0.00" /></div></td>
-                                            <td><div class="matrix-display-value"><c:out value="${record.eyeglass.odCyl}" default="0.00" /></div></td>
-                                            <td><div class="matrix-display-value"><c:out value="${record.eyeglass.odAxis}" default="0" />°</div></td>
-                                            <td><div class="matrix-display-value"><c:out value="${record.eyeglass.odAdd}" default="0.00" /></div></td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">Trái (OS)</th>
-                                            <td><div class="matrix-display-value"><c:out value="${record.eyeglass.osSph}" default="0.00" /></div></td>
-                                            <td><div class="matrix-display-value"><c:out value="${record.eyeglass.osCyl}" default="0.00" /></div></td>
-                                            <td><div class="matrix-display-value"><c:out value="${record.eyeglass.osAxis}" default="0" />°</div></td>
-                                            <td><div class="matrix-display-value"><c:out value="${record.eyeglass.osAdd}" default="0.00" /></div></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-
+                            <c:if test="${not empty fn:trim(record.eyeglass.odSph) or not empty fn:trim(record.eyeglass.osSph) or not empty fn:trim(record.eyeglass.odCyl) or not empty fn:trim(record.eyeglass.osCyl) or not empty fn:trim(record.eyeglass.odAxis) or not empty fn:trim(record.eyeglass.osAxis) or not empty fn:trim(record.eyeglass.odAdd) or not empty fn:trim(record.eyeglass.osAdd)}"><div class="doctor-form-table-wrap mb-3"><table class="doctor-form-matrix"><thead><tr><th>Chỉ số</th><th>Mắt phải (OD)</th><th>Mắt trái (OS)</th></tr></thead><tbody>
+<c:if test="${not empty fn:trim(record.eyeglass.odSph) or not empty fn:trim(record.eyeglass.osSph)}"><tr><th scope="row">Độ cầu (SPH)</th><td><div class="matrix-display-value"><c:out value="${record.eyeglass.odSph}" /></div></td><td><div class="matrix-display-value"><c:out value="${record.eyeglass.osSph}" /></div></td></tr></c:if>
+<c:if test="${not empty fn:trim(record.eyeglass.odCyl) or not empty fn:trim(record.eyeglass.osCyl)}"><tr><th scope="row">Độ trụ (CYL)</th><td><div class="matrix-display-value"><c:out value="${record.eyeglass.odCyl}" /></div></td><td><div class="matrix-display-value"><c:out value="${record.eyeglass.osCyl}" /></div></td></tr></c:if>
+<c:if test="${not empty fn:trim(record.eyeglass.odAxis) or not empty fn:trim(record.eyeglass.osAxis)}"><tr><th scope="row">Trục (AXIS)</th><td><div class="matrix-display-value"><c:out value="${record.eyeglass.odAxis}" /><c:if test="${not empty fn:trim(record.eyeglass.odAxis)}">°</c:if></div></td><td><div class="matrix-display-value"><c:out value="${record.eyeglass.osAxis}" /><c:if test="${not empty fn:trim(record.eyeglass.osAxis)}">°</c:if></div></td></tr></c:if>
+<c:if test="${not empty fn:trim(record.eyeglass.odAdd) or not empty fn:trim(record.eyeglass.osAdd)}"><tr><th scope="row">Độ cộng (ADD)</th><td><div class="matrix-display-value"><c:out value="${record.eyeglass.odAdd}" /></div></td><td><div class="matrix-display-value"><c:out value="${record.eyeglass.osAdd}" /></div></td></tr></c:if>
+</tbody></table></div>
+</c:if>
                             <div class="row g-3">
-                                <div class="col-md-4">
+                                <c:if test="${not empty fn:trim(record.eyeglass.pd)}"><div class="col-md-4">
                                     <div class="clinical-result-box mb-0">
                                         <div class="clinical-result-label">Khoảng cách đồng tử (PD)</div>
-                                        <div class="clinical-result-content fw-bold text-dark"><c:out value="${record.eyeglass.pd}" default="62" /> mm</div>
+                                        <div class="clinical-result-content fw-bold text-dark"><c:out value="${record.eyeglass.pd}" /> mm</div>
                                     </div>
-                                </div>
-                                <div class="col-md-4">
+                                </div></c:if>
+                                <c:if test="${not empty fn:trim(record.eyeglass.lensType)}"><div class="col-md-4">
                                     <div class="clinical-result-box mb-0">
                                         <div class="clinical-result-label">Loại kính chỉ định</div>
-                                        <div class="clinical-result-content fw-bold text-teal"><c:out value="${record.eyeglass.lensTypeName}" default="Kính nhìn xa" /></div>
+                                        <div class="clinical-result-content fw-bold text-teal"><c:out value="${record.eyeglass.lensTypeName}" /></div>
                                     </div>
-                                </div>
-                                <div class="col-md-4">
+                                </div></c:if>
+                                <c:if test="${not empty fn:trim(record.eyeglass.glassesNotes)}"><div class="col-md-4">
                                     <div class="clinical-result-box mb-0">
                                         <div class="clinical-result-label">Ghi chú về kính</div>
-                                        <div class="clinical-result-content"><c:out value="${record.eyeglass.glassesNotes}" default="Tròng chống lóa, bảo vệ mắt." /></div>
+                                        <div class="clinical-result-content"><c:out value="${record.eyeglass.glassesNotes}" /></div>
                                     </div>
-                                </div>
+                                </div></c:if>
                             </div>
                         </section>
                     </c:if>
@@ -570,7 +551,7 @@
                     <!-- ======================================================== -->
                     <!-- 6. ĐƠN THUỐC ĐIỀU TRỊ (Chuẩn Doctor Prescription)        -->
                     <!-- ======================================================== -->
-                    <section class="doctor-detail-card mb-4" aria-labelledby="prescription-heading">
+                    <c:if test="${not empty record.medicines or not empty fn:trim(record.doctorNotes)}"><section class="doctor-detail-card mb-4" aria-labelledby="prescription-heading">
                         <div class="doctor-detail-card-heading d-flex align-items-center justify-content-between flex-wrap gap-2">
                             <div class="d-flex align-items-center gap-3">
                                 <span class="doctor-detail-card-icon blue"><i class="bi bi-capsule" aria-hidden="true"></i></span>
@@ -613,24 +594,19 @@
                                     </table>
                                 </div>
                             </c:when>
-                            <c:otherwise>
-                                <div class="p-4 bg-light rounded-3 text-muted text-center small mb-3 border">
-                                    <i class="bi bi-capsule text-secondary fs-4 d-block mb-1"></i>
-                                    Bác sĩ không kê đơn thuốc uống hoặc thuốc nhỏ mắt trong lần khám này.
-                                </div>
-                            </c:otherwise>
+
                         </c:choose>
 
                         <!-- Lời dặn Bác sĩ -->
-                        <div class="clinical-result-box mb-0 mt-3" style="background-color: #f0fdfa; border: 1px solid #ccfbf1;">
+                        <c:if test="${not empty fn:trim(record.doctorNotes)}"><div class="clinical-result-box mb-0 mt-3" style="background-color: #f0fdfa; border: 1px solid #ccfbf1;">
                             <div class="clinical-result-label">
                                 <i class="bi bi-chat-heart text-teal"></i> Lời dặn của Bác sĩ &amp; Hướng dẫn chăm sóc
                             </div>
                             <div class="clinical-result-content">
-                                <c:out value="${record.doctorNotes}" default="Giữ vệ sinh mắt, tránh dụi mắt và tái khám đúng lịch hẹn nếu có bất thường." />
+                                <c:out value="${record.doctorNotes}" />
                             </div>
-                        </div>
-                    </section>
+                        </div></c:if>
+                    </section></c:if>
 
                     <!-- ======================================================== -->
                     <!-- 7. LỊCH SỬ CÁC LẦN KHÁM KHÁC (100% Doctor Timeline)      -->

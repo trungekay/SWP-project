@@ -52,6 +52,8 @@ public class MedicalRecordServlet extends HttpServlet {
                 return;
             }
 
+            Object invoiceId=record.get("invoiceId");
+            if(currentUser.getRoleId()==6 && invoiceId instanceof Number){record.put("invoiceVisible",new com.visioncare.dao.PatientInvoiceDAO().completed(((Number)invoiceId).intValue(),currentUser.getId())!=null);}
             request.setAttribute("record", record);
             request.getRequestDispatcher("/views/profile/medical-record.jsp").forward(request, response);
         } catch (NumberFormatException e) {

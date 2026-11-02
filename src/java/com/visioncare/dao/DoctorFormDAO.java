@@ -17,12 +17,12 @@ public class DoctorFormDAO {
     private static final String[] EXAM_KEYS = {
         "chiefComplaint", "medicalHistory", "odUncorrected", "osUncorrected",
         "odCorrected", "osCorrected", "odIop", "osIop",
-        "anteriorFindings", "posteriorFindings", "followUpDate"
+        "anteriorFindings", "posteriorFindings", "followUpDate", "surgeryIndication"
     };
     private static final String[] EXAM_COLUMNS = {
         "Chief_Complaint", "Medical_History", "OD_Uncorrected", "OS_Uncorrected",
         "OD_Corrected", "OS_Corrected", "OD_IOP", "OS_IOP",
-        "Anterior_Findings", "Posterior_Findings", "Follow_Up_Date"
+        "Anterior_Findings", "Posterior_Findings", "Follow_Up_Date", "Surgery_Indication"
     };
     private static final String[] GLASSES_KEYS = {
         "odSph", "odCyl", "odAxis", "odAdd",
@@ -51,14 +51,6 @@ public class DoctorFormDAO {
                         put(values, EXAM_KEYS[i], rs.getString(EXAM_COLUMNS[i]));
                     }
                 }
-            }
-        }
-        if (values.getOrDefault("chiefComplaint", "").isBlank()) {
-            String staffNote = values.get("staffNotes");
-            if (staffNote != null && !staffNote.isBlank()
-                    && values.getOrDefault("examinationResult", "").isBlank()) {
-                values.put("chiefComplaint", staffNote);
-                values.put("chiefComplaintSource", "Lấy từ ghi chú tiếp nhận");
             }
         }
         if (values.getOrDefault("medicalHistory", "").isBlank()) {
@@ -166,8 +158,7 @@ public class DoctorFormDAO {
         return String.join("\n", lines);
     }
 
-    public void saveExamination(int appointmentId, int doctorId, Map<String, String> values,
-                                Integer surgeryServiceId, String surgeryNotes) throws Exception {
+    public void saveExamination(int appointmentId, int doctorId, Map<String, String> values) throws Exception {
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
             conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
@@ -207,123 +198,11 @@ public class DoctorFormDAO {
                         ps.executeUpdate();
                     }
                 }
-                if (surgeryServiceId != null) {
-                    saveSurgeryReferral(conn, recordId, surgeryServiceId, surgeryNotes);
-                }
                 conn.commit();
             } catch (Exception error) {
                 conn.rollback();
                 throw error;
             }
-        }
-    }
-
-    private void saveSurgeryReferral(Connection conn, int recordId, int serviceId, String notes) throws Exception {
-        BigDecimal price;
-        String serviceCode;
-        String serviceSql = "SELECT Price, Service_Code FROM Service_Catalog WHERE Service_ID = ? " +
-                "AND (Service_Code IN ('LS-03', 'TT-05') OR Service_Code LIKE 'PT-%')";
-        try (PreparedStatement ps = conn.prepareStatement(serviceSql)) {
-            ps.setInt(1, serviceId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) throw new IllegalArgumentException("Dịch vụ phẫu thuật không hợp lệ.");
-                price = rs.getBigDecimal(1);
-                serviceCode = rs.getString(2);
-            }
-        }
-        String existingSql = "SELECT TOP 1 Order_ID, Status FROM Procedure_Order WITH (UPDLOCK, HOLDLOCK) " +
-                "WHERE Record_ID = ? AND Referral_Notes IS NOT NULL ORDER BY Order_ID DESC";
-        try (PreparedStatement ps = conn.prepareStatement(existingSql)) {
-            ps.setInt(1, recordId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    int orderId = rs.getInt("Order_ID");
-                    if (!"Pending".equals(rs.getString("Status"))) {
-                        throw new IllegalStateException("Chỉ định đã được bác sĩ thủ thuật tiếp nhận; không thể sửa từ phiếu khám.");
-                    }
-                    try (PreparedStatement paid = conn.prepareStatement(
-                            "SELECT Status FROM Procedure_Payment_Request WITH (UPDLOCK, HOLDLOCK) WHERE Order_ID = ?")) {
-                        paid.setInt(1, orderId);
-                        try (ResultSet payment = paid.executeQuery()) {
-                            if (payment.next() && "Paid".equals(payment.getString(1))) {
-                                throw new IllegalStateException("Chỉ định đã thanh toán; không thể đổi dịch vụ hoặc giá.");
-                            }
-                        }
-                    }
-                    try (PreparedStatement update = conn.prepareStatement(
-                            "UPDATE Procedure_Order SET Service_ID = ?, Actual_Price = ?, Referral_Notes = ? WHERE Order_ID = ?")) {
-                        update.setInt(1, serviceId);
-                        update.setBigDecimal(2, price);
-                        update.setNString(3, notes);
-                        update.setInt(4, orderId);
-                        update.executeUpdate();
-                    }
-                    syncSurgeryPayment(conn, orderId, recordId, serviceCode, price);
-                    return;
-                }
-            }
-        }
-        try (PreparedStatement insert = conn.prepareStatement(
-                "INSERT INTO Procedure_Order (Record_ID, Service_ID, Specialist_Employee_ID, Status, Actual_Price, Referral_Notes) " +
-                "VALUES (?, ?, NULL, 'Pending', ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
-            insert.setInt(1, recordId);
-            insert.setInt(2, serviceId);
-            insert.setBigDecimal(3, price);
-            insert.setNString(4, notes);
-            insert.executeUpdate();
-            try (ResultSet keys = insert.getGeneratedKeys()) {
-                if (!keys.next()) throw new IllegalStateException("Không lấy được mã chỉ định phẫu thuật.");
-                syncSurgeryPayment(conn, keys.getInt(1), recordId, serviceCode, price);
-            }
-        }
-    }
-
-    private void syncSurgeryPayment(Connection conn, int orderId, int recordId,
-                                    String serviceCode, BigDecimal price) throws Exception {
-        if (serviceCode == null || !serviceCode.startsWith("PT-")) {
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "DELETE FROM Procedure_Payment_Request WHERE Order_ID = ? AND Status = 'Pending'")) {
-                ps.setInt(1, orderId);
-                ps.executeUpdate();
-            }
-            return;
-        }
-        if (price == null || price.signum() <= 0) {
-            throw new IllegalStateException("Giá phẫu thuật phải lớn hơn 0.");
-        }
-        BigDecimal credit = BigDecimal.ZERO;
-        String creditSql = "SELECT i.Deposit_Amount, COALESCE(SUM(CASE WHEN t.Gateway_Status = 'Success' "
-                + "THEN t.Amount ELSE 0 END), 0) AS Paid_Amount "
-                + "FROM Medical_Record mr JOIN Master_Invoice i ON i.Appointment_ID = mr.Appointment_ID "
-                + "LEFT JOIN Payment_Transaction t ON t.Invoice_ID = i.Invoice_ID "
-                + "WHERE mr.Record_ID = ? GROUP BY i.Deposit_Amount";
-        try (PreparedStatement ps = conn.prepareStatement(creditSql)) {
-            ps.setInt(1, recordId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    BigDecimal deposit = rs.getBigDecimal("Deposit_Amount");
-                    BigDecimal paid = rs.getBigDecimal("Paid_Amount");
-                    if (deposit != null && paid != null && deposit.signum() > 0 && paid.signum() > 0) {
-                        credit = deposit.min(paid).min(price);
-                    }
-                }
-            }
-        }
-        BigDecimal amount = price.subtract(credit);
-        try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE Procedure_Payment_Request SET Amount = ?, Credit_Amount = ? "
-                + "WHERE Order_ID = ? AND Status = 'Pending'")) {
-            ps.setBigDecimal(1, amount);
-            ps.setBigDecimal(2, credit);
-            ps.setInt(3, orderId);
-            if (ps.executeUpdate() == 1) return;
-        }
-        try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO Procedure_Payment_Request (Order_ID, Amount, Credit_Amount) VALUES (?, ?, ?)")) {
-            ps.setInt(1, orderId);
-            ps.setBigDecimal(2, amount);
-            ps.setBigDecimal(3, credit);
-            ps.executeUpdate();
         }
     }
 

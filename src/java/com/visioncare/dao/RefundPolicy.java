@@ -33,5 +33,5 @@ public final class RefundPolicy {
         + "mr.conclusion LIKE N'Bác sĩ hủy ca quá giờ: %' "
         + "OR mr.conclusion LIKE N'%' + CHAR(10) + N'Bác sĩ hủy ca quá giờ: %')))) ";
     public static final String NO_ACTIVE_REQUEST = "NOT EXISTS (SELECT 1 FROM Refund_Request rr "
-        + "WHERE rr.Invoice_ID = i.Invoice_ID AND rr.Status IN ('Pending', 'Approved', 'Success')) ";
+        + "WHERE rr.Invoice_ID = i.Invoice_ID AND rr.Status IN ('Pending', 'Approved', 'Completed', 'Success')) ";
 }

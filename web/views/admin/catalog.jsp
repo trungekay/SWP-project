@@ -37,13 +37,12 @@
         <jsp:include page="/views/admin/layout/admin-header.jsp" />
 
         <div class="page-content catalog-page">
-  <div class="page-header"><div class="page-title"><h2>Quản lý Danh mục</h2><p>Quản lý dịch vụ phòng khám, thiết bị và vật tư tiêu hao</p></div></div>
+  <div class="page-header"><div class="page-title"><h2>Quản lý Danh mục</h2><p>Quản lý dịch vụ phòng khám và vật tư tiêu hao</p></div></div>
   <div class="catalog-layout">
     <aside class="catalog-sidebar" aria-label="Phân mục quản trị">
       <div class="catalog-panel catalog-nav-panel" role="tablist" aria-label="Loại danh mục">
         <p class="catalog-eyebrow">Loại danh mục</p>
-        <button type="button" class="catalog-tab ${param.tab != 'supplies' && param.tab != 'consumables' ? 'is-active' : ''}" id="servicesTab" data-tab="services" role="tab" aria-controls="servicesView" aria-selected="${param.tab != 'supplies' && param.tab != 'consumables' ? 'true' : 'false'}" tabindex="${param.tab != 'supplies' && param.tab != 'consumables' ? '0' : '-1'}"><span><i class="bi bi-clipboard2-pulse"></i> Dịch vụ phòng khám</span></button>
-        <button type="button" class="catalog-tab ${param.tab == 'supplies' ? 'is-active' : ''}" id="suppliesTab" data-tab="supplies" role="tab" aria-controls="suppliesView" aria-selected="${param.tab == 'supplies' ? 'true' : 'false'}" tabindex="${param.tab == 'supplies' ? '0' : '-1'}"><span><i class="bi bi-box-seam"></i> Thiết bị y tế</span></button>
+        <button type="button" class="catalog-tab ${param.tab != 'consumables' ? 'is-active' : ''}" id="servicesTab" data-tab="services" role="tab" aria-controls="servicesView" aria-selected="${param.tab != 'consumables' ? 'true' : 'false'}" tabindex="${param.tab != 'consumables' ? '0' : '-1'}"><span><i class="bi bi-clipboard2-pulse"></i> Dịch vụ phòng khám</span></button>
         <button type="button" class="catalog-tab ${param.tab == 'consumables' ? 'is-active' : ''}" id="consumablesTab" data-tab="consumables" role="tab" aria-controls="consumablesView" aria-selected="${param.tab == 'consumables' ? 'true' : 'false'}" tabindex="${param.tab == 'consumables' ? '0' : '-1'}"><span><i class="bi bi-bandaid"></i> Vật tư tiêu hao</span></button>
       </div>
     </aside>
@@ -56,7 +55,7 @@
       </c:choose>
       <c:if test="${not empty catalogSuccessMessage}"><div id="catalogSuccessToast" class="catalog-success-toast" role="status" aria-live="polite"><i class="bi bi-check-circle-fill" aria-hidden="true"></i><span><c:out value="${catalogSuccessMessage}" /></span></div></c:if>
       <c:if test="${param.deleteError == '1'}"><div class="catalog-delete-error" role="alert">Không thể xóa mục này. Mục có thể đang được sử dụng; hãy kiểm tra dữ liệu liên quan.</div></c:if>
-      <section class="catalog-view" id="servicesView" role="tabpanel" aria-labelledby="servicesTab" ${param.tab == 'supplies' || param.tab == 'consumables' ? 'hidden' : ''}>
+      <section class="catalog-view" id="servicesView" role="tabpanel" aria-labelledby="servicesTab" ${param.tab == 'consumables' ? 'hidden' : ''}>
         <div class="catalog-panel catalog-heading"><h5><i class="bi bi-clipboard2-pulse me-2 text-primary"></i>Danh sách Dịch vụ Phòng khám</h5><a class="catalog-primary" href="${pageContext.request.contextPath}/admin/catalog/service?new=1"><i class="bi bi-plus-lg"></i> Thêm dịch vụ</a></div>
         <div class="catalog-panel catalog-filters"><label class="catalog-search"><i class="bi bi-search"></i><input type="search" id="serviceSearch" placeholder="Tìm tên hoặc mã dịch vụ..." aria-label="Tìm dịch vụ"></label></div>
         <div class="table-responsive" id="serviceList"><table class="table align-middle table-custom catalog-table"><thead><tr><th>Mã dịch vụ</th><th>Tên dịch vụ</th><th>Nhóm dịch vụ</th><th>Đơn giá</th><th class="text-end">Thao tác</th></tr></thead><tbody>
@@ -72,14 +71,7 @@
         </tbody></table></div><p class="catalog-empty" id="serviceEmpty" hidden>Không tìm thấy dịch vụ phù hợp.</p>
       </section>
 
-      <section class="catalog-view" id="suppliesView" role="tabpanel" aria-labelledby="suppliesTab" ${param.tab == 'supplies' ? '' : 'hidden'}>
-        <div class="catalog-panel catalog-heading"><h5><i class="bi bi-box-seam me-2 text-primary"></i>Danh sách Thiết bị</h5><a class="catalog-primary" href="${pageContext.request.contextPath}/admin/catalog/supply?new=1&amp;returnTab=supplies"><i class="bi bi-plus-lg"></i> Thêm thiết bị</a></div>
-        <div class="catalog-panel catalog-supply-panel"><div class="catalog-supply-toolbar"><label class="catalog-search"><i class="bi bi-search"></i><input type="search" id="supplySearch" placeholder="Tìm tên thiết bị" aria-label="Tìm thiết bị"></label></div><div class="table-responsive catalog-table-wrap"><table class="table align-middle table-custom catalog-table"><thead><tr><th>Tên thiết bị</th><th>Phân loại</th><th>Giá trị</th><th class="text-end">Thao tác</th></tr></thead><tbody>
-          <c:forEach items="${catalogSupplies}" var="supply"><tr><td><strong><c:out value="${supply.name}" /></strong></td><td>Thiết bị</td><td><fmt:formatNumber value="${supply.price}" pattern="#,##0" /> VNĐ</td><td><div class="catalog-supply-actions"><a class="catalog-supply-edit" href="${pageContext.request.contextPath}/admin/catalog/supply?id=${supply.id}&amp;returnTab=supplies" aria-label="Sửa thiết bị ${fn:escapeXml(supply.name)}" title="Sửa thiết bị"><i class="bi bi-pencil" aria-hidden="true"></i></a><form class="catalog-delete-form" method="post" action="${pageContext.request.contextPath}/admin/catalog/supply" data-kind="thiết bị" data-name="${fn:escapeXml(supply.name)}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="${supply.id}"><input type="hidden" name="returnTab" value="supplies"><input type="hidden" name="csrf" value="${sessionScope.catalogCsrf}"><button class="catalog-delete" type="button" aria-label="Xóa thiết bị ${fn:escapeXml(supply.name)}" title="Xóa thiết bị"><i class="bi bi-trash" aria-hidden="true"></i></button></form></div></td></tr></c:forEach>
-        </tbody></table></div><p class="catalog-empty" id="supplyEmpty" hidden>Chưa có thiết bị hoặc không tìm thấy thiết bị phù hợp.</p></div>
-      </section>
-
-      <section class="catalog-view" id="consumablesView" role="tabpanel" aria-labelledby="consumablesTab" ${param.tab == 'consumables' ? '' : 'hidden'}>
+<section class="catalog-view" id="consumablesView" role="tabpanel" aria-labelledby="consumablesTab" ${param.tab == 'consumables' ? '' : 'hidden'}>
         <div class="catalog-panel catalog-heading"><h5><i class="bi bi-bandaid me-2 text-primary"></i>Danh sách Vật tư tiêu hao</h5><a class="catalog-primary" href="${pageContext.request.contextPath}/admin/catalog/consumable?new=1"><i class="bi bi-plus-lg"></i> Thêm vật tư</a></div>
         <div class="catalog-panel catalog-supply-panel"><div class="catalog-supply-toolbar"><label class="catalog-search"><i class="bi bi-search"></i><input type="search" id="consumableSearch" placeholder="Tìm tên vật tư tiêu hao" aria-label="Tìm vật tư tiêu hao"></label></div><div class="table-responsive catalog-table-wrap"><table class="table align-middle table-custom catalog-table"><thead><tr><th>Tên vật tư</th><th>Phân loại</th><th>Đơn giá</th><th class="text-end">Thao tác</th></tr></thead><tbody>
           <c:forEach items="${catalogConsumables}" var="supply"><tr><td><strong><c:out value="${supply.name}" /></strong></td><td><c:out value="${supply.category}" /></td><td><fmt:formatNumber value="${supply.price}" pattern="#,##0" /> VNĐ</td><td><div class="catalog-supply-actions"><a class="catalog-supply-edit" href="${pageContext.request.contextPath}/admin/catalog/consumable?id=${supply.id}" aria-label="Sửa vật tư ${fn:escapeXml(supply.name)}" title="Sửa vật tư"><i class="bi bi-pencil" aria-hidden="true"></i></a><form class="catalog-delete-form" method="post" action="${pageContext.request.contextPath}/admin/catalog/consumable" data-kind="vật tư" data-name="${fn:escapeXml(supply.name)}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="${supply.id}"><input type="hidden" name="returnTab" value="consumables"><input type="hidden" name="csrf" value="${sessionScope.catalogCsrf}"><button class="catalog-delete" type="button" aria-label="Xóa vật tư ${fn:escapeXml(supply.name)}" title="Xóa vật tư"><i class="bi bi-trash" aria-hidden="true"></i></button></form></div></td></tr></c:forEach>
@@ -100,7 +92,7 @@
     <button id="catalogDeleteConfirm" type="button" class="catalog-delete-confirm"><i class="bi bi-trash"></i> Xác nhận xóa</button>
   </div>
 </dialog>
-<script src="${pageContext.request.contextPath}/assets/js/admin-catalog.js?v=9" defer></script>
+<script src="${pageContext.request.contextPath}/assets/js/admin-catalog.js?v=10" defer></script>
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

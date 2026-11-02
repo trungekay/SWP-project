@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
   <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
     <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
       <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -8,23 +8,45 @@
           <jsp:include page="/views/common/header.jsp">
             <jsp:param name="pageTitle" value="Trang chủ" />
             <jsp:param name="pageDescription" value="VisionCare — Hệ thống đặt lịch khám mắt trực tuyến" />
-            <jsp:param name="bodyClass" value="index-page" />
+            <jsp:param name="bodyClass" value="index-page home-full-width" />
             <jsp:param name="activeNav" value="home" />
           </jsp:include>
+
+          <style>
+            /* Cấu hình full trang web không thụt lề cho trang chủ */
+            body.home-full-width .container,
+            body.home-full-width #header .container,
+            body.home-full-width #footer .container {
+              width: 100% !important;
+              max-width: none !important;
+              padding-left: clamp(16px, 3vw, 48px) !important;
+              padding-right: clamp(16px, 3vw, 48px) !important;
+            }
+
+            body.home-full-width .hero .container,
+            body.home-full-width .about .container,
+            body.home-full-width .services .container,
+            body.home-full-width .departments .container,
+            body.home-full-width .doctors .container,
+            body.home-full-width .faq .container,
+            body.home-full-width .contact .container {
+              width: 100% !important;
+              max-width: none !important;
+            }
+          </style>
 
           <main class="main">
 
             <!-- Hero Section -->
             <section id="hero" class="hero section light-background">
 
-              <img src="${pageContext.request.contextPath}/assets/img/hero-bg.jpg" alt="" data-aos="fade-in">
+              <img src="${pageContext.request.contextPath}/clinic-banner-image?key=HERO_BANNER" alt="VisionCare" data-aos="fade-in">
 
               <div class="container position-relative">
 
                 <div class="welcome position-relative" data-aos="fade-down" data-aos-delay="100">
                   <h2>CHÀO MỪNG ĐẾN VISIONCARE</h2>
-                  <p>Phòng khám mắt chuyên sâu — đặt lịch khám trực tuyến, trang thiết bị hiện đại, đội ngũ bác sĩ nhãn
-                    khoa giàu kinh nghiệm</p>
+                  
                 </div><!-- End Welcome -->
 
                 <div class="content row gy-4">
@@ -94,7 +116,7 @@
                 <div class="row gy-4 gx-5">
 
                   <div class="col-lg-6 position-relative align-self-start" data-aos="fade-up" data-aos-delay="200">
-                    <img src="${pageContext.request.contextPath}/assets/img/about.jpg" class="img-fluid rounded shadow"
+                    <img src="${pageContext.request.contextPath}/clinic-banner-image?key=ABOUT_IMAGE" class="img-fluid rounded shadow"
                       alt="VisionCare Clinic">
                   </div>
 
@@ -187,7 +209,7 @@
 
                 <div class="row gy-4">
 
-                  <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
+                  <div class="col-lg-4 col-md-6 d-flex flex-column align-items-center">
                     <i class="fa-solid fa-user-doctor"></i>
                     <div class="stats-item">
                       <span data-purecounter-start="0" data-purecounter-end="${fn:length(doctors)}"
@@ -196,7 +218,7 @@
                     </div>
                   </div><!-- End Stats Item -->
 
-                  <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
+                  <div class="col-lg-4 col-md-6 d-flex flex-column align-items-center">
                     <i class="fa-regular fa-hospital"></i>
                     <div class="stats-item">
                       <span data-purecounter-start="0" data-purecounter-end="${fn:length(catalogServices)}"
@@ -205,16 +227,9 @@
                     </div>
                   </div><!-- End Stats Item -->
 
-                  <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
-                    <i class="fas fa-calendar-check"></i>
-                    <div class="stats-item">
-                      <span data-purecounter-start="0" data-purecounter-end="${fn:length(doctors) * 12}"
-                        data-purecounter-duration="1" class="purecounter"></span>
-                      <p>Ca khám / ngày</p>
-                    </div>
-                  </div><!-- End Stats Item -->
+                  
 
-                  <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
+                  <div class="col-lg-4 col-md-6 d-flex flex-column align-items-center">
                     <i class="fas fa-award"></i>
                     <div class="stats-item">
                       <span data-purecounter-start="0" data-purecounter-end="15" data-purecounter-duration="1"
@@ -274,25 +289,17 @@
                 }
               </style>
 
-              <c:set var="countKham" value="0" />
-              <c:set var="countChandoan" value="0" />
+              <c:set var="countKhamChandoan" value="0" />
               <c:set var="countDieutri" value="0" />
-              <c:set var="lasikPreopId" value="3" />
-              <c:set var="phacoPreopId" value="5" />
               <c:forEach items="${catalogServices}" var="s">
                 <c:choose>
-                  <c:when test="${s.category == 'Kiểm tra và chẩn đoán'}">
-                    <c:set var="countChandoan" value="${countChandoan + 1}" />
-                  </c:when>
                   <c:when test="${s.category == 'Điều trị và thủ thuật'}">
                     <c:set var="countDieutri" value="${countDieutri + 1}" />
                   </c:when>
                   <c:otherwise>
-                    <c:set var="countKham" value="${countKham + 1}" />
+                    <c:set var="countKhamChandoan" value="${countKhamChandoan + 1}" />
                   </c:otherwise>
                 </c:choose>
-                <c:if test="${s.code == 'LS-03'}"><c:set var="lasikPreopId" value="${s.id}" /></c:if>
-                <c:if test="${s.code == 'TT-05'}"><c:set var="phacoPreopId" value="${s.id}" /></c:if>
               </c:forEach>
 
               <div class="container section-title" data-aos="fade-up">
@@ -308,12 +315,8 @@
                     <span class="badge rounded-pill bg-light text-secondary ms-1">${fn:length(catalogServices)}</span>
                   </button>
                   <button type="button" class="btn svc-filter-btn" data-filter="kham" onclick="filterServices('kham', this)">
-                    <i class="bi bi-person-check-fill me-1"></i> Khám &amp; Tư vấn
-                    <span class="badge rounded-pill bg-light text-secondary ms-1">${countKham}</span>
-                  </button>
-                  <button type="button" class="btn svc-filter-btn" data-filter="chandoan" onclick="filterServices('chandoan', this)">
-                    <i class="bi bi-clipboard2-pulse-fill me-1"></i> Kiểm tra &amp; Chẩn đoán
-                    <span class="badge rounded-pill bg-light text-secondary ms-1">${countChandoan}</span>
+                    <i class="bi bi-person-check-fill me-1"></i> Khám &amp; Chẩn đoán
+                    <span class="badge rounded-pill bg-light text-secondary ms-1">${countKhamChandoan}</span>
                   </button>
                   <button type="button" class="btn svc-filter-btn" data-filter="dieutri" onclick="filterServices('dieutri', this)">
                     <i class="bi bi-hospital-fill me-1"></i> Phẫu thuật &amp; Thủ thuật
@@ -325,9 +328,6 @@
                   <c:forEach items="${catalogServices}" var="service">
                     <c:set var="svcCatGroup" value="kham" />
                     <c:choose>
-                      <c:when test="${service.category == 'Kiểm tra và chẩn đoán'}">
-                        <c:set var="svcCatGroup" value="chandoan" />
-                      </c:when>
                       <c:when test="${service.category == 'Điều trị và thủ thuật'}">
                         <c:set var="svcCatGroup" value="dieutri" />
                       </c:when>
@@ -362,11 +362,6 @@
                                   <i class="bi bi-shield-plus me-1"></i>${service.category}
                                 </span>
                               </c:when>
-                              <c:when test="${svcCatGroup == 'chandoan'}">
-                                <span class="badge rounded-pill px-3 py-2 fw-semibold shadow-sm" style="background: rgba(59, 130, 246, 0.9); color: #ffffff;">
-                                  <i class="bi bi-clipboard2-pulse me-1"></i>${service.category}
-                                </span>
-                              </c:when>
                               <c:otherwise>
                                 <span class="badge rounded-pill px-3 py-2 fw-semibold shadow-sm" style="background: rgba(13, 148, 136, 0.9); color: #ffffff;">
                                   <i class="bi bi-eye me-1"></i>${service.category}
@@ -392,17 +387,17 @@
                             </p>
 
                             <!-- Ghi chú đặc quyền / Tiền phẫu hoàn trừ phí -->
-                            <c:if test="${service.code == 'LS-03' or service.code == 'TT-05' or fn:contains(service.name, 'tiền phẫu') or fn:contains(service.name, 'tầm soát')}">
+                            <c:if test="${service.preOp or fn:contains(service.name, 'tiền phẫu') or fn:contains(service.name, 'tầm soát')}">
                               <div class="mb-3">
                                 <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill py-1 px-2 small">
                                   <i class="bi bi-gift-fill me-1"></i>Trừ 100% vào chi phí mổ
                                 </span>
                               </div>
                             </c:if>
-                            <c:if test="${service.code == 'PT-LASIK' or service.code == 'PT-SMILE' or service.code == 'PT-PHACO'}">
+                            <c:if test="${service.requiresPreOp or not service.allowDirectBooking}">
                               <div class="mb-3">
                                 <span class="badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill py-1 px-2 small">
-                                  <i class="bi bi-info-circle-fill me-1 text-warning"></i>Chỉ định sau khám chuyên sâu
+                                  <i class="bi bi-info-circle-fill me-1 text-warning"></i>Bắt buộc khám tiền phẫu trước
                                 </span>
                               </div>
                             </c:if>
@@ -420,26 +415,22 @@
                               <button type="button"
                                 class="btn btn-outline-secondary rounded-pill px-3 btn-sm"
                                 data-bs-toggle="modal" data-bs-target="#homeServiceModal${service.id}"
-                                title="Xem thông tin chi tiết và lưu ý quy trình y khoa">
-                                <i class="bi bi-info-circle me-1"></i>Chi tiết
+                                title="Xem thông tin chi tiết và quy trình các bước">
+                                <i class="bi bi-info-circle me-1"></i>Chi tiết &amp; Quy trình
                               </button>
                               <c:choose>
-                                <c:when test="${service.code == 'PT-LASIK' or service.code == 'PT-SMILE'}">
-                                  <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${lasikPreopId != null ? lasikPreopId : 3}"
-                                    class="btn btn-dental rounded-pill px-3 btn-sm shadow-sm" title="Đăng ký khám tiền phẫu để đánh giá điều kiện xóa cận">
-                                    <i class="bi bi-calendar-check me-1"></i>Đăng ký khám tiền phẫu
-                                  </a>
-                                </c:when>
-                                <c:when test="${service.code == 'PT-PHACO'}">
-                                  <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${phacoPreopId != null ? phacoPreopId : 5}"
-                                    class="btn btn-dental rounded-pill px-3 btn-sm shadow-sm" title="Đăng ký khám tầm soát đục thủy tinh thể">
-                                    <i class="bi bi-calendar-check me-1"></i>Đăng ký tầm soát Phaco
+                                <c:when test="${not service.allowDirectBooking}">
+                                  <%-- Trường hợp 3: Thủ thuật chỉ qua chỉ định Bác sĩ - hướng dẫn đặt khám tổng quát --%>
+                                  <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${not empty generalExamServiceId ? generalExamServiceId : ""}"
+                                    class="btn btn-outline-primary rounded-pill px-3 btn-sm shadow-sm"
+                                    title="Đặt lịch Khám mắt tổng quát — Bác sĩ sẽ thăm khám và chỉ định thủ thuật phù hợp">
+                                    <i class="bi bi-person-check me-1"></i>Đặt lịch Khám trước
                                   </a>
                                 </c:when>
                                 <c:otherwise>
                                   <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${service.id}"
-                                    class="btn btn-dental rounded-pill px-3 btn-sm shadow-sm">
-                                    <i class="bi bi-calendar-check me-1"></i>Đặt lịch khám
+                                    class="btn btn-dental rounded-pill px-3 btn-sm shadow-sm" title="Đặt lịch hẹn trước cho dịch vụ này">
+                                    <i class="bi bi-calendar-check me-1"></i>Đặt lịch trước
                                   </a>
                                 </c:otherwise>
                               </c:choose>
@@ -469,10 +460,20 @@
                           <h4 class="fw-bold text-dark mt-2 mb-2" id="homeServiceModalLabel${service.id}">${service.name}</h4>
                           
                           <div class="d-flex align-items-center justify-content-between p-3 rounded-3 mb-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
-                            <span class="text-muted small">Chi phí dịch vụ niêm yết:</span>
-                            <span class="fs-4 fw-bold text-teal" style="color: #0d9488;">
-                              <fmt:formatNumber value="${service.price}" pattern="#,##0" /> VNĐ
-                            </span>
+                            <div>
+                              <span class="text-muted small d-block">Chi phí dịch vụ niêm yết:</span>
+                              <span class="fs-4 fw-bold text-teal" style="color: #0d9488;">
+                                <fmt:formatNumber value="${service.price}" pattern="#,##0" /> VNĐ
+                              </span>
+                            </div>
+                            <c:if test="${service.onlineBalanceDue > 0}">
+                              <div class="text-end">
+                                <span class="text-muted small d-block">Tiền cọc giữ chỗ &amp; khám ban đầu:</span>
+                                <span class="fs-5 fw-bold text-success">
+                                  <fmt:formatNumber value="${service.onlineDepositFee}" pattern="#,##0" /> VNĐ
+                                </span>
+                              </div>
+                            </c:if>
                           </div>
 
                           <c:if test="${not empty service.summary}">
@@ -484,15 +485,37 @@
                           </c:if>
 
                           <%-- CẢNH BÁO QUY TRÌNH Y KHOA BẮT BUỘC --%>
+                          <%-- CẢNH BÁO QUY TRÌNH Y KHOA DỰA TRÊN CẤU HÌNH ADMIN --%>
                           <c:choose>
-                            <c:when test="${service.surgery}">
-                              <div class="alert alert-warning border border-warning rounded-4 p-3 mb-2 shadow-sm" style="background: #fffbeb;">
+                            <%-- Trường hợp 3: Thủ thuật chỉ qua chỉ định Bác sĩ --%>
+                            <c:when test="${not service.allowDirectBooking}">
+                              <div class="alert border rounded-4 p-3 mb-3 shadow-sm" style="background: #fff7ed; border-color: #fed7aa !important;">
+                                <div class="d-flex align-items-start">
+                                  <i class="bi bi-person-check-fill fs-3 me-3 flex-shrink-0 mt-1" style="color: #ea580c;"></i>
+                                  <div>
+                                    <h6 class="fw-bold text-dark mb-1">🩺 THỦ THUẬT CHỈ NHẬN QUA CHỈ ĐỊNH BÁC SĨ</h6>
+                                    <p class="small text-secondary mb-2">
+                                      Dịch vụ này <strong>không thể đặt lịch trực tiếp</strong> vì bắt buộc cần Bác sĩ thăm khám lâm sàng, đánh giá tình trạng cụ thể và ra chỉ định trước khi thực hiện can thiệp.
+                                    </p>
+                                    <div class="d-flex align-items-start gap-2 p-2 rounded-3 bg-white border border-light-subtle">
+                                      <i class="bi bi-lightbulb-fill text-warning mt-1 flex-shrink-0"></i>
+                                      <div class="small">
+                                        <strong class="text-dark">Quý khách cần làm gì?</strong>
+                                        <div class="text-secondary mt-1">Vui lòng <strong>đặt lịch Khám mắt tổng quát (NK-01)</strong> trước. Tại buổi khám, Bác sĩ sẽ trực tiếp đánh giá và ra chỉ định thực hiện thủ thuật này ngay trong hệ thống — không cần đặt thêm lịch riêng.</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </c:when>
+                            <c:when test="${service.requiresPreOp}">
+                              <div class="alert alert-warning border border-warning rounded-4 p-3 mb-3 shadow-sm" style="background: #fffbeb;">
                                 <div class="d-flex align-items-start">
                                   <i class="bi bi-exclamation-triangle-fill fs-3 text-warning me-3 flex-shrink-0 mt-1"></i>
                                   <div>
                                     <h6 class="fw-bold text-dark mb-1">⚠️ LƯU Ý QUY TRÌNH BẮT BUỘC: PHẢI KHÁM TIỀN PHẪU TRƯỚC</h6>
                                     <p class="small text-secondary mb-2">
-                                      Theo quy chuẩn an toàn y khoa, bệnh nhân <strong>bắt buộc phải thực hiện gói Khám tiền phẫu chuyên sâu trước</strong> để Bác sĩ đo đạc các chỉ số sinh học mắt (đo khúc xạ liệt điều tiết, bản đồ giác mạc Pentacam, độ dày giác mạc, soi đáy mắt...) và kết luận mắt có đủ điều kiện phẫu thuật hay không. Sau khi có kết luận chính thức và chỉ định từ Bác sĩ, bệnh viện mới xếp lịch phẫu thuật.
+                                      Theo quy chuẩn y khoa, bệnh nhân <strong>bắt buộc phải thực hiện gói ${not empty service.prerequisiteServiceName ? service.prerequisiteServiceName : 'Khám tiền phẫu chuyên sâu'} trước</strong> để Bác sĩ đo đạc các chỉ số sinh học mắt và kết luận mắt có đủ điều kiện phẫu thuật hay không. Sau khi có kết luận chính thức từ Bác sĩ, bệnh viện mới xếp lịch phẫu thuật.
                                     </p>
                                     <div class="d-flex align-items-center gap-2 text-success small fw-semibold">
                                       <i class="bi bi-gift-fill"></i>
@@ -503,49 +526,74 @@
                               </div>
                             </c:when>
                             <c:when test="${service.procedure}">
-                              <div class="alert alert-info border border-info rounded-4 p-3 mb-2 shadow-sm" style="background: #f0fdfa; border-color: #99f6e4 !important;">
+                              <div class="alert alert-info border border-info rounded-4 p-3 mb-3 shadow-sm" style="background: #f0fdfa; border-color: #99f6e4 !important;">
                                 <div class="d-flex align-items-start">
                                   <i class="bi bi-shield-exclamation fs-3 text-teal me-3 flex-shrink-0 mt-1" style="color: #0d9488;"></i>
                                   <div>
-                                    <h6 class="fw-bold text-dark mb-1">⚠️ LƯU Ý QUY TRÌNH THỦ THUẬT / TIỂU PHẪU: BẮT BUỘC KHÁM TRƯỚC</h6>
+                                    <h6 class="fw-bold text-dark mb-1">⚠️ LƯU Ý QUY TRÌNH THỦ THUẬT: BẮT BUỘC KHÁM TRƯỚC</h6>
                                     <p class="small text-secondary mb-0">
-                                      Để đảm bảo an toàn y tế và vô trùng tuyệt đối, đối với thủ thuật / tiểu phẫu, bệnh nhân <strong>vẫn bắt buộc phải qua bước Thăm khám lâm sàng trực tiếp với Bác sĩ chuyên khoa trước</strong>. Bác sĩ sẽ dùng đèn sinh hiển vi đánh giá chính xác mức độ tổn thương, giai đoạn ổ viêm và chỉ định thời điểm làm thủ thuật thích hợp, an toàn nhất.
+                                      Để đảm bảo an toàn y tế và vô trùng tuyệt đối, đối với thủ thuật / tiểu phẫu, bệnh nhân <strong>vẫn bắt buộc phải qua bước Thăm khám lâm sàng trực tiếp với Bác sĩ chuyên khoa trước</strong> để đánh giá chính xác mức độ tổn thương và chỉ định thời điểm can thiệp thích hợp.
                                     </p>
                                   </div>
                                 </div>
                               </div>
                             </c:when>
                             <c:when test="${service.preOp}">
-                              <div class="alert alert-success border border-success rounded-4 p-3 mb-2 shadow-sm" style="background: #f0fdf4;">
+                              <div class="alert alert-success border border-success rounded-4 p-3 mb-3 shadow-sm" style="background: #f0fdf4;">
                                 <div class="d-flex align-items-start">
                                   <i class="bi bi-check-circle-fill fs-3 text-success me-3 flex-shrink-0 mt-1"></i>
                                   <div>
                                     <h6 class="fw-bold text-success mb-1">ĐIỀU KIỆN TIÊN QUYẾT TRƯỚC PHẪU THUẬT &amp; HOÀN PHÍ 100%</h6>
                                     <p class="small text-secondary mb-0">
-                                      Đây là gói khám chuyên sâu đánh giá toàn diện điều kiện mắt trước can thiệp phẫu thuật khúc xạ / Phaco. Toàn bộ chi phí của gói khám này được <strong>hoàn trừ 100% vào chi phí ca mổ</strong> nếu quý khách phẫu thuật tại VisionCare.
+                                      Đây là gói khám chuyên sâu đánh giá toàn diện điều kiện mắt trước can thiệp. Toàn bộ chi phí của gói khám này được <strong>hoàn trừ 100% vào chi phí ca mổ</strong> nếu quý khách phẫu thuật tại VisionCare.
                                     </p>
                                   </div>
                                 </div>
                               </div>
                             </c:when>
                           </c:choose>
+
+                          <%-- SƠ ĐỒ CÁC BƯỚC QUY TRÌNH THỰC HIỆN (DYNAMIC WORKFLOW TIMELINE) --%>
+                          <c:if test="${service.hasWorkflowSteps()}">
+                            <div class="card border-0 rounded-4 p-3 mb-3 shadow-sm" style="background: #f8fafc; border: 1px solid #e2e8f0 !important;">
+                              <div class="d-flex align-items-center gap-2 mb-3">
+                                <i class="bi bi-diagram-3-fill text-teal fs-5" style="color: #0d9488;"></i>
+                                <h6 class="fw-bold mb-0 text-dark">Quy trình các bước thực hiện</h6>
+                              </div>
+                              <div class="d-flex flex-column gap-2">
+                                <c:forEach items="${service.workflowSteps}" var="step" varStatus="stepStatus">
+                                  <div class="d-flex align-items-start gap-3 p-2 rounded-3 bg-white border border-light-subtle shadow-xs">
+                                    <span class="badge ${step.stageBadgeClass} rounded-pill py-1 px-2 small flex-shrink-0" style="font-size: 11px;">
+                                      <i class="bi ${step.stageIcon} me-1"></i>Bước ${step.stepOrder}: ${step.stageDisplayName}
+                                    </span>
+                                    <div class="flex-grow-1">
+                                      <div class="fw-semibold text-dark small"><c:out value="${step.stepName}" /></div>
+                                      <c:if test="${not empty step.description}">
+                                        <div class="text-muted" style="font-size: 11.5px;"><c:out value="${step.description}" /></div>
+                                      </c:if>
+                                    </div>
+                                  </div>
+                                </c:forEach>
+                              </div>
+                            </div>
+                          </c:if>
+
                         </div>
                         <div class="modal-footer border-top-0 pt-0 px-4 pb-4 d-flex justify-content-between">
                           <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
                           <c:choose>
-                            <c:when test="${service.code == 'PT-LASIK' or service.code == 'PT-SMILE'}">
-                              <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${lasikPreopId != null ? lasikPreopId : 3}" class="btn btn-dental rounded-pill px-4 shadow-sm">
-                                <i class="bi bi-calendar-check me-2"></i>Đăng ký khám tiền phẫu LASIK/SMILE
-                              </a>
-                            </c:when>
-                            <c:when test="${service.code == 'PT-PHACO'}">
-                              <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${phacoPreopId != null ? phacoPreopId : 5}" class="btn btn-dental rounded-pill px-4 shadow-sm">
-                                <i class="bi bi-calendar-check me-2"></i>Đăng ký tầm soát Phaco
+                            <c:when test="${not service.allowDirectBooking}">
+                              <%-- Trường hợp 3: Hướng dẫn đặt khám tổng quát thay vì dịch vụ này --%>
+                              <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${not empty generalExamServiceId ? generalExamServiceId : ""}"
+                                 class="btn btn-outline-primary rounded-pill px-4 shadow-sm"
+                                 title="Đặt lịch Khám mắt tổng quát — Bác sĩ sẽ thăm khám và chỉ định thủ thuật">
+                                <i class="bi bi-person-check me-2"></i>Đặt lịch Khám tổng quát trước
                               </a>
                             </c:when>
                             <c:otherwise>
-                              <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${service.id}" class="btn btn-dental rounded-pill px-4 shadow-sm">
-                                <i class="bi bi-calendar-check me-2"></i>Đặt lịch khám dịch vụ này
+                              <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${service.id}"
+                                 class="btn btn-dental rounded-pill px-4 shadow-sm" title="Đặt lịch hẹn trước cho dịch vụ này">
+                                <i class="bi bi-calendar-check me-2"></i>Đặt lịch trước dịch vụ này
                               </a>
                             </c:otherwise>
                           </c:choose>
@@ -687,16 +735,10 @@
 
                               <div class="mt-4">
                                 <c:choose>
-                                  <c:when test="${service.code == 'PT-LASIK' or service.code == 'PT-SMILE'}">
-                                    <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${lasikPreopId != null ? lasikPreopId : 3}"
+                                  <c:when test="${service.requiresPreOp and not empty service.prerequisiteServiceId}">
+                                    <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${service.prerequisiteServiceId}"
                                        class="btn btn-dental rounded-pill px-4 py-2 shadow-sm">
-                                      <i class="bi bi-calendar-check me-2"></i>Đăng ký khám tiền phẫu LASIK/SMILE
-                                    </a>
-                                  </c:when>
-                                  <c:when test="${service.code == 'PT-PHACO'}">
-                                    <a href="${pageContext.request.contextPath}/book-appointment?serviceId=${phacoPreopId != null ? phacoPreopId : 5}"
-                                       class="btn btn-dental rounded-pill px-4 py-2 shadow-sm">
-                                      <i class="bi bi-calendar-check me-2"></i>Đăng ký tầm soát Phaco
+                                      <i class="bi bi-calendar-check me-2"></i>Đăng ký ${not empty service.prerequisiteServiceName ? service.prerequisiteServiceName : 'khám tiền phẫu / tầm soát'}
                                     </a>
                                   </c:when>
                                   <c:when test="${service.procedure}">

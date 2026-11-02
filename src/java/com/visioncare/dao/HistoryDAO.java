@@ -20,7 +20,7 @@ public class HistoryDAO {
         String sql = "SELECT m.Record_ID, a.Appointment_ID, a.Status, m.Created_At AS Date, e.Full_Name AS DoctorName, " +
                      "e.Specialty AS DoctorSpecialty, m.Clinical_Diagnosis, m.examination_result, m.conclusion, " +
                      "ws.Work_Date, ws.Start_Time, ws.End_Time, " +
-                     "i.Invoice_ID, i.Status AS Invoice_Status, i.Total_Amount, " +
+                     "i.Invoice_ID, i.Status AS Invoice_Status, i.Total_Amount, CASE WHEN a.Status='Completed' AND i.Status='Paid' AND EXISTS(SELECT 1 FROM Invoice_Checkout co WHERE co.Invoice_ID=i.Invoice_ID AND co.Finalized_At IS NOT NULL) AND NOT EXISTS(SELECT 1 FROM Refund_Request rr WHERE rr.Invoice_ID=i.Invoice_ID AND rr.Status IN ('Pending','Approved')) THEN 1 ELSE 0 END AS Invoice_Visible, " +
                      "(SELECT TOP 1 s.Service_Name FROM Procedure_Order po JOIN Service_Catalog s ON po.Service_ID = s.Service_ID WHERE po.Record_ID = m.Record_ID) AS Dynamic_Service " +
                      "FROM Medical_Record m " +
                      "JOIN Appointment a ON m.Appointment_ID = a.Appointment_ID " +
@@ -97,6 +97,7 @@ public class HistoryDAO {
                     map.put("id", recId > 0 ? recId : apptId);
                     int invId = rs.getInt("Invoice_ID");
                     map.put("invoiceId", invId > 0 ? invId : 0);
+                    map.put("invoiceVisible",rs.getBoolean("Invoice_Visible"));
                     map.put("invoiceStatus", rs.getString("Invoice_Status"));
                     String dynamicSvc = rs.getString("Dynamic_Service");
                     map.put("serviceName", dynamicSvc != null ? dynamicSvc : "Khám chuyên khoa");
@@ -148,7 +149,7 @@ public class HistoryDAO {
     // For refund-request.jsp
     public List<Map<String, Object>> getRefunds(int accountId) throws Exception {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT r.Refund_ID, r.Invoice_ID, r.Refund_Amount, r.Reason, r.Status, r.Created_At, " +
+        String sql = "SELECT r.Refund_ID, r.Invoice_ID, r.Refund_Amount, r.Reason, r.Decision_Note, r.Status, r.Created_At, " +
                      "p.Full_Name AS Patient_Name, p.Phone AS Patient_Phone, i.Appointment_ID " +
                      "FROM Refund_Request r " +
                      "JOIN Patient p ON r.Patient_ID = p.Patient_ID " +
@@ -167,7 +168,8 @@ public class HistoryDAO {
                     String status = rs.getString("Status");
                     String statusVn = status;
                     if ("Pending".equals(status)) statusVn = "Chờ duyệt";
-                    else if ("Approved".equals(status)) statusVn = "Đã xác nhận";
+                    else if ("Approved".equals(status)) statusVn = "Đã duyệt · Chờ hoàn tiền";
+                    else if ("Completed".equals(status)) statusVn = "Đã hoàn tiền";
                     else if ("Rejected".equals(status)) statusVn = "Đã từ chối";
 
                     map.put("id", refundId);
@@ -178,7 +180,7 @@ public class HistoryDAO {
                     map.put("formattedApptId", apptId > 0 ? ("#APT-" + apptId) : "N/A");
                     map.put("amount", String.format("%,d", rs.getLong("Refund_Amount")));
                     map.put("amountFmt", String.format("%,d đ", rs.getLong("Refund_Amount")));
-                    map.put("reason", rs.getString("Reason"));
+                    map.put("reason", rs.getString("Reason"));map.put("decisionNote",rs.getString("Decision_Note"));
                     map.put("status", status);
                     map.put("statusVn", statusVn);
                     map.put("patientName", rs.getString("Patient_Name"));

@@ -23,7 +23,7 @@ public class StaffInvoiceServlet extends HttpServlet {
  @Override protected void doGet(HttpServletRequest req,HttpServletResponse res)throws ServletException,IOException {
   if(authorize(req,res)==null)return;
   res.setHeader("Cache-Control","no-store");
-  HttpSession session=req.getSession();if(session.getAttribute("invoiceCsrf")==null)session.setAttribute("invoiceCsrf",UUID.randomUUID().toString());
+  HttpSession session=req.getSession();WorkflowTokens.ensure(session);if(session.getAttribute("invoiceCsrf")==null)session.setAttribute("invoiceCsrf",UUID.randomUUID().toString());
   try {
    String path=req.getServletPath();
    if("/staff/invoices".equals(path)) {
@@ -31,7 +31,8 @@ public class StaffInvoiceServlet extends HttpServlet {
     req.setAttribute("rows",dao.list(search,status,date));req.getRequestDispatcher("/views/staff/invoice-list.jsp").forward(req,res);return;
    }
    if(req.getParameter("id")==null && req.getParameter("appointmentId")==null){res.sendRedirect(req.getContextPath()+"/staff/invoices");return;}
-   int id=req.getParameter("id")!=null?Integer.parseInt(req.getParameter("id")):dao.invoiceForAppointment(Integer.parseInt(req.getParameter("appointmentId")));StaffInvoice invoice=dao.get(id);req.setAttribute("invoice",invoice);req.setAttribute("fingerprint",invoice.fingerprint());
+   int id=req.getParameter("id")!=null?Integer.parseInt(req.getParameter("id")):dao.invoiceForAppointment(Integer.parseInt(req.getParameter("appointmentId")));StaffInvoice invoice=dao.get(id);req.setAttribute("invoice",invoice);Map<String,Object> refund=new RefundLifecycleDAO().latest(id);req.setAttribute("refund",refund);
+   if(refund==null||!("Pending".equals(refund.get("status"))||"Approved".equals(refund.get("status"))))req.setAttribute("refundItems",new ItemRefundDAO().candidates(id));req.setAttribute("fingerprint",invoice.fingerprint());
    if("/staff/invoices/export".equals(path)) {
     if(!invoice.finalized||!"Paid".equals(invoice.invoiceStatus)||invoice.getDue()!=0||invoice.isBlocked()){res.sendError(409,"Chỉ xuất hóa đơn đã chốt và thanh toán đủ.");return;}
     req.getRequestDispatcher("/views/staff/invoice-export.jsp").forward(req,res);return;

@@ -1,11 +1,8 @@
 package com.visioncare.model;
 
 public enum ServiceCategory {
-    CONSULTATION("Khám và tư vấn"),
-    DIAGNOSTICS("Kiểm tra và chẩn đoán"),
-    TREATMENT("Điều trị và thủ thuật"),
-    OTHER("Khác"),
-    EXTERNAL("Dịch vụ ngoài");
+    EXAMINATION("Khám và chẩn đoán"),
+    TREATMENT("Điều trị và thủ thuật");
 
     private final String vietnameseName;
 

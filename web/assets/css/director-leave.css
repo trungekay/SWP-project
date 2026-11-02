@@ -1,0 +1,15 @@
+/* Shared card, filter and table geometry comes from director-refunds.css. */
+.leave-page .leave-stat{height:100%;margin-bottom:0}
+.leave-page .filter-tab{display:inline-block}
+.leave-page .leave-reason{min-width:160px;max-width:280px;white-space:normal;overflow-wrap:anywhere;color:#475569}
+.leave-page .badge-soft-teal{background:#ccfbf1;color:#0d9488}
+.leave-page .badge-soft-primary{background:#e0f2fe;color:#0284c7}
+.leave-page .badge-soft-success{background:#dcfce7;color:#16a34a}
+.leave-page .leave-table{min-width:1150px;table-layout:fixed}
+.leave-page .refund-action{min-width:190px}
+.leave-page .leave-actions{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+.leave-page .leave-actions .btn{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0}
+.leave-page .leave-person-meta{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 8px;margin-top:4px}
+.leave-page .leave-person-meta .badge{white-space:nowrap;flex-shrink:0;line-height:1.4}
+.leave-page .leave-person-meta small{min-width:0;overflow-wrap:anywhere}
+.leave-page .refund-table td{border-color:#e2e8f0}

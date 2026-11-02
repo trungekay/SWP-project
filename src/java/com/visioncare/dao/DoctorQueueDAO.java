@@ -1,12 +1,10 @@
 package com.visioncare.dao;
 
-import com.visioncare.util.ExaminationWindow;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -17,7 +15,9 @@ public class DoctorQueueDAO {
             + "WHERE mr.Appointment_ID = a.Appointment_ID "
             + "AND NULLIF(LTRIM(RTRIM(mr.Clinical_Diagnosis)), '') IS NOT NULL "
             + "AND NULLIF(LTRIM(RTRIM(mr.examination_result)), '') IS NOT NULL "
-            + "AND NULLIF(LTRIM(RTRIM(mr.conclusion)), '') IS NOT NULL)";
+            + "AND NULLIF(LTRIM(RTRIM(mr.conclusion)), '') IS NOT NULL) "
+            + "AND NOT EXISTS (SELECT 1 FROM Procedure_Order po JOIN Medical_Record pm ON pm.Record_ID=po.Record_ID "
+            + "WHERE pm.Appointment_ID=a.Appointment_ID AND po.Status NOT IN ('Completed','Cancelled'))";
 
     /** Appointments whose saved examination form has the required result and conclusion. */
     public Set<Integer> readyForCompletion(int doctorEmployeeId, Date clinicDate) throws Exception {
@@ -37,9 +37,8 @@ public class DoctorQueueDAO {
         return ready;
     }
 
-    /** The assigned doctor may cancel an overdue waiting case or stop an active examination. */
-    public boolean cancelExamination(int appointmentId, int doctorEmployeeId,
-            LocalDateTime clinicNow, String reason) throws Exception {
+    /** The assigned doctor may cancel a waiting case or stop an active examination. */
+    public boolean cancelExamination(int appointmentId, int doctorEmployeeId, String reason) throws Exception {
         if (reason == null || reason.trim().isEmpty() || reason.trim().length() > 500) return false;
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
@@ -47,7 +46,7 @@ public class DoctorQueueDAO {
             try {
                 int scheduleId;
                 String originalStatus;
-                String assignedSql = "SELECT a.Status, a.checkin_time, ws.Schedule_ID, ws.Work_Date, ws.Start_Time "
+                String assignedSql = "SELECT a.Status, a.checkin_time, ws.Schedule_ID "
                         + "FROM Appointment a WITH (UPDLOCK, HOLDLOCK) "
                         + "JOIN Work_Schedule ws WITH (UPDLOCK, HOLDLOCK) ON a.Schedule_ID = ws.Schedule_ID "
                         + "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ?";
@@ -61,11 +60,7 @@ public class DoctorQueueDAO {
                         }
                         originalStatus = rs.getString("Status");
                         if (!"In_Progress".equals(originalStatus)
-                                && !("Confirmed".equals(originalStatus)
-                                && rs.getDate("Work_Date") != null && rs.getTime("Start_Time") != null
-                                && "late".equals(ExaminationWindow.state(
-                                        rs.getDate("Work_Date").toLocalDate(),
-                                        rs.getTime("Start_Time").toLocalTime(), clinicNow)))) {
+                                && !"Confirmed".equals(originalStatus)) {
                             conn.rollback();
                             return false;
                         }
@@ -106,7 +101,7 @@ public class DoctorQueueDAO {
 
                 String cancellationNote = "In_Progress".equals(originalStatus)
                         ? "Bác sĩ dừng ca đang khám: " + reason.trim()
-                        : "Bác sĩ hủy ca quá giờ: " + reason.trim();
+                        : "Bác sĩ hủy ca chờ khám: " + reason.trim();
                 int recordCount;
                 try (PreparedStatement ps = conn.prepareStatement(
                         "UPDATE Medical_Record SET conclusion = CASE "
@@ -153,7 +148,7 @@ public class DoctorQueueDAO {
         }
     }
 
-    public boolean startExamination(int appointmentId, int doctorEmployeeId, LocalDateTime clinicNow) throws Exception {
+    public boolean startExamination(int appointmentId, int doctorEmployeeId) throws Exception {
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
             conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
@@ -172,9 +167,7 @@ public class DoctorQueueDAO {
                             return false;
                         }
                         workDate = rs.getDate("Work_Date");
-                        if (workDate == null || rs.getTime("Start_Time") == null
-                                || !"open".equals(ExaminationWindow.state(
-                                        workDate.toLocalDate(), rs.getTime("Start_Time").toLocalTime(), clinicNow))) {
+                        if (workDate == null || rs.getTime("Start_Time") == null) {
                             conn.rollback();
                             return false;
                         }

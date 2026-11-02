@@ -5,7 +5,8 @@
       <jsp:include page="/views/common/header.jsp">
         <jsp:param name="pageTitle" value="Lịch sử hẹn khám" />
         <jsp:param name="pageDescription" value="Lịch sử hẹn khám VisionCare" />
-        <jsp:param name="bodyClass" value="starter-page-page" />
+        <jsp:param name="bodyClass" value="starter-page-page screen-wide patient-wide" />
+        <jsp:param name="fullWidth" value="true" />
         <jsp:param name="activeNav" value="" />
       </jsp:include>
 
@@ -243,7 +244,7 @@
 
         <div class="page-title">
           <div class="heading">
-            <div class="container">
+            <div class="container-fluid screen-fluid">
               <div class="row d-flex justify-content-center text-center">
                 <div class="col-lg-8">
                   <h1>Hồ sơ cá nhân</h1>
@@ -253,7 +254,7 @@
             </div>
           </div>
           <nav class="breadcrumbs">
-            <div class="container">
+            <div class="container-fluid screen-fluid">
               <ol>
                 <li><a href="${pageContext.request.contextPath}/home">Trang chủ</a></li>
                 <li class="current">Lịch sử hẹn khám</li>
@@ -263,8 +264,8 @@
         </div>
 
         <section class="section pt-4">
-          <div class="container">
-            <div class="row">
+          <div class="container-fluid screen-fluid">
+            <div class="row profile-screen-grid">
               <div class="col-lg-3">
                 <div class="content-card text-center border-0 mb-4 mb-lg-0" style="padding: 30px 20px;">
                   <div class="mb-3">
@@ -409,6 +410,7 @@
                                     </c:choose>
                                   </td>
                                   <td class="py-3 text-center">
+                                    <c:if test="${appt.canReschedule}"><a class="btn btn-sm btn-outline-primary mb-1" href="${pageContext.request.contextPath}/profile/reschedule?id=${appt.id}">Đổi bác sĩ / ca khám</a></c:if>
                                     <c:choose>
                                       <c:when test="${appt.status == 'Confirmed' && empty appt.checkinTime}">
                                         <button type="button" class="btn btn-sm btn-outline-danger btn-table-cancel"

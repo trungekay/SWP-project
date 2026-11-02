@@ -50,7 +50,7 @@ public class ProcedurePaymentDAO {
         return rows;
     }
 
-    /** Record the receipt once and release the matching surgery order atomically. */
+    /** Record the receipt once, independently of the surgery's clinical progress. */
     public boolean confirm(int orderId, int staffEmployeeId, String method) throws Exception {
         try { method = com.visioncare.util.PaymentMethod.canonical(method); } catch (IllegalArgumentException error) { return false; }
         if (orderId <= 0 || staffEmployeeId <= 0
@@ -79,7 +79,7 @@ public class ProcedurePaymentDAO {
                         + "JOIN Medical_Record mr ON mr.Record_ID = po.Record_ID "
                         + "JOIN Appointment a ON a.Appointment_ID = mr.Appointment_ID AND a.Status <> 'Canceled' "
                         + "JOIN Master_Invoice i WITH (UPDLOCK, HOLDLOCK) ON i.Appointment_ID = mr.Appointment_ID "
-                        + "WHERE pr.Order_ID = ? AND pr.Status = 'Pending' AND po.Status = 'Pending' "
+                        + "WHERE pr.Order_ID = ? AND pr.Status = 'Pending' AND po.Status <> 'Cancelled' "
                         + "AND s.Service_Code LIKE 'PT-%' AND po.Referral_Notes IS NOT NULL "
                         + "AND i.Status NOT IN ('Canceled', 'Refunded') "
                         + "AND NOT EXISTS (SELECT 1 FROM Invoice_Checkout co WHERE co.Invoice_ID=i.Invoice_ID AND co.Finalized_At IS NOT NULL)";

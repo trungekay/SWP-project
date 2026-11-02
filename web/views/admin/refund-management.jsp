@@ -363,7 +363,7 @@
                                                 <span class="refund-code">${rf.formattedId}</span>
                                             </td>
                                             <td>
-                                                <a href="${pageContext.request.contextPath}/profile/invoice-detail?id=${rf.invoiceId}" class="invoice-link" title="Xem chi tiết hóa đơn">
+                                                <a href="${pageContext.request.contextPath}/staff/invoices/detail?id=${rf.invoiceId}" class="invoice-link" title="Xem chi tiết hóa đơn">
                                                     ${rf.formattedInvoiceId}
                                                 </a>
                                                 <c:if test="${not empty rf.formattedApptId && rf.formattedApptId != 'N/A'}">
@@ -612,7 +612,7 @@
             // Invoice link
             const invLink = document.getElementById('detailModalInvoiceLink');
             invLink.innerText = data.invoiceCode;
-            invLink.href = '${pageContext.request.contextPath}/profile/invoice-detail?id=' + data.invoiceId;
+            invLink.href = '${pageContext.request.contextPath}/staff/invoices/detail?id=' + data.invoiceId;
 
             // Appointment badge
             const apptContainer = document.getElementById('detailModalApptBadge');

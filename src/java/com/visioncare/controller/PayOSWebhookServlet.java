@@ -49,7 +49,12 @@ public class PayOSWebhookServlet extends HttpServlet {
                 int appointmentId = (int) (orderCode > 1000000L ? (orderCode / 1000000L) : orderCode);
 
                 // Cập nhật trạng thái thành Confirmed & Paid
-                appointmentDAO.confirmPayment(appointmentId);
+                if (!appointmentDAO.confirmPayment(appointmentId)) {
+                    System.err.println("[PayOS Webhook] Payment requires staff review; appointment cannot be confirmed: " + appointmentId);
+                    response.setStatus(HttpServletResponse.SC_CONFLICT);
+                    response.getWriter().write("{\"success\":false,\"message\":\"Appointment unavailable; payment requires staff review\"}");
+                    return;
+                }
                 System.out.println("[PayOS Webhook] Successfully confirmed payment for Appointment #" + appointmentId + " (OrderCode: " + orderCode + ")");
 
                 // Gửi email vé khám

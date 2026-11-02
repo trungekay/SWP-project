@@ -30,6 +30,21 @@ public class ScheduleSlotDTO {
     public void setId(String id) {
         this.id = id;
     }
+    public String getDisplayName() {
+        if (id == null) return "";
+        String name = id;
+        int parenIdx = name.indexOf(" (");
+        if (parenIdx > 0) {
+            name = name.substring(0, parenIdx).trim();
+        }
+        if (name.startsWith("Slot ")) {
+            return "Ca " + name.substring(5).trim();
+        }
+        if ("Slot".equalsIgnoreCase(name)) {
+            return "Ca";
+        }
+        return name;
+    }
     public String getTimeRange() {
         return timeRange;
     }

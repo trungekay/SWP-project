@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@WebServlet(name = "AdminBillingServlet", urlPatterns = {"/admin/billing", "/admin/dashboard", "/staff/payments", "/director/revenue", "/director/billing"})
+@WebServlet(name = "AdminBillingServlet", urlPatterns = {"/admin/billing", "/staff/payments", "/director/revenue", "/director/billing"})
 public class AdminBillingServlet extends HttpServlet {
 
     private final InvoiceDAO invoiceDAO = new InvoiceDAO();

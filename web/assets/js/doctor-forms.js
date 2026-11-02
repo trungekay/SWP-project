@@ -10,6 +10,7 @@
         const medicationToggle = document.querySelector('[data-section-toggle="medication"]');
         if (!selected || !dose) return;
         const active = (!medicationToggle || medicationToggle.checked) && selected.checked;
+        row.classList.toggle("is-selected", selected.checked);
         dose.disabled = !active;
         dose.required = active;
     }
@@ -188,25 +189,10 @@
     const surgeryToggle = page.querySelector("[data-surgery-toggle]");
     const surgeryPanel = page.querySelector("[data-surgery-panel]");
     if (surgeryToggle && surgeryPanel) {
-        const canRefer = page.dataset.surgeryCanRefer === "true";
-        const controls = [...surgeryPanel.querySelectorAll("[data-surgery-required]")];
-        const submit = page.querySelector("[data-exam-submit]");
-        const submitLabel = submit?.querySelector("[data-exam-submit-label]");
-        const submitIcon = submit?.querySelector("[data-exam-submit-icon]");
         const syncSurgery = open => {
             surgeryPanel.hidden = !open;
             surgeryToggle.setAttribute("aria-expanded", String(open));
             surgeryToggle.classList.toggle("is-active", open);
-            controls.forEach(control => {
-                control.disabled = !open || !canRefer;
-                control.required = open && canRefer;
-            });
-            if (submit && submitLabel && submitIcon) {
-                const refer = open && canRefer;
-                submit.value = refer ? "refer" : "save";
-                submitLabel.textContent = refer ? submit.dataset.labelRefer : submit.dataset.labelSave;
-                submitIcon.className = refer ? "bi bi-send" : "bi bi-cloud-arrow-up";
-            }
         };
         syncSurgery(page.dataset.surgeryInitial === "true");
         surgeryToggle.addEventListener("click", () => syncSurgery(surgeryPanel.hidden));

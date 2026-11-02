@@ -5,13 +5,14 @@
       <jsp:include page="/views/common/header.jsp">
         <jsp:param name="pageTitle" value="Xác minh mã OTP" />
         <jsp:param name="pageDescription" value="Xác minh mã OTP" />
-        <jsp:param name="bodyClass" value="starter-page-page" />
-        <jsp:param name="activeNav" value="login" />
+        <jsp:param name="bodyClass" value="starter-page-page screen-wide auth-wide" />
+        <jsp:param name="fullWidth" value="true" />
+  <jsp:param name="activeNav" value="login" />
       </jsp:include>
 
       <style>
         .auth-container {
-          max-width: 480px;
+      width: 100%;
           margin: 0 auto;
         }
 
@@ -54,8 +55,9 @@
 
       <main class="main bg-light">
         <section class="section pt-5 pb-5">
-          <div class="container">
-            <div class="auth-container">
+          <div class="container-fluid screen-fluid">
+            <div class="auth-container auth-layout">
+          <jsp:include page="/views/auth/layout/auth-intro.jsp"><jsp:param name="screenTitle" value="Xác minh quyền truy cập" /><jsp:param name="screenDescription" value="Sử dụng mã OTP được gửi đến email của bạn để tiếp tục khôi phục mật khẩu." /></jsp:include>
               <div class="auth-card">
                 <div class="text-center">
                   <div class="logo-icon"><i class="bi bi-chat-dots"></i></div>

@@ -5,6 +5,7 @@ import com.visioncare.dao.CatalogDAO.ImageData;
 import com.visioncare.model.CatalogService;
 import com.visioncare.model.MedicalSupply;
 import com.visioncare.model.ServiceCategory;
+import com.visioncare.model.ServiceWorkflowStep;
 import com.visioncare.model.SupplyCategory;
 import com.visioncare.model.User;
 import jakarta.servlet.ServletException;
@@ -17,13 +18,14 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 @WebServlet(name = "AdminCatalogServlet", urlPatterns = {
-    "/admin/catalog", "/admin/catalog/service", "/admin/catalog/supply",
+    "/admin/catalog", "/admin/catalog/service",
     "/admin/catalog/consumable", "/catalog-image"
 })
 @MultipartConfig(maxFileSize = 5 * 1024 * 1024, maxRequestSize = 6 * 1024 * 1024)
@@ -47,30 +49,26 @@ public class AdminCatalogServlet extends HttpServlet {
             }
             if ("/admin/catalog".equals(path)) {
                 request.setAttribute("catalogServices", dao.listServices());
-                request.setAttribute("catalogSupplies", dao.listSupplies("supply"));
-                request.setAttribute("catalogConsumables", dao.listSupplies("consumable"));
+                request.setAttribute("catalogConsumables", dao.listConsumables());
                 request.getRequestDispatcher("/views/admin/catalog.jsp").forward(request, response);
             } else {
                 String kind = kind(path);
-                if ("supply".equals(kind) && "consumables".equals(request.getParameter("returnTab"))) {
-                    response.sendRedirect(request.getContextPath() + "/admin/catalog/consumable" +
-                            (request.getQueryString() == null ? "?new=1" : "?" + request.getQueryString()));
-                    return;
-                }
                 boolean service = "service".equals(kind);
-                List<?> choices = service ? dao.listServices() : dao.listSupplies(kind);
+                List<?> choices = service ? dao.listServices() : dao.listConsumables();
                 int id = optionalId(request.getParameter("id"));
                 if (id == 0 && !"1".equals(request.getParameter("new")) && !choices.isEmpty()) {
                     id = service ? ((CatalogService) choices.get(0)).getId()
                             : ((MedicalSupply) choices.get(0)).getId();
                 }
                 Object item = id == 0 ? new HashMap<String, Object>() :
-                        (service ? dao.getService(id) : dao.getSupply(kind, id));
+                        (service ? dao.getService(id) : dao.getConsumable(id));
                 if (item == null) { response.sendError(HttpServletResponse.SC_NOT_FOUND); return; }
                 request.setAttribute("choices", choices);
                 if (!service) request.setAttribute("supplyCategories", SupplyCategory.values());
                 if (service) {
                     request.setAttribute("serviceCategories", ServiceCategory.values());
+                    // Pass available services for Prerequisite Dropdown
+                    request.setAttribute("availablePrereqServices", dao.listServices());
                 }
                 request.setAttribute("item", item);
                 request.setAttribute("kind", kind);
@@ -129,14 +127,57 @@ public class AdminCatalogServlet extends HttpServlet {
                 }
                 String summary = field(request, "summary", 500, false);
                 String description = field(request, "description", 4000, false);
+
+                // Workflow & PreOp settings
+                boolean requiresPreOp = "true".equalsIgnoreCase(request.getParameter("requiresPreOp"))
+                        || "on".equalsIgnoreCase(request.getParameter("requiresPreOp"))
+                        || "1".equals(request.getParameter("requiresPreOp"));
+
+                boolean allowDirectBooking = "true".equalsIgnoreCase(request.getParameter("allowDirectBooking"))
+                        || "on".equalsIgnoreCase(request.getParameter("allowDirectBooking"))
+                        || "1".equals(request.getParameter("allowDirectBooking"));
+
+                Integer prerequisiteServiceId = null;
+                String prereqParam = request.getParameter("prerequisiteServiceId");
+                if (prereqParam != null && !prereqParam.trim().isEmpty() && !"0".equals(prereqParam.trim())) {
+                    try {
+                        prerequisiteServiceId = Integer.parseInt(prereqParam.trim());
+                    } catch (NumberFormatException ignored) {}
+                }
+
+                // Parse dynamic workflow steps
+                List<ServiceWorkflowStep> workflowSteps = new ArrayList<>();
+                String[] stepNames = request.getParameterValues("stepName");
+                String[] stepStages = request.getParameterValues("stepStage");
+                String[] stepOrders = request.getParameterValues("stepOrder");
+                String[] stepDescs = request.getParameterValues("stepDescription");
+
+                if (stepNames != null) {
+                    for (int i = 0; i < stepNames.length; i++) {
+                        String sName = stepNames[i] != null ? stepNames[i].trim() : "";
+                        if (sName.isEmpty()) continue;
+                        String sStage = (stepStages != null && stepStages.length > i && stepStages[i] != null) ? stepStages[i].trim() : "PRE_EXAM";
+                        int sOrder = i + 1;
+                        if (stepOrders != null && stepOrders.length > i && stepOrders[i] != null && !stepOrders[i].trim().isEmpty()) {
+                            try {
+                                sOrder = Integer.parseInt(stepOrders[i].trim());
+                            } catch (NumberFormatException ignored) {}
+                        }
+                        String sDesc = (stepDescs != null && stepDescs.length > i && stepDescs[i] != null) ? stepDescs[i].trim() : null;
+                        workflowSteps.add(new ServiceWorkflowStep(0, id, sName, sStage, sOrder, sDesc));
+                    }
+                }
+
                 savedId = dao.saveService(id, code, name, price, category, summary,
                         description, upload == null ? null : upload.getBytes(),
-                        upload == null ? null : upload.getMimeType());
+                        upload == null ? null : upload.getMimeType(),
+                        requiresPreOp, prerequisiteServiceId, allowDirectBooking,
+                        workflowSteps);
             } else {
                 String name = field(request, "name", 255, true);
                 String category = field(request, "category", 100, true);
-                validateCategory(kind, category);
-                savedId = dao.saveSupply(kind, id, name, category, price(request),
+                validateCategory(category);
+                savedId = dao.saveConsumable(id, name, category, price(request),
                         upload == null ? null : upload.getBytes(),
                         upload == null ? null : upload.getMimeType());
             }
@@ -157,14 +198,15 @@ public class AdminCatalogServlet extends HttpServlet {
             throws ServletException, IOException {
         boolean service = "service".equals(kind);
         Map<String, Object> item = new HashMap<>();
-        for (String key : new String[]{"id", "code", "name", "price", "category", "summary", "description", "image"}) {
+        for (String key : new String[]{"id", "code", "name", "price", "category", "summary", "description", "image", "requiresPreOp", "prerequisiteServiceId", "allowDirectBooking"}) {
             item.put(key, request.getParameter(key));
         }
         try {
-            request.setAttribute("choices", service ? dao.listServices() : dao.listSupplies(kind));
+            request.setAttribute("choices", service ? dao.listServices() : dao.listConsumables());
             if (!service) request.setAttribute("supplyCategories", SupplyCategory.values());
             if (service) {
                 request.setAttribute("serviceCategories", ServiceCategory.values());
+                request.setAttribute("availablePrereqServices", dao.listServices());
             }
         } catch (Exception e) {
             log("Could not reload catalog choices", e);
@@ -226,7 +268,7 @@ public class AdminCatalogServlet extends HttpServlet {
             return;
         }
         try {
-            boolean deleted = "service".equals(kind) ? dao.deleteService(id) : dao.deleteSupply(kind, id);
+            boolean deleted = "service".equals(kind) ? dao.deleteService(id) : dao.deleteConsumable(id);
             if (!deleted) {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
                 return;
@@ -276,7 +318,6 @@ public class AdminCatalogServlet extends HttpServlet {
     private String kind(String path) {
         switch (path) {
             case "/admin/catalog/service": return "service";
-            case "/admin/catalog/supply": return "supply";
             case "/admin/catalog/consumable": return "consumable";
             default: throw new IllegalArgumentException("Đường dẫn không hợp lệ.");
         }
@@ -285,7 +326,6 @@ public class AdminCatalogServlet extends HttpServlet {
     private String returnTab(String kind) {
         switch (kind) {
             case "service": return "services";
-            case "supply": return "supplies";
             case "consumable": return "consumables";
             default: throw new IllegalArgumentException("Loại vật tư không hợp lệ.");
         }
@@ -295,11 +335,9 @@ public class AdminCatalogServlet extends HttpServlet {
         return "/admin/catalog?tab=" + returnTab(kind);
     }
 
-    private void validateCategory(String kind, String category) {
+    private void validateCategory(String category) {
         SupplyCategory value = SupplyCategory.fromVietnameseName(category);
-        boolean valid = value != null &&
-                ("supply".equals(kind) && value == SupplyCategory.OTHER ||
-                 "consumable".equals(kind) && value == SupplyCategory.MEDICAL_CONSUMABLES);
+        boolean valid = value == SupplyCategory.MEDICAL_CONSUMABLES;
         if (!valid) throw new IllegalArgumentException("Phân loại vật tư không hợp lệ.");
     }
 

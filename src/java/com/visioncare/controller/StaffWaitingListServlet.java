@@ -157,8 +157,7 @@ public class StaffWaitingListServlet extends HttpServlet {
             List<CatalogService> bookingServices = new ArrayList<>();
             if (allServices != null) {
                 for (CatalogService cs : allServices) {
-                    if ("Khám và tư vấn".equalsIgnoreCase(cs.getCategory())
-                            || "Kiểm tra và chẩn đoán".equalsIgnoreCase(cs.getCategory())
+                    if ("Khám và chẩn đoán".equalsIgnoreCase(cs.getCategory())
                             || (cs.getPrice() != null && cs.getPrice().longValue() <= 1000000)) {
                         bookingServices.add(cs);
                     }

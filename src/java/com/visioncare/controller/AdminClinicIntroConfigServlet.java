@@ -32,7 +32,81 @@ public class AdminClinicIntroConfigServlet extends HttpServlet {
         }
 
         try {
-            if ("add".equalsIgnoreCase(action)) {
+            if ("update_banner".equalsIgnoreCase(action)) {
+                String bannerKey = request.getParameter("bannerKey");
+                Part imagePart = request.getPart("imageFile");
+                if (imagePart == null || imagePart.getSize() <= 0) {
+                    request.getSession().setAttribute("errorMsg", "Vui lòng chọn tệp hình ảnh để tải lên!");
+                    response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro&subtab=banners");
+                    return;
+                }
+                if (imagePart.getSize() > 10 * 1024 * 1024) {
+                    request.getSession().setAttribute("errorMsg", "Kích thước ảnh tối đa là 10MB!");
+                    response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro&subtab=banners");
+                    return;
+                }
+                byte[] bytes;
+                try (InputStream is = imagePart.getInputStream()) {
+                    bytes = is.readAllBytes();
+                }
+                String mimeType = imagePart.getContentType();
+                if (mimeType == null || !mimeType.startsWith("image/")) {
+                    mimeType = detectMimeType(bytes);
+                }
+                com.visioncare.dao.ClinicBannerDAO bannerDAO = new com.visioncare.dao.ClinicBannerDAO();
+                boolean updated = bannerDAO.updateBanner(bannerKey, bytes, mimeType);
+                if (updated) {
+                    request.getSession().setAttribute("successMsg", "Đã cập nhật hình ảnh Banner/Giới thiệu thành công!");
+                } else {
+                    request.getSession().setAttribute("errorMsg", "Không thể cập nhật hình ảnh.");
+                }
+                response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro&subtab=banners");
+                return;
+            } else if ("reset_banner".equalsIgnoreCase(action)) {
+                String bannerKey = request.getParameter("bannerKey");
+                com.visioncare.dao.ClinicBannerDAO bannerDAO = new com.visioncare.dao.ClinicBannerDAO();
+                bannerDAO.resetBanner(bannerKey);
+                request.getSession().setAttribute("successMsg", "Đã khôi phục ảnh Banner/Giới thiệu về mặc định!");
+                response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro&subtab=banners");
+                return;
+            } else if ("update_service_image".equalsIgnoreCase(action)) {
+                int serviceId = Integer.parseInt(request.getParameter("serviceId"));
+                Part imagePart = request.getPart("imageFile");
+                if (imagePart == null || imagePart.getSize() <= 0) {
+                    request.getSession().setAttribute("errorMsg", "Vui lòng chọn tệp hình ảnh để tải lên!");
+                    response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro&subtab=services");
+                    return;
+                }
+                if (imagePart.getSize() > 10 * 1024 * 1024) {
+                    request.getSession().setAttribute("errorMsg", "Kích thước ảnh tối đa là 10MB!");
+                    response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro&subtab=services");
+                    return;
+                }
+                byte[] bytes;
+                try (InputStream is = imagePart.getInputStream()) {
+                    bytes = is.readAllBytes();
+                }
+                String mimeType = imagePart.getContentType();
+                if (mimeType == null || !mimeType.startsWith("image/")) {
+                    mimeType = detectMimeType(bytes);
+                }
+                com.visioncare.dao.CatalogDAO catalogDAO = new com.visioncare.dao.CatalogDAO();
+                boolean updated = catalogDAO.updateServiceImage(serviceId, bytes, mimeType);
+                if (updated) {
+                    request.getSession().setAttribute("successMsg", "Đã cập nhật hình ảnh dịch vụ thành công! Ảnh ngoài trang chủ đã thay đổi.");
+                } else {
+                    request.getSession().setAttribute("errorMsg", "Không tìm thấy hoặc không thể cập nhật ảnh dịch vụ.");
+                }
+                response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro&subtab=services");
+                return;
+            } else if ("reset_service_image".equalsIgnoreCase(action)) {
+                int serviceId = Integer.parseInt(request.getParameter("serviceId"));
+                com.visioncare.dao.CatalogDAO catalogDAO = new com.visioncare.dao.CatalogDAO();
+                catalogDAO.resetServiceImage(serviceId);
+                request.getSession().setAttribute("successMsg", "Đã khôi phục ảnh dịch vụ về mặc định!");
+                response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro&subtab=services");
+                return;
+            } else if ("add".equalsIgnoreCase(action)) {
                 // Thêm hình ảnh mới
                 String title = request.getParameter("title");
                 String description = request.getParameter("description");
