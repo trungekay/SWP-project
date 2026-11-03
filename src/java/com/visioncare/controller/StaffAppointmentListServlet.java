@@ -59,8 +59,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                                 User currentUser = (User) session.getAttribute("user");
                                 int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
                                 // Thanh toán QR: xác nhận Paid/Confirmed, KHÔNG tự check-in
-                                appointmentDAO.confirmAndCheckinWalkin(apptId, staffEmployeeId, false);
-                                isPaid = true;
+                                isPaid = appointmentDAO.confirmAndCheckinWalkin(apptId, staffEmployeeId, false);
                             }
                         }
                     }
@@ -647,6 +646,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                                 String returnUrl = baseUrl + "/staff/appointments";
                                 com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(orderCodeFinal, (int) fee, "VC" + newApptId, cancelUrl, returnUrl);
                                 if (payosRes != null && payosRes.success && payosRes.qrCode != null && !payosRes.qrCode.isEmpty()) {
+                                    paymentDesc = "VC" + newApptId;
                                     qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + URLEncoder.encode(payosRes.qrCode, StandardCharsets.UTF_8);
                                 }
                             } catch (Exception payosEx) {
@@ -658,6 +658,10 @@ public class StaffAppointmentListServlet extends HttpServlet {
                             }
 
                             String ajaxParam = request.getParameter("ajax");
+                            String displayToken = com.visioncare.util.WalkinPaymentDisplay.create(
+                                    newApptId, qrUrl, String.format("%,d đ", fee).replace(',', '.'), paymentDesc);
+                            String displayUrl = request.getContextPath() + "/payment/walkin?token=" + displayToken;
+                            com.visioncare.util.WalkinPaymentDisplay.get(displayToken).orderCode = orderCodeFinal;
                             String ajaxHeader = request.getHeader("X-Requested-With");
                             if ("1".equals(ajaxParam) || "XMLHttpRequest".equalsIgnoreCase(ajaxHeader)) {
                                 response.setContentType("application/json;charset=UTF-8");
@@ -671,6 +675,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                                         + "\"formattedFee\":\"" + String.format("%,d ₫", fee).replace(',', '.') + "\","
                                         + "\"paymentDesc\":\"" + escapeJson(paymentDesc) + "\","
                                         + "\"qrUrl\":\"" + escapeJson(qrUrl) + "\","
+                                        + "\"displayUrl\":\"" + escapeJson(displayUrl) + "\","
                                         + "\"bankName\":\"" + escapeJson(bankName) + "\","
                                         + "\"accountNumber\":\"" + escapeJson(accountNumber) + "\","
                                         + "\"accountHolder\":\"" + escapeJson(accountHolder) + "\""
@@ -691,7 +696,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                                         + "\"phone\":\"" + escapeJson(phone.trim()) + "\","
                                         + "\"fee\":" + fee + ","
                                         + "\"formattedFee\":\"" + String.format("%,d ₫", fee).replace(',', '.') + "\","
-                                        + "\"message\":\"Thu tiền mặt và tiếp đón thành công!\""
+                                        + "\"message\":\"Thu tiền mặt thành công. Bệnh nhân đã thanh toán và đang chờ tiếp đón.\""
                                         + "}";
                                 response.getWriter().write(json);
                                 return;
@@ -702,8 +707,8 @@ public class StaffAppointmentListServlet extends HttpServlet {
                             session.setAttribute("successMessage", "Tạo lịch tiếp đón cho bệnh nhân: " + patientName.trim() + " (#APT-" + newApptId + ") thành công! Sau khi bệnh nhân thanh toán VietQR, lịch hẹn sẽ lưu ở Danh sách Lịch hẹn (vui lòng bấm Check-in khi bệnh nhân có mặt).");
                             response.sendRedirect(request.getContextPath() + "/staff/appointments?date=all&keyword=" + newApptId);
                         } else {
-                            session.setAttribute("successMessage", "Tiếp đón khách vãng lai: " + patientName.trim() + " (#APT-" + newApptId + ") thành công! Bệnh nhân đã được đưa vào danh sách chờ khám.");
-                            response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
+                            session.setAttribute("successMessage", "Thu tiền mặt khách vãng lai: " + patientName.trim() + " (#APT-" + newApptId + ") thành công! Đã thanh toán — Chờ tiếp đón. Vui lòng bấm Check-in để đưa bệnh nhân vào hàng đợi khám.");
+                            response.sendRedirect(request.getContextPath() + "/staff/appointments?date=all&keyword=" + newApptId);
                         }
                         return;
                     } else {
