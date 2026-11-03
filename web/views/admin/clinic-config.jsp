@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
@@ -1469,15 +1469,15 @@
                     </c:if>
 
                     <c:if test="${currentTab == 'intro'}">
-                        <c:set var="currentSubtab" value="${empty param.subtab || param.subtab == 'gallery' ? 'services' : param.subtab}" />
+                        <c:set var="currentSubtab" value="${empty param.subtab || param.subtab == 'services' ? 'gallery' : param.subtab}" />
 
                         <!-- Sub-tab Navigation for Home Images -->
                         <div class="col-12 mb-3">
                             <div class="card border-0 shadow-sm rounded-4 p-2 bg-white">
                                 <div class="nav nav-pills nav-fill gap-2" role="tablist">
-                                    <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=intro&subtab=services" 
-                                       class="nav-link rounded-pill py-2 fw-semibold ${currentSubtab == 'services' ? 'active bg-primary text-white shadow-sm' : 'text-secondary'}">
-                                        <i class="bi bi-heart-pulse me-2"></i>1. Hình ảnh Dịch vụ phòng khám (${fn:length(catalogServices)} dịch vụ ngoài Home)
+                                    <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=intro&subtab=gallery" 
+                                       class="nav-link rounded-pill py-2 fw-semibold ${currentSubtab == 'gallery' ? 'active bg-primary text-white shadow-sm' : 'text-secondary'}">
+                                        <i class="bi bi-images me-2"></i>1. Hình ảnh Phòng Khám (${fn:length(galleryItems)} ảnh Gallery Giới thiệu)
                                     </a>
                                     <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=intro&subtab=banners" 
                                        class="nav-link rounded-pill py-2 fw-semibold ${currentSubtab == 'banners' ? 'active bg-primary text-white shadow-sm' : 'text-secondary'}">
@@ -1487,60 +1487,60 @@
                             </div>
                         </div>
 
-                        <!-- ================= SECTION 1: SERVICES IMAGES ================= -->
-                        <c:if test="${currentSubtab == 'services'}">
+                        <!-- ================= SECTION 1: GALLERY IMAGES (ABOUT SECTION) ================= -->
+                        <c:if test="${currentSubtab == 'gallery'}">
                             <div class="col-12">
                                 <div class="admin-card">
                                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                                         <div>
-                                            <h5 class="mb-1 fw-bold"><i class="bi bi-heart-pulse me-2 text-primary"></i>Hình ảnh Dịch vụ Phòng Khám</h5>
-                                            <p class="text-muted small mb-0">Các hình ảnh dưới đây hiển thị trực tiếp tại mục <strong>Dịch vụ phòng khám</strong> và <strong>Chuyên khoa</strong> ngoài trang chủ. Khi bạn cập nhật ảnh tại đây, ảnh ngoài trang chủ sẽ lập tức thay đổi!</p>
+                                            <h5 class="mb-1 fw-bold"><i class="bi bi-images me-2 text-primary"></i>8 Hình ảnh Phòng Khám (Gallery phần Giới thiệu Trang chủ)</h5>
+                                            <p class="text-muted small mb-0">Các hình ảnh dưới đây hiển thị trực tiếp tại mục <strong>"Hình ảnh phòng khám" trong phần Giới thiệu (About Us)</strong> ngoài trang chủ. Quản trị viên có thể đổi ảnh, tiêu đề, mô tả và khôi phục về ảnh mặc định.</p>
                                         </div>
                                     </div>
 
                                     <div class="row g-4">
-                                        <c:forEach var="svc" items="${catalogServices}">
+                                        <c:forEach var="item" items="${galleryItems}">
                                             <div class="col-sm-6 col-lg-4 col-xl-3">
                                                 <div class="card h-100 border rounded-3 overflow-hidden shadow-sm d-flex flex-column gallery-card">
                                                     <div class="position-relative" style="height: 180px; background-color: #f1f5f9; overflow: hidden;">
                                                         <c:choose>
-                                                            <c:when test="${svc.uploadedImage}">
-                                                                <img id="svcCardImg${svc.id}"
-                                                                     src="${pageContext.request.contextPath}/catalog-image?kind=service&amp;id=${svc.id}"
-                                                                     alt="${fn:escapeXml(svc.name)}" class="w-100 h-100 object-fit-cover"
-                                                                     onerror="this.onerror=null; this.src='${pageContext.request.contextPath}/assets/img/${svc.defaultImagePath}';">
+                                                            <c:when test="${item.hasCustomImage}">
+                                                                <img id="galleryCardImg${item.id}"
+                                                                     src="${pageContext.request.contextPath}/clinic-gallery-image?id=${item.id}&amp;t=${item.updatedAt}"
+                                                                     alt="${fn:escapeXml(item.title)}" class="w-100 h-100 object-fit-cover"
+                                                                     onerror="this.onerror=null; this.src='${pageContext.request.contextPath}/assets/img/gallery/${item.defaultFilename}';">
                                                             </c:when>
                                                             <c:otherwise>
-                                                                <img id="svcCardImg${svc.id}"
-                                                                     src="${pageContext.request.contextPath}/assets/img/${svc.defaultImagePath}"
-                                                                     alt="${fn:escapeXml(svc.name)}" class="w-100 h-100 object-fit-cover">
+                                                                <img id="galleryCardImg${item.id}"
+                                                                     src="${pageContext.request.contextPath}/assets/img/gallery/${item.defaultFilename}"
+                                                                     alt="${fn:escapeXml(item.title)}" class="w-100 h-100 object-fit-cover">
                                                             </c:otherwise>
                                                         </c:choose>
 
-                                                        <span class="position-absolute top-0 start-0 m-2 badge ${svc.uploadedImage ? 'bg-success' : 'bg-secondary'} shadow-sm">
-                                                            <i class="bi ${svc.uploadedImage ? 'bi-check-circle' : 'bi-image'} me-1"></i>
-                                                            ${svc.uploadedImage ? 'Ảnh tải lên' : 'Ảnh mặc định'}
+                                                        <span class="position-absolute top-0 start-0 m-2 badge ${item.hasCustomImage ? 'bg-success' : 'bg-secondary'} shadow-sm">
+                                                            <i class="bi ${item.hasCustomImage ? 'bi-check-circle' : 'bi-image'} me-1"></i>
+                                                            ${item.hasCustomImage ? 'Ảnh tùy chỉnh' : 'Ảnh mặc định'}
                                                         </span>
                                                         <span class="position-absolute bottom-0 end-0 m-2 badge bg-dark bg-opacity-75 shadow-sm">
-                                                            ${svc.code}
+                                                            Vị trí #${item.displayOrder}
                                                         </span>
                                                     </div>
                                                     <div class="card-body p-3 d-flex flex-column justify-content-between flex-grow-1">
                                                         <div>
-                                                            <span class="badge bg-light text-secondary border small mb-1">${svc.category}</span>
-                                                            <h6 class="fw-bold mb-1 text-truncate" title="${fn:escapeXml(svc.name)}">${svc.name}</h6>
+                                                            <span class="badge bg-light text-secondary border small mb-1">Ảnh Gallery #${item.id}</span>
+                                                            <h6 class="fw-bold mb-1 text-truncate" title="${fn:escapeXml(item.title)}">${item.title}</h6>
                                                             <p class="text-muted small mb-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 36px;">
-                                                                ${empty svc.summary ? 'Dịch vụ nhãn khoa chuyên sâu tại phòng khám VisionCare.' : svc.summary}
+                                                                ${empty item.description ? 'Không gian hiện đại, sạch sẽ và thân thiện tại VisionCare.' : item.description}
                                                             </p>
                                                         </div>
                                                         <div class="pt-2 border-top d-flex gap-2">
                                                             <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1"
-                                                                    data-bs-toggle="modal" data-bs-target="#editServiceModal${svc.id}">
-                                                                <i class="bi bi-camera me-1"></i> Đổi ảnh
+                                                                    data-bs-toggle="modal" data-bs-target="#editGalleryModal${item.id}">
+                                                                <i class="bi bi-camera me-1"></i> Đổi ảnh &amp; Mô tả
                                                             </button>
-                                                            <c:if test="${svc.uploadedImage}">
+                                                            <c:if test="${item.hasCustomImage}">
                                                                 <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal"
-                                                                        data-bs-target="#resetServiceModal${svc.id}" title="Khôi phục ảnh gốc mặc định">
+                                                                        data-bs-target="#resetGalleryModal${item.id}" title="Khôi phục ảnh gốc mặc định (${item.defaultFilename})">
                                                                     <i class="bi bi-arrow-counterclockwise"></i>
                                                                 </button>
                                                             </c:if>
@@ -1549,67 +1549,78 @@
                                                 </div>
                                             </div>
 
-                                            <!-- Edit Service Image Modal -->
-                                            <div class="modal fade" id="editServiceModal${svc.id}" tabindex="-1" aria-hidden="true">
+                                            <!-- Edit Gallery Image Modal -->
+                                            <div class="modal fade" id="editGalleryModal${item.id}" tabindex="-1" aria-hidden="true">
                                                 <div class="modal-dialog modal-dialog-centered">
                                                     <div class="modal-content border-0 shadow">
                                                         <form action="${pageContext.request.contextPath}/admin/clinic-intro-config" method="post" enctype="multipart/form-data">
-                                                            <input type="hidden" name="action" value="update_service_image">
-                                                            <input type="hidden" name="serviceId" value="${svc.id}">
+                                                            <input type="hidden" name="action" value="update">
+                                                            <input type="hidden" name="itemId" value="${item.id}">
                                                             <div class="modal-header border-0 pb-0">
-                                                                <h5 class="modal-title fw-bold text-primary"><i class="bi bi-camera me-2"></i>Đổi ảnh Dịch vụ: ${svc.code}</h5>
+                                                                <h5 class="modal-title fw-bold text-primary"><i class="bi bi-camera me-2"></i>Chỉnh sửa ảnh Giới thiệu #${item.id}</h5>
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                             </div>
                                                             <div class="modal-body p-4">
-                                                                <p class="fw-semibold text-dark mb-2">${svc.name}</p>
                                                                 <div class="mb-3 text-center">
                                                                     <label class="form-label d-block text-start small fw-semibold text-secondary">Ảnh hiện tại:</label>
                                                                     <c:choose>
-                                                                        <c:when test="${svc.uploadedImage}">
-                                                                            <img id="previewSvcImg${svc.id}"
-                                                                                 src="${pageContext.request.contextPath}/catalog-image?kind=service&amp;id=${svc.id}"
-                                                                                 alt="${fn:escapeXml(svc.name)}" class="img-thumbnail rounded shadow-sm w-100"
+                                                                        <c:when test="${item.hasCustomImage}">
+                                                                            <img id="previewGalleryImg${item.id}"
+                                                                                 src="${pageContext.request.contextPath}/clinic-gallery-image?id=${item.id}&amp;t=${item.updatedAt}"
+                                                                                 alt="${fn:escapeXml(item.title)}" class="img-thumbnail rounded shadow-sm w-100"
                                                                                  style="max-height: 200px; object-fit: cover;">
                                                                         </c:when>
                                                                         <c:otherwise>
-                                                                            <img id="previewSvcImg${svc.id}"
-                                                                                 src="${pageContext.request.contextPath}/assets/img/${svc.defaultImagePath}"
-                                                                                 alt="${fn:escapeXml(svc.name)}" class="img-thumbnail rounded shadow-sm w-100"
+                                                                            <img id="previewGalleryImg${item.id}"
+                                                                                 src="${pageContext.request.contextPath}/assets/img/gallery/${item.defaultFilename}"
+                                                                                 alt="${fn:escapeXml(item.title)}" class="img-thumbnail rounded shadow-sm w-100"
                                                                                  style="max-height: 200px; object-fit: cover;">
                                                                         </c:otherwise>
                                                                     </c:choose>
                                                                 </div>
                                                                 <div class="mb-3">
-                                                                    <label class="form-label fw-semibold">Chọn file ảnh mới <span class="text-danger">*</span></label>
-                                                                    <input type="file" name="imageFile" class="form-control" accept="image/*" required
-                                                                           onchange="previewGalleryImage(this, 'previewSvcImg${svc.id}')">
-                                                                    <div class="form-text small text-muted">Hỗ trợ JPG, PNG, WEBP (tối đa 10MB). Ảnh sẽ lập tức thay đổi ngoài trang chủ.</div>
+                                                                    <label class="form-label fw-semibold">Chọn file ảnh mới</label>
+                                                                    <input type="file" name="imageFile" class="form-control" accept="image/*"
+                                                                           onchange="previewGalleryImage(this, 'previewGalleryImg${item.id}')">
+                                                                    <div class="form-text small text-muted">Hỗ trợ JPG, PNG, WEBP (tối đa 10MB). Để trống nếu chỉ sửa tiêu đề / mô tả.</div>
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label class="form-label fw-semibold">Tiêu đề ảnh <span class="text-danger">*</span></label>
+                                                                    <input type="text" name="title" class="form-control" value="${fn:escapeXml(item.title)}" required maxlength="200">
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label class="form-label fw-semibold">Mô tả chi tiết</label>
+                                                                    <textarea name="description" class="form-control" rows="2" maxlength="500">${fn:escapeXml(item.description)}</textarea>
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label class="form-label fw-semibold">Thứ tự hiển thị ngoài Home</label>
+                                                                    <input type="number" name="displayOrder" class="form-control" value="${item.displayOrder}" min="1" max="99" required>
                                                                 </div>
                                                             </div>
                                                             <div class="modal-footer border-0 pt-0">
                                                                 <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Hủy</button>
-                                                                <button type="submit" class="btn btn-primary px-4 rounded-pill"><i class="bi bi-cloud-upload me-1"></i> Lưu ảnh mới</button>
+                                                                <button type="submit" class="btn btn-primary px-4 rounded-pill"><i class="bi bi-cloud-upload me-1"></i> Lưu thay đổi</button>
                                                             </div>
                                                         </form>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <!-- Reset Service Image Modal -->
-                                            <c:if test="${svc.uploadedImage}">
-                                                <div class="modal fade" id="resetServiceModal${svc.id}" tabindex="-1" aria-hidden="true">
+                                            <!-- Reset Gallery Image Modal -->
+                                            <c:if test="${item.hasCustomImage}">
+                                                <div class="modal fade" id="resetGalleryModal${item.id}" tabindex="-1" aria-hidden="true">
                                                     <div class="modal-dialog modal-dialog-centered">
                                                         <div class="modal-content border-0 shadow">
                                                             <form action="${pageContext.request.contextPath}/admin/clinic-intro-config" method="post">
-                                                                <input type="hidden" name="action" value="reset_service_image">
-                                                                <input type="hidden" name="serviceId" value="${svc.id}">
+                                                                <input type="hidden" name="action" value="reset">
+                                                                <input type="hidden" name="itemId" value="${item.id}">
                                                                 <div class="modal-header border-0 pb-0">
-                                                                    <h5 class="modal-title fw-bold text-warning"><i class="bi bi-arrow-counterclockwise me-2"></i>Khôi phục ảnh gốc</h5>
+                                                                    <h5 class="modal-title fw-bold text-warning"><i class="bi bi-arrow-counterclockwise me-2"></i>Khôi phục ảnh gốc mặc định</h5>
                                                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                                 </div>
                                                                 <div class="modal-body p-4 text-center">
-                                                                    <p class="mb-2">Bạn có chắc muốn đặt lại hình ảnh cho dịch vụ <strong>${svc.name}</strong> về ảnh mặc định ban đầu?</p>
-                                                                    <p class="text-muted small mb-0">Hệ thống sẽ xóa ảnh đã tải lên và khôi phục hiển thị file gốc (${svc.defaultImagePath}).</p>
+                                                                    <p class="mb-2">Bạn có chắc muốn đặt lại hình ảnh <strong>${item.title}</strong> về ảnh mặc định ban đầu (${item.defaultFilename})?</p>
+                                                                    <p class="text-muted small mb-0">Hệ thống sẽ xóa ảnh tùy chỉnh và khôi phục hiển thị file gốc ngoài trang chủ.</p>
                                                                 </div>
                                                                 <div class="modal-footer border-0 justify-content-center pt-0">
                                                                     <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Hủy</button>
