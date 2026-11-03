@@ -57,7 +57,7 @@
                                     <i class="bi bi-exclamation-triangle-fill"></i>
                                 </div>
                                 <div class="flash-alert-content">
-                                    <span class="alert-title">Thông báo:</span>${sessionScope.errorMessage}
+                                    <span class="alert-title">Thông báo:</span><c:out value="${sessionScope.errorMessage}" />
                                 </div>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"
                                     aria-label="Close"></button>
