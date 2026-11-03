@@ -1,0 +1,161 @@
+/* Walk-in reception and cash confirmation, scoped to these two dialogs. */
+:is(#walkinModal, #walkinCashModal) .modal-content {
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgb(15 23 42 / 18%);
+}
+:is(#walkinModal, #walkinCashModal) .modal-header {
+    gap: 16px;
+    background: #f8fafc !important;
+}
+:is(#walkinModal, #walkinCashModal) .modal-header > .d-flex {
+    min-width: 0;
+}
+:is(#walkinModal, #walkinCashModal) .modal-header > .d-flex > div:first-child {
+    flex-shrink: 0;
+}
+:is(#walkinModal, #walkinCashModal) .modal-title {
+    line-height: 1.5;
+}
+:is(#walkinModal, #walkinCashModal) .btn-close {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+#walkinModal .walkin-fields > [class*="col-"] {
+    min-width: 0;
+}
+#walkinModal .form-label {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 24px;
+    margin-bottom: 6px !important;
+    line-height: 1.5;
+}
+#walkinModal .walkin-fields > .col-md-6 > .d-flex:has(.form-label) {
+    min-height: 24px;
+    margin-bottom: 6px !important;
+    gap: 8px;
+    align-items: flex-start !important;
+}
+#walkinModal .walkin-fields > .col-md-6 > .d-flex .form-label {
+    margin-bottom: 0 !important;
+    flex-shrink: 0;
+}
+#walkinModal :is(.form-control, .form-select) {
+    min-height: 42px;
+    font-size: 13px !important;
+    border-color: #dce3eb;
+    background-color: #fff;
+}
+#walkinModal .form-select {
+    padding: 9px 34px 9px 12px !important;
+    text-overflow: ellipsis;
+}
+#walkinModal :is(.form-control, .form-select):focus {
+    border-color: #0d9488;
+    box-shadow: 0 0 0 3px rgb(13 148 136 / 10%) !important;
+}
+#walkinModal .input-group {
+    flex-wrap: nowrap;
+}
+#walkinModal #btnPickWalkinDob {
+    width: 42px;
+    flex-shrink: 0;
+}
+#walkinModal :is(#walkinNameFeedback, #phoneCheckFeedback, #walkinDobFeedback):empty {
+    display: none;
+}
+#walkinModal #walkinReasonText {
+    min-height: 78px;
+    resize: vertical;
+}
+#walkinModal .walkin-payment-options {
+    padding: 16px !important;
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+}
+#walkinModal .walkin-payment-options > .d-flex {
+    gap: 12px !important;
+    margin-bottom: 0 !important;
+}
+#walkinModal .walkin-payment-options .btn-group {
+    padding: 4px;
+    gap: 4px;
+}
+#walkinModal .walkin-payment-options .btn-group label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 8px 12px !important;
+}
+:is(#walkinModal .walkin-form-actions, #walkinCashModal .modal-footer) {
+    gap: 12px !important;
+    flex-wrap: wrap;
+}
+:is(#walkinModal .walkin-form-actions, #walkinCashModal .modal-footer) .btn {
+    min-height: 42px;
+    padding: 10px 16px !important;
+    border-radius: 8px;
+    line-height: 1.4;
+}
+#walkinCashModal .walkin-cash-summary {
+    padding: 8px 16px !important;
+    margin-bottom: 0 !important;
+}
+#walkinCashModal .walkin-cash-summary > div {
+    display: grid !important;
+    grid-template-columns: 140px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+    padding: 12px 0 !important;
+}
+#walkinCashModal .walkin-cash-summary > div > :last-child {
+    max-width: none !important;
+    min-width: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+    line-height: 1.6;
+}
+#walkinCashModal .walkin-cash-summary .badge {
+    justify-self: end;
+    white-space: normal;
+}
+#walkinCashModal .walkin-cash-total .badge {
+    white-space: normal;
+    line-height: 1.5;
+}
+#walkinCashModal #cashSuccessOverlay {
+    padding: 24px;
+    text-align: center;
+}
+@media (max-width: 575.98px) {
+    :is(#walkinModal, #walkinCashModal) .modal-dialog {
+        margin: 12px;
+    }
+    :is(#walkinModal, #walkinCashModal) :is(.modal-header, .modal-body, .modal-footer) {
+        padding: 18px !important;
+    }
+    #walkinModal .walkin-payment-options .btn-group {
+        width: 100%;
+    }
+    #walkinModal .walkin-payment-options .btn-group label {
+        flex: 1;
+        padding: 8px !important;
+    }
+    #walkinCashModal .walkin-cash-summary > div {
+        grid-template-columns: 110px minmax(0, 1fr);
+        gap: 10px;
+    }
+    :is(#walkinModal .walkin-form-actions, #walkinCashModal .modal-footer) .btn {
+        flex: 1 1 auto;
+    }
+}
+#walkinModal #slotAvailabilityHint {
+    display: block;
+    margin-top: 5px;
+    text-align: left;
+    line-height: 1.5;
+}
+

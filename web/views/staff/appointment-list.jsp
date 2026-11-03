@@ -20,6 +20,7 @@
 
                 <!-- Employee / Staff Unified Layout CSS -->
                 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/employee.css">
+                <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/walkin-forms.css">
             </head>
 
             <body>
@@ -57,7 +58,7 @@
                                     <i class="bi bi-exclamation-triangle-fill"></i>
                                 </div>
                                 <div class="flash-alert-content">
-                                    <span class="alert-title">Thông báo:</span>${sessionScope.errorMessage}
+                                    <span class="alert-title">Thông báo:</span><c:out value="${sessionScope.errorMessage}" />
                                 </div>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"
                                     aria-label="Close"></button>
@@ -200,8 +201,8 @@
                             </form>
 
                             <!-- Thanh điều hướng Tab trạng thái -->
-                            <div class="px-3 pt-3 pb-2 bg-light border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <div class="appointment-status-bar px-3 pt-3 pb-2 bg-light border-bottom">
+                                <div class="appointment-status-tabs d-flex align-items-center gap-2">
                                     <a href="${pageContext.request.contextPath}/staff/appointments?date=${selectedDate}&status=all&doctorId=${selectedDoctorId}&keyword=${param.keyword}"
                                         class="btn btn-sm ${selectedStatus == 'all' || empty selectedStatus ? 'btn-dark fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
                                         <i class="bi bi-calendar4-event me-1"></i> Tất cả (${totalCount})
@@ -233,11 +234,7 @@
                                 </div>
                             </div>
 
-                            <div class="px-3 py-2 small text-muted border-bottom">
-                                <i class="bi bi-info-circle me-1"></i>Bệnh nhân gửi yêu cầu hủy → Staff duyệt hủy → Tạo yêu cầu hoàn tiền.
-                                Lịch phải chưa check-in, đã thanh toán và chưa có yêu cầu hoàn tiền đang xử lý.
-                                Nếu bác sĩ đổi lịch và không bố trí được lịch khác, chọn đúng lý do trong thao tác hủy lịch.
-                            </div>
+
                             <!-- Table: Danh sách bệnh nhân -->
                             <div class="table-container">
                                 <table class="custom-table" style="table-layout: fixed; width: 100%;">
@@ -621,7 +618,7 @@
 
                 <!-- Modal Tiếp Đón Khách Vãng Lai (Walk-in Patient Check-in) -->
                 <div class="modal fade" id="walkinModal" tabindex="-1" aria-labelledby="walkinModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered" style="max-width: 620px;">
+                    <div class="modal-dialog modal-dialog-centered" style="max-width: 740px;">
                         <div class="modal-content shadow-lg border-0" style="border-radius: 16px; overflow: hidden;">
                             <div class="modal-header border-bottom px-4 py-3 bg-light">
                                 <div class="d-flex align-items-center gap-2">
@@ -641,9 +638,9 @@
                                 <input type="hidden" name="returnUrl" id="walkinReturnUrl" value="${pageContext.request.contextPath}/staff/waiting-list">
 
                                 <div class="modal-body p-4 text-start">
-                                    <div class="row g-3">
+                                    <div class="row g-3 walkin-fields">
                                         <!-- Họ và tên -->
-                                        <div class="col-md-7">
+                                        <div class="col-md-6">
                                             <label class="form-label small fw-semibold text-dark mb-1">
                                                 Họ và tên bệnh nhân <span class="text-danger">*</span>
                                             </label>
@@ -657,7 +654,7 @@
                                         </div>
 
                                         <!-- Số điện thoại -->
-                                        <div class="col-md-5">
+                                        <div class="col-md-6">
                                             <label class="form-label small fw-semibold text-dark mb-1">
                                                 Số điện thoại <span class="text-danger">*</span>
                                             </label>
@@ -672,7 +669,7 @@
                                         </div>
 
                                         <!-- Dịch vụ khám ban đầu -->
-                                        <div class="col-md-7">
+                                        <div class="col-md-6">
                                             <label class="form-label small fw-semibold text-dark mb-1">
                                                 Dịch vụ khám ban đầu <span class="text-danger">*</span>
                                             </label>
@@ -694,7 +691,7 @@
                                         </div>
 
                                         <!-- Ngày sinh -->
-                                        <div class="col-md-5">
+                                        <div class="col-md-6">
                                             <label class="form-label small fw-semibold text-dark mb-1">
                                                 Ngày sinh <span class="text-muted fw-normal">(dd/mm/yyyy)</span>
                                             </label>
@@ -720,7 +717,7 @@
                                         </div>
 
                                         <!-- Bác sĩ phụ trách -->
-                                        <div class="col-md-7">
+                                        <div class="col-md-6">
                                             <label class="form-label small fw-semibold text-dark mb-1">
                                                 Bác sĩ khám <span class="text-danger">*</span>
                                             </label>
@@ -740,12 +737,12 @@
                                         </div>
 
                                         <!-- Khung giờ khám hôm nay -->
-                                        <div class="col-md-5">
+                                        <div class="col-md-6">
                                             <div class="d-flex align-items-center justify-content-between mb-1">
                                                 <label class="form-label small fw-semibold text-dark mb-0">
                                                     Khung giờ khám <span class="text-danger">*</span>
                                                 </label>
-                                                <span id="slotAvailabilityHint" class="text-muted small" style="font-size: 11px;"></span>
+                                                
                                             </div>
                                             <select name="timeSlot" id="walkinTimeSlot" class="form-select form-select-sm shadow-none"
                                                 style="border-radius: 8px; font-size: 13px; padding: 7px 12px;">
@@ -764,11 +761,12 @@
                                                 <option value="16:00" data-orig="16:00 - 16:30 (Chiều)">16:00 - 16:30 (Chiều)</option>
                                                 <option value="16:30" data-orig="16:30 - 17:00 (Chiều)">16:30 - 17:00 (Chiều)</option>
                                             </select>
+                                            <span id="slotAvailabilityHint" class="text-muted small" style="font-size: 11px;"></span>
                                         </div>
 
                                         <!-- Thẻ Phí khám ban đầu & Phương thức thanh toán (Gọn gàng & Phù hợp) -->
                                         <div class="col-12">
-                                            <div class="py-2 px-3 rounded-3 border" style="background: #f8fafc; border-color: #cbd5e1;">
+                                            <div class="walkin-payment-options py-2 px-3 rounded-3 border" style="background: #f8fafc; border-color: #cbd5e1;">
                                                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1.5">
                                                     <div class="d-flex align-items-center gap-2">
                                                         <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
@@ -795,16 +793,6 @@
                                                             <i class="bi bi-qr-code-scan me-1"></i>Chuyển khoản VietQR
                                                         </label>
                                                     </div>
-                                                </div>
-
-                                                <!-- Ghi chú động theo hình thức đã chọn -->
-                                                <div id="walkinPayCashNotice" class="d-flex align-items-center justify-content-between small text-success pt-1 border-top" style="font-size: 11px;">
-                                                    <span><i class="bi bi-check2-circle me-1"></i>Thu tiền mặt trực tiếp tại quầy lễ tân (Hóa đơn Paid &amp; Check-in ngay)</span>
-                                                    <span class="badge bg-success-subtle text-success border border-success-subtle py-0.5">Vào thẳng hàng đợi</span>
-                                                </div>
-                                                <div id="walkinPayQRNotice" class="d-none align-items-center justify-content-between small text-primary pt-1 border-top" style="font-size: 11px;">
-                                                    <span><i class="bi bi-qr-code me-1"></i>Quét mã VietQR MB Bank. Thanh toán xong lưu Danh sách Lịch hẹn (Check-in khi bệnh nhân đến)</span>
-                                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-0.5">Check-in khi có mặt</span>
                                                 </div>
                                             </div>
                                             <span id="walkinSvcTag" class="d-none"></span>
@@ -835,10 +823,10 @@
                                     </div>
 
                                     <!-- Modal Actions -->
-                                    <div class="d-flex align-items-center justify-content-end gap-2 mt-4 pt-3 border-top">
+                                    <div class="walkin-form-actions d-flex align-items-center justify-content-end gap-2 mt-4 pt-3 border-top">
                                         <button type="button" class="btn btn-modal-cancel" data-bs-dismiss="modal">Đóng</button>
                                         <button type="submit" id="walkinSubmitBtn" class="btn btn-teal px-3.5 shadow-sm">
-                                            <i class="bi bi-check2-circle me-1"></i> Xác nhận & Đưa vào hàng đợi
+                                            <i class="bi bi-check2-circle me-1"></i> Xác nhận thu tiền mặt
                                         </button>
                                     </div>
                                 </div>
@@ -879,7 +867,7 @@
                                             <i class="bi bi-check-lg"></i>
                                         </div>
                                         <h6 class="fw-bold text-success mb-1">Thanh toán thành công!</h6>
-                                        <small class="text-secondary">Đang chuyển bệnh nhân vào hàng đợi...</small>
+                                        <small class="text-secondary">Đã thanh toán — Chờ tiếp đón. Staff bấm Check-in để đưa bệnh nhân vào danh sách chờ khám.</small>
                                     </div>
                                 </div>
 
@@ -912,6 +900,10 @@
                                 </p>
                             </div>
 
+                            <div class="px-4 pb-3 d-flex flex-wrap gap-2">
+                                <a id="walkinCustomerDisplay" class="btn btn-primary btn-sm" target="visioncareCustomerPayment" rel="noopener noreferrer">Hiển thị QR cho khách</a>
+                                <small class="text-muted d-block w-100">Mở trang QR rồi kéo cửa sổ sang màn hình hướng về khách.</small>
+                            </div>
                             <div class="modal-footer px-4 py-3 bg-light border-top d-flex justify-content-between">
                                 <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="cancelWalkinQR()">
                                     <i class="bi bi-arrow-left me-1"></i>Hủy / Quay lại
@@ -926,16 +918,16 @@
 
                 <!-- Modal Xác Nhận Thu Tiền Mặt Cho Khách Vãng Lai -->
                 <div class="modal fade" id="walkinCashModal" tabindex="-1" aria-labelledby="walkinCashModalLabel" aria-hidden="true" data-bs-backdrop="static">
-                    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+                    <div class="modal-dialog modal-dialog-centered" style="max-width: 560px;">
                         <div class="modal-content shadow-lg border-0" style="border-radius: 16px; overflow: hidden; position: relative;">
-                            
+
                             <!-- Success Overlay khi thu tiền mặt thành công -->
                             <div id="cashSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 d-none flex-column align-items-center justify-content-center" style="background: rgba(240, 253, 244, 0.96); z-index: 1055;">
                                 <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mb-2 shadow" style="width: 56px; height: 56px; font-size: 28px;">
                                     <i class="bi bi-check-lg"></i>
                                 </div>
                                 <h5 class="fw-bold text-success mb-1">Thu tiền mặt thành công!</h5>
-                                <p class="text-secondary small mb-0">Đang chuyển bệnh nhân vào hàng đợi khám...</p>
+                                <p class="text-secondary small mb-0">Đã thanh toán — Chờ tiếp đón. Vui lòng bấm Check-in tại danh sách lịch hẹn.</p>
                             </div>
 
                             <div class="modal-header border-bottom px-4 py-3 bg-light">
@@ -959,7 +951,7 @@
                                 </div>
 
                                 <!-- Thẻ số tiền cần thu to rõ ràng -->
-                                <div class="p-3 rounded-3 text-center mb-3" style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); border: 1.5px solid #a7f3d0;">
+                                <div class="walkin-cash-total p-3 rounded-3 text-center mb-3" style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); border: 1.5px solid #a7f3d0;">
                                     <div class="text-secondary small fw-semibold text-uppercase" style="letter-spacing: 0.5px; font-size: 11px;">Số tiền cần thu từ bệnh nhân</div>
                                     <div class="fw-bold text-success display-6 my-1" style="font-size: 28px;" id="cashTotalFee">200.000 ₫</div>
                                     <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2" style="font-size: 11.5px;">
@@ -968,7 +960,7 @@
                                 </div>
 
                                 <!-- Bảng tóm tắt thông tin tiếp đón -->
-                                <div class="bg-light p-3 rounded-3 small border mb-3" style="font-size: 12.5px;">
+                                <div class="walkin-cash-summary bg-light p-3 rounded-3 small border mb-3" style="font-size: 12.5px;">
                                     <div class="d-flex justify-content-between py-1 border-bottom">
                                         <span class="text-muted">Họ và tên bệnh nhân:</span>
                                         <strong class="text-dark" id="cashModalPatientName">---</strong>
@@ -991,29 +983,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Tiện ích tính tiền thối lại cho lễ tân -->
-                                <div class="border rounded-3 p-3" style="background: #ffffff;">
-                                    <label class="form-label small fw-semibold text-dark mb-1.5 d-flex justify-content-between">
-                                        <span>Tiền khách đưa:</span>
-                                        <span class="text-muted fw-normal" style="font-size: 11.5px;">(Không bắt buộc)</span>
-                                    </label>
-                                    <div class="input-group input-group-sm mb-2">
-                                        <input type="text" id="cashGivenInput" class="form-control form-control-sm text-end fw-bold shadow-none" placeholder="Nhập số tiền..." style="font-size: 14px; border-radius: 6px 0 0 6px;" oninput="onCashGivenChange(this.value)">
-                                        <span class="input-group-text bg-light text-muted">₫</span>
-                                    </div>
-
-                                    <!-- Nút chọn nhanh mệnh giá -->
-                                    <div class="d-flex gap-1.5 flex-wrap mb-2">
-                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 11.5px; border-radius: 6px;" onclick="setCashGivenPreset('exact')">Đưa đủ tiền</button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 11.5px; border-radius: 6px;" onclick="setCashGivenPreset(200000)">200.000 ₫</button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 11.5px; border-radius: 6px;" onclick="setCashGivenPreset(500000)">500.000 ₫</button>
-                                    </div>
-
-                                    <div class="d-flex justify-content-between align-items-center pt-2 border-top small" style="font-size: 12.5px;">
-                                        <span class="text-secondary">Tiền thối lại cho khách:</span>
-                                        <strong class="fs-6 text-primary" id="cashChangeAmount">0 ₫</strong>
-                                    </div>
-                                </div>
                             </div>
 
                             <div class="modal-footer px-4 py-3 bg-light border-top d-flex justify-content-between">
@@ -1021,7 +990,7 @@
                                     <i class="bi bi-arrow-left me-1"></i>Hủy / Quay lại
                                 </button>
                                 <button type="button" class="btn btn-success btn-sm px-3.5 py-1.5 fw-semibold shadow-sm" id="btnConfirmCashPayment" onclick="submitWalkinCashPayment()">
-                                    <i class="bi bi-check2-circle me-1"></i>Xác nhận đã nhận tiền & Đưa vào hàng đợi
+                                    <i class="bi bi-check2-circle me-1"></i>Xác nhận đã đưa tiền
                                 </button>
                             </div>
                         </div>
@@ -1549,15 +1518,11 @@
                     }
 
                     function toggleWalkinPayMode(mode) {
-                        var cashNotice = document.getElementById('walkinPayCashNotice');
-                        var qrNotice = document.getElementById('walkinPayQRNotice');
                         var submitBtn = document.getElementById('walkinSubmitBtn');
                         var feeDisplay = document.getElementById('walkinFeeDisplay');
                         var currentFeeText = feeDisplay ? feeDisplay.textContent : '200.000 ₫';
 
                         if (mode === 'QR_Banking' || mode === 'VietQR_Banking') {
-                            if (cashNotice) { cashNotice.classList.remove('d-flex'); cashNotice.classList.add('d-none'); }
-                            if (qrNotice) { qrNotice.classList.remove('d-none'); qrNotice.classList.add('d-flex'); }
                             if (submitBtn) {
                                 submitBtn.className = 'btn btn-primary px-3.5 shadow-sm';
                                 submitBtn.style.background = '#0284c7';
@@ -1565,13 +1530,11 @@
                                 submitBtn.innerHTML = '<i class="bi bi-qr-code-scan me-1"></i> Quét mã VietQR (<span id="btnFeeDisplay">' + currentFeeText + '</span>)';
                             }
                         } else {
-                            if (qrNotice) { qrNotice.classList.remove('d-flex'); qrNotice.classList.add('d-none'); }
-                            if (cashNotice) { cashNotice.classList.remove('d-none'); cashNotice.classList.add('d-flex'); }
                             if (submitBtn) {
                                 submitBtn.className = 'btn btn-teal px-3.5 shadow-sm';
                                 submitBtn.style.background = '';
                                 submitBtn.style.borderColor = '';
-                                submitBtn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Xác nhận & Đưa vào hàng đợi';
+                                submitBtn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Xác nhận thu tiền mặt';
                             }
                         }
                     }
@@ -1622,6 +1585,10 @@
                             }
 
                             if (data.success) {
+                                if (data.displayUrl) {
+                                    window.location.assign(data.displayUrl);
+                                    return;
+                                }
                                 var walkinModalEl = document.getElementById('walkinModal');
                                 if (walkinModalEl) {
                                     var modal = bootstrap.Modal.getInstance(walkinModalEl);
@@ -1630,6 +1597,7 @@
 
                                 currentWalkinApptId = data.appointmentId;
                                 currentWalkinOrderCode = data.orderCode || null;
+                                document.getElementById('walkinCustomerDisplay').href = data.displayUrl;
                                 var pSub = document.getElementById('qrPatientSubtitle');
                                 if (pSub) pSub.textContent = 'Bệnh nhân: ' + data.patientName + ' (' + data.phone + ')';
                                 var qrImg = document.getElementById('walkinQrImg');
@@ -1668,7 +1636,7 @@
 
                                 startWalkinQrPolling(data.appointmentId, data.orderCode || null);
                             } else {
-                                alert(data.message || 'Không thể tạo mã VietQR lúc này. Vui lòng thử lại!');
+                                showWalkinNotice(data.message || 'Không thể tạo mã VietQR lúc này. Vui lòng thử lại!');
                             }
                         })
                         .catch(function(err) {
@@ -1676,7 +1644,7 @@
                                 submitBtn.disabled = false;
                                 toggleWalkinPayMode('QR_Banking');
                             }
-                            alert('Lỗi tạo mã QR: ' + err.message);
+                            showWalkinNotice('Lỗi tạo mã QR: ' + err.message);
                         });
                     }
 
@@ -1685,7 +1653,7 @@
                         var attempts = 0;
                         walkinPollTimer = setInterval(function() {
                             attempts++;
-                            if (attempts > 180) {
+                            if (attempts > 360) {
                                 clearInterval(walkinPollTimer);
                                 var statusText = document.getElementById('qrStatusText');
                                 if (statusText) statusText.textContent = 'Hết thời gian chờ thanh toán (15 phút). Vui lòng thử lại.';
@@ -1724,7 +1692,7 @@
                         }
                         var overlaySub = overlay ? overlay.querySelector('small') : null;
                         if (overlaySub) {
-                            overlaySub.textContent = 'Lịch hẹn đã lưu vào Danh sách Lịch hẹn (Lễ tân bấm "Check-in" khi bệnh nhân có mặt)';
+                            overlaySub.textContent = 'Đã thanh toán — Chờ tiếp đón. Staff bấm Check-in để đưa bệnh nhân vào danh sách chờ khám.';
                         }
                         var btnConfirm = document.getElementById('btnManualConfirmQR');
                         if (btnConfirm) btnConfirm.disabled = true;
@@ -1892,20 +1860,11 @@
                             errAlert.classList.remove('d-flex');
                         }
 
-                        var cleanFee = parseInt(feeText.replace(/[^0-9]/g, '')) || 200000;
-                        window._currentWalkinCashFee = cleanFee;
-                        var givenInput = document.getElementById('cashGivenInput');
-                        if (givenInput) givenInput.value = String(cleanFee).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                        var changeEl = document.getElementById('cashChangeAmount');
-                        if (changeEl) {
-                            changeEl.className = 'fs-6 text-primary';
-                            changeEl.textContent = '0 ₫';
-                        }
 
                         var btnConfirm = document.getElementById('btnConfirmCashPayment');
                         if (btnConfirm) {
                             btnConfirm.disabled = false;
-                            btnConfirm.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Xác nhận đã nhận tiền & Đưa vào hàng đợi';
+                            btnConfirm.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Xác nhận đã đưa tiền';
                         }
 
                         var walkinModalEl = document.getElementById('walkinModal');
@@ -1966,12 +1925,12 @@
                                     overlay.classList.add('d-flex');
                                 }
                                 setTimeout(function() {
-                                    window.location.href = '${pageContext.request.contextPath}/staff/waiting-list';
+                                    window.location.href = '${pageContext.request.contextPath}/staff/appointments?date=all&keyword=' + encodeURIComponent(data.appointmentId);
                                 }, 1200);
                             } else {
                                 if (btnConfirm) {
                                     btnConfirm.disabled = false;
-                                    btnConfirm.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Xác nhận đã nhận tiền & Đưa vào hàng đợi';
+                                    btnConfirm.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Xác nhận đã đưa tiền';
                                 }
                                 if (errAlert && errText) {
                                     errText.textContent = (data && data.message) ? data.message : 'Không thể tiếp đón khách vãng lai lúc này.';
@@ -1983,7 +1942,7 @@
                         .catch(function(err) {
                             if (btnConfirm) {
                                 btnConfirm.disabled = false;
-                                btnConfirm.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Xác nhận đã nhận tiền & Đưa vào hàng đợi';
+                                btnConfirm.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Xác nhận đã đưa tiền';
                             }
                             if (errAlert && errText) {
                                 errText.textContent = 'Lỗi kết nối: ' + err.message;
@@ -2008,31 +1967,6 @@
                         }
                     }
 
-                    function onCashGivenChange(val) {
-                        var num = parseInt((val || '').replace(/[^0-9]/g, '')) || 0;
-                        var fee = window._currentWalkinCashFee || 200000;
-                        var change = num - fee;
-                        var changeEl = document.getElementById('cashChangeAmount');
-                        if (changeEl) {
-                            if (change < 0) {
-                                changeEl.className = 'fs-6 text-danger';
-                                changeEl.textContent = 'Còn thiếu ' + String(Math.abs(change)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' ₫';
-                            } else {
-                                changeEl.className = 'fs-6 text-success';
-                                changeEl.textContent = String(change).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' ₫';
-                            }
-                        }
-                    }
-
-                    function setCashGivenPreset(amount) {
-                        var fee = window._currentWalkinCashFee || 200000;
-                        var target = (amount === 'exact') ? fee : amount;
-                        var givenInput = document.getElementById('cashGivenInput');
-                        if (givenInput) {
-                            givenInput.value = String(target).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                            onCashGivenChange(givenInput.value);
-                        }
-                    }
 
                     var walkinFormEl = document.getElementById('walkinForm');
                     if (walkinFormEl) {
@@ -2295,5 +2229,21 @@
                 }
             });
             </script>
-</body>
+                <dialog id="walkinNoticeDialog" aria-labelledby="walkinNoticeTitle" aria-describedby="walkinNoticeMessage"
+                    style="width:min(92vw,520px);padding:28px;border:0;border-radius:18px;box-shadow:0 24px 80px rgba(20,58,58,.25);color:#243b4a;">
+                    <div style="width:48px;height:48px;display:grid;place-items:center;border-radius:50%;background:#fff3dc;color:#c48116;font-size:26px;margin-bottom:16px;" aria-hidden="true">!</div>
+                    <h5 id="walkinNoticeTitle" style="font-weight:700;margin-bottom:12px;">Không thể tạo lượt tiếp đón</h5>
+                    <p id="walkinNoticeMessage" style="line-height:1.7;color:#526575;margin-bottom:24px;white-space:pre-line;"></p>
+                    <div style="display:flex;justify-content:flex-end;">
+                        <button type="button" autofocus class="btn btn-teal px-4" onclick="document.getElementById('walkinNoticeDialog').close()">Đã hiểu</button>
+                    </div>
+                </dialog>
+                <style>#walkinNoticeDialog::backdrop{background:rgba(15,35,40,.45);}</style>
+                <script>
+                    function showWalkinNotice(message) {
+                        document.getElementById('walkinNoticeMessage').textContent = message;
+                        var dialog = document.getElementById('walkinNoticeDialog');
+                        if (!dialog.open) dialog.showModal();
+                    }
+                </script></body>
             </html>

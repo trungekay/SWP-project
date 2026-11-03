@@ -8,9 +8,32 @@
           <jsp:include page="/views/common/header.jsp">
             <jsp:param name="pageTitle" value="Trang chủ" />
             <jsp:param name="pageDescription" value="VisionCare — Hệ thống đặt lịch khám mắt trực tuyến" />
-            <jsp:param name="bodyClass" value="index-page" />
+            <jsp:param name="bodyClass" value="index-page home-full-width" />
             <jsp:param name="activeNav" value="home" />
           </jsp:include>
+
+          <style>
+            /* Cấu hình full trang web không thụt lề cho trang chủ */
+            body.home-full-width .container,
+            body.home-full-width #header .container,
+            body.home-full-width #footer .container {
+              width: 100% !important;
+              max-width: none !important;
+              padding-left: clamp(16px, 3vw, 48px) !important;
+              padding-right: clamp(16px, 3vw, 48px) !important;
+            }
+
+            body.home-full-width .hero .container,
+            body.home-full-width .about .container,
+            body.home-full-width .services .container,
+            body.home-full-width .departments .container,
+            body.home-full-width .doctors .container,
+            body.home-full-width .faq .container,
+            body.home-full-width .contact .container {
+              width: 100% !important;
+              max-width: none !important;
+            }
+          </style>
 
           <main class="main">
 
@@ -23,8 +46,7 @@
 
                 <div class="welcome position-relative" data-aos="fade-down" data-aos-delay="100">
                   <h2>CHÀO MỪNG ĐẾN VISIONCARE</h2>
-                  <p>Phòng khám mắt chuyên sâu — đặt lịch khám trực tuyến, trang thiết bị hiện đại, đội ngũ bác sĩ nhãn
-                    khoa giàu kinh nghiệm</p>
+                  
                 </div><!-- End Welcome -->
 
                 <div class="content row gy-4">
@@ -187,7 +209,7 @@
 
                 <div class="row gy-4">
 
-                  <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
+                  <div class="col-lg-4 col-md-6 d-flex flex-column align-items-center">
                     <i class="fa-solid fa-user-doctor"></i>
                     <div class="stats-item">
                       <span data-purecounter-start="0" data-purecounter-end="${fn:length(doctors)}"
@@ -196,7 +218,7 @@
                     </div>
                   </div><!-- End Stats Item -->
 
-                  <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
+                  <div class="col-lg-4 col-md-6 d-flex flex-column align-items-center">
                     <i class="fa-regular fa-hospital"></i>
                     <div class="stats-item">
                       <span data-purecounter-start="0" data-purecounter-end="${fn:length(catalogServices)}"
@@ -205,16 +227,9 @@
                     </div>
                   </div><!-- End Stats Item -->
 
-                  <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
-                    <i class="fas fa-calendar-check"></i>
-                    <div class="stats-item">
-                      <span data-purecounter-start="0" data-purecounter-end="${fn:length(doctors) * 12}"
-                        data-purecounter-duration="1" class="purecounter"></span>
-                      <p>Ca khám / ngày</p>
-                    </div>
-                  </div><!-- End Stats Item -->
+                  
 
-                  <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
+                  <div class="col-lg-4 col-md-6 d-flex flex-column align-items-center">
                     <i class="fas fa-award"></i>
                     <div class="stats-item">
                       <span data-purecounter-start="0" data-purecounter-end="15" data-purecounter-duration="1"

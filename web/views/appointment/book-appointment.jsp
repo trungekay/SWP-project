@@ -1033,8 +1033,10 @@
                                                                           <span
                                                                             class="badge-session badge-morning me-2"><i
                                                                               class="bi bi-sun me-1"></i>Ca Sáng</span>
-                                                                          <small class="text-muted">(08:00 —
-                                                                            11:30)</small>
+                                                                          <small class="text-muted" id="morningTimeRangeLabel">${sessionEndBufferEnabled ? '(08:00 — 11:00)' : '(08:00 — 11:30)'}</small>
+                                                                          <span id="morningBufferBadge" class="badge ${sessionEndBufferEnabled ? '' : 'd-none'}" style="font-size:11.5px; background-color: #fef3c7; color: #78350f; border: 1px solid #f59e0b; font-weight: 700; padding: 3px 8px; border-radius: 6px;">
+                                                                            <i class="bi bi-shield-lock me-1"></i>11:00 - 11:30: Ca đệm
+                                                                          </span>
                                                                         </div>
                                                                         <div class="d-flex flex-wrap gap-2"
                                                                           id="morningSlotsContainer"></div>
@@ -1047,8 +1049,10 @@
                                                                               class="badge-session badge-afternoon me-2"><i
                                                                                 class="bi bi-brightness-high me-1"></i>Ca
                                                                               Chiều</span>
-                                                                            <small class="text-muted">(13:30 —
-                                                                              17:00)</small>
+                                                                            <small class="text-muted" id="afternoonTimeRangeLabel">${sessionEndBufferEnabled ? '(13:30 — 16:30)' : '(13:30 — 17:00)'}</small>
+                                                                          <span id="afternoonBufferBadge" class="badge ${sessionEndBufferEnabled ? '' : 'd-none'}" style="font-size:11.5px; background-color: #fef3c7; color: #78350f; border: 1px solid #f59e0b; font-weight: 700; padding: 3px 8px; border-radius: 6px;">
+                                                                            <i class="bi bi-shield-lock me-1"></i>16:30 - 17:00: Ca đệm
+                                                                          </span>
                                                                           </div>
                                                                           <div class="d-flex flex-wrap gap-2"
                                                                             id="afternoonSlotsContainer"></div>
@@ -1855,6 +1859,35 @@
                       if (schedInput) schedInput.value = s.id;
                     }
                   });
+
+                  const isBuffer = Boolean(data.sessionEndBufferEnabled);
+                  const mLabel = document.getElementById('morningTimeRangeLabel');
+                  const mBadge = document.getElementById('morningBufferBadge');
+                  const aLabel = document.getElementById('afternoonTimeRangeLabel');
+                  const aBadge = document.getElementById('afternoonBufferBadge');
+                  if (isBuffer) {
+                    if (mLabel) mLabel.textContent = '(08:00 — 11:00)';
+                    if (mBadge) mBadge.classList.remove('d-none');
+                    if (aLabel) aLabel.textContent = '(13:30 — 16:30)';
+                    if (aBadge) aBadge.classList.remove('d-none');
+                    if (hasMorning && morningSlotsContainer) {
+                      const bufItem = document.createElement('div');
+                      bufItem.className = 'position-relative';
+                      bufItem.innerHTML = '<label class="slot-btn slot-btn-past" style="opacity:0.85; cursor:not-allowed; border:1px solid #f59e0b; background:#fffbeb; color:#78350f; font-weight:600;" title="Ca đệm bù giờ phát sinh (11:00 - 11:30): Dành riêng cho bác sĩ hoàn tất các ca khám phức tạp, không nhận đặt trước">11:00 — 11:30 <span class="badge ms-1" style="font-size:10.5px; background:#fef3c7; color:#78350f; border:1px solid #f59e0b; font-weight:700;"><i class="bi bi-shield-lock-fill me-1" style="color:#d97706;"></i>Ca đệm</span></label>';
+                      morningSlotsContainer.appendChild(bufItem);
+                    }
+                    if (hasAfternoon && afternoonSlotsContainer) {
+                      const bufItem = document.createElement('div');
+                      bufItem.className = 'position-relative';
+                      bufItem.innerHTML = '<label class="slot-btn slot-btn-past" style="opacity:0.85; cursor:not-allowed; border:1px solid #f59e0b; background:#fffbeb; color:#78350f; font-weight:600;" title="Ca đệm bù giờ phát sinh (16:30 - 17:00): Dành riêng cho bác sĩ hoàn tất các ca khám phức tạp, không nhận đặt trước">16:30 — 17:00 <span class="badge ms-1" style="font-size:10.5px; background:#fef3c7; color:#78350f; border:1px solid #f59e0b; font-weight:700;"><i class="bi bi-shield-lock-fill me-1" style="color:#d97706;"></i>Ca đệm</span></label>';
+                      afternoonSlotsContainer.appendChild(bufItem);
+                    }
+                  } else {
+                    if (mLabel) mLabel.textContent = '(08:00 — 11:30)';
+                    if (mBadge) mBadge.classList.add('d-none');
+                    if (aLabel) aLabel.textContent = '(13:30 — 17:00)';
+                    if (aBadge) aBadge.classList.add('d-none');
+                  }
 
                   if (hasMorning && morningSection) morningSection.classList.remove('d-none');
                   if (hasAfternoon && afternoonSection) afternoonSection.classList.remove('d-none');
