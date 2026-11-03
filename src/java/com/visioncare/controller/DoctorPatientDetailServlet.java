@@ -59,9 +59,16 @@ public class DoctorPatientDetailServlet extends HttpServlet {
             }
 
             List<MedicalRecord> history = procedureOrderDAO.getPatientMedicalHistory(appointment.getPatientId());
-            history.removeIf(record -> record.getAppointmentId() == appointmentId
-                    || !"Completed".equals(record.getAppointmentStatus()));
+            history.removeIf(record -> !"Completed".equals(record.getAppointmentStatus()));
             request.setAttribute("appointment", appointment);
+            request.setAttribute("selectedService", appointment.getServiceName());
+            String receptionNotes = appointment.getMedicalNotes();
+            if (receptionNotes != null && (receptionNotes.startsWith("Dịch vụ:")
+                    || receptionNotes.startsWith("Dịch vụ/Bệnh lý:"))) {
+                int separator = receptionNotes.indexOf('|');
+                receptionNotes = separator < 0 ? "" : receptionNotes.substring(separator + 1).trim();
+            }
+            request.setAttribute("receptionNotes", receptionNotes);
             request.setAttribute("history", history);
             if ("In_Progress".equals(appointment.getStatus()) || "Completed".equals(appointment.getStatus())) {
                 request.setAttribute("examinationUrl",

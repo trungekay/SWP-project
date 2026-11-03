@@ -162,13 +162,17 @@
                                 </dd></div>
                                 <div><dt>Giờ hẹn</dt><dd><c:out value="${appointment.timeSlot}" default="Chưa cập nhật" /></dd></div>
                                 <div><dt>Bác sĩ phụ trách</dt><dd><c:out value="${appointment.doctorName}" default="Chưa phân công" /></dd></div>
-                                <div><dt>Phòng khám</dt><dd><c:out value="${appointment.roomName}" default="Chưa phân phòng" /></dd></div>
-                                <div class="doctor-detail-field-wide"><dt>Thời gian check-in</dt><dd>
+                                <div><dt>Dịch vụ</dt><dd><c:out value="${selectedService}" default="Chưa cập nhật" /></dd></div>
+                                <div><dt>Thời gian check-in</dt><dd>
                                     <c:choose>
-                                        <c:when test="${not empty appointment.checkinTime}"><c:out value="${appointment.checkinTime}" /></c:when>
+                                        <c:when test="${not empty appointment.checkinTime}">
+                                            <fmt:parseDate value="${appointment.checkinTime}" pattern="yyyy-MM-dd HH:mm:ss" var="checkinDate" />
+                                            <fmt:formatDate value="${checkinDate}" pattern="dd/MM/yyyy HH:mm:ss" />
+                                        </c:when>
                                         <c:otherwise><span class="doctor-detail-muted">Chưa check-in</span></c:otherwise>
                                     </c:choose>
                                 </dd></div>
+                                <div><dt>Phòng khám</dt><dd><c:out value="${appointment.roomName}" default="Chưa phân phòng" /></dd></div>
                             </dl>
                         </section>
 
@@ -181,8 +185,8 @@
                             </div>
                         </div>
                         <c:choose>
-                            <c:when test="${not empty appointment.medicalNotes}">
-                                <p class="doctor-detail-staff-notes-content"><c:out value="${appointment.medicalNotes}" /></p>
+                            <c:when test="${not empty receptionNotes}">
+                                <p class="doctor-detail-staff-notes-content"><c:out value="${receptionNotes}" /></p>
                             </c:when>
                             <c:otherwise><p class="doctor-detail-muted">Chưa có ghi chú từ nhân viên tiếp nhận.</p></c:otherwise>
                         </c:choose>
@@ -193,7 +197,7 @@
                             <span class="doctor-detail-card-icon violet"><i class="bi bi-clock-history" aria-hidden="true"></i></span>
                             <div>
                                 <h2 id="history-heading">Lịch sử khám</h2>
-                                <p>Các lần khám trước của bệnh nhân, mới nhất ở trên</p>
+                                <p>Các lần khám đã hoàn tất của bệnh nhân, mới nhất ở trên</p>
                             </div>
                             <span class="doctor-detail-history-count"><c:out value="${fn:length(history)}" /> lần khám</span>
                         </div>

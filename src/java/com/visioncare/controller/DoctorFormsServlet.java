@@ -82,6 +82,12 @@ public class DoctorFormsServlet extends HttpServlet {
                 }
             } else {
                 formValues = formDAO.loadExamination(appointmentId);
+                String staffNotes = formValues.get("staffNotes");
+                if (staffNotes != null && (staffNotes.startsWith("Dịch vụ:")
+                        || staffNotes.startsWith("Dịch vụ/Bệnh lý:"))) {
+                    int separator = staffNotes.indexOf('|');
+                    formValues.put("staffNotes", separator < 0 ? "" : staffNotes.substring(separator + 1).trim());
+                }
                 boolean printReady = formDAO.hasSavedExamination(appointmentId);
                 if (printExamination && !printReady) {
                     response.sendError(HttpServletResponse.SC_CONFLICT,

@@ -8,16 +8,18 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /** Atomically closes a doctor's work slot and transfers its appointment, if any. */
 public class StaffDoctorRescheduleDAO {
     public record Result(Integer appointmentId, Integer replacementDoctorId) {}
+    public record Replacement(int doctorId, LocalDate date) {}
 
     private record SourceSlot(int id, java.sql.Time start, java.sql.Time end, String status, boolean past) {}
 
     /** Move every appointment in a registered session and close all its remaining slots atomically. */
     public List<Result> changeShift(int doctorId, LocalDate sourceDate, String session,
-                                    Integer replacementDoctorId, LocalDate targetDate,
+                                    Map<Integer, Replacement> replacements,
                                     int staffAccountId, String reason) throws Exception {
         if (sourceDate == null || !("Morning".equals(session) || "Afternoon".equals(session))) {
             throw new IllegalArgumentException("Hãy chọn ca Sáng hoặc Chiều hợp lệ.");
@@ -41,27 +43,30 @@ public class StaffDoctorRescheduleDAO {
                     }
                 }
                 if (sources.isEmpty()) throw new IllegalStateException("Ca làm việc không còn khung giờ để điều chỉnh.");
-                for (SourceSlot source : sources) {
-                    if (source.past()) {
-                        throw new IllegalStateException("Ca làm việc đã bắt đầu; không thể đóng một phần ca.");
-                    }
-                }
-                boolean hasBookings = sources.stream().anyMatch(s -> "Booked".equals(s.status()));
-                if (hasBookings && (replacementDoctorId == null || targetDate == null || replacementDoctorId == doctorId)) {
-                    throw new IllegalArgumentException("Hãy chọn bác sĩ và ngày thay thế cho các lịch hẹn trong ca.");
-                }
-                if (hasBookings && (targetDate.isBefore(LocalDate.now()) || targetDate.isAfter(LocalDate.now().plusDays(30)))) {
-                    throw new IllegalArgumentException("Ngày thay thế phải nằm trong 30 ngày tới.");
-                }
                 List<Result> results = new ArrayList<>();
                 for (SourceSlot source : sources) {
+                    if (source.past()) continue;
+                    try (PreparedStatement ps = conn.prepareStatement(
+                            "SELECT 1 FROM Appointment WHERE Schedule_ID=? AND Status IN ('In_Progress','Completed')")) {
+                        ps.setInt(1, source.id());
+                        try (ResultSet rs = ps.executeQuery()) { if (rs.next()) continue; }
+                    }
                     Integer targetId = null;
+                    LocalDate targetDate = null;
                     if ("Booked".equals(source.status())) {
+                        Replacement replacement = replacements.get(source.id());
+                        if (replacement == null || replacement.doctorId() == doctorId || replacement.date() == null) {
+                            throw new IllegalArgumentException("Hãy chọn bác sĩ và ngày thay thế cho khung giờ " + source.start() + ".");
+                        }
+                        targetDate = replacement.date();
+                        if (targetDate.isBefore(LocalDate.now()) || targetDate.isAfter(LocalDate.now().plusDays(30))) {
+                            throw new IllegalArgumentException("Ngày thay thế phải nằm trong 30 ngày tới.");
+                        }
                         String targetSql = "SELECT ws.Schedule_ID FROM Work_Schedule ws WITH (UPDLOCK,HOLDLOCK) "
                                 + "WHERE ws.Doctor_Employee_ID=? AND ws.Work_Date=? AND ws.Start_Time=? "
                                 + "AND ws.End_Time=? AND ws.Status='Available'";
                         try (PreparedStatement ps = conn.prepareStatement(targetSql)) {
-                            ps.setInt(1, replacementDoctorId);
+                            ps.setInt(1, replacement.doctorId());
                             ps.setDate(2, java.sql.Date.valueOf(targetDate));
                             ps.setTime(3, source.start());
                             ps.setTime(4, source.end());
@@ -73,6 +78,7 @@ public class StaffDoctorRescheduleDAO {
                     }
                     results.add(changeOne(conn, doctorId, source.id(), targetId, targetDate, staffAccountId, reason));
                 }
+                if (results.isEmpty()) throw new IllegalStateException("Ca này không còn khung giờ có thể điều chỉnh.");
                 conn.commit();
                 return results;
             } catch (Exception e) {
@@ -116,7 +122,6 @@ public class StaffDoctorRescheduleDAO {
                 Integer appointmentId = null;
                 Integer patientId = null;
                 String appointmentStatus = null;
-                boolean checkedIn = false;
                 try (PreparedStatement ps = conn.prepareStatement(
                         "SELECT Appointment_ID, Patient_ID, Status, checkin_time FROM Appointment WITH (UPDLOCK, HOLDLOCK) "
                         + "WHERE Schedule_ID=? AND Status<>'Canceled'")) {
@@ -126,7 +131,6 @@ public class StaffDoctorRescheduleDAO {
                             appointmentId = rs.getInt(1);
                             patientId = rs.getInt(2);
                             appointmentStatus = rs.getString(3);
-                            checkedIn = rs.getTimestamp(4) != null;
                             if (rs.next()) throw new IllegalStateException("Ca này có nhiều lịch hẹn; cần xử lý thủ công.");
                         }
                     }
@@ -134,8 +138,8 @@ public class StaffDoctorRescheduleDAO {
 
                 Integer replacementDoctorId = null;
                 if (appointmentId != null) {
-                    if (!"Booked".equals(sourceStatus) || !"Confirmed".equals(appointmentStatus) || checkedIn) {
-                        throw new IllegalStateException("Chỉ chuyển lịch hẹn đã xác nhận và chưa check-in.");
+                    if (!"Booked".equals(sourceStatus) || !"Confirmed".equals(appointmentStatus)) {
+                        throw new IllegalStateException("Lịch hẹn đã vào khám hoặc không còn ở trạng thái chờ khám.");
                     }
                     ensureAppointmentCanMove(conn, appointmentId);
                     if (targetScheduleId == null || targetDate == null || targetScheduleId == sourceScheduleId) {
@@ -158,7 +162,7 @@ public class StaffDoctorRescheduleDAO {
                     }
                     try (PreparedStatement ps = conn.prepareStatement(
                             "UPDATE Appointment SET Schedule_ID=? WHERE Appointment_ID=? AND Schedule_ID=? "
-                            + "AND Status='Confirmed' AND checkin_time IS NULL")) {
+                            + "AND Status='Confirmed'")) {
                         ps.setInt(1, targetScheduleId);
                         ps.setInt(2, appointmentId);
                         ps.setInt(3, sourceScheduleId);

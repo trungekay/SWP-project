@@ -19,6 +19,8 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.UUID;
 
 /** Staff view of a doctor's schedule with handoff to the existing appointment reschedule flow. */
@@ -107,10 +109,16 @@ public class StaffDoctorRescheduleServlet extends HttpServlet {
             List<Appointment> appointments = Collections.emptyList();
             String shiftSummary = "OFF";
             int availableCount = 0;
+            Map<Integer, Boolean> lockedSlots = new HashMap<>();
             if (selectedDoctor != null) {
                 slots = workScheduleDAO.getDoctorShiftSlotsForDate(selectedDoctor.getId(), date.toString());
                 shiftSummary = workScheduleDAO.getDoctorWorkShiftSummary(selectedDoctor.getId(), date.toString());
                 appointments = appointmentDAO.getStaffAppointments(Date.valueOf(date), "all", selectedDoctor.getId(), null);
+                for (Appointment appointment : appointments) {
+                    if ("In_Progress".equals(appointment.getStatus()) || "Completed".equals(appointment.getStatus())) {
+                        lockedSlots.put(appointment.getScheduleId(), true);
+                    }
+                }
                 for (TimeSlot slot : slots) {
                     if (!slot.isBooked() && !slot.isPast()) availableCount++;
                 }
@@ -121,6 +129,7 @@ public class StaffDoctorRescheduleServlet extends HttpServlet {
             request.setAttribute("selectedDate", date.toString());
             request.setAttribute("today", today.toString());
             request.setAttribute("slots", slots);
+            request.setAttribute("lockedSlots", lockedSlots);
             request.setAttribute("appointments", appointments);
             request.setAttribute("shiftSummary", shiftSummary);
             request.setAttribute("availableCount", availableCount);
@@ -162,36 +171,49 @@ public class StaffDoctorRescheduleServlet extends HttpServlet {
             doctorId = Integer.parseInt(request.getParameter("doctorId"));
             String sourceSession = request.getParameter("sourceSession");
             LocalDate sourceDate = LocalDate.parse(viewDate);
-            String replacementParam = request.getParameter("replacementDoctorId");
-            Integer replacementDoctorId = replacementParam == null || replacementParam.isBlank() ? null : Integer.parseInt(replacementParam);
-            String dateParam = request.getParameter("targetDate");
-            LocalDate targetDate = dateParam == null || dateParam.isBlank() ? null : LocalDate.parse(dateParam);
             String reason = request.getParameter("reason");
             reason = reason == null ? "" : reason.trim();
             if (reason.length() < 10 || reason.length() > 500) {
                 throw new IllegalArgumentException("Lý do điều chỉnh cần từ 10 đến 500 ký tự.");
             }
 
+            Map<Integer, StaffDoctorRescheduleDAO.Replacement> replacements = new HashMap<>();
+            for (TimeSlot slot : workScheduleDAO.getDoctorShiftSlotsForDate(doctorId, sourceDate.toString())) {
+                String doctorParam = request.getParameter("replacementDoctor_" + slot.getId());
+                String dateParam = request.getParameter("targetDate_" + slot.getId());
+                if (doctorParam != null && !doctorParam.isBlank() && dateParam != null && !dateParam.isBlank()) {
+                    replacements.put(slot.getId(), new StaffDoctorRescheduleDAO.Replacement(
+                            Integer.parseInt(doctorParam), LocalDate.parse(dateParam)));
+                }
+            }
             List<StaffDoctorRescheduleDAO.Result> results = rescheduleDAO.changeShift(
-                    doctorId, sourceDate, sourceSession, replacementDoctorId, targetDate, user.getId(), reason);
+                    doctorId, sourceDate, sourceSession, replacements, user.getId(), reason);
             long moved = results.stream().filter(result -> result.appointmentId() != null).count();
-            request.getSession().setAttribute("successMessage", "Đã đóng " + results.size()
-                    + " khung giờ của ca " + ("Morning".equals(sourceSession) ? "Sáng" : "Chiều")
-                    + " và chuyển " + moved + " lịch hẹn.");
+            int emailsSent = 0;
+            int emailsFailed = 0;
+            int noEmail = 0;
             for (StaffDoctorRescheduleDAO.Result result : results) {
                 if (result.appointmentId() == null) continue;
                 try {
                     Appointment updated = appointmentDAO.getAppointmentDetailById(result.appointmentId());
                     if (updated != null && updated.getEmail() != null && !updated.getEmail().isBlank()) {
-                        EmailUtil.sendAppointmentConfirmationEmail(
-                                updated.getEmail().trim(), updated.getPatientName(), updated.getId(),
-                                updated.getDoctorName(), updated.getDepartment(),
-                                updated.getAppointmentDate().toString(), updated.getTimeSlot(), updated.getFee());
+                        EmailUtil.sendDoctorReplacementEmail(updated.getEmail().trim(),
+                                updated.getPatientName(), updated.getId(), updated.getDoctorName(),
+                                updated.getAppointmentDate().toString(), updated.getTimeSlot());
+                        emailsSent++;
+                    } else {
+                        noEmail++;
                     }
                 } catch (Exception e) {
+                    emailsFailed++;
                     getServletContext().log("Cannot email patient after doctor schedule change", e);
                 }
             }
+            request.getSession().setAttribute("successMessage", "Đã điều chỉnh " + results.size()
+                    + " khung giờ ca " + ("Morning".equals(sourceSession) ? "Sáng" : "Chiều")
+                    + " và chuyển " + moved + " lịch hẹn. Email gửi thành công: " + emailsSent
+                    + (noEmail > 0 ? "; bệnh nhân chưa có email: " + noEmail : "")
+                    + (emailsFailed > 0 ? "; gửi lỗi: " + emailsFailed : "") + ".");
         } catch (IllegalArgumentException | IllegalStateException e) {
             request.getSession().setAttribute("errorMessage", e.getMessage());
         } catch (Exception e) {
