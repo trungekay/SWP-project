@@ -511,15 +511,10 @@ public class AppointmentDAO {
                 scheduleId = getOrCreateSchedule(conn, a);
             }
 
-            // 4. Tạo Appointment: Nếu thanh toán QR thì tạo Pending, ngược lại tạo Confirmed và check-in ngay
-            String sqlAppt;
-            if (isPendingPayment) {
-                sqlAppt = "INSERT INTO Appointment (Patient_ID, Schedule_ID, Staff_Employee_ID, Status, created_at) " +
-                          "VALUES (?, ?, ?, 'Pending', DATEADD(HOUR, 7, SYSUTCDATETIME()))";
-            } else {
-                sqlAppt = "INSERT INTO Appointment (Patient_ID, Schedule_ID, Staff_Employee_ID, Status, checkin_time, created_at) " +
-                          "VALUES (?, ?, ?, 'Confirmed', DATEADD(HOUR, 7, SYSUTCDATETIME()), DATEADD(HOUR, 7, SYSUTCDATETIME()))";
-            }
+            // Payment and reception are separate: only staff check-in admits a walk-in to the queue.
+            String apptStatus = isPendingPayment ? "Pending" : "Confirmed";
+            String sqlAppt = "INSERT INTO Appointment (Patient_ID, Schedule_ID, Staff_Employee_ID, Status, created_at) " +
+                             "VALUES (?, ?, ?, ?, DATEADD(HOUR, 7, SYSUTCDATETIME()))";
             int appointmentId = -1;
             try (PreparedStatement psAppt = conn.prepareStatement(sqlAppt, Statement.RETURN_GENERATED_KEYS)) {
                 psAppt.setInt(1, patientId);
@@ -529,6 +524,7 @@ public class AppointmentDAO {
                 } else {
                     psAppt.setNull(3, Types.INTEGER);
                 }
+                psAppt.setString(4, apptStatus);
                 psAppt.executeUpdate();
                 try (ResultSet keys = psAppt.getGeneratedKeys()) {
                     if (keys.next()) {
@@ -733,8 +729,8 @@ public class AppointmentDAO {
 
             // 1. Kiểm tra trạng thái hiện tại: chỉ cho phép hủy/xóa nếu là Pending và chưa thanh toán
             String sqlCheck = "SELECT a.Status, a.Schedule_ID, inv.Status AS InvStatus " +
-                              "FROM Appointment a " +
-                              "LEFT JOIN Master_Invoice inv ON a.Appointment_ID = inv.Appointment_ID " +
+                              "FROM Appointment a WITH (UPDLOCK, HOLDLOCK) " +
+                              "LEFT JOIN Master_Invoice inv WITH (UPDLOCK, HOLDLOCK) ON a.Appointment_ID = inv.Appointment_ID " +
                               "WHERE a.Appointment_ID = ?";
             int scheduleId = -1;
             String apptStatus = null;
@@ -756,7 +752,7 @@ public class AppointmentDAO {
             }
 
             // Nếu đã thanh toán (Paid) hoặc đã tiếp đón/khám, tuyệt đối không được xóa
-            if ("Paid".equalsIgnoreCase(invStatus) || "Confirmed".equalsIgnoreCase(apptStatus) ||
+            if (!"Pending".equalsIgnoreCase(apptStatus) || "Paid".equalsIgnoreCase(invStatus) || "Confirmed".equalsIgnoreCase(apptStatus) ||
                 "In_Progress".equalsIgnoreCase(apptStatus) || "Completed".equalsIgnoreCase(apptStatus)) {
                 conn.rollback();
                 return false;
@@ -789,7 +785,8 @@ public class AppointmentDAO {
 
             // 3. Trả lại trạng thái Work_Schedule thành 'Available' để giải phóng slot khám cho bác sĩ
             if (scheduleId > 0) {
-                String sqlSched = "UPDATE Work_Schedule SET Status = 'Available' WHERE Schedule_ID = ?";
+                String sqlSched = "UPDATE Work_Schedule SET Status = 'Available' WHERE Schedule_ID = ? "
+                        + "AND Status = 'Booked' AND NOT EXISTS (SELECT 1 FROM Appointment a WHERE a.Schedule_ID = Work_Schedule.Schedule_ID AND a.Status <> 'Canceled')";
                 try (PreparedStatement ps = conn.prepareStatement(sqlSched)) {
                     ps.setInt(1, scheduleId);
                     ps.executeUpdate();
@@ -1058,7 +1055,7 @@ public class AppointmentDAO {
             "LEFT JOIN Employee_Profile stf ON a.Staff_Employee_ID = stf.Employee_ID " +
             "LEFT JOIN Medical_Record mr ON a.Appointment_ID = mr.Appointment_ID " +
             "LEFT JOIN Master_Invoice mi ON a.Appointment_ID = mi.Appointment_ID " +
-            "WHERE 1=1 "
+            "WHERE NOT (a.Status = 'Pending' AND (mi.Status IS NULL OR mi.Status NOT IN ('Paid', 'Partial_Paid'))) "
         );
 
         List<Object> params = new ArrayList<>();
@@ -1985,6 +1982,7 @@ public class AppointmentDAO {
                              "FROM Appointment a " +
                              "LEFT JOIN Master_Invoice mi ON a.Appointment_ID = mi.Appointment_ID " +
                              "WHERE a.Status = 'Pending' " +
+                             "  AND a.Staff_Employee_ID IS NULL " +
                              "  AND (mi.Status IS NULL OR mi.Status IN ('Pending_Deposit', 'Unpaid')) " +
                              "  AND DATEDIFF(SECOND, a.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) >= ?";
         try (Connection conn = DBContext.getConnection();

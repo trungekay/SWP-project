@@ -23,10 +23,15 @@ public final class RefundPolicy {
         + "WHERE ci.Appointment_ID = a.Appointment_ID AND ci.Status IN ('Paid', 'Partial_Paid') "
         + "AND cr.Status = 'Pending' AND cr.Reason LIKE N'Hủy lịch hẹn #%'))";
     // Aliases a and i refer to Appointment and Master_Invoice respectively.
-    public static final String ELIGIBLE = "a.Status = 'Canceled' AND a.checkin_time IS NULL "
+    public static final String ELIGIBLE = "a.Status = 'Canceled' "
         + "AND i.Status IN ('Paid', 'Partial_Paid') "
         + "AND EXISTS (SELECT 1 FROM Medical_Record mr WHERE mr.Appointment_ID = a.Appointment_ID "
-        + "AND mr.conclusion LIKE N'" + APPROVED + "%') ";
+        + "AND ((a.checkin_time IS NULL AND ("
+        + "mr.conclusion LIKE N'" + APPROVED + "%' "
+        + "OR mr.conclusion LIKE N'Lễ tân hủy lịch%')) "
+        + "OR (a.checkin_time IS NOT NULL AND ("
+        + "mr.conclusion LIKE N'Bác sĩ hủy ca quá giờ: %' "
+        + "OR mr.conclusion LIKE N'%' + CHAR(10) + N'Bác sĩ hủy ca quá giờ: %')))) ";
     public static final String NO_ACTIVE_REQUEST = "NOT EXISTS (SELECT 1 FROM Refund_Request rr "
         + "WHERE rr.Invoice_ID = i.Invoice_ID AND rr.Status IN ('Pending', 'Approved', 'Completed', 'Success')) ";
 }

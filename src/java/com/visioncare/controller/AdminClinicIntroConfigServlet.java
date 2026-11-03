@@ -19,7 +19,7 @@ public class AdminClinicIntroConfigServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro");
+        response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro&subtab=gallery");
     }
 
     @Override
@@ -122,13 +122,13 @@ public class AdminClinicIntroConfigServlet extends HttpServlet {
                 Part imagePart = request.getPart("imageFile");
                 if (imagePart == null || imagePart.getSize() <= 0) {
                     request.getSession().setAttribute("errorMsg", "Vui lòng chọn tệp hình ảnh để tải lên!");
-                    response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro");
+                    response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro&subtab=gallery");
                     return;
                 }
 
                 if (imagePart.getSize() > 10 * 1024 * 1024) {
                     request.getSession().setAttribute("errorMsg", "Kích thước ảnh tối đa là 10MB!");
-                    response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro");
+                    response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro&subtab=gallery");
                     return;
                 }
 
@@ -190,7 +190,7 @@ public class AdminClinicIntroConfigServlet extends HttpServlet {
 
                 if (itemId <= 0) {
                     request.getSession().setAttribute("errorMsg", "Mã hình ảnh cần cập nhật không hợp lệ!");
-                    response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro");
+                    response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro&subtab=gallery");
                     return;
                 }
 
@@ -212,7 +212,7 @@ public class AdminClinicIntroConfigServlet extends HttpServlet {
                 if (imagePart != null && imagePart.getSize() > 0) {
                     if (imagePart.getSize() > 10 * 1024 * 1024) {
                         request.getSession().setAttribute("errorMsg", "Kích thước ảnh tối đa là 10MB!");
-                        response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro");
+                        response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro&subtab=gallery");
                         return;
                     }
 
@@ -238,7 +238,7 @@ public class AdminClinicIntroConfigServlet extends HttpServlet {
             request.getSession().setAttribute("errorMsg", "Lỗi xử lý hình ảnh: " + e.getMessage());
         }
 
-        response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro");
+        response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=intro&subtab=gallery");
     }
 
     private String detectMimeType(byte[] bytes) {
