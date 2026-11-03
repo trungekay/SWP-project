@@ -39,7 +39,6 @@
         </header>
 
         <section class="doctor-form-patient" aria-label="Thông tin bệnh nhân">
-            <div class="doctor-form-avatar" aria-hidden="true"><c:out value="${fn:substring(appointment.patientName, 0, 1)}" default="BN" /></div>
             <div class="doctor-form-patient-main">
                 <span>BỆNH NHÂN</span>
                 <h2><c:out value="${appointment.patientName}" default="Chưa cập nhật" /></h2>

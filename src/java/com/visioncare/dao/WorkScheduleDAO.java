@@ -367,6 +367,15 @@ public class WorkScheduleDAO {
     }
 
     public List<com.visioncare.model.TimeSlot> getDoctorSlotsForDate(int doctorId, String dateStr) {
+        return getDoctorSlotsForDate(doctorId, dateStr, false);
+    }
+
+    /** Registered morning/afternoon slots, including slots hidden from booking by buffer mode. */
+    public List<com.visioncare.model.TimeSlot> getDoctorShiftSlotsForDate(int doctorId, String dateStr) {
+        return getDoctorSlotsForDate(doctorId, dateStr, true);
+    }
+
+    private List<com.visioncare.model.TimeSlot> getDoctorSlotsForDate(int doctorId, String dateStr, boolean wholeShift) {
         List<com.visioncare.model.TimeSlot> list = new ArrayList<>();
         int pendingHoldMinutes = TimeSlotDAO.getPendingHoldMinutes();
         String sql = "SELECT ws.Schedule_ID, ws.Doctor_Employee_ID, ws.Work_Date, ws.Slot, " +
@@ -388,7 +397,7 @@ public class WorkScheduleDAO {
                      "       END AS Is_Past " +
                      "FROM Work_Schedule ws " +
                      "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? " +
-                     " AND " + com.visioncare.util.BookingAvailability.getWindowCondition() + " " +
+                     " AND " + (wholeShift ? "ws.Start_Time < '17:00:00'" : com.visioncare.util.BookingAvailability.getWindowCondition()) + " " +
                      "  AND ws.Status IN ('Available', 'Booked') " +
                      "ORDER BY ws.Start_Time ASC";
         try (Connection conn = DBContext.getConnection();

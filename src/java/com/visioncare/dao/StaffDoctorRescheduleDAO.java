@@ -6,10 +6,81 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 /** Atomically closes a doctor's work slot and transfers its appointment, if any. */
 public class StaffDoctorRescheduleDAO {
     public record Result(Integer appointmentId, Integer replacementDoctorId) {}
+
+    private record SourceSlot(int id, java.sql.Time start, java.sql.Time end, String status, boolean past) {}
+
+    /** Move every appointment in a registered session and close all its remaining slots atomically. */
+    public List<Result> changeShift(int doctorId, LocalDate sourceDate, String session,
+                                    Integer replacementDoctorId, LocalDate targetDate,
+                                    int staffAccountId, String reason) throws Exception {
+        if (sourceDate == null || !("Morning".equals(session) || "Afternoon".equals(session))) {
+            throw new IllegalArgumentException("Hãy chọn ca Sáng hoặc Chiều hợp lệ.");
+        }
+        try (Connection conn = DBContext.getConnection()) {
+            conn.setAutoCommit(false);
+            conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            try {
+                String window = "Morning".equals(session) ? "ws.Start_Time<'12:00:00'" : "ws.Start_Time>='12:00:00' AND ws.Start_Time<'17:00:00'";
+                List<SourceSlot> sources = new ArrayList<>();
+                String sql = "SELECT ws.Schedule_ID, ws.Start_Time, ws.End_Time, ws.Status, "
+                        + "CASE WHEN " + BookingAvailability.FUTURE + " THEN 0 ELSE 1 END AS Is_Past "
+                        + "FROM Work_Schedule ws WITH (UPDLOCK,HOLDLOCK) WHERE ws.Doctor_Employee_ID=? "
+                        + "AND ws.Work_Date=? AND " + window + " AND ws.Status IN ('Available','Booked') "
+                        + "ORDER BY ws.Start_Time";
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setInt(1, doctorId);
+                    ps.setDate(2, java.sql.Date.valueOf(sourceDate));
+                    try (ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) sources.add(new SourceSlot(rs.getInt(1), rs.getTime(2), rs.getTime(3), rs.getString(4), rs.getBoolean(5)));
+                    }
+                }
+                if (sources.isEmpty()) throw new IllegalStateException("Ca làm việc không còn khung giờ để điều chỉnh.");
+                for (SourceSlot source : sources) {
+                    if (source.past()) {
+                        throw new IllegalStateException("Ca làm việc đã bắt đầu; không thể đóng một phần ca.");
+                    }
+                }
+                boolean hasBookings = sources.stream().anyMatch(s -> "Booked".equals(s.status()));
+                if (hasBookings && (replacementDoctorId == null || targetDate == null || replacementDoctorId == doctorId)) {
+                    throw new IllegalArgumentException("Hãy chọn bác sĩ và ngày thay thế cho các lịch hẹn trong ca.");
+                }
+                if (hasBookings && (targetDate.isBefore(LocalDate.now()) || targetDate.isAfter(LocalDate.now().plusDays(30)))) {
+                    throw new IllegalArgumentException("Ngày thay thế phải nằm trong 30 ngày tới.");
+                }
+                List<Result> results = new ArrayList<>();
+                for (SourceSlot source : sources) {
+                    Integer targetId = null;
+                    if ("Booked".equals(source.status())) {
+                        String targetSql = "SELECT ws.Schedule_ID FROM Work_Schedule ws WITH (UPDLOCK,HOLDLOCK) "
+                                + "WHERE ws.Doctor_Employee_ID=? AND ws.Work_Date=? AND ws.Start_Time=? "
+                                + "AND ws.End_Time=? AND ws.Status='Available'";
+                        try (PreparedStatement ps = conn.prepareStatement(targetSql)) {
+                            ps.setInt(1, replacementDoctorId);
+                            ps.setDate(2, java.sql.Date.valueOf(targetDate));
+                            ps.setTime(3, source.start());
+                            ps.setTime(4, source.end());
+                            try (ResultSet rs = ps.executeQuery()) {
+                                if (rs.next()) targetId = rs.getInt(1);
+                            }
+                        }
+                        if (targetId == null) throw new IllegalStateException("Bác sĩ thay thế thiếu khung giờ trống " + source.start() + ".");
+                    }
+                    results.add(changeOne(conn, doctorId, source.id(), targetId, targetDate, staffAccountId, reason));
+                }
+                conn.commit();
+                return results;
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            }
+        }
+    }
 
     public Result change(int doctorId, int sourceScheduleId, Integer targetScheduleId,
                          LocalDate targetDate, int staffAccountId, String reason) throws Exception {
@@ -17,6 +88,18 @@ public class StaffDoctorRescheduleDAO {
             conn.setAutoCommit(false);
             conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             try {
+                Result result = changeOne(conn, doctorId, sourceScheduleId, targetScheduleId, targetDate, staffAccountId, reason);
+                conn.commit();
+                return result;
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            }
+        }
+    }
+
+    private Result changeOne(Connection conn, int doctorId, int sourceScheduleId, Integer targetScheduleId,
+                             LocalDate targetDate, int staffAccountId, String reason) throws Exception {
                 String sourceStatus;
                 String sourceSql = "SELECT ws.Status FROM Work_Schedule ws WITH (UPDLOCK, HOLDLOCK) "
                         + "WHERE ws.Schedule_ID=? AND ws.Doctor_Employee_ID=? "
@@ -113,13 +196,7 @@ public class StaffDoctorRescheduleDAO {
                     ps.setString(5, reason);
                     ps.executeUpdate();
                 }
-                conn.commit();
                 return new Result(appointmentId, replacementDoctorId);
-            } catch (Exception e) {
-                conn.rollback();
-                throw e;
-            }
-        }
     }
 
     private void ensureAppointmentCanMove(Connection conn, int appointmentId) throws SQLException {

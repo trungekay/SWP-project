@@ -108,7 +108,7 @@ public class StaffDoctorRescheduleServlet extends HttpServlet {
             String shiftSummary = "OFF";
             int availableCount = 0;
             if (selectedDoctor != null) {
-                slots = workScheduleDAO.getDoctorSlotsForDate(selectedDoctor.getId(), date.toString());
+                slots = workScheduleDAO.getDoctorShiftSlotsForDate(selectedDoctor.getId(), date.toString());
                 shiftSummary = workScheduleDAO.getDoctorWorkShiftSummary(selectedDoctor.getId(), date.toString());
                 appointments = appointmentDAO.getStaffAppointments(Date.valueOf(date), "all", selectedDoctor.getId(), null);
                 for (TimeSlot slot : slots) {
@@ -160,9 +160,10 @@ public class StaffDoctorRescheduleServlet extends HttpServlet {
         String viewDate = request.getParameter("viewDate");
         try {
             doctorId = Integer.parseInt(request.getParameter("doctorId"));
-            int sourceScheduleId = Integer.parseInt(request.getParameter("sourceScheduleId"));
-            String targetParam = request.getParameter("targetScheduleId");
-            Integer targetScheduleId = targetParam == null || targetParam.isBlank() ? null : Integer.parseInt(targetParam);
+            String sourceSession = request.getParameter("sourceSession");
+            LocalDate sourceDate = LocalDate.parse(viewDate);
+            String replacementParam = request.getParameter("replacementDoctorId");
+            Integer replacementDoctorId = replacementParam == null || replacementParam.isBlank() ? null : Integer.parseInt(replacementParam);
             String dateParam = request.getParameter("targetDate");
             LocalDate targetDate = dateParam == null || dateParam.isBlank() ? null : LocalDate.parse(dateParam);
             String reason = request.getParameter("reason");
@@ -171,13 +172,14 @@ public class StaffDoctorRescheduleServlet extends HttpServlet {
                 throw new IllegalArgumentException("Lý do điều chỉnh cần từ 10 đến 500 ký tự.");
             }
 
-            StaffDoctorRescheduleDAO.Result result = rescheduleDAO.change(
-                    doctorId, sourceScheduleId, targetScheduleId, targetDate, user.getId(), reason);
-            if (result.appointmentId() == null) {
-                request.getSession().setAttribute("successMessage", "Đã đóng ca làm việc chưa có lịch hẹn của bác sĩ.");
-            } else {
-                request.getSession().setAttribute("successMessage", "Đã chuyển lịch hẹn #APT-" + result.appointmentId()
-                        + " sang bác sĩ thay thế và đóng ca làm việc cũ.");
+            List<StaffDoctorRescheduleDAO.Result> results = rescheduleDAO.changeShift(
+                    doctorId, sourceDate, sourceSession, replacementDoctorId, targetDate, user.getId(), reason);
+            long moved = results.stream().filter(result -> result.appointmentId() != null).count();
+            request.getSession().setAttribute("successMessage", "Đã đóng " + results.size()
+                    + " khung giờ của ca " + ("Morning".equals(sourceSession) ? "Sáng" : "Chiều")
+                    + " và chuyển " + moved + " lịch hẹn.");
+            for (StaffDoctorRescheduleDAO.Result result : results) {
+                if (result.appointmentId() == null) continue;
                 try {
                     Appointment updated = appointmentDAO.getAppointmentDetailById(result.appointmentId());
                     if (updated != null && updated.getEmail() != null && !updated.getEmail().isBlank()) {

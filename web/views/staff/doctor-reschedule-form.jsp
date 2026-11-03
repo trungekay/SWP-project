@@ -90,8 +90,14 @@
                     <h2 id="scheduleTitle" class="doctor-card-title"><i class="bi bi-calendar3"></i>2. Chọn ca làm việc cần điều chỉnh</h2>
                     <c:choose><c:when test="${empty selectedDoctor}"><p class="text-muted mb-0">Chưa có bác sĩ để hiển thị.</p></c:when>
                     <c:when test="${empty slots}"><div class="text-center py-4 text-muted"><i class="bi bi-calendar-x fs-2 d-block mb-2"></i>Không có khung giờ khám khả dụng trong lịch làm việc ngày này.</div></c:when>
-                    <c:otherwise><div class="schedule-grid"><c:forEach var="slot" items="${slots}"><label class="schedule-slot ${slot.booked ? 'booked' : ''} ${slot.past ? 'past' : ''}"><input type="radio" name="sourceSlot" class="shift-slot" value="${slot.id}" data-time="${slot.startTime}–${slot.endTime}" data-booked="${slot.booked}" ${slot.past ? 'disabled' : ''} aria-label="Chọn ca ${slot.startTime} đến ${slot.endTime}"><strong class="d-block"><c:out value="${slot.startTime}"/>–<c:out value="${slot.endTime}"/></strong><small><c:choose><c:when test="${slot.past}">Đã qua</c:when><c:when test="${slot.booked}">Đã có lịch hẹn</c:when><c:otherwise>Chưa có lịch hẹn</c:otherwise></c:choose></small></label></c:forEach></div></c:otherwise></c:choose>
-                    <p class="small text-muted mt-3 mb-0">Chọn một khung giờ chưa qua. Nếu đã có lịch hẹn, hãy chọn bác sĩ thay thế và khung giờ còn trống của họ.</p>
+                    <c:otherwise>
+                        <div id="sourceSlots" hidden><c:forEach var="slot" items="${slots}"><span data-session="${slot.session}" data-start="${slot.startTime}" data-end="${slot.endTime}" data-booked="${slot.booked}" data-past="${slot.past}"></span></c:forEach></div>
+                        <div class="schedule-grid">
+                            <label id="morningCard" class="schedule-slot" hidden><input type="radio" name="sourceSlot" class="shift-slot" value="Morning"><strong class="d-block">Ca Sáng (08:00–11:30)</strong><small></small></label>
+                            <label id="afternoonCard" class="schedule-slot" hidden><input type="radio" name="sourceSlot" class="shift-slot" value="Afternoon"><strong class="d-block">Ca Chiều (13:30–17:00)</strong><small></small></label>
+                        </div>
+                    </c:otherwise></c:choose>
+                    <p class="small text-muted mt-3 mb-0">Chọn cả buổi như khi đăng ký lịch. Ca đã bắt đầu không thể điều chỉnh; lịch hẹn trong ca cần bác sĩ thay thế có khung giờ tương ứng.</p>
                 </section>
 
                 <section class="doctor-card" aria-labelledby="planTitle">
@@ -100,14 +106,14 @@
                         <input type="hidden" name="csrfToken" value="${csrfToken}">
                         <input type="hidden" name="doctorId" value="${selectedDoctor.id}">
                         <input type="hidden" name="viewDate" value="${selectedDate}">
-                        <input type="hidden" name="sourceScheduleId" id="sourceScheduleId">
+                        <input type="hidden" name="sourceSession" id="sourceSession">
                         <div class="row g-3">
                             <div class="col-12"><div id="sourceHint" class="alert alert-light border mb-0">Chọn một ca làm việc ở mục 2 để tiếp tục.</div></div>
                             <div id="replacementFields" class="col-12" hidden>
                                 <div class="row g-3">
-                                    <div class="col-md-6"><label class="form-label fw-semibold" for="replacementDoctorId">Bác sĩ thay thế</label><select class="form-select" id="replacementDoctorId"><option value="">Chọn bác sĩ thay thế</option><c:forEach var="doctor" items="${doctors}"><c:if test="${empty selectedDoctor || doctor.id != selectedDoctor.id}"><option value="${doctor.id}"><c:out value="${doctor.fullName}"/> — <c:out value="${doctor.specialty}"/></option></c:if></c:forEach></select></div>
+                                    <div class="col-md-6"><label class="form-label fw-semibold" for="replacementDoctorId">Bác sĩ thay thế</label><select class="form-select" id="replacementDoctorId" name="replacementDoctorId"><option value="">Chọn bác sĩ thay thế</option><c:forEach var="doctor" items="${doctors}"><c:if test="${empty selectedDoctor || doctor.id != selectedDoctor.id}"><option value="${doctor.id}"><c:out value="${doctor.fullName}"/> — <c:out value="${doctor.specialty}"/></option></c:if></c:forEach></select></div>
                                     <div class="col-md-6"><label class="form-label fw-semibold" for="newDate">Ngày dự kiến</label><input class="form-control" type="date" id="newDate" name="targetDate" min="${today}"></div>
-                                    <div class="col-12"><div class="form-label fw-semibold">Khung giờ đã đăng ký của bác sĩ thay thế</div><p id="targetSlotHint" class="form-text mb-2">Chọn bác sĩ thay thế và ngày dự kiến để xem khung giờ.</p><div id="targetSlotGrid" class="schedule-grid" role="radiogroup" aria-label="Chọn khung giờ của bác sĩ thay thế"></div></div>
+                                    <div class="col-12"><div class="form-label fw-semibold">Khung giờ tương ứng của bác sĩ thay thế</div><p id="targetSlotHint" class="form-text mb-2">Chọn bác sĩ thay thế và ngày dự kiến để kiểm tra các lịch hẹn.</p><div id="targetSlotGrid" class="schedule-grid"></div></div>
                                 </div>
                             </div>
                             <div class="col-12"><label class="form-label fw-semibold" for="changeReason">Lý do điều chỉnh <span class="text-danger">*</span></label><textarea class="form-control" id="changeReason" name="reason" rows="2" minlength="10" maxlength="500" required placeholder="Ví dụ: bác sĩ đổi ca trực hoặc có lịch công tác"></textarea></div>
@@ -143,71 +149,89 @@ const targetSlotGrid = document.getElementById('targetSlotGrid');
 const targetSlotHint = document.getElementById('targetSlotHint');
 const sourceHint = document.getElementById('sourceHint');
 const replacementFields = document.getElementById('replacementFields');
-const sourceScheduleInput = document.getElementById('sourceScheduleId');
+const sourceSessionInput = document.getElementById('sourceSession');
 const changeForm = document.getElementById('doctorChangeForm');
+const sourceSlots = [...document.querySelectorAll('#sourceSlots span')].map(el => ({
+    session: el.dataset.session,
+    start: el.dataset.start,
+    end: el.dataset.end,
+    booked: el.dataset.booked === 'true',
+    past: el.dataset.past === 'true'
+}));
 let targetRequestId = 0;
+let targetReady = false;
 const minDate = targetDateInput.min || new Date().toISOString().slice(0, 10);
 const dateParts = minDate.split('-').map(Number);
 targetDateInput.min = minDate;
 targetDateInput.max = new Date(Date.UTC(dateParts[0], dateParts[1] - 1, dateParts[2] + 30)).toISOString().slice(0, 10);
 
+function selectedShift() {
+    return document.querySelector('.shift-slot:checked');
+}
+function bookedSlots() {
+    const selected = selectedShift();
+    return selected ? sourceSlots.filter(slot => slot.session === selected.value && slot.booked) : [];
+}
+for (const [session, cardId] of [['Morning', 'morningCard'], ['Afternoon', 'afternoonCard']]) {
+    const card = document.getElementById(cardId);
+    if (!card) continue;
+    const slots = sourceSlots.filter(slot => slot.session === session);
+    if (!slots.length) continue;
+    card.hidden = false;
+    const booked = slots.filter(slot => slot.booked).length;
+    const past = slots.some(slot => slot.past);
+    card.classList.toggle('booked', booked > 0);
+    card.classList.toggle('past', past);
+    card.querySelector('input').disabled = past;
+    card.querySelector('small').textContent = past
+        ? 'Ca đã bắt đầu hoặc đã qua'
+        : slots.length + ' khung giờ · ' + booked + ' lịch hẹn';
+}
 document.querySelectorAll('.shift-slot').forEach(radio => radio.addEventListener('change', function () {
-    sourceScheduleInput.value = radio.value;
-    const booked = radio.dataset.booked === 'true';
-    replacementFields.hidden = !booked;
+    sourceSessionInput.value = radio.value;
+    const booked = bookedSlots().length;
+    replacementFields.hidden = booked === 0;
     sourceHint.textContent = booked
-        ? 'Ca ' + radio.dataset.time + ' đã có lịch hẹn. Chọn bác sĩ khác để chuyển lịch hẹn trước khi đóng ca cũ.'
-        : 'Ca ' + radio.dataset.time + ' chưa có lịch hẹn. Xác nhận sẽ đóng ca này, không cần bác sĩ thay thế.';
+        ? 'Ca ' + (radio.value === 'Morning' ? 'Sáng' : 'Chiều') + ' có ' + booked + ' lịch hẹn. Chọn bác sĩ thay thế có đủ khung giờ tương ứng.'
+        : 'Ca ' + (radio.value === 'Morning' ? 'Sáng' : 'Chiều') + ' chưa có lịch hẹn. Xác nhận sẽ đóng toàn bộ khung giờ của ca.';
     document.getElementById('planFeedback').replaceChildren();
+    loadTargetSlots();
 }));
 
 async function loadTargetSlots() {
     const requestId = ++targetRequestId;
-    const date = targetDateInput.value;
-    const replacementDoctorId = replacementDoctorSelect.value;
+    targetReady = false;
     targetSlotGrid.replaceChildren();
-    targetSlotHint.textContent = 'Chọn bác sĩ thay thế và ngày dự kiến để xem khung giờ.';
-    document.getElementById('planFeedback').replaceChildren();
-    if (!date || !replacementDoctorId) return;
+    targetSlotHint.textContent = 'Chọn bác sĩ thay thế và ngày dự kiến để kiểm tra các lịch hẹn.';
+    const date = targetDateInput.value;
+    const doctorId = replacementDoctorSelect.value;
+    const required = bookedSlots();
+    if (!required.length || !date || !doctorId) return;
     if (date < targetDateInput.min || date > targetDateInput.max) {
-        targetSlotHint.textContent = 'Chọn ngày từ ' + targetDateInput.min + ' đến ' + targetDateInput.max + '. Ngày đang chọn: ' + date + '.';
+        targetSlotHint.textContent = 'Ngày thay thế phải nằm trong 30 ngày tới.';
         return;
     }
-    targetSlotHint.textContent = 'Đang tải lịch đã đăng ký…';
+    targetSlotHint.textContent = 'Đang kiểm tra lịch đã đăng ký…';
     try {
-        const params = new URLSearchParams({
-            action: 'slots',
-            doctorId: replacementDoctorId,
-            date: date
-        });
+        const params = new URLSearchParams({action: 'slots', doctorId, date});
         const response = await fetch('${pageContext.request.contextPath}/staff/doctor-reschedule?' + params, {credentials: 'same-origin'});
         if (!response.ok) throw new Error('Không tải được lịch');
         const data = await response.json();
         if (requestId !== targetRequestId) return;
-        const slots = data.slots || [];
-        slots.forEach(slot => {
-            const label = document.createElement('label');
-            label.className = 'schedule-slot' + (slot.isAvailable ? '' : ' booked');
-            const radio = document.createElement('input');
-            radio.type = 'radio';
-            radio.name = 'targetScheduleId';
-            radio.className = 'target-slot';
-            radio.value = String(slot.scheduleId);
-            radio.dataset.time = slot.startTime + '–' + slot.endTime;
-            radio.disabled = !slot.isAvailable;
-            radio.setAttribute('aria-label', 'Chọn khung giờ ' + radio.dataset.time);
-            const time = document.createElement('strong');
-            time.className = 'd-block';
-            time.textContent = radio.dataset.time;
-            const status = document.createElement('small');
-            status.textContent = slot.isAvailable ? 'Còn trống' : 'Đã có lịch hẹn / đã qua';
-            label.append(radio, time, status);
-            targetSlotGrid.appendChild(label);
-        });
-        const availableCount = slots.filter(slot => slot.isAvailable).length;
-        targetSlotHint.textContent = slots.length
-            ? slots.length + ' khung giờ đã đăng ký; ' + availableCount + ' khung giờ còn trống để chọn.'
-            : 'Bác sĩ thay thế không có khung giờ đã đăng ký trong ngày này.';
+        const available = (data.slots || []).filter(slot => slot.isAvailable);
+        const missing = required.filter(source => !available.some(target =>
+            target.startTime === source.start && target.endTime === source.end));
+        targetReady = missing.length === 0;
+        for (const source of required) {
+            const ready = !missing.includes(source);
+            const line = document.createElement('div');
+            line.className = 'schedule-slot' + (ready ? '' : ' booked');
+            line.textContent = source.start + '–' + source.end + (ready ? ' · Còn trống' : ' · Không có khung giờ trống');
+            targetSlotGrid.appendChild(line);
+        }
+        targetSlotHint.textContent = targetReady
+            ? 'Đủ ' + required.length + ' khung giờ tương ứng để chuyển lịch hẹn.'
+            : 'Thiếu ' + missing.length + ' khung giờ tương ứng. Chọn bác sĩ hoặc ngày khác.';
     } catch (error) {
         if (requestId !== targetRequestId) return;
         targetSlotHint.textContent = 'Không tải được lịch đã đăng ký. Vui lòng chọn lại ngày.';
@@ -221,56 +245,34 @@ function showPlanError(message) {
     feedback.className = 'alert alert-danger mt-3';
     feedback.textContent = message;
 }
-
+function validatePlan() {
+    const source = selectedShift();
+    if (!source) return 'Hãy chọn ca làm việc cần điều chỉnh ở mục 2.';
+    if (bookedSlots().length && (!replacementDoctorSelect.value || !targetDateInput.value || !targetReady)) {
+        return 'Hãy chọn bác sĩ thay thế và ngày có đủ khung giờ tương ứng.';
+    }
+    const reason = document.getElementById('changeReason').value.trim();
+    if (reason.length < 10 || reason.length > 500) return 'Lý do điều chỉnh cần từ 10 đến 500 ký tự.';
+    return null;
+}
 document.getElementById('previewPlan').addEventListener('click', function () {
-    const source = document.querySelector('.shift-slot:checked');
-    const date = targetDateInput.value;
-    const target = document.querySelector('.target-slot:checked');
+    const error = validatePlan();
+    if (error) return showPlanError(error);
+    const source = selectedShift();
+    const count = sourceSlots.filter(slot => slot.session === source.value).length;
+    const booked = bookedSlots().length;
     const feedback = document.getElementById('planFeedback');
-    feedback.replaceChildren();
-    if (!source) {
-        showPlanError('Hãy chọn ca làm việc cần điều chỉnh ở mục 2.');
-        return;
-    }
-    const booked = source.dataset.booked === 'true';
-    if (booked) {
-        if (!replacementDoctorSelect.value || !date || !target) {
-            showPlanError('Hãy chọn bác sĩ thay thế, ngày và khung giờ còn trống của bác sĩ đó.');
-            return;
-        }
-        if (date < targetDateInput.min || date > targetDateInput.max) {
-            showPlanError('Ngày dự kiến phải nằm trong 30 ngày tới.');
-            return;
-        }
-    }
-    const reason = document.getElementById('changeReason').value.trim();
     feedback.className = 'plan-preview mt-3';
-    const heading = document.createElement('strong');
-    heading.textContent = 'Bản xem trước — chưa lưu';
-    feedback.appendChild(heading);
-    const details = document.createElement('p');
-    details.className = 'mb-0 mt-2';
-    details.textContent = booked
-        ? 'Đóng ca ' + source.dataset.time + ' của bác sĩ hiện tại; chuyển lịch hẹn sang ' + replacementDoctorSelect.selectedOptions[0].textContent + ', ngày ' + date + ', khung giờ ' + target.dataset.time + '.' + (reason ? ' Lý do: ' + reason : '')
-        : 'Đóng ca ' + source.dataset.time + ' chưa có lịch hẹn.' + (reason ? ' Lý do: ' + reason : '');
-    feedback.appendChild(details);
+    feedback.textContent = 'Bản xem trước — chưa lưu: Đóng ' + count + ' khung giờ ca '
+        + (source.value === 'Morning' ? 'Sáng' : 'Chiều') + '; chuyển ' + booked
+        + ' lịch hẹn' + (booked ? ' sang ' + replacementDoctorSelect.selectedOptions[0].textContent
+        + ' ngày ' + targetDateInput.value + ' ở cùng giờ' : '') + '.';
 });
-
 changeForm.addEventListener('submit', function (event) {
-    const source = document.querySelector('.shift-slot:checked');
-    const target = document.querySelector('.target-slot:checked');
-    const reason = document.getElementById('changeReason').value.trim();
-    if (!source) {
+    const error = validatePlan();
+    if (error) {
         event.preventDefault();
-        showPlanError('Hãy chọn ca làm việc cần điều chỉnh ở mục 2.');
-    } else if (reason.length < 10) {
-        event.preventDefault();
-        showPlanError('Lý do điều chỉnh cần ít nhất 10 ký tự.');
-    } else if (source.dataset.booked === 'true'
-            && (!replacementDoctorSelect.value || !targetDateInput.value || !target
-                || targetDateInput.value < targetDateInput.min || targetDateInput.value > targetDateInput.max)) {
-        event.preventDefault();
-        showPlanError('Hãy chọn bác sĩ thay thế, ngày và khung giờ còn trống hợp lệ.');
+        showPlanError(error);
     }
 });
 </script>

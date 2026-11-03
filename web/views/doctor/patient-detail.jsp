@@ -82,12 +82,6 @@
 
                     <section class="doctor-detail-hero" aria-labelledby="patient-name">
                         <div class="doctor-detail-hero-main">
-                            <div class="doctor-detail-avatar" aria-hidden="true">
-                                <c:choose>
-                                    <c:when test="${not empty appointment.patientName}"><c:out value="${fn:substring(appointment.patientName, 0, 1)}" /></c:when>
-                                    <c:otherwise>BN</c:otherwise>
-                                </c:choose>
-                            </div>
                             <div class="doctor-detail-hero-copy">
                                 <div class="doctor-detail-hero-label">BỆNH NHÂN</div>
                                 <h2 id="patient-name"><c:out value="${appointment.patientName}" default="Chưa có tên" /></h2>
