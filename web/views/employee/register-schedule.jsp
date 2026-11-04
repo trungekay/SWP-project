@@ -92,17 +92,10 @@
                     </c:if>
                   </div>
                   <div class="text-muted small mt-1">
-                    <c:choose>
-                      <c:when test="${isShiftOnlyRole}">
-                        <i class="bi bi-info-circle me-1 text-primary"></i><strong>Quy định:</strong> Chuyên viên và Nhân viên bắt buộc đăng ký
-                        trọn vẹn theo <strong>Ca Sáng (08:00 - 11:30)</strong> hoặc <strong>Ca Chiều (13:30 -
-                          17:00)</strong>. Tối thiểu <strong>${not empty minWeeklyHours ? minWeeklyHours : 30.0} giờ / tuần</strong>.
-                      </c:when>
-                      <c:otherwise>
-                        <i class="bi bi-info-circle me-1"></i><strong>Quy định:</strong> Bác sĩ đăng ký linh hoạt theo từng
-                        slot hoặc theo ca làm việc. Tối thiểu <strong>${not empty minWeeklyHours ? minWeeklyHours : 30.0} giờ / tuần</strong>.
-                      </c:otherwise>
-                    </c:choose>
+
+                        <i class="bi bi-info-circle me-1 text-primary"></i><strong>Quy định:</strong> Tất cả nhân viên, kể cả bác sĩ, đăng ký
+                        trọn <strong>buổi sáng</strong>, <strong>buổi chiều</strong> hoặc cả hai theo khung giờ phòng khám đang mở. Tối thiểu <strong>${not empty minWeeklyHours ? minWeeklyHours : 30.0} giờ / tuần</strong>.
+
                   </div>
                 </div>
               </div>
@@ -221,8 +214,7 @@
             <!-- Right: Quick Select Helpers -->
             <div class="quick-select-group">
               <span class="text-muted small fw-semibold me-1 d-none d-lg-inline">Chọn nhanh:</span>
-              <c:choose>
-                <c:when test="${isShiftOnlyRole}">
+
                   <c:if test="${totalMorningSlots > 0}">
                     <button type="button" class="btn-quick-select" onclick="selectShiftAllWeek('Morning')">
                       <i class="bi bi-sun text-warning"></i> Ca Sáng Cả Tuần
@@ -239,33 +231,12 @@
                   <button type="button" class="btn-quick-select text-danger" onclick="deselectAll()">
                     <i class="bi bi-x-circle"></i> Bỏ chọn tất cả
                   </button>
-                </c:when>
-                <c:otherwise>
-                  <c:if test="${totalMorningSlots > 0}">
-                    <button type="button" class="btn-quick-select" onclick="selectMorning()">
-                      <i class="bi bi-sun text-warning"></i> Ca Sáng
-                    </button>
-                  </c:if>
-                  <c:if test="${totalAfternoonSlots > 0}">
-                    <button type="button" class="btn-quick-select" onclick="selectAfternoon()">
-                      <i class="bi bi-sunset text-danger"></i> Ca Chiều
-                    </button>
-                  </c:if>
-                  <button type="button" class="btn-quick-select" onclick="selectAllWeek()">
-                    <i class="bi bi-check-all text-primary"></i> Cả Tuần
-                  </button>
-                  <button type="button" class="btn-quick-select text-danger" onclick="deselectAll()">
-                    <i class="bi bi-x-circle"></i> Bỏ chọn
-                  </button>
-                </c:otherwise>
-              </c:choose>
+
             </div>
 
           </div>
 
-          <c:choose>
-            <%--=========================================================================A. GIAO DIỆN ĐĂNG KÝ THEO BUỔI/CA CHO CHUYÊN VIÊN & NHÂN VIÊN=========================================================================--%>
-              <c:when test="${isShiftOnlyRole}">
+
                 <div class="register-card">
                   <div class="table-responsive">
                     <table class="table table-shift-register align-middle">
@@ -489,111 +460,7 @@
                     </table>
                   </div>
                 </div>
-              </c:when>
 
-              <%--=========================================================================B. GIAO DIỆN ĐĂNG KÝ THEO TỪNG SLOT LINH HOẠT CHO BÁC SĨ (DOCTOR)=========================================================================--%>
-                <c:otherwise>
-                  <div class="register-card">
-                    <div class="table-responsive">
-                      <table class="table table-register align-middle">
-                        <thead>
-                          <tr>
-                            <th class="col-day-header">Thứ / Ngày</th>
-                            <th class="col-select-all-header text-center">Cả ngày</th>
-                            <c:forEach var="slot" items="${slots}">
-                              <th class="col-slot-header">
-                                <div>${slot.id}</div>
-                                <span class="time-sub">${slot.timeRange}</span>
-                              </th>
-                            </c:forEach>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <c:forEach var="day" items="${weekDays}">
-                            <tr class="${day.today ? 'row-today' : ''}">
-
-                              <!-- Cột 1: Ngày Trong Tuần -->
-                              <td class="day-cell">
-                                <div class="d-flex align-items-center flex-wrap">
-                                  <span class="day-name">${day.dayName}</span>
-                                  <span class="day-date">${day.dayDate}</span>
-                                </div>
-                                <c:if test="${day.today}">
-                                  <span class="today-badge">Hôm nay</span>
-                                </c:if>
-                              </td>
-
-                              <!-- Cột 2: Nút Chọn Cả Ngày -->
-                              <td class="text-center select-all-cell">
-                                <c:choose>
-                                  <c:when test="${day.past}">
-                                    <span class="text-muted small">-</span>
-                                  </c:when>
-                                  <c:otherwise>
-                                    <button type="button" class="btn-select-day" onclick="toggleDay('${day.fullDate}')"
-                                      title="Chọn / Bỏ chọn tất cả ca trong ngày">
-                                      Tất cả
-                                    </button>
-                                  </c:otherwise>
-                                </c:choose>
-                              </td>
-
-                              <!-- 14 Cột Slot  -->
-                              <c:forEach var="slot" items="${slots}">
-                                <c:set var="cellKey" value="${day.fullDate}_${slot.id}" />
-                                <c:set var="isRegistered" value="${registeredMap[cellKey]}" />
-                                <c:set var="isClosed"
-                                  value="${closedMap[cellKey] || slotStatusMap[slot.id] == 'Canceled' || slotStatusMap[slot.id] == 'Inactive' || slotStatusMap[slot.id] == 'Disabled'}" />
-
-                                <td>
-                                  <c:choose>
-                                    <%-- 1. Trường hợp: Ngày trong quá khứ --%>
-                                      <c:when test="${day.past}">
-                                        <div class="slot-past" title="Thời gian này đã qua">
-                                          <span class="text-muted"><i class="bi bi-clock-history me-1"></i>Đã qua</span>
-                                        </div>
-                                      </c:when>
-
-                                      <%-- 2. Trường hợp: Bị Admin đóng ca / tạm dừng (Sky blue) --%>
-                                        <c:when test="${isClosed}">
-                                          <div class="slot-closed" title="Khung giờ này đã bị Quản trị viên đóng">
-                                            <span class="slot-title"><i class="bi bi-slash-circle me-1"></i>Đóng
-                                              ca</span>
-                                          </div>
-                                        </c:when>
-
-                                        <%-- 3. Trường hợp: Đã đăng ký trước đó trong Database --%>
-                                          <c:when test="${isRegistered}">
-                                            <div class="slot-registered" title="Bạn đã có lịch làm việc ở ca này">
-                                              <span class="slot-title"><i class="bi bi-check-circle-fill me-1"></i>Đã
-                                                đăng ký</span>
-                                            </div>
-                                          </c:when>
-
-                                          <%-- 4. Trường hợp: Có thể chọn đăng ký mới --%>
-                                            <c:otherwise>
-                                              <div class="slot-check-wrapper">
-                                                <input type="checkbox" name="selectedSlots"
-                                                  value="${day.fullDate}|${slot.id}|${slot.startTime}:00|${slot.endTime}:00|${slot.session}"
-                                                  data-session="${slot.session}" data-date="${day.fullDate}"
-                                                  id="chk_${cellKey}" class="slot-check-input">
-                                                <label for="chk_${cellKey}" class="slot-check-label">
-                                                  <span class="slot-title"><i class="bi bi-plus-lg me-1"></i>Chọn</span>
-                                                </label>
-                                              </div>
-                                            </c:otherwise>
-                                  </c:choose>
-                                </td>
-                              </c:forEach>
-
-                            </tr>
-                          </c:forEach>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </c:otherwise>
-          </c:choose>
 
         </form>
 
@@ -610,7 +477,7 @@
       </c:choose>
 
     <script>
-      var isShiftOnlyMode = ${not empty isShiftOnlyRole && isShiftOnlyRole ? 'true' : 'false'};
+      var isShiftOnlyMode = true;
 
       // Chuyen doi tuan va nam
       function changeWeekOrYear() {
@@ -619,7 +486,7 @@
         window.location.href = "${pageContext.request.contextPath}/employee/register-schedule?year=" + year + "&week=" + week;
       }
 
-      // Toggle Shift Card danh cho Chuyen vien / Nhan vien
+      // Chọn trọn buổi cho tất cả nhân viên
       function toggleShiftCard(dateStr, sessionStr) {
         var checkboxes = document.querySelectorAll('.slot-check-input[data-date="' + dateStr + '"][data-session="' + sessionStr + '"]');
         if (checkboxes.length === 0) return;

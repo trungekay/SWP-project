@@ -24,7 +24,7 @@ public class HomeServlet extends HttpServlet {
             String role = user.getRole();
             int roleId = user.getRoleId();
             if (roleId == 1 || "admin".equalsIgnoreCase(role)) {
-                response.sendRedirect(request.getContextPath() + "/admin/users");
+                response.sendRedirect(request.getContextPath() + "/admin/dashboard");
                 return;
             } else if (roleId == 2 || "director".equalsIgnoreCase(role)) {
                 response.sendRedirect(request.getContextPath() + "/director/revenue");

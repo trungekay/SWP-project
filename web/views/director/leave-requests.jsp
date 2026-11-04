@@ -114,13 +114,13 @@
               <option value="all" ${currentRole == 'all' ? 'selected' : ''}>Tất cả đối tượng</option>
               <option value="doctor" ${currentRole == 'doctor' ? 'selected' : ''}>Bác sĩ</option>
               <option value="specialist" ${currentRole == 'specialist' ? 'selected' : ''}>Kỹ thuật viên</option>
-              <option value="staff" ${currentRole == 'staff' ? 'selected' : ''}>Nhân viên tiếp đón</option>
             </select>
           </div>
         </div>
       </div>
 
       <!-- Requests Table -->
+      <c:if test="${not empty affectedAppointments}"><div class="alert alert-info"><h6>Bệnh nhân bị ảnh hưởng</h6><c:forEach items="${affectedAppointments}" var="a"><div>#APT-${a.id} · <c:out value="${a.patientName}"/> · <c:out value="${a.phone}"/> · <c:out value="${a.startTime}"/></div></c:forEach></div></c:if>
       <div class="refund-card p-0 overflow-hidden">
         <div class="table-responsive">
           <table class="table refund-table leave-table mb-0">
@@ -157,12 +157,13 @@
                       </td>
                       <td>
                         <div class="fw-bold text-danger"><i class="bi bi-calendar-event me-1"></i>${r.leaveDate}</div>
-                        <div class="small text-dark fw-semibold font-monospace">${r.slotName} (${r.startTime} - ${r.endTime})</div>
+                        <div class="small text-dark fw-semibold font-monospace"><c:out value="${r.slotName}"/> (${r.affectedCount} lịch hẹn) (${r.startTime} - ${r.endTime})</div>
+                        <a class="small" href="?requestId=${r.requestId}">Xem bệnh nhân bị ảnh hưởng</a>
                         <small class="text-muted">Mã ca: #WS-${r.scheduleId}</small>
                       </td>
                       <td>
                         <div class="leave-reason">
-                          ${r.reason}
+                          <c:out value="${r.reason}"/>
                         </div>
                       </td>
                       <td>
@@ -174,12 +175,12 @@
                             <div class="leave-actions">
                               <!-- Nút Chấp thuận -->
                               <button type="button" class="btn btn-sm btn-outline-success"
-                                      onclick="openApproveModal(${r.requestId}, '${fn:escapeXml(r.requesterName)}', '${r.leaveDate}', '${r.slotName}')">
+                                      ${r.requesterRole == 'staff' ? 'disabled' : ''} data-id="${r.requestId}" data-name="${fn:escapeXml(r.requesterName)}" data-date="${r.leaveDate}" data-shift="${fn:escapeXml(r.slotName)} (${r.affectedCount} lịch hẹn)" onclick="openApproveModal(this.dataset.id,this.dataset.name,this.dataset.date,this.dataset.shift)">
                                 <i class="bi bi-check-circle-fill"></i>Duyệt
                               </button>
                               <!-- Nút Từ chối -->
                               <button type="button" class="btn btn-sm btn-outline-danger"
-                                      onclick="openRejectModal(${r.requestId}, '${fn:escapeXml(r.requesterName)}')">
+                                      data-id="${r.requestId}" data-name="${fn:escapeXml(r.requesterName)}" onclick="openRejectModal(this.dataset.id,this.dataset.name)">
                                 <i class="bi bi-x-circle-fill"></i>Từ chối
                               </button>
                             </div>
@@ -213,7 +214,7 @@
   <div class="modal fade" id="approveModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content rounded-4 border-0 shadow">
-        <form action="${pageContext.request.contextPath}/director/leave-requests" method="POST">
+        <form action="${pageContext.request.contextPath}/director/leave-requests" method="POST"><input type="hidden" name="csrfToken" value="${sessionScope.scheduleCsrf}">
           <input type="hidden" name="action" value="approve">
           <input type="hidden" name="requestId" id="approveRequestId">
           <div class="modal-header border-0 pb-0">
@@ -246,7 +247,7 @@
   <div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content rounded-4 border-0 shadow">
-        <form action="${pageContext.request.contextPath}/director/leave-requests" method="POST">
+        <form action="${pageContext.request.contextPath}/director/leave-requests" method="POST"><input type="hidden" name="csrfToken" value="${sessionScope.scheduleCsrf}">
           <input type="hidden" name="action" value="reject">
           <input type="hidden" name="requestId" id="rejectRequestId">
           <div class="modal-header border-0 pb-0">

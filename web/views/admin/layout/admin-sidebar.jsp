@@ -119,7 +119,7 @@
                 <li>
                     <a href="${pageContext.request.contextPath}/admin/dashboard" class="${param.activeNav == 'dashboard' ? 'active' : ''}">
                         <i class="bi bi-graph-up"></i>
-                        Dashboard Doanh thu
+                        Tổng quan phòng khám
                     </a>
                 </li>
                 <li>

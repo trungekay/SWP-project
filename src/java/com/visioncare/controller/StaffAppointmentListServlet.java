@@ -8,6 +8,7 @@ import com.visioncare.model.CatalogService;
 import com.visioncare.model.Doctor;
 import com.visioncare.model.Patient;
 import com.visioncare.model.User;
+import com.visioncare.util.EmailUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -58,8 +59,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                                 User currentUser = (User) session.getAttribute("user");
                                 int staffEmployeeId = (currentUser != null && currentUser.getActorId() > 0) ? currentUser.getActorId() : 0;
                                 // Thanh toán QR: xác nhận Paid/Confirmed, KHÔNG tự check-in
-                                appointmentDAO.confirmAndCheckinWalkin(apptId, staffEmployeeId, false);
-                                isPaid = true;
+                                isPaid = appointmentDAO.confirmAndCheckinWalkin(apptId, staffEmployeeId, false);
                             }
                         }
                     }
@@ -116,6 +116,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
             response.getWriter().write(json.toString());
             return;
         }
+        com.visioncare.util.WorkflowTokens.ensure(request.getSession());
         java.util.List<java.util.Map<String, Object>> refundInvoices = new com.visioncare.dao.RefundDAO().getInvoicesForStaffRefundSelection();
         request.setAttribute("availableInvoices", refundInvoices);
         java.util.Map<Integer, Boolean> refundEligible = new java.util.HashMap<>();
@@ -179,7 +180,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
             long completedCount = allDayAppointments.stream().filter(a -> "Completed".equalsIgnoreCase(a.getEffectiveStatus())).count();
             long canceledCount = allDayAppointments.stream().filter(a -> "Canceled".equalsIgnoreCase(a.getStatus())).count();
             request.setAttribute("cancellationRequestedCount", appointmentDAO.getStaffAppointments(null, "CancellationRequested", null, null).size());
-            request.setAttribute("refundEligibleCount", refundInvoices.size());
+            request.setAttribute("refundEligibleCount", appointmentDAO.getStaffAppointments(null, "RefundEligible", null, null).size());
 
             // Lấy danh sách lịch hẹn theo trạng thái đang chọn (Mặc định: Pending - Chờ tiếp đón)
             List<Appointment> appointments = appointmentDAO.getStaffAppointments(queryDate, filterStatus, doctorId, keyword);
@@ -195,8 +196,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
             List<CatalogService> bookingServices = new ArrayList<>();
             if (allServices != null) {
                 for (CatalogService cs : allServices) {
-                    if ("Khám và tư vấn".equalsIgnoreCase(cs.getCategory())
-                            || "Kiểm tra và chẩn đoán".equalsIgnoreCase(cs.getCategory())
+                    if ("Khám và chẩn đoán".equalsIgnoreCase(cs.getCategory())
                             || (cs.getPrice() != null && cs.getPrice().longValue() <= 1000000)) {
                         bookingServices.add(cs);
                     }
@@ -240,12 +240,34 @@ public class StaffAppointmentListServlet extends HttpServlet {
         if ("approveCancellation".equals(action)) {
             try {
                 int id = Integer.parseInt(request.getParameter("appointmentId"));
-                Appointment appt = appointmentDAO.getAppointmentById(id);
+                Appointment appt = appointmentDAO.getAppointmentDetailById(id);
+                if (appt == null) {
+                    appt = appointmentDAO.getAppointmentById(id);
+                }
                 boolean ok = appt != null && appt.isCancellationRequested()
                     && appointmentDAO.cancelAppointment(id, "Đã duyệt yêu cầu hủy lịch của bệnh nhân: " + (appt.getReason() != null && appt.getReason().startsWith(com.visioncare.dao.RefundPolicy.REQUESTED)
                         ? appt.getReason().substring(com.visioncare.dao.RefundPolicy.REQUESTED.length()) : "Yêu cầu hủy lịch từ luồng trước"));
+                
+                if (ok && appt != null && appt.getEmail() != null && !appt.getEmail().trim().isEmpty()) {
+                    String cleanReason = appt.getReason();
+                    if (cleanReason != null && cleanReason.startsWith(com.visioncare.dao.RefundPolicy.REQUESTED)) {
+                        cleanReason = cleanReason.substring(com.visioncare.dao.RefundPolicy.REQUESTED.length());
+                    }
+                    String apptDateStr = appt.getAppointmentDate() != null ? new java.text.SimpleDateFormat("dd/MM/yyyy").format(appt.getAppointmentDate()) : "";
+                    EmailUtil.sendAppointmentCancellationEmail(
+                        appt.getEmail(),
+                        appt.getPatientName(),
+                        appt.getId(),
+                        appt.getDoctorName(),
+                        appt.getDepartment(),
+                        apptDateStr,
+                        appt.getTimeSlot(),
+                        cleanReason
+                    );
+                }
+
                 session.setAttribute(ok ? "successMessage" : "errorMessage", ok
-                    ? "Đã duyệt hủy lịch #APT-" + id + ". Có thể tạo yêu cầu hoàn tiền."
+                    ? "Đã duyệt hủy lịch #APT-" + id + ". Đã gửi email xác nhận cho bệnh nhân và có thể tạo yêu cầu hoàn tiền."
                     : "Yêu cầu hủy không hợp lệ hoặc bệnh nhân đã check-in.");
             } catch (Exception e) { session.setAttribute("errorMessage", "Không thể duyệt yêu cầu hủy lịch."); }
             String idFilter = request.getParameter("appointmentId");
@@ -625,6 +647,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                                 String returnUrl = baseUrl + "/staff/appointments";
                                 com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(orderCodeFinal, (int) fee, "VC" + newApptId, cancelUrl, returnUrl);
                                 if (payosRes != null && payosRes.success && payosRes.qrCode != null && !payosRes.qrCode.isEmpty()) {
+                                    paymentDesc = "VC" + newApptId;
                                     qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + URLEncoder.encode(payosRes.qrCode, StandardCharsets.UTF_8);
                                 }
                             } catch (Exception payosEx) {
@@ -636,6 +659,10 @@ public class StaffAppointmentListServlet extends HttpServlet {
                             }
 
                             String ajaxParam = request.getParameter("ajax");
+                            String displayToken = com.visioncare.util.WalkinPaymentDisplay.create(
+                                    newApptId, qrUrl, String.format("%,d đ", fee).replace(',', '.'), paymentDesc);
+                            String displayUrl = request.getContextPath() + "/payment/walkin?token=" + displayToken;
+                            com.visioncare.util.WalkinPaymentDisplay.get(displayToken).orderCode = orderCodeFinal;
                             String ajaxHeader = request.getHeader("X-Requested-With");
                             if ("1".equals(ajaxParam) || "XMLHttpRequest".equalsIgnoreCase(ajaxHeader)) {
                                 response.setContentType("application/json;charset=UTF-8");
@@ -649,6 +676,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                                         + "\"formattedFee\":\"" + String.format("%,d ₫", fee).replace(',', '.') + "\","
                                         + "\"paymentDesc\":\"" + escapeJson(paymentDesc) + "\","
                                         + "\"qrUrl\":\"" + escapeJson(qrUrl) + "\","
+                                        + "\"displayUrl\":\"" + escapeJson(displayUrl) + "\","
                                         + "\"bankName\":\"" + escapeJson(bankName) + "\","
                                         + "\"accountNumber\":\"" + escapeJson(accountNumber) + "\","
                                         + "\"accountHolder\":\"" + escapeJson(accountHolder) + "\""
@@ -669,7 +697,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
                                         + "\"phone\":\"" + escapeJson(phone.trim()) + "\","
                                         + "\"fee\":" + fee + ","
                                         + "\"formattedFee\":\"" + String.format("%,d ₫", fee).replace(',', '.') + "\","
-                                        + "\"message\":\"Thu tiền mặt và tiếp đón thành công!\""
+                                        + "\"message\":\"Thu tiền mặt thành công. Bệnh nhân đã thanh toán và đang chờ tiếp đón.\""
                                         + "}";
                                 response.getWriter().write(json);
                                 return;
@@ -680,8 +708,8 @@ public class StaffAppointmentListServlet extends HttpServlet {
                             session.setAttribute("successMessage", "Tạo lịch tiếp đón cho bệnh nhân: " + patientName.trim() + " (#APT-" + newApptId + ") thành công! Sau khi bệnh nhân thanh toán VietQR, lịch hẹn sẽ lưu ở Danh sách Lịch hẹn (vui lòng bấm Check-in khi bệnh nhân có mặt).");
                             response.sendRedirect(request.getContextPath() + "/staff/appointments?date=all&keyword=" + newApptId);
                         } else {
-                            session.setAttribute("successMessage", "Tiếp đón khách vãng lai: " + patientName.trim() + " (#APT-" + newApptId + ") thành công! Bệnh nhân đã được đưa vào danh sách chờ khám.");
-                            response.sendRedirect(request.getContextPath() + "/staff/waiting-list");
+                            session.setAttribute("successMessage", "Thu tiền mặt khách vãng lai: " + patientName.trim() + " (#APT-" + newApptId + ") thành công! Đã thanh toán — Chờ tiếp đón. Vui lòng bấm Check-in để đưa bệnh nhân vào hàng đợi khám.");
+                            response.sendRedirect(request.getContextPath() + "/staff/appointments?date=all&keyword=" + newApptId);
                         }
                         return;
                     } else {

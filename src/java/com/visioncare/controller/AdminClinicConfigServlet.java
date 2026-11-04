@@ -28,6 +28,7 @@ public class AdminClinicConfigServlet extends HttpServlet {
             request.setAttribute("minWorkHours", timeSlotDAO.getMinWeeklyWorkingHours());
             request.setAttribute("maxWeeklyHours", timeSlotDAO.getMaxWeeklyAvailableHours());
             request.setAttribute("pendingHoldMinutes", timeSlotDAO.getPendingHoldMinutes());
+            request.setAttribute("sessionEndBufferEnabled", timeSlotDAO.isSessionEndBufferEnabled());
         } catch (Exception e) {
             e.printStackTrace();
             request.setAttribute("timeSlots", java.util.Collections.emptyList());

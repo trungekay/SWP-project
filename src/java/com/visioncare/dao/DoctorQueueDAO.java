@@ -1,12 +1,10 @@
 package com.visioncare.dao;
 
-import com.visioncare.util.ExaminationWindow;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -27,7 +25,8 @@ public class DoctorQueueDAO {
         String sql = "SELECT a.Appointment_ID FROM Appointment a "
                 + "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID "
                 + "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? "
-                + "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL AND " + EXAMINATION_READY;
+                + "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL AND " + EXAMINATION_READY
+                + " AND " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF;
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, doctorEmployeeId);
@@ -39,9 +38,8 @@ public class DoctorQueueDAO {
         return ready;
     }
 
-    /** The assigned doctor may cancel an overdue waiting case or stop an active examination. */
-    public boolean cancelExamination(int appointmentId, int doctorEmployeeId,
-            LocalDateTime clinicNow, String reason) throws Exception {
+    /** The assigned doctor may cancel a waiting case or stop an active examination. */
+    public boolean cancelExamination(int appointmentId, int doctorEmployeeId, String reason) throws Exception {
         if (reason == null || reason.trim().isEmpty() || reason.trim().length() > 500) return false;
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
@@ -49,10 +47,10 @@ public class DoctorQueueDAO {
             try {
                 int scheduleId;
                 String originalStatus;
-                String assignedSql = "SELECT a.Status, a.checkin_time, ws.Schedule_ID, ws.Work_Date, ws.Start_Time "
+                String assignedSql = "SELECT a.Status, a.checkin_time, ws.Schedule_ID "
                         + "FROM Appointment a WITH (UPDLOCK, HOLDLOCK) "
                         + "JOIN Work_Schedule ws WITH (UPDLOCK, HOLDLOCK) ON a.Schedule_ID = ws.Schedule_ID "
-                        + "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ?";
+                        + "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ? AND " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF;
                 try (PreparedStatement ps = conn.prepareStatement(assignedSql)) {
                     ps.setInt(1, appointmentId);
                     ps.setInt(2, doctorEmployeeId);
@@ -63,11 +61,7 @@ public class DoctorQueueDAO {
                         }
                         originalStatus = rs.getString("Status");
                         if (!"In_Progress".equals(originalStatus)
-                                && !("Confirmed".equals(originalStatus)
-                                && rs.getDate("Work_Date") != null && rs.getTime("Start_Time") != null
-                                && "late".equals(ExaminationWindow.state(
-                                        rs.getDate("Work_Date").toLocalDate(),
-                                        rs.getTime("Start_Time").toLocalTime(), clinicNow)))) {
+                                && !"Confirmed".equals(originalStatus)) {
                             conn.rollback();
                             return false;
                         }
@@ -108,7 +102,7 @@ public class DoctorQueueDAO {
 
                 String cancellationNote = "In_Progress".equals(originalStatus)
                         ? "Bác sĩ dừng ca đang khám: " + reason.trim()
-                        : "Bác sĩ hủy ca quá giờ: " + reason.trim();
+                        : "Bác sĩ hủy ca chờ khám: " + reason.trim();
                 int recordCount;
                 try (PreparedStatement ps = conn.prepareStatement(
                         "UPDATE Medical_Record SET conclusion = CASE "
@@ -145,7 +139,8 @@ public class DoctorQueueDAO {
                 + "FROM Appointment a "
                 + "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID "
                 + "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? "
-                + "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL AND " + EXAMINATION_READY;
+                + "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL AND " + EXAMINATION_READY
+                + " AND " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF;
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, appointmentId);
@@ -155,7 +150,7 @@ public class DoctorQueueDAO {
         }
     }
 
-    public boolean startExamination(int appointmentId, int doctorEmployeeId, LocalDateTime clinicNow) throws Exception {
+    public boolean startExamination(int appointmentId, int doctorEmployeeId) throws Exception {
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
             conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
@@ -164,7 +159,7 @@ public class DoctorQueueDAO {
                 String assignedSql = "SELECT ws.Work_Date, ws.Start_Time FROM Appointment a WITH (UPDLOCK, HOLDLOCK) "
                         + "JOIN Work_Schedule ws WITH (UPDLOCK, HOLDLOCK) ON a.Schedule_ID = ws.Schedule_ID "
                         + "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ? "
-                        + "AND a.Status = 'Confirmed' AND a.checkin_time IS NOT NULL";
+                        + "AND a.Status = 'Confirmed' AND a.checkin_time IS NOT NULL AND " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF;
                 try (PreparedStatement ps = conn.prepareStatement(assignedSql)) {
                     ps.setInt(1, appointmentId);
                     ps.setInt(2, doctorEmployeeId);
@@ -174,9 +169,7 @@ public class DoctorQueueDAO {
                             return false;
                         }
                         workDate = rs.getDate("Work_Date");
-                        if (workDate == null || rs.getTime("Start_Time") == null
-                                || !"open".equals(ExaminationWindow.state(
-                                        workDate.toLocalDate(), rs.getTime("Start_Time").toLocalTime(), clinicNow))) {
+                        if (workDate == null || rs.getTime("Start_Time") == null) {
                             conn.rollback();
                             return false;
                         }
@@ -185,7 +178,8 @@ public class DoctorQueueDAO {
 
                 String busySql = "SELECT TOP 1 a.Appointment_ID FROM Appointment a WITH (UPDLOCK, HOLDLOCK) "
                         + "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID "
-                        + "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? AND a.Status = 'In_Progress'";
+                        + "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? AND a.Status = 'In_Progress' AND "
+                        + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF;
                 try (PreparedStatement ps = conn.prepareStatement(busySql)) {
                     ps.setInt(1, doctorEmployeeId);
                     ps.setDate(2, workDate);

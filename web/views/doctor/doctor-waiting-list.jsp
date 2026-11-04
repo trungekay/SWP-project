@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -10,7 +11,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css">
     <jsp:include page="/views/admin/layout/admin-css.jsp" />
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-waiting-list.css?v=11">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-waiting-list.css?v=15">
 </head>
 <body class="doctor-queue-body">
 <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
@@ -88,13 +89,15 @@
                     <input type="hidden" name="status" value="<c:out value='${selectedStatus}' />">
                     <div class="doctor-queue-date-controls" aria-label="Chọn ngày khám">
                         <a href="<c:out value='${previousUrl}' />" aria-label="Ngày trước" title="Ngày trước"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
-                        <label class="doctor-queue-date-field">
-                            <i class="bi bi-calendar-event" aria-hidden="true"></i>
-                            <span class="visually-hidden">Ngày khám</span>
-                            <input type="date" name="date" value="<c:out value='${selectedDate}' />">
-                        </label>
+                        <span class="doctor-queue-date-field">
+                            <button type="button" class="doctor-queue-date-picker-button" id="doctorQueueDateButton" aria-label="Chọn ngày khám, hiện tại <c:out value='${displayDate}' />">
+                                <span><c:out value="${displayDate}" /></span>
+                                <i class="bi bi-calendar3" aria-hidden="true"></i>
+                            </button>
+                            <input type="date" id="doctorQueueDatePicker" name="date" value="<c:out value='${selectedDate}' />" tabindex="-1" aria-hidden="true">
+                        </span>
                         <a href="<c:out value='${nextUrl}' />" aria-label="Ngày sau" title="Ngày sau"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
-                        <c:if test="${not isToday}"><a class="doctor-queue-today" href="<c:out value='${todayUrl}' />">Hôm nay</a></c:if>
+                        <c:if test="${not isToday}"><a class="doctor-queue-today" href="<c:out value='${todayUrl}' />">Trở lại hôm nay</a></c:if>
                     </div>
                     <label class="doctor-queue-search-field">
                         <i class="bi bi-search" aria-hidden="true"></i>
@@ -144,7 +147,7 @@
                                     </td>
                                     <td class="text-nowrap">
                                         <div class="fw-semibold text-dark doctor-queue-time"><i class="bi bi-clock text-teal me-1" aria-hidden="true"></i><c:out value="${item.timeSlot}" default="--:--" /><c:if test="${not empty item.endTime}"> - <c:out value="${item.endTime}" /></c:if></div>
-                                        <div class="text-muted small"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i><c:out value="${item.appointmentDate}" /></div>
+                                        <div class="text-muted small"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i><fmt:formatDate value="${item.appointmentDate}" pattern="dd/MM/yyyy" /></div>
                                         <div class="text-muted small">Check-in <c:out value="${fn:substring(item.checkinTime, 11, 16)}" default="--:--" /></div>
                                         <c:if test="${startWindowState eq 'late' && (item.status eq 'Confirmed' || item.status eq 'In_Progress')}">
                                             <div class="small doctor-queue-overdue-label">Quá giờ hẹn</div>
@@ -166,8 +169,14 @@
                                     <td class="text-center text-nowrap"><div class="action-btns doctor-queue-actions">
                                         <a class="action-btn" title="Xem hồ sơ" aria-label="Xem hồ sơ"
                                            href="${pageContext.request.contextPath}/doctor/patient-detail?id=${item.id}">
-                                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                                            <i class="bi bi-folder2-open" aria-hidden="true"></i>
                                         </a>
+                                        <c:if test="${item.status eq 'Completed'}">
+                                            <a class="action-btn" title="In phiếu khám và đơn thuốc (nếu có)" aria-label="In phiếu khám và đơn thuốc (nếu có)"
+                                               href="${pageContext.request.contextPath}/doctor/examination/print?id=${item.id}&amp;autoPrint=1" target="_blank" rel="noopener">
+                                                <i class="bi bi-printer" aria-hidden="true"></i>
+                                            </a>
+                                        </c:if>
                                         <c:if test="${item.status eq 'Confirmed'}">
                                             <form action="${pageContext.request.contextPath}/doctor/waiting-list" method="post">
                                                 <input type="hidden" name="action" value="start">
@@ -178,31 +187,36 @@
                                                 <input type="hidden" name="keyword" value="<c:out value='${keyword}' />">
                                                 <input type="hidden" name="sort" value="<c:out value='${selectedSort}' />">
                                                 <c:choose>
-                                                    <c:when test="${startWindowState eq 'early'}">
-                                                        <button class="action-btn warning" type="button" title="Chưa đến giờ gọi vào khám" aria-label="Chưa đến giờ gọi vào khám"
-                                                                data-bs-toggle="modal" data-bs-target="#examWindowModal" data-window-state="early">
-                                                            <i class="bi bi-play-fill" aria-hidden="true"></i>
-                                                        </button>
-                                                    </c:when>
-                                                    <c:when test="${startWindowState eq 'late'}">
-                                                        <button class="action-btn warning" type="button" title="Đã quá giờ gọi vào khám" aria-label="Đã quá giờ gọi vào khám"
-                                                                data-bs-toggle="modal" data-bs-target="#examWindowModal" data-window-state="late">
-                                                            <i class="bi bi-play-fill" aria-hidden="true"></i>
-                                                        </button>
-                                                    </c:when>
-                                                    <c:when test="${startWindowState ne 'open'}">
-                                                        <button class="action-btn warning" type="button" title="Không xác định được giờ hẹn" aria-label="Không xác định được giờ hẹn"
-                                                                data-bs-toggle="modal" data-bs-target="#examWindowModal" data-window-state="invalid">
-                                                            <i class="bi bi-play-fill" aria-hidden="true"></i>
-                                                        </button>
-                                                    </c:when>
                                                     <c:when test="${doctorBusy}">
                                                         <button class="action-btn checkin" type="button" disabled title="Hãy hoàn tất ca đang khám trước" aria-label="Gọi vào khám: bác sĩ đang bận">
                                                             <i class="bi bi-play-fill" aria-hidden="true"></i>
                                                         </button>
                                                     </c:when>
+                                                    <c:when test="${startWindowState eq 'early'}">
+                                                        <button class="action-btn warning" type="button" title="Chưa đến giờ gọi vào khám" aria-label="Chưa đến giờ gọi vào khám"
+                                                                data-bs-toggle="modal" data-bs-target="#examWindowModal" data-window-state="early"
+                                                                data-appointment-id="${item.id}" data-exam-status="Confirmed" data-patient-name="<c:out value='${item.patientName}' />">
+                                                            <i class="bi bi-play-fill" aria-hidden="true"></i>
+                                                        </button>
+                                                    </c:when>
+                                                    <c:when test="${startWindowState eq 'late'}">
+                                                        <button class="action-btn warning" type="button" title="Đã quá giờ gọi vào khám" aria-label="Đã quá giờ gọi vào khám"
+                                                                data-bs-toggle="modal" data-bs-target="#examWindowModal" data-window-state="late"
+                                                                data-appointment-id="${item.id}" data-exam-status="Confirmed" data-patient-name="<c:out value='${item.patientName}' />">
+                                                            <i class="bi bi-play-fill" aria-hidden="true"></i>
+                                                        </button>
+                                                    </c:when>
+                                                    <c:when test="${startWindowState ne 'open'}">
+                                                        <button class="action-btn warning" type="button" title="Không xác định được giờ hẹn" aria-label="Không xác định được giờ hẹn"
+                                                                data-bs-toggle="modal" data-bs-target="#examWindowModal" data-window-state="invalid"
+                                                                data-appointment-id="${item.id}" data-exam-status="Confirmed" data-patient-name="<c:out value='${item.patientName}' />">
+                                                            <i class="bi bi-play-fill" aria-hidden="true"></i>
+                                                        </button>
+                                                    </c:when>
                                                     <c:otherwise>
-                                                        <button class="action-btn checkin" type="submit" title="Gọi vào khám" aria-label="Gọi vào khám">
+                                                        <button class="action-btn checkin" type="button" title="Gọi vào khám" aria-label="Gọi vào khám"
+                                                                data-bs-toggle="modal" data-bs-target="#examWindowModal" data-window-state="open"
+                                                                data-appointment-id="${item.id}" data-patient-name="<c:out value='${item.patientName}' />">
                                                             <i class="bi bi-play-fill" aria-hidden="true"></i>
                                                         </button>
                                                     </c:otherwise>
@@ -212,7 +226,7 @@
                                         <c:if test="${item.status eq 'In_Progress'}">
                                             <c:if test="${not completionReadyIds.contains(item.id)}">
                                                 <a class="action-btn" href="${pageContext.request.contextPath}/doctor/examination?id=${item.id}" title="Điền kết quả khám, chẩn đoán và kết luận" aria-label="Điền phiếu khám">
-                                                    <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i>
+                                                    <i class="bi bi-pencil-square" aria-hidden="true"></i>
                                                 </a>
                                             </c:if>
                                             <c:if test="${completionReadyIds.contains(item.id)}">
@@ -297,11 +311,13 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
             <div class="modal-body">
-                <div class="modal-icon-warning"><i class="bi bi-clock-history" aria-hidden="true"></i></div>
+                <div class="modal-icon-warning" id="examWindowModalIcon"><i class="bi bi-clock-history" aria-hidden="true"></i></div>
                 <h3 class="modal-title-custom" id="examWindowModalTitle">Chưa đến giờ khám</h3>
                 <p class="modal-text" id="examWindowModalText"></p>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-modal-warning" data-bs-dismiss="modal">Đã hiểu</button>
+                    <button type="button" class="btn btn-modal-cancel" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-modal-danger d-none" id="cancelFromWindowButton">Hủy khám</button>
+                    <button type="button" class="btn btn-modal-warning d-none" id="continueExamButton">Gọi vào khám</button>
                 </div>
             </div>
         </div>
@@ -321,6 +337,15 @@
 </c:if>
 <script src="${pageContext.request.contextPath}/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script>
+    var datePicker = document.getElementById('doctorQueueDatePicker');
+    document.getElementById('doctorQueueDateButton').addEventListener('click', function () {
+        if (datePicker.showPicker) datePicker.showPicker();
+        else { datePicker.focus(); datePicker.click(); }
+    });
+    datePicker.addEventListener('change', function () {
+        if (datePicker.value) datePicker.form.requestSubmit();
+    });
+
     document.getElementById('cancelExamModal').addEventListener('show.bs.modal', function (event) {
         var trigger = event.relatedTarget;
         var id = trigger.getAttribute('data-appointment-id');
@@ -329,23 +354,47 @@
         document.getElementById('cancelExamAppointmentId').value = id;
         document.getElementById('cancelExamCode').textContent = '#APT-' + id;
         document.getElementById('cancelExamPatient').textContent = patient;
-        document.getElementById('cancelExamModalTitle').textContent = active ? 'Xác nhận dừng ca đang khám?' : 'Xác nhận hủy ca quá giờ?';
+        document.getElementById('cancelExamModalTitle').textContent = active ? 'Xác nhận dừng ca đang khám?' : 'Xác nhận hủy ca chờ khám?';
         document.getElementById('cancelExamDescription').textContent = active
                 ? 'đang được khám. Chỉ bác sĩ phụ trách có thể dừng ca này.'
-                : 'đã quá 1 giờ sau giờ hẹn và chưa bắt đầu khám.';
+                : 'đang chờ khám.';
         document.getElementById('cancelExamReason').value = '';
     });
 
+    var examStartForm = null;
+    var examWindowTrigger = null;
     document.getElementById('examWindowModal').addEventListener('show.bs.modal', function (event) {
+        examWindowTrigger = event.relatedTarget;
         var state = event.relatedTarget.getAttribute('data-window-state');
         var messages = {
-            early: ['Chưa đến giờ khám', 'Chỉ có thể bắt đầu trong vòng 1 giờ trước giờ hẹn.'],
-            late: ['Đã quá giờ khám', 'Chỉ có thể bắt đầu trong vòng 1 giờ sau giờ hẹn. Bạn có thể hủy ca quá giờ nếu chưa hoàn tất khám.'],
+            open: ['Gọi bệnh nhân vào khám?', 'Xác nhận gọi bệnh nhân ' + (event.relatedTarget.getAttribute('data-patient-name') || '') + ' vào khám (ca #APT-' + event.relatedTarget.getAttribute('data-appointment-id') + ').'],
+            early: ['Chưa đến giờ khám', 'Ca này còn hơn 1 giờ mới đến giờ hẹn. Bạn vẫn có thể tiếp tục khám.'],
+            late: ['Đã quá giờ khám', 'Ca này đã quá 1 giờ sau giờ hẹn. Bạn vẫn có thể tiếp tục khám.'],
             invalid: ['Không xác định được giờ hẹn', 'Vui lòng liên hệ bộ phận tiếp nhận để kiểm tra lịch hẹn.']
         };
         var message = messages[state] || messages.invalid;
+        examStartForm = state === 'open' || state === 'early' || state === 'late' ? event.relatedTarget.closest('form') : null;
+        document.getElementById('continueExamButton').classList.toggle('d-none', !examStartForm);
+        document.getElementById('continueExamButton').textContent = state === 'open' ? 'Gọi vào khám' : 'Tiếp tục khám';
+        document.getElementById('continueExamButton').classList.toggle('confirm-start', state === 'open');
+        document.getElementById('cancelFromWindowButton').classList.toggle('d-none', state !== 'late');
+        document.getElementById('examWindowModalIcon').classList.toggle('modal-icon-success', state === 'open');
+        document.getElementById('examWindowModalIcon').classList.toggle('modal-icon-warning', state !== 'open');
+        document.querySelector('#examWindowModalIcon i').className = state === 'open' ? 'bi bi-person-check' : 'bi bi-clock-history';
         document.getElementById('examWindowModalTitle').textContent = message[0];
         document.getElementById('examWindowModalText').textContent = message[1];
+    });
+    document.getElementById('continueExamButton').addEventListener('click', function () {
+        if (examStartForm) examStartForm.requestSubmit();
+    });
+    document.getElementById('cancelFromWindowButton').addEventListener('click', function () {
+        if (!examWindowTrigger) return;
+        var trigger = examWindowTrigger;
+        var windowModal = document.getElementById('examWindowModal');
+        windowModal.addEventListener('hidden.bs.modal', function () {
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('cancelExamModal')).show(trigger);
+        }, { once: true });
+        bootstrap.Modal.getOrCreateInstance(windowModal).hide();
     });
 </script>
 </body>

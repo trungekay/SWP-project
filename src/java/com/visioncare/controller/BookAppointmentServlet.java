@@ -63,7 +63,9 @@ public class BookAppointmentServlet extends HttpServlet {
 
                         String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(orderCode);
                         if ("PAID".equalsIgnoreCase(payosStatus)) {
-                            appointmentDAO.confirmPayment(apptId);
+                            if (!appointmentDAO.confirmPayment(apptId)) {
+                                throw new IllegalStateException("Bác sĩ không còn làm việc trong khung giờ đã chọn hoặc lịch hẹn không còn hợp lệ. Nếu đã thanh toán, vui lòng liên hệ phòng khám để xử lý.");
+                            }
                             isPaid = true;
 
                             // Tự động gửi email xác nhận đặt lịch & hướng dẫn đi khám
@@ -248,10 +250,12 @@ public class BookAppointmentServlet extends HttpServlet {
                 appointmentDAO.autoCancelExpiredPendingAppointments();
                 List<TimeSlot> slots = workScheduleDAO.getDoctorSlotsForDate(doctorId, dateStr);
                 String shift = workScheduleDAO.getDoctorWorkShiftSummary(doctorId, dateStr);
+                boolean bufferEnabled = com.visioncare.dao.TimeSlotDAO.isSessionEndBufferEnabled();
 
                 StringBuilder json = new StringBuilder();
                 json.append("{");
                 json.append("\"shiftSummary\":\"").append(shift).append("\",");
+                json.append("\"sessionEndBufferEnabled\":").append(bufferEnabled).append(",");
                 json.append("\"slots\":[");
                 for (int i = 0; i < slots.size(); i++) {
                     TimeSlot s = slots.get(i);
@@ -445,7 +449,9 @@ public class BookAppointmentServlet extends HttpServlet {
                 }
 
                 // Xác nhận thanh toán thành công
-                appointmentDAO.confirmPayment(appointmentId);
+                if (!appointmentDAO.confirmPayment(appointmentId)) {
+                    throw new IllegalStateException("Bác sĩ không còn làm việc trong khung giờ đã chọn hoặc lịch hẹn không còn hợp lệ. Nếu đã thanh toán, vui lòng liên hệ phòng khám để xử lý.");
+                }
 
                 // Lấy thông tin lịch hẹn đầy đủ sau khi đã thanh toán
                 Appointment fullAppt = appointmentDAO.getAppointmentDetailById(appointmentId);
@@ -744,6 +750,7 @@ public class BookAppointmentServlet extends HttpServlet {
         }
         scheduleJson.append("}");
         request.setAttribute("doctorScheduleMapJson", scheduleJson.toString());
+        request.setAttribute("sessionEndBufferEnabled", com.visioncare.dao.TimeSlotDAO.isSessionEndBufferEnabled());
 
         // Tự động điền thông tin nếu bệnh nhân đã đăng nhập
         HttpSession session = request.getSession(false);

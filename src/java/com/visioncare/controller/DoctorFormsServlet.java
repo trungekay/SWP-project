@@ -1,7 +1,6 @@
 package com.visioncare.controller;
 
 import com.visioncare.dao.AppointmentDAO;
-import com.visioncare.dao.CatalogDAO;
 import com.visioncare.dao.DoctorFormDAO;
 import com.visioncare.dao.MedicineDAO;
 import com.visioncare.model.Appointment;
@@ -30,7 +29,6 @@ public class DoctorFormsServlet extends HttpServlet {
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
     private final DoctorFormDAO formDAO = new DoctorFormDAO();
     private final MedicineDAO medicineDAO = new MedicineDAO();
-    private final CatalogDAO catalogDAO = new CatalogDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -84,6 +82,12 @@ public class DoctorFormsServlet extends HttpServlet {
                 }
             } else {
                 formValues = formDAO.loadExamination(appointmentId);
+                String staffNotes = formValues.get("staffNotes");
+                if (staffNotes != null && (staffNotes.startsWith("Dịch vụ:")
+                        || staffNotes.startsWith("Dịch vụ/Bệnh lý:"))) {
+                    int separator = staffNotes.indexOf('|');
+                    formValues.put("staffNotes", separator < 0 ? "" : staffNotes.substring(separator + 1).trim());
+                }
                 boolean printReady = formDAO.hasSavedExamination(appointmentId);
                 if (printExamination && !printReady) {
                     response.sendError(HttpServletResponse.SC_CONFLICT,
@@ -92,14 +96,18 @@ public class DoctorFormsServlet extends HttpServlet {
                 }
                 request.setAttribute("printReady", printReady);
                 if (printExamination) {
+                    DoctorFormDAO.PrescriptionSnapshot savedPrescription = formDAO.loadPrescription(appointmentId);
                     response.setHeader("Cache-Control", "no-store");
                     request.setAttribute("appointment", appointment);
                     request.setAttribute("formValues", formValues);
+                    request.setAttribute("medicineRows", savedPrescription.getMedicines());
+                    request.setAttribute("prescriptionValues", savedPrescription.getValues());
+                    request.setAttribute("autoPrint", "Completed".equals(appointment.getStatus())
+                            && "1".equals(request.getParameter("autoPrint")));
                     request.getRequestDispatcher("/views/doctor/examination-print.jsp")
                             .forward(request, response);
                     return;
                 }
-                request.setAttribute("surgeryServices", catalogDAO.listSurgeryServices());
             }
             if (medicineRows.isEmpty()) medicineRows.add(new HashMap<>());
             String csrf = (String) session.getAttribute("doctorFormCsrf");

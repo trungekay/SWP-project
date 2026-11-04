@@ -8,9 +8,32 @@
           <jsp:include page="/views/common/header.jsp">
             <jsp:param name="pageTitle" value="Trang chủ" />
             <jsp:param name="pageDescription" value="VisionCare — Hệ thống đặt lịch khám mắt trực tuyến" />
-            <jsp:param name="bodyClass" value="index-page" />
+            <jsp:param name="bodyClass" value="index-page home-full-width" />
             <jsp:param name="activeNav" value="home" />
           </jsp:include>
+
+          <style>
+            /* Cấu hình full trang web không thụt lề cho trang chủ */
+            body.home-full-width .container,
+            body.home-full-width #header .container,
+            body.home-full-width #footer .container {
+              width: 100% !important;
+              max-width: none !important;
+              padding-left: clamp(16px, 3vw, 48px) !important;
+              padding-right: clamp(16px, 3vw, 48px) !important;
+            }
+
+            body.home-full-width .hero .container,
+            body.home-full-width .about .container,
+            body.home-full-width .services .container,
+            body.home-full-width .departments .container,
+            body.home-full-width .doctors .container,
+            body.home-full-width .faq .container,
+            body.home-full-width .contact .container {
+              width: 100% !important;
+              max-width: none !important;
+            }
+          </style>
 
           <main class="main">
 
@@ -23,8 +46,7 @@
 
                 <div class="welcome position-relative" data-aos="fade-down" data-aos-delay="100">
                   <h2>CHÀO MỪNG ĐẾN VISIONCARE</h2>
-                  <p>Phòng khám mắt chuyên sâu — đặt lịch khám trực tuyến, trang thiết bị hiện đại, đội ngũ bác sĩ nhãn
-                    khoa giàu kinh nghiệm</p>
+                  
                 </div><!-- End Welcome -->
 
                 <div class="content row gy-4">
@@ -187,7 +209,7 @@
 
                 <div class="row gy-4">
 
-                  <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
+                  <div class="col-lg-4 col-md-6 d-flex flex-column align-items-center">
                     <i class="fa-solid fa-user-doctor"></i>
                     <div class="stats-item">
                       <span data-purecounter-start="0" data-purecounter-end="${fn:length(doctors)}"
@@ -196,7 +218,7 @@
                     </div>
                   </div><!-- End Stats Item -->
 
-                  <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
+                  <div class="col-lg-4 col-md-6 d-flex flex-column align-items-center">
                     <i class="fa-regular fa-hospital"></i>
                     <div class="stats-item">
                       <span data-purecounter-start="0" data-purecounter-end="${fn:length(catalogServices)}"
@@ -205,16 +227,9 @@
                     </div>
                   </div><!-- End Stats Item -->
 
-                  <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
-                    <i class="fas fa-calendar-check"></i>
-                    <div class="stats-item">
-                      <span data-purecounter-start="0" data-purecounter-end="${fn:length(doctors) * 12}"
-                        data-purecounter-duration="1" class="purecounter"></span>
-                      <p>Ca khám / ngày</p>
-                    </div>
-                  </div><!-- End Stats Item -->
+                  
 
-                  <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
+                  <div class="col-lg-4 col-md-6 d-flex flex-column align-items-center">
                     <i class="fas fa-award"></i>
                     <div class="stats-item">
                       <span data-purecounter-start="0" data-purecounter-end="15" data-purecounter-duration="1"
@@ -274,19 +289,15 @@
                 }
               </style>
 
-              <c:set var="countKham" value="0" />
-              <c:set var="countChandoan" value="0" />
+              <c:set var="countKhamChandoan" value="0" />
               <c:set var="countDieutri" value="0" />
               <c:forEach items="${catalogServices}" var="s">
                 <c:choose>
-                  <c:when test="${s.category == 'Kiểm tra và chẩn đoán'}">
-                    <c:set var="countChandoan" value="${countChandoan + 1}" />
-                  </c:when>
                   <c:when test="${s.category == 'Điều trị và thủ thuật'}">
                     <c:set var="countDieutri" value="${countDieutri + 1}" />
                   </c:when>
                   <c:otherwise>
-                    <c:set var="countKham" value="${countKham + 1}" />
+                    <c:set var="countKhamChandoan" value="${countKhamChandoan + 1}" />
                   </c:otherwise>
                 </c:choose>
               </c:forEach>
@@ -304,12 +315,8 @@
                     <span class="badge rounded-pill bg-light text-secondary ms-1">${fn:length(catalogServices)}</span>
                   </button>
                   <button type="button" class="btn svc-filter-btn" data-filter="kham" onclick="filterServices('kham', this)">
-                    <i class="bi bi-person-check-fill me-1"></i> Khám &amp; Tư vấn
-                    <span class="badge rounded-pill bg-light text-secondary ms-1">${countKham}</span>
-                  </button>
-                  <button type="button" class="btn svc-filter-btn" data-filter="chandoan" onclick="filterServices('chandoan', this)">
-                    <i class="bi bi-clipboard2-pulse-fill me-1"></i> Kiểm tra &amp; Chẩn đoán
-                    <span class="badge rounded-pill bg-light text-secondary ms-1">${countChandoan}</span>
+                    <i class="bi bi-person-check-fill me-1"></i> Khám &amp; Chẩn đoán
+                    <span class="badge rounded-pill bg-light text-secondary ms-1">${countKhamChandoan}</span>
                   </button>
                   <button type="button" class="btn svc-filter-btn" data-filter="dieutri" onclick="filterServices('dieutri', this)">
                     <i class="bi bi-hospital-fill me-1"></i> Phẫu thuật &amp; Thủ thuật
@@ -321,9 +328,6 @@
                   <c:forEach items="${catalogServices}" var="service">
                     <c:set var="svcCatGroup" value="kham" />
                     <c:choose>
-                      <c:when test="${service.category == 'Kiểm tra và chẩn đoán'}">
-                        <c:set var="svcCatGroup" value="chandoan" />
-                      </c:when>
                       <c:when test="${service.category == 'Điều trị và thủ thuật'}">
                         <c:set var="svcCatGroup" value="dieutri" />
                       </c:when>
@@ -356,11 +360,6 @@
                               <c:when test="${svcCatGroup == 'dieutri'}">
                                 <span class="badge rounded-pill px-3 py-2 fw-semibold shadow-sm" style="background: rgba(239, 68, 68, 0.9); color: #ffffff;">
                                   <i class="bi bi-shield-plus me-1"></i>${service.category}
-                                </span>
-                              </c:when>
-                              <c:when test="${svcCatGroup == 'chandoan'}">
-                                <span class="badge rounded-pill px-3 py-2 fw-semibold shadow-sm" style="background: rgba(59, 130, 246, 0.9); color: #ffffff;">
-                                  <i class="bi bi-clipboard2-pulse me-1"></i>${service.category}
                                 </span>
                               </c:when>
                               <c:otherwise>

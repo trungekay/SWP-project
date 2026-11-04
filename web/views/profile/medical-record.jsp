@@ -14,7 +14,7 @@
 
 <!-- Link to Doctor Unified Detail & Forms Stylesheets -->
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-patient-detail.css?v=6">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=8">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=9">
 
 <style>
     .patient-medical-record-wrapper {

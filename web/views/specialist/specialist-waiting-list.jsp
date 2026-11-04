@@ -43,7 +43,7 @@
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
           <h2 class="fw-bold text-dark mb-1" style="font-size: 22px;">Hàng đợi Cận lâm sàng & Thủ thuật</h2>
-          <p class="text-secondary mb-0 small">Danh sách bệnh nhân được Bác sĩ chỉ định thực hiện kỹ thuật chẩn đoán và thủ thuật chuyên sâu</p>
+          <p class="text-secondary mb-0 small">Danh sách ca chờ tiếp nhận và thực hiện thủ thuật. Thông tin khám trước đó được hiển thị nếu có.</p>
         </div>
         <div class="d-flex align-items-center gap-2">
           <a href="${pageContext.request.contextPath}/specialist/waiting-list" 
@@ -272,7 +272,7 @@
                       <!-- Bác sĩ & Chẩn đoán sơ bộ -->
                       <td>
                         <div class="fw-semibold text-dark" style="font-size: 13px;">
-                          <i class="bi bi-person-badge text-success me-1"></i><c:out value="${item.doctorName}" />
+                          <i class="bi bi-person-badge text-success me-1"></i><c:out value="${item.requesterName}" default="${not empty item.doctorName ? item.doctorName : 'Chưa có thông tin bác sĩ khám'}" />
                         </div>
                         <div class="text-secondary small mt-1" style="line-height: 1.35;" title="${item.clinicalDiagnosis}">
                           <c:choose>

@@ -227,10 +227,13 @@ public class RefundDAO {
     public List<Map<String, Object>> getInvoicesForStaffRefundSelection() {
         List<Map<String, Object>> list = new ArrayList<>();
         String sql = "SELECT i.Invoice_ID, i.Appointment_ID, i.Total_Amount, i.Deposit_Amount, i.Status, " +
-                     "p.Patient_ID, p.Full_Name AS Patient_Name, p.Phone AS Patient_Phone " +
+                     "p.Patient_ID, p.Full_Name AS Patient_Name, p.Phone AS Patient_Phone, " +
+                     "e.Full_Name AS Doctor_Name, e.Specialty, ws.Work_Date, ws.Start_Time " +
                      "FROM Master_Invoice i " +
                      "JOIN Appointment a ON i.Appointment_ID = a.Appointment_ID " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
+                     "LEFT JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
+                     "LEFT JOIN Employee_Profile e ON ws.Doctor_Employee_ID = e.Employee_ID " +
                      "WHERE " + RefundPolicy.ELIGIBLE + " AND " + RefundPolicy.NO_ACTIVE_REQUEST + " ORDER BY i.Invoice_ID DESC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -250,6 +253,15 @@ public class RefundDAO {
                 map.put("patientName", rs.getString("Patient_Name"));
                 map.put("patientPhone", rs.getString("Patient_Phone"));
                 map.put("refundableAmount", refundable);
+                String doctorName = rs.getString("Doctor_Name");
+                map.put("doctorName", doctorName != null ? doctorName : "Bác sĩ phụ trách");
+                String specialty = rs.getString("Specialty");
+                map.put("specialty", specialty != null ? specialty : "Khám chuyên khoa mắt");
+                java.sql.Date workDate = rs.getDate("Work_Date");
+                map.put("workDate", workDate != null ? new SimpleDateFormat("dd/MM/yyyy").format(workDate) : "");
+                java.sql.Time startTime = rs.getTime("Start_Time");
+                map.put("startTime", startTime != null ? new SimpleDateFormat("HH:mm").format(startTime) : "");
+
                 map.put("label", String.format("#INV-%05d (Hẹn #APT-%d) - %s (%s) - %s đ", 
                     invId, aptId, rs.getString("Patient_Name"), rs.getString("Patient_Phone"), String.format("%,d", refundable)));
                 list.add(map);
@@ -263,7 +275,7 @@ public class RefundDAO {
     /** Existing requests are visible to reception without permitting a duplicate refund. */
     public Map<Integer, Map<String, Object>> getActiveRefundsForStaffAppointments() {
         Map<Integer, Map<String, Object>> results = new HashMap<>();
-        String sql = "SELECT i.Appointment_ID, i.Invoice_ID, r.Refund_ID, r.Status, r.Refund_Amount, r.Reason "
+        String sql = "SELECT i.Appointment_ID, i.Invoice_ID, r.Refund_ID, r.Status, r.Refund_Amount, r.Reason, r.Decision_Note "
                 + "FROM Refund_Request r JOIN Master_Invoice i ON i.Invoice_ID = r.Invoice_ID "
                 + "JOIN Appointment a ON a.Appointment_ID = i.Appointment_ID "
                 + "WHERE r.Status IN ('Pending', 'Approved', 'Rejected', 'Completed') ORDER BY r.Refund_ID DESC";
@@ -282,6 +294,7 @@ public class RefundDAO {
                 refund.put("amount", rs.getLong("Refund_Amount"));
                 refund.put("amountLabel", String.format("%,d đ", rs.getLong("Refund_Amount")));
                 refund.put("reason", rs.getString("Reason"));
+                refund.put("decisionNote", rs.getString("Decision_Note"));
                 results.put(appointmentId, refund);
             }
         } catch (Exception e) { e.printStackTrace(); }
@@ -290,7 +303,7 @@ public class RefundDAO {
 
     private String getStatusVn(String st) {
         if ("Pending".equalsIgnoreCase(st)) return "Chờ duyệt";
-        if ("Approved".equalsIgnoreCase(st)) return "Đã duyệt · Chờ staff hoàn tiền";
+        if ("Approved".equalsIgnoreCase(st)) return "Đã duyệt";
         if ("Completed".equalsIgnoreCase(st)) return "Đã hoàn tiền";
         if ("Rejected".equalsIgnoreCase(st)) return "Từ chối";
         return st != null ? st : "";

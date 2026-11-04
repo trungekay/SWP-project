@@ -72,6 +72,42 @@ public class Patient {
         this.address = address;
     }
 
+    private String email;
+    private int totalAppointments;
+    private String latestAppointmentDate;
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public int getTotalAppointments() {
+        return totalAppointments;
+    }
+
+    public void setTotalAppointments(int totalAppointments) {
+        this.totalAppointments = totalAppointments;
+    }
+
+    public String getLatestAppointmentDate() {
+        return latestAppointmentDate;
+    }
+
+    public void setLatestAppointmentDate(String latestAppointmentDate) {
+        this.latestAppointmentDate = latestAppointmentDate;
+    }
+
+    public boolean isHasAccount() {
+        return accountId != null && accountId > 0;
+    }
+
+    public String getFormattedId() {
+        return String.format("#PAT-%04d", patientId);
+    }
+
     public int getAge() {
         if (dob == null) {
             return 0;

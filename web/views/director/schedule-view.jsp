@@ -784,6 +784,9 @@
                         <c:if test="${sessionFilter == 'all' || slot.session == sessionFilter}">
                           <c:set var="key" value="${day.fullDate}_${slot.id}" />
                           <c:set var="cell" value="${scheduleMatrix[key]}" />
+                          <c:if test="${empty cell and not empty slot.timeRange and slot.timeRange.length() >= 5}">
+                            <c:set var="cell" value="${scheduleMatrix[day.fullDate.concat('_').concat(slot.timeRange.substring(0, 5))]}" />
+                          </c:if>
                           <c:set var="rawSlotName" value="${not empty slot.displayName ? slot.displayName : slot.id}" />
                           <c:set var="cleanSlotName" value="${fn:contains(rawSlotName, ' (') ? fn:substringBefore(rawSlotName, ' (') : rawSlotName}" />
                           <c:set var="cleanSlotName" value="${fn:startsWith(cleanSlotName, 'Slot ') ? fn:replace(cleanSlotName, 'Slot ', 'Ca ') : cleanSlotName}" />

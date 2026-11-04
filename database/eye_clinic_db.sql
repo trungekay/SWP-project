@@ -1,4 +1,4 @@
-﻿-- ==========================================================================
+-- ==========================================================================
 -- VisionCare Eye Clinic Database Full Setup Script
 -- Exported: 2026-10-19 11:03:44
 -- Database: eye_clinic_db
@@ -234,50 +234,6 @@ END
 GO
 
 -- -----------------------------------------------------
--- Table: [Clinic_Setting]
--- -----------------------------------------------------
-IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Clinic_Setting' AND xtype='U')
-BEGIN
-CREATE TABLE [dbo].[Clinic_Setting] (
-    [Setting_Key] VARCHAR(50) PRIMARY KEY,
-    [Setting_Value] NVARCHAR(255) NOT NULL,
-    [Description] NVARCHAR(255) NULL
-);
-INSERT INTO [dbo].[Clinic_Setting] ([Setting_Key], [Setting_Value], [Description])
-VALUES ('MIN_WORK_HOURS_PER_WEEK', '30.0', N'Số giờ làm việc tối thiểu mỗi tuần');
-INSERT INTO [dbo].[Clinic_Setting] ([Setting_Key], [Setting_Value], [Description])
-VALUES ('BOOKING_PENDING_HOLD_MINUTES', '15', N'Thời gian giữ chỗ tối đa cho lịch hẹn Pending chờ thanh toán (phút)');
-END
-GO
-
--- -----------------------------------------------------
--- Table: [Clinic_Gallery]
--- -----------------------------------------------------
-IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Clinic_Gallery' AND xtype='U')
-BEGIN
-CREATE TABLE [dbo].[Clinic_Gallery] (
-    [Item_ID] INT PRIMARY KEY,
-    [Title] NVARCHAR(200) NULL,
-    [Description] NVARCHAR(500) NULL,
-    [Display_Order] INT NOT NULL DEFAULT 1,
-    [Default_Filename] VARCHAR(100) NULL,
-    [Image_Data] VARBINARY(MAX) NULL,
-    [Image_Mime_Type] VARCHAR(50) NULL,
-    [Updated_At] DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
-);
-INSERT INTO [dbo].[Clinic_Gallery] ([Item_ID], [Title], [Description], [Display_Order], [Default_Filename]) VALUES
-(1, N'Sảnh tiếp đón và quầy tư vấn dịch vụ', N'Không gian hiện đại, tiện nghi tại VisionCare.', 1, 'gallery-1.jpg'),
-(2, N'Phòng khám khúc xạ và kiểm tra thị lực tự động', N'Không gian hiện đại, tiện nghi tại VisionCare.', 2, 'gallery-2.jpg'),
-(3, N'Phòng khám nhãn khoa tổng quát và soi đáy mắt', N'Không gian hiện đại, tiện nghi tại VisionCare.', 3, 'gallery-3.jpg'),
-(4, N'Phòng phẫu thuật khúc xạ công nghệ cao (LASIK/SMILE)', N'Không gian hiện đại, tiện nghi tại VisionCare.', 4, 'gallery-4.jpg'),
-(5, N'Hệ thống máy chụp cắt lớp võng mạc OCT hiện đại', N'Không gian hiện đại, tiện nghi tại VisionCare.', 5, 'gallery-5.jpg'),
-(6, N'Khu vực phòng chờ tiện nghi, thân thiện cho bệnh nhân', N'Không gian hiện đại, tiện nghi tại VisionCare.', 6, 'gallery-6.jpg'),
-(7, N'Phòng tiểu phẫu vô trùng đạt chuẩn y tế', N'Không gian hiện đại, tiện nghi tại VisionCare.', 7, 'gallery-7.jpg'),
-(8, N'Trung tâm kính mắt chuyên sâu và tư vấn tròng kính', N'Không gian hiện đại, tiện nghi tại VisionCare.', 8, 'gallery-8.jpg');
-END
-GO
-
--- -----------------------------------------------------
 -- Table: [Patient]
 -- -----------------------------------------------------
 SET ANSI_NULLS ON
@@ -406,6 +362,7 @@ CREATE TABLE [dbo].[Medical_Record](
 	[Appointment_ID] [int] NOT NULL,
 	[Doctor_Employee_ID] [int] NOT NULL,
 	[Clinical_Diagnosis] [nvarchar](max) NULL,
+	[Staff_Notes] [nvarchar](max) NULL,
 	[examination_result] [nvarchar](max) NULL,
 	[conclusion] [nvarchar](max) NULL,
 	[Created_At] [datetime2](7) NOT NULL,
@@ -436,10 +393,11 @@ CREATE TABLE [dbo].[Examination_Detail](
     [Anterior_Findings] [nvarchar](2000) NULL,
     [Posterior_Findings] [nvarchar](2000) NULL,
     [Follow_Up_Date] [date] NULL,
+    [Surgery_Indication] [nvarchar](1000) NULL,
     CONSTRAINT [FK_Examination_Detail_Record] FOREIGN KEY ([Record_ID])
         REFERENCES [dbo].[Medical_Record]([Record_ID]),
-    CONSTRAINT [CHK_Exam_OD_IOP] CHECK ([OD_IOP] IS NULL OR [OD_IOP] BETWEEN 0 AND 80),
-    CONSTRAINT [CHK_Exam_OS_IOP] CHECK ([OS_IOP] IS NULL OR [OS_IOP] BETWEEN 0 AND 80)
+    CONSTRAINT [CHK_Exam_OD_IOP] CHECK ([OD_IOP] IS NULL OR [OD_IOP] BETWEEN 5 AND 70),
+    CONSTRAINT [CHK_Exam_OS_IOP] CHECK ([OS_IOP] IS NULL OR [OS_IOP] BETWEEN 5 AND 70)
 );
 GO
 
@@ -452,6 +410,7 @@ CREATE TABLE [dbo].[Prescription](
 	[Prescription_ID] [int] IDENTITY(1,1) NOT NULL,
 	[Record_ID] [int] NOT NULL,
 	[Doctor_Notes] [nvarchar](max) NULL,
+	[Follow_Up_Date] [date] NULL,
 	[created_at] [datetime2](7) NOT NULL,
 PRIMARY KEY CLUSTERED 
 (
@@ -497,6 +456,12 @@ CREATE TABLE [dbo].[Prescription_Detail](
 	[Quantity] [int] NOT NULL,
 	[Dosage_Instruction] [nvarchar](max) NULL,
 	[Medicine_Name] [nvarchar](255) NOT NULL,
+	[Strength] [nvarchar](100) NULL,
+	[Dosage] [nvarchar](255) NULL,
+	[Frequency] [nvarchar](255) NULL,
+	[Duration] [nvarchar](100) NULL,
+	[Unit] [nvarchar](50) NULL,
+	[Additional_Instruction] [nvarchar](255) NULL,
 	[Morning_Dose] [nvarchar](100) NULL,
 	[Afternoon_Dose] [nvarchar](100) NULL,
 	[Evening_Dose] [nvarchar](100) NULL,
@@ -509,6 +474,24 @@ PRIMARY KEY CLUSTERED
 
 ALTER TABLE [dbo].[Prescription_Detail]  WITH CHECK ADD  CONSTRAINT [CHK_Medicine_Quantity] CHECK  (([Quantity]>(0)))
 ALTER TABLE [dbo].[Prescription_Detail] CHECK CONSTRAINT [CHK_Medicine_Quantity]
+GO
+
+CREATE TABLE [dbo].[Eyeglass_Prescription](
+    [Prescription_ID] [int] NOT NULL PRIMARY KEY,
+    [OD_SPH] [decimal](5,2) NULL,
+    [OD_CYL] [decimal](5,2) NULL,
+    [OD_AXIS] [smallint] NULL,
+    [OD_ADD] [decimal](5,2) NULL,
+    [OS_SPH] [decimal](5,2) NULL,
+    [OS_CYL] [decimal](5,2) NULL,
+    [OS_AXIS] [smallint] NULL,
+    [OS_ADD] [decimal](5,2) NULL,
+    [PD] [decimal](4,1) NULL,
+    [Lens_Type] [varchar](30) NULL,
+    [Glasses_Notes] [nvarchar](1000) NULL,
+    CONSTRAINT [FK_Eyeglass_Prescription_Prescription]
+        FOREIGN KEY ([Prescription_ID]) REFERENCES [dbo].[Prescription]([Prescription_ID])
+);
 GO
 
 -- -----------------------------------------------------
@@ -603,6 +586,21 @@ CREATE TABLE [dbo].[Refund_Request](
 	[Status] [nvarchar](50) NOT NULL,
 	[Created_At] [datetime2](7) NOT NULL,
 	[Update_At] [datetime2](7) NOT NULL,
+	[Decision_Note] [nvarchar](1000) NULL,
+	[Decision_At] [datetime2](7) NULL,
+	[Completed_At] [datetime2](7) NULL,
+	[Completed_By] [int] NULL,
+	[Completion_Note] [nvarchar](1000) NULL,
+	[Evidence_Image] [varbinary](max) NULL,
+	[Evidence_Type] [varchar](30) NULL,
+	[Notification_Status] [varchar](20) NOT NULL CONSTRAINT [DF_Refund_Mail] DEFAULT ('NotRequired'),
+	[Notification_Attempts] [int] NOT NULL CONSTRAINT [DF_Refund_Attempts] DEFAULT ((0)),
+	[Notification_Claimed_At] [datetime2](7) NULL,
+	[Notification_Sent_At] [datetime2](7) NULL,
+	[Notification_Last_Error] [nvarchar](500) NULL,
+	[Request_Kind] [varchar](20) NOT NULL CONSTRAINT [DF_Refund_Request_Kind] DEFAULT ('Appointment'),
+	[Unused_Checked_By] [int] NULL,
+	[Unused_Checked_At] [datetime2](7) NULL,
 PRIMARY KEY CLUSTERED 
 (
 	[Refund_ID] ASC
@@ -614,7 +612,7 @@ ALTER TABLE [dbo].[Refund_Request] ADD  DEFAULT (sysutcdatetime()) FOR [Created_
 ALTER TABLE [dbo].[Refund_Request] ADD  DEFAULT (sysutcdatetime()) FOR [Update_At]
 ALTER TABLE [dbo].[Refund_Request]  WITH CHECK ADD  CONSTRAINT [CHK_Refund_Amount] CHECK  (([Refund_Amount]>(0)))
 ALTER TABLE [dbo].[Refund_Request] CHECK CONSTRAINT [CHK_Refund_Amount]
-ALTER TABLE [dbo].[Refund_Request]  WITH CHECK ADD  CONSTRAINT [CHK_Refund_Status] CHECK  (([Status]=N'Rejected' OR [Status]=N'Approved' OR [Status]=N'Pending'))
+ALTER TABLE [dbo].[Refund_Request]  WITH CHECK ADD  CONSTRAINT [CHK_Refund_Status] CHECK  (([Status]=N'Rejected' OR [Status]=N'Approved' OR [Status]=N'Pending' OR [Status]=N'Completed'))
 ALTER TABLE [dbo].[Refund_Request] CHECK CONSTRAINT [CHK_Refund_Status]
 GO
 
@@ -2138,6 +2136,8 @@ GO
 -- Data: [Clinic_Setting]
 -- -----------------------------------------------------
 INSERT [dbo].[Clinic_Setting] ([Setting_Key], [Setting_Value], [Description]) VALUES (N'MIN_WORK_HOURS_PER_WEEK', N'30.0', N'Số giờ làm việc tối thiểu mỗi tuần')
+INSERT [dbo].[Clinic_Setting] ([Setting_Key], [Setting_Value], [Description]) VALUES (N'BOOKING_PENDING_HOLD_MINUTES', N'15', N'Thời gian giữ chỗ tối đa cho lịch hẹn Pending chờ thanh toán (phút)')
+INSERT [dbo].[Clinic_Setting] ([Setting_Key], [Setting_Value], [Description]) VALUES (N'SESSION_END_BUFFER_ENABLED', N'false', N'Dành riêng 30 phút cuối mỗi ca (11:00-11:30 và 16:30-17:00) làm ca đệm bù giờ phát sinh')
 GO
 
 -- Demo checked-in queue for doctor Tinh on 2026-10-21.
@@ -3225,45 +3225,20 @@ END CATCH;
 
 GO
 
-GO
--- BEGIN REFUND LIFECYCLE UPGRADE
-SET XACT_ABORT ON;
-BEGIN TRANSACTION;
-IF COL_LENGTH('dbo.Refund_Request','Decision_Note') IS NULL ALTER TABLE dbo.Refund_Request ADD Decision_Note nvarchar(1000) NULL;
-IF COL_LENGTH('dbo.Refund_Request','Decision_At') IS NULL ALTER TABLE dbo.Refund_Request ADD Decision_At datetime2 NULL;
-IF COL_LENGTH('dbo.Refund_Request','Completed_At') IS NULL ALTER TABLE dbo.Refund_Request ADD Completed_At datetime2 NULL;
-IF COL_LENGTH('dbo.Refund_Request','Completed_By') IS NULL ALTER TABLE dbo.Refund_Request ADD Completed_By int NULL REFERENCES dbo.Employee_Profile(Employee_ID);
-IF COL_LENGTH('dbo.Refund_Request','Completion_Note') IS NULL ALTER TABLE dbo.Refund_Request ADD Completion_Note nvarchar(1000) NULL;
-IF COL_LENGTH('dbo.Refund_Request','Evidence_Image') IS NULL ALTER TABLE dbo.Refund_Request ADD Evidence_Image varbinary(max) NULL;
-IF COL_LENGTH('dbo.Refund_Request','Evidence_Type') IS NULL ALTER TABLE dbo.Refund_Request ADD Evidence_Type varchar(30) NULL;
-IF COL_LENGTH('dbo.Refund_Request','Notification_Status') IS NULL ALTER TABLE dbo.Refund_Request ADD Notification_Status varchar(20) NOT NULL CONSTRAINT DF_Refund_Mail DEFAULT 'NotRequired';
-IF COL_LENGTH('dbo.Refund_Request','Notification_Attempts') IS NULL ALTER TABLE dbo.Refund_Request ADD Notification_Attempts int NOT NULL CONSTRAINT DF_Refund_Attempts DEFAULT 0;
-IF COL_LENGTH('dbo.Refund_Request','Notification_Claimed_At') IS NULL ALTER TABLE dbo.Refund_Request ADD Notification_Claimed_At datetime2 NULL;
-IF COL_LENGTH('dbo.Refund_Request','Notification_Sent_At') IS NULL ALTER TABLE dbo.Refund_Request ADD Notification_Sent_At datetime2 NULL;
-IF COL_LENGTH('dbo.Refund_Request','Notification_Last_Error') IS NULL ALTER TABLE dbo.Refund_Request ADD Notification_Last_Error nvarchar(500) NULL;
-IF EXISTS(SELECT 1 FROM sys.check_constraints WHERE parent_object_id=OBJECT_ID('dbo.Refund_Request') AND name='CHK_Refund_Status') ALTER TABLE dbo.Refund_Request DROP CONSTRAINT CHK_Refund_Status;
-ALTER TABLE dbo.Refund_Request WITH CHECK ADD CONSTRAINT CHK_Refund_Status CHECK(Status IN ('Pending','Approved','Rejected','Completed'));
-EXEC sp_executesql N'UPDATE r SET Status=''Completed'',Completed_At=COALESCE(r.Update_At,r.Created_At) FROM dbo.Refund_Request r JOIN dbo.Master_Invoice i ON i.Invoice_ID=r.Invoice_ID WHERE r.Status=''Approved'' AND i.Status=''Refunded'';';
-COMMIT;
--- END REFUND LIFECYCLE UPGRADE
-GO
-
--- BEGIN ITEM REFUND UPGRADE
-SET XACT_ABORT ON;
-BEGIN TRANSACTION;
-IF COL_LENGTH('dbo.Refund_Request','Request_Kind') IS NULL ALTER TABLE dbo.Refund_Request ADD Request_Kind varchar(20) NOT NULL CONSTRAINT DF_Refund_Request_Kind DEFAULT 'Appointment';
-IF COL_LENGTH('dbo.Refund_Request','Unused_Checked_By') IS NULL ALTER TABLE dbo.Refund_Request ADD Unused_Checked_By int NULL REFERENCES dbo.Employee_Profile(Employee_ID);
-IF COL_LENGTH('dbo.Refund_Request','Unused_Checked_At') IS NULL ALTER TABLE dbo.Refund_Request ADD Unused_Checked_At datetime2 NULL;
-IF OBJECT_ID('dbo.Refund_Request_Item','U') IS NULL
-CREATE TABLE dbo.Refund_Request_Item(
- Refund_ID int NOT NULL REFERENCES dbo.Refund_Request(Refund_ID),
- Item_Key nvarchar(64) NOT NULL,
- Item_Name nvarchar(500) NOT NULL,
- Item_Type varchar(20) NOT NULL CHECK(Item_Type IN ('Medicine','Procedure')),
- Quantity int NOT NULL CHECK(Quantity>0),
- Unit_Price decimal(18,0) NOT NULL CHECK(Unit_Price>0),
- PRIMARY KEY(Refund_ID,Item_Key)
-);
-COMMIT;
--- END ITEM REFUND UPGRADE
+-- Staff doctor schedule changes (also available as database/doctor_schedule_change.sql
+-- for existing databases that should not re-run this full seed script).
+IF OBJECT_ID(N'dbo.Doctor_Schedule_Change', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Doctor_Schedule_Change (
+        Change_ID INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        Source_Schedule_ID INT NOT NULL REFERENCES dbo.Work_Schedule(Schedule_ID),
+        Target_Schedule_ID INT NULL REFERENCES dbo.Work_Schedule(Schedule_ID),
+        Appointment_ID INT NULL REFERENCES dbo.Appointment(Appointment_ID),
+        Changed_By_Account_ID INT NOT NULL REFERENCES dbo.Account(Account_ID),
+        Reason NVARCHAR(500) NOT NULL,
+        Changed_At DATETIME2(0) NOT NULL DEFAULT DATEADD(HOUR, 7, SYSUTCDATETIME())
+    );
+    CREATE INDEX IX_Doctor_Schedule_Change_Source
+        ON dbo.Doctor_Schedule_Change(Source_Schedule_ID, Changed_At DESC);
+END;
 GO

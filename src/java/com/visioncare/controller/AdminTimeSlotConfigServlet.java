@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+
 @WebServlet(name = "AdminTimeSlotConfigServlet", urlPatterns = {"/admin/timeslot-config"})
 public class AdminTimeSlotConfigServlet extends HttpServlet {
     private final TimeSlotDAO timeSlotDAO = new TimeSlotDAO();
@@ -79,13 +80,38 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
                         request.getSession().setAttribute("errorMsg", "Vui lòng nhập định dạng số nguyên hợp lệ cho thời gian giữ chỗ!");
                     }
                 }
+            } else if ("update_session_buffer".equals(action)) {
+                String bufferVal = request.getParameter("sessionEndBufferEnabled");
+                boolean enabled = "true".equalsIgnoreCase(bufferVal) || "on".equalsIgnoreCase(bufferVal) || "1".equals(bufferVal);
+                boolean success = timeSlotDAO.updateSessionEndBufferEnabled(enabled);
+                if (success) {
+                    request.getSession().setAttribute("successMsg", enabled 
+                        ? "Đã kích hoạt chế độ Buffer Slot (Dành riêng 30 phút cuối ca 11h-11h30 và 16h30-17h để xử lý khám bù giờ)!"
+                        : "Đã tắt chế độ Buffer Slot (Mở toàn bộ ca khám cho bệnh nhân đặt: 08:00 - 11:30 và 13:30 - 17:00)!");
+                } else {
+                    request.getSession().setAttribute("errorMsg", "Không thể cập nhật cấu hình Buffer Slot!");
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
             request.getSession().setAttribute("errorMsg", "Lỗi cấu hình: " + e.getMessage());
         }
 
-        if ("update_min_hours".equals(action) || "update_pending_hold_minutes".equals(action)) {
+        String returnTab = request.getParameter("returnTab");
+        if (returnTab != null && !returnTab.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=" + returnTab.trim());
+            return;
+        }
+
+        if ("update_session_buffer".equals(action)) {
+            response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=buffer");
+            return;
+        }
+        if ("update_pending_hold_minutes".equals(action)) {
+            response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=holdtime");
+            return;
+        }
+        if ("update_min_hours".equals(action)) {
             response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=rules");
             return;
         }

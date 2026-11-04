@@ -11,19 +11,34 @@ public class SpecialistCompletionDAO {
     public SpecialistCompletionDAO() { this(DBContext::getConnection); }
     public SpecialistCompletionDAO(Connections connections) { this.connections = connections; }
 
-    public boolean cancel(int orderId, int specialistId) throws Exception {
+    public boolean accept(int orderId,int specialistId) throws Exception {
+        if(orderId<=0||specialistId<=0)return false;
+        try(Connection c=connections.open();PreparedStatement p=c.prepareStatement(
+                "UPDATE po SET Specialist_Employee_ID=? FROM Procedure_Order po "
+                + "JOIN Medical_Record mr ON mr.Record_ID=po.Record_ID JOIN Appointment a ON a.Appointment_ID=mr.Appointment_ID "
+                + "WHERE po.Order_ID=? AND po.Status='Pending' AND po.Specialist_Employee_ID IS NULL "
+                + "AND a.Status='In_Progress' AND a.checkin_time IS NOT NULL "
+                + "AND EXISTS(SELECT 1 FROM Employee_Profile e JOIN Account ac ON ac.Account_ID=e.Account_ID "
+                + "WHERE e.Employee_ID=? AND ac.Role_ID=4 AND ac.Account_Status='Active')")) {
+            p.setInt(1,specialistId);p.setInt(2,orderId);p.setInt(3,specialistId);return p.executeUpdate()==1;
+        }
+    }
+
+    public boolean cancel(int orderId, int specialistId, String reason) throws Exception {
+        if(reason==null||reason.isBlank()||reason.length()>2000)
+            throw new IllegalArgumentException("Vui lòng nhập lý do không thực hiện (tối đa 2.000 ký tự).");
         try (Connection conn = connections.open(); PreparedStatement ps = conn.prepareStatement(
-                "UPDATE po SET Status='Cancelled', Specialist_Employee_ID=? FROM Procedure_Order po "
+                "UPDATE po SET Status='Cancelled', Specialist_Employee_ID=?, Result_Conclusion=? FROM Procedure_Order po "
                 + "JOIN Medical_Record mr ON mr.Record_ID=po.Record_ID "
                 + "JOIN Appointment a ON a.Appointment_ID=mr.Appointment_ID "
                 + "WHERE po.Order_ID=? AND a.Status='In_Progress' AND po.Status IN ('Pending','In_Progress') "
-                + "AND (po.Specialist_Employee_ID IS NULL OR po.Specialist_Employee_ID=?)")) {
-            ps.setInt(1, specialistId); ps.setInt(2, orderId); ps.setInt(3, specialistId);
+                + "AND po.Specialist_Employee_ID=?")) {
+            ps.setInt(1, specialistId); ps.setNString(2,reason.trim());ps.setInt(3, orderId); ps.setInt(4, specialistId);
             return ps.executeUpdate() == 1;
         }
     }
 
-    public void save(int orderId, int specialistId, String report, String conclusion,
+    public boolean save(int orderId, int specialistId, String report, String conclusion,
                      String status, boolean closeVisit) throws Exception {
         if (orderId <= 0 || specialistId <= 0 || !("Pending".equals(status) || "Completed".equals(status)))
             throw new IllegalArgumentException("Ca hoặc trạng thái không hợp lệ.");
@@ -44,7 +59,7 @@ public class SpecialistCompletionDAO {
                     try (ResultSet rs = ps.executeQuery()) {
                         if (!rs.next() || !"In_Progress".equals(rs.getString("Status"))
                                 || rs.getTimestamp("checkin_time") == null)
-                            throw new IllegalStateException("Ca khám đã kết thúc, bị hủy hoặc chưa được bác sĩ tiếp nhận.");
+                            throw new IllegalStateException("Ca đã kết thúc, bị hủy hoặc chưa được tiếp nhận.");
                         appointmentId = rs.getInt("Appointment_ID"); recordId = rs.getInt("Record_ID");
                     }
                 }
@@ -54,18 +69,18 @@ public class SpecialistCompletionDAO {
                             + "WHERE Record_ID=? AND Order_ID<>? AND Status NOT IN ('Completed','Cancelled')")) {
                         ps.setInt(1, recordId); ps.setInt(2, orderId);
                         try (ResultSet rs = ps.executeQuery()) {
-                            if (rs.next()) throw new IllegalStateException("Còn chỉ định chưa xử lý. Hãy trả kết quả về bác sĩ hoặc hoàn tất các chỉ định còn lại.");
+                            if (rs.next()) closeVisit=false;
                         }
                     }
-                    // Record the responsible specialist on the order; do not replace the original doctor.
-                    report += "\n<VISIT_CLOSURE>\nBSPT #" + specialistId + " kết thúc ca khám lúc "
+                    // Only the last completed procedure closes a visit with several orders.
+                    if(closeVisit) report += "\n<VISIT_CLOSURE>\nBSPT #" + specialistId + " kết thúc ca khám lúc "
                             + LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")) + "\n</VISIT_CLOSURE>";
                 }
                 try (PreparedStatement ps = conn.prepareStatement(
                         "UPDATE Procedure_Order SET Result_Text=?, Result_Conclusion=?, Status=?, Specialist_Employee_ID=?, "
                         + "Completed_At=CASE WHEN ?='Completed' THEN COALESCE(Completed_At,SYSDATETIME()) ELSE Completed_At END "
                         + "WHERE Order_ID=? AND Status<>'Cancelled' AND (Status<>'Completed' OR ?='Completed') "
-                        + "AND (Specialist_Employee_ID IS NULL OR Specialist_Employee_ID=?)")) {
+                        + "AND Specialist_Employee_ID=?")) {
                     ps.setNString(1, report); ps.setNString(2, conclusion); ps.setString(3, status);
                     ps.setInt(4, specialistId); ps.setString(5, status); ps.setInt(6, orderId);
                     ps.setString(7, status); ps.setInt(8, specialistId);
@@ -80,6 +95,7 @@ public class SpecialistCompletionDAO {
                     }
                 }
                 conn.commit();
+                return closeVisit;
             } catch (Exception error) {
                 conn.rollback(); throw error;
             }

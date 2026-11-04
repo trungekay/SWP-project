@@ -11,8 +11,8 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css">
     <jsp:include page="/views/admin/layout/admin-css.jsp" />
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=8">
-    <script defer charset="UTF-8" src="${pageContext.request.contextPath}/assets/js/doctor-forms.js?v=8"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=10">
+    <script defer charset="UTF-8" src="${pageContext.request.contextPath}/assets/js/doctor-forms.js?v=13"></script>
 </head>
 <body>
 <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
@@ -20,7 +20,7 @@
 </jsp:include>
 <main class="main-wrapper">
     <jsp:include page="/views/employee/layout/employee-header.jsp" />
-    <div class="page-content doctor-form-page" data-doctor-form="examination" data-readonly="${readOnly}" data-surgery-initial="${surgeryOpen || not empty formValues.surgeryNotes}" data-surgery-can-refer="${empty formValues.surgeryStatus || formValues.surgeryStatus eq 'Pending'}">
+    <div class="page-content doctor-form-page" data-doctor-form="examination" data-readonly="${readOnly}" data-surgery-initial="${not empty formValues.surgeryIndication}">
         <nav class="doctor-form-breadcrumb" aria-label="Điều hướng">
             <a href="${pageContext.request.contextPath}/doctor/waiting-list">Hàng đợi khám bệnh</a>
             <i class="bi bi-chevron-right" aria-hidden="true"></i>
@@ -39,7 +39,6 @@
         </header>
 
         <section class="doctor-form-patient" aria-label="Thông tin bệnh nhân">
-            <div class="doctor-form-avatar" aria-hidden="true"><c:out value="${fn:substring(appointment.patientName, 0, 1)}" default="BN" /></div>
             <div class="doctor-form-patient-main">
                 <span>BỆNH NHÂN</span>
                 <h2><c:out value="${appointment.patientName}" default="Chưa cập nhật" /></h2>
@@ -77,7 +76,6 @@
                         </c:if>
                         <label class="doctor-form-field doctor-form-span"><span>Triệu chứng chính</span>
                             <textarea name="chiefComplaint" rows="3" maxlength="1000" placeholder="Ví dụ: Nhìn mờ mắt phải trong 2 tuần, tăng khi đọc gần..."><c:out value="${formValues.chiefComplaint}" /></textarea>
-                            <c:if test="${not empty formValues.chiefComplaintSource}"><small class="doctor-form-hint"><c:out value="${formValues.chiefComplaintSource}" />. Hãy kiểm tra và cập nhật nếu cần.</small></c:if>
                         </label>
                         <label class="doctor-form-field doctor-form-span"><span>Tiền sử mắt và bệnh sử liên quan</span>
                             <textarea name="medicalHistory" rows="2" maxlength="1000" placeholder="Bệnh mắt trước đây, bệnh nền, dị ứng, thuốc đang dùng..."><c:out value="${formValues.medicalHistory}" /></textarea>
@@ -98,13 +96,13 @@
                         <table class="doctor-form-matrix">
                             <thead><tr><th scope="col">Chỉ số</th><th scope="col">Mắt phải (OD)</th><th scope="col">Mắt trái (OS)</th></tr></thead>
                             <tbody>
-                                <tr><th scope="row">Thị lực không kính</th><td><input aria-label="Thị lực không kính mắt phải" name="odUncorrected" type="text" maxlength="20" placeholder="VD: 7/10" value="<c:out value='${formValues.odUncorrected}' />"></td><td><input aria-label="Thị lực không kính mắt trái" name="osUncorrected" type="text" maxlength="20" placeholder="VD: 8/10" value="<c:out value='${formValues.osUncorrected}' />"></td></tr>
-                                <tr><th scope="row">Thị lực có kính</th><td><input aria-label="Thị lực có kính mắt phải" name="odCorrected" type="text" maxlength="20" placeholder="VD: 10/10" value="<c:out value='${formValues.odCorrected}' />"></td><td><input aria-label="Thị lực có kính mắt trái" name="osCorrected" type="text" maxlength="20" placeholder="VD: 10/10" value="<c:out value='${formValues.osCorrected}' />"></td></tr>
-                                <tr><th scope="row">Nhãn áp (mmHg)</th><td><input aria-label="Nhãn áp mắt phải" name="odIop" type="number" min="0" max="80" step="0.1" placeholder="VD: 16" value="<c:out value='${formValues.odIop}' />"></td><td><input aria-label="Nhãn áp mắt trái" name="osIop" type="number" min="0" max="80" step="0.1" placeholder="VD: 17" value="<c:out value='${formValues.osIop}' />"></td></tr>
+                                <tr><th scope="row">Thị lực không kính</th><td><input aria-label="Thị lực không kính mắt phải" name="odUncorrected" type="text" inputmode="decimal" data-visual-acuity maxlength="20" placeholder="VD: 7" value="<c:out value='${formValues.odUncorrected}' />"></td><td><input aria-label="Thị lực không kính mắt trái" name="osUncorrected" type="text" inputmode="decimal" data-visual-acuity maxlength="20" placeholder="VD: 8" value="<c:out value='${formValues.osUncorrected}' />"></td></tr>
+                                <tr><th scope="row">Thị lực có kính</th><td><input aria-label="Thị lực có kính mắt phải" name="odCorrected" type="text" inputmode="decimal" data-visual-acuity maxlength="20" placeholder="VD: 10" value="<c:out value='${formValues.odCorrected}' />"></td><td><input aria-label="Thị lực có kính mắt trái" name="osCorrected" type="text" inputmode="decimal" data-visual-acuity maxlength="20" placeholder="VD: 10" value="<c:out value='${formValues.osCorrected}' />"></td></tr>
+                                <tr><th scope="row">Nhãn áp (mmHg)</th><td><input aria-label="Nhãn áp mắt phải" name="odIop" type="number" min="5" max="70" step="0.1" placeholder="VD: 16" value="<c:out value='${formValues.odIop}' />"></td><td><input aria-label="Nhãn áp mắt trái" name="osIop" type="number" min="5" max="70" step="0.1" placeholder="VD: 17" value="<c:out value='${formValues.osIop}' />"></td></tr>
                             </tbody>
                         </table>
                     </div>
-                    <p class="doctor-form-hint">Ghi thị lực theo chuẩn đang sử dụng tại phòng khám.</p>
+                    <p class="doctor-form-hint">Thị lực: nhập số nguyên từ 1 đến 10; dưới 1 có thể nhập số thập phân. Dấu phẩy được đổi thành dấu chấm.</p>
                 </section>
 
                 <section class="doctor-form-card" aria-labelledby="exam-findings-heading">
@@ -166,31 +164,10 @@
                         <button class="doctor-form-button doctor-form-surgery-toggle" type="button" data-surgery-toggle aria-expanded="false" aria-controls="surgery-referral-fields">
                             <i class="bi bi-clipboard2-plus" aria-hidden="true"></i> Chỉ định phẫu thuật
                         </button>
-                        <c:if test="${not empty formValues.surgeryStatus}">
-                            <c:choose>
-                                <c:when test="${formValues.surgeryStatus eq 'Pending'}"><c:set var="referralStatusLabel" value="Chờ bác sĩ thủ thuật tiếp nhận" /><c:set var="referralStatusTone" value="pending" /></c:when>
-                                <c:when test="${formValues.surgeryStatus eq 'In_Progress'}"><c:set var="referralStatusLabel" value="Đang thực hiện" /><c:set var="referralStatusTone" value="active" /></c:when>
-                                <c:when test="${formValues.surgeryStatus eq 'Completed'}"><c:set var="referralStatusLabel" value="Đã hoàn tất" /><c:set var="referralStatusTone" value="completed" /></c:when>
-                                <c:otherwise><c:set var="referralStatusLabel" value="Đã hủy" /><c:set var="referralStatusTone" value="cancelled" /></c:otherwise>
-                            </c:choose>
-                            <div class="doctor-form-referral-status ${referralStatusTone}" role="status">
-                                <span class="doctor-form-referral-status-icon"><i class="bi bi-clipboard2-check" aria-hidden="true"></i></span>
-                                <div><small>CHỈ ĐỊNH HIỆN TẠI</small><strong><c:out value="${referralStatusLabel}" /></strong><span>Phiếu khám đã được chuyển đến hàng đợi bác sĩ thủ thuật.</span></div>
-                            </div>
-                        </c:if>
                         <div id="surgery-referral-fields" class="doctor-form-surgery-panel" data-surgery-panel hidden>
-                            <p><c:choose><c:when test="${empty formValues.surgeryStatus || formValues.surgeryStatus eq 'Pending'}">Phiếu khám và ghi chú sẽ được gửi vào hàng đợi bác sĩ thủ thuật khi lưu.</c:when><c:otherwise>Chỉ định đã được tiếp nhận. Thông tin bên dưới chỉ để xem.</c:otherwise></c:choose></p>
                             <div class="doctor-form-fields">
-                                <label class="doctor-form-field doctor-form-span"><span>Loại phẫu thuật <em>*</em></span>
-                                    <select name="surgeryServiceId" data-surgery-required disabled>
-                                        <option value="">Chọn dịch vụ phẫu thuật</option>
-                                        <c:forEach var="service" items="${surgeryServices}">
-                                            <option value="${service.id}" ${formValues.surgeryServiceId eq service.id ? 'selected' : ''}><c:out value="${service.name}" /></option>
-                                        </c:forEach>
-                                    </select>
-                                </label>
-                                <label class="doctor-form-field doctor-form-span"><span>Ghi chú cho bác sĩ thủ thuật <em>*</em></span>
-                                    <textarea name="surgeryNotes" rows="3" maxlength="2000" data-surgery-required disabled placeholder="Lý do chỉ định, mắt cần can thiệp, lưu ý trước phẫu thuật..."><c:out value="${formValues.surgeryNotes}" /></textarea>
+                                <label class="doctor-form-field doctor-form-span"><span>Nội dung chỉ định phẫu thuật</span>
+                                    <textarea name="surgeryIndication" rows="3" maxlength="2000" placeholder="Ghi loại phẫu thuật, mắt cần can thiệp và các lưu ý..."><c:out value="${formValues.surgeryIndication}" /></textarea>
                                 </label>
                             </div>
                         </div>
@@ -203,7 +180,7 @@
                         <c:when test="${printReady}"><a class="doctor-form-button secondary" href="${pageContext.request.contextPath}/doctor/examination/print?id=${appointment.id}" target="_blank" rel="noopener"><i class="bi bi-printer" aria-hidden="true"></i> In phiếu khám đã lưu</a></c:when>
                         <c:otherwise><button class="doctor-form-button secondary" type="button" disabled title="Lưu đầy đủ phiếu khám trước khi in"><i class="bi bi-printer" aria-hidden="true"></i> In phiếu khám</button></c:otherwise>
                     </c:choose>
-                    <c:if test="${not readOnly}"><button class="doctor-form-button primary" type="submit" name="submitAction" value="save" data-exam-submit data-label-save="Lưu phiếu khám" data-label-refer="Lưu và gửi chỉ định"><i class="bi bi-cloud-arrow-up" data-exam-submit-icon aria-hidden="true"></i><span data-exam-submit-label>Lưu phiếu khám</span></button></c:if>
+                    <c:if test="${not readOnly}"><button class="doctor-form-button primary" type="submit"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Lưu phiếu khám</button></c:if>
                 </div>
             </form>
 
