@@ -4,6 +4,31 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.util.Properties;
 public class EmailUtil {
+    public static void sendDoctorReplacementEmail(String recipient, String patientName, int appointmentId,
+            String doctorName, String appointmentDate, String timeSlot) throws Exception {
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.host", "smtp.gmail.com");
+        props.put("mail.smtp.port", "587");
+        props.put("mail.smtp.connectiontimeout", "10000");
+        props.put("mail.smtp.timeout", "10000");
+        Session session = Session.getInstance(props, new Authenticator() {
+            @Override protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(SENDER_EMAIL, SENDER_PASSWORD);
+            }
+        });
+        MimeMessage message = new MimeMessage(session);
+        message.setFrom(new InternetAddress(SENDER_EMAIL, "VisionCare", "UTF-8"));
+        message.setRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
+        message.setSubject("VisionCare - Thay đổi bác sĩ khám #APT-" + appointmentId, "UTF-8");
+        message.setContent("<p>Xin chào " + WorkflowTokens.html(patientName) + ",</p>"
+                + "<p>Lịch khám #APT-" + appointmentId + " đã được chuyển sang bác sĩ "
+                + WorkflowTokens.html(doctorName) + ".</p><p>Ngày khám: "
+                + WorkflowTokens.html(appointmentDate) + "; giờ khám: "
+                + WorkflowTokens.html(timeSlot) + ".</p><p>VisionCare</p>", "text/html; charset=UTF-8");
+        Transport.send(message);
+    }
     
     private static final String SENDER_EMAIL = "hotro.visioncare@gmail.com";
     private static final String SENDER_PASSWORD = "gmpizjvpsdxssjwe";

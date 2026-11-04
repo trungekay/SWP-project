@@ -165,6 +165,12 @@ public class DatabaseInitializerListener implements ServletContextListener {
 
             // 7. Cấu hình linh hoạt Quy trình khám (Workflow Steps) & Tiền phẫu (Prerequisite Services) cho Service_Catalog
             try (Statement stmt = conn.createStatement()) {
+                // Keep the database constraint in sync with the category values exposed by the admin form.
+                stmt.execute("IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CHK_Service_Catalog_Category' AND parent_object_id = OBJECT_ID('dbo.Service_Catalog')) "
+                           + "ALTER TABLE dbo.Service_Catalog DROP CONSTRAINT CHK_Service_Catalog_Category");
+                stmt.execute("ALTER TABLE dbo.Service_Catalog WITH CHECK ADD CONSTRAINT CHK_Service_Catalog_Category "
+                           + "CHECK (Category IN (N'Dịch vụ ngoài', N'Khác', N'Điều trị và thủ thuật', "
+                           + "N'Kiểm tra và chẩn đoán', N'Khám và tư vấn', N'Khám và chẩn đoán'))");
                 stmt.execute("IF COL_LENGTH('dbo.Service_Catalog', 'Requires_Pre_Op') IS NULL "
                            + "ALTER TABLE dbo.Service_Catalog ADD Requires_Pre_Op BIT NOT NULL DEFAULT 0");
                 stmt.execute("IF COL_LENGTH('dbo.Service_Catalog', 'Prerequisite_Service_ID') IS NULL "

@@ -53,6 +53,9 @@
 .doctor-form-matrix tbody th{width:30%;color:#3c5260;font-size:12px;font-weight:700}
 .doctor-form-matrix td{min-width:145px}
 .doctor-form-matrix input{min-height:38px}
+.doctor-form-matrix input[aria-invalid="true"]{border-color:#d35a5a;box-shadow:0 0 0 3px rgba(211,90,90,.1)}
+.doctor-form-input-error{display:block;margin-top:5px;color:#a33c3c;font-size:11px;line-height:1.4}
+.doctor-form-input-error:empty{display:none}
 .doctor-form-hint{margin:12px 0 0;color:#8797a0;font-size:11px}
 .doctor-form-prior-diagnoses{margin-top:18px;padding:14px 16px;border:1px solid #d9e9e5;border-radius:10px;background:#f7fbf9;color:#405960}
 .doctor-form-prior-diagnoses strong{display:block;margin-bottom:7px;font-size:12px}

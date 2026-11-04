@@ -4,6 +4,72 @@
     const page = document.querySelector("[data-doctor-form]");
     if (!page) return;
 
+    if (page.dataset.doctorForm === "examination") {
+        const form = page.querySelector("#examination-form");
+        const acuityInputs = [...form.querySelectorAll("[data-visual-acuity]")];
+        const iopInputs = [...form.querySelectorAll('[name="odIop"], [name="osIop"]')];
+        const showInputError = (input, message) => {
+            let feedback = input.parentElement.querySelector(".doctor-form-input-error");
+            if (!feedback) {
+                feedback = document.createElement("small");
+                feedback.className = "doctor-form-input-error";
+                feedback.id = input.name + "-error";
+                input.parentElement.appendChild(feedback);
+            }
+            feedback.textContent = message;
+            input.setAttribute("aria-invalid", String(Boolean(message)));
+            if (message) input.setAttribute("aria-describedby", feedback.id);
+            else input.removeAttribute("aria-describedby");
+        };
+        const validateAcuity = input => {
+            const normalized = input.value.trim().replace(',', '.');
+            const valid = normalized === "" || (/^[0-9]+(?:\.[0-9]+)?$/.test(normalized)
+                && Number(normalized) <= 10
+                && (Number(normalized) < 1 || Number.isInteger(Number(normalized))));
+            const message = valid ? "" : "Nh\u1eadp s\u1ed1 nguy\u00ean t\u1eeb 1 \u0111\u1ebfn 10; ch\u1ec9 gi\u00e1 tr\u1ecb d\u01b0\u1edbi 1 \u0111\u01b0\u1ee3c c\u00f3 ph\u1ea7n th\u1eadp ph\u00e2n.";
+            showInputError(input, message);
+            if (/^[0-9]+(?:\.[0-9]+)?$/.test(normalized)) input.value = normalized;
+            return valid;
+        };
+        const validateIop = input => {
+            const raw = input.value.trim();
+            const valid = !input.validity.badInput && (raw === "" || (/^[0-9]+(?:\.[0-9])?$/.test(raw)
+                && Number(raw) >= 5 && Number(raw) <= 70));
+            showInputError(input, valid ? "" : "Nh\u00e3n \u00e1p ph\u1ea3i t\u1eeb 5 \u0111\u1ebfn 70 mmHg, b\u01b0\u1edbc 0.1 (t\u1ed1i \u0111a 1 ch\u1eef s\u1ed1 th\u1eadp ph\u00e2n).");
+            return valid;
+        };
+        acuityInputs.forEach(input => {
+            input.addEventListener("blur", () => validateAcuity(input));
+            input.addEventListener("input", () => {
+                if (input.getAttribute("aria-invalid") === "true") validateAcuity(input);
+            });
+        });
+        iopInputs.forEach(input => {
+            input.addEventListener("blur", () => validateIop(input));
+            input.addEventListener("input", () => validateIop(input));
+        });
+        form.addEventListener("invalid", event => {
+            if (iopInputs.includes(event.target)) {
+                validateIop(event.target);
+                event.preventDefault();
+                event.target.focus();
+            }
+        }, true);
+        form.addEventListener("submit", event => {
+            let firstInvalid = null;
+            acuityInputs.forEach(input => {
+                if (!validateAcuity(input) && !firstInvalid) firstInvalid = input;
+            });
+            iopInputs.forEach(input => {
+                if (!validateIop(input) && !firstInvalid) firstInvalid = input;
+            });
+            if (firstInvalid) {
+                event.preventDefault();
+                firstInvalid.focus();
+            }
+        });
+    }
+
     function syncDoseRow(row) {
         const selected = row.querySelector("[data-dose-toggle]");
         const dose = row.querySelector("[data-dose-input]");

@@ -8,6 +8,7 @@ target/
 /nbproject/private/
 /build/
 /dist/
+src/java/db.local.properties
 .vscode/
 out/
 cookies.txt

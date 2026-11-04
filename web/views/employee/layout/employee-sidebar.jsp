@@ -56,12 +56,6 @@
                                 <span>Hàng đợi phòng khám</span>
                             </a>
                         </li>
-                        <li>
-                            <a href="${pageContext.request.contextPath}/staff/doctor-reschedule" class="${param.activeNav == 'doctor-reschedule' ? 'active' : ''}">
-                                <i class="bi bi-calendar2-range"></i>
-                                <span>Quản lý lịch làm việc bác sĩ</span>
-                            </a>
-                        </li>
                     </ul>
                 </li>
 
@@ -77,6 +71,13 @@
                     <a href="${pageContext.request.contextPath}/staff/patients" class="${param.activeNav == 'patients' ? 'active' : ''}">
                         <i class="bi bi-people-fill"></i>
                         <span>Quản lý Bệnh nhân</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="${pageContext.request.contextPath}/staff/doctor-reschedule" class="${param.activeNav == 'doctor-reschedule' ? 'active' : ''}">
+                        <i class="bi bi-calendar2-range"></i>
+                        <span>Quản lý lịch làm việc bác sĩ</span>
                     </a>
                 </li>
 
@@ -157,18 +158,18 @@
                                     <span>Hàng đợi phòng khám</span>
                                 </a>
                             </li>
-                            <li>
-                                <a href="${pageContext.request.contextPath}/staff/doctor-reschedule" class="${param.activeNav == 'doctor-reschedule' ? 'active' : ''}">
-                                    <i class="bi bi-calendar2-range"></i>
-                                    <span>Quản lý lịch làm việc bác sĩ</span>
-                                </a>
-                            </li>
                         </ul>
                     </li>
                     <li>
                         <a href="${pageContext.request.contextPath}/staff/patients" class="${param.activeNav == 'patients' ? 'active' : ''}">
                             <i class="bi bi-people-fill"></i>
                             <span>Quản lý Bệnh nhân</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="${pageContext.request.contextPath}/staff/doctor-reschedule" class="${param.activeNav == 'doctor-reschedule' ? 'active' : ''}">
+                            <i class="bi bi-calendar2-range"></i>
+                            <span>Quản lý lịch làm việc bác sĩ</span>
                         </a>
                     </li>
                     <li>

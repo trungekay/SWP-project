@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -10,7 +11,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css">
     <jsp:include page="/views/admin/layout/admin-css.jsp" />
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-waiting-list.css?v=11">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-waiting-list.css?v=13">
 </head>
 <body class="doctor-queue-body">
 <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
@@ -90,11 +91,11 @@
                         <a href="<c:out value='${previousUrl}' />" aria-label="Ngày trước" title="Ngày trước"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
                         <label class="doctor-queue-date-field">
                             <i class="bi bi-calendar-event" aria-hidden="true"></i>
-                            <span class="visually-hidden">Ngày khám</span>
-                            <input type="date" name="date" value="<c:out value='${selectedDate}' />">
+                            <span class="doctor-queue-date-label"><c:out value="${displayDate}" /></span>
+                            <input type="date" name="date" lang="vi-VN" aria-label="Chọn ngày khám" value="<c:out value='${selectedDate}' />" onchange="this.form.requestSubmit()">
                         </label>
                         <a href="<c:out value='${nextUrl}' />" aria-label="Ngày sau" title="Ngày sau"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
-                        <c:if test="${not isToday}"><a class="doctor-queue-today" href="<c:out value='${todayUrl}' />">Hôm nay</a></c:if>
+                        <c:if test="${not isToday}"><a class="doctor-queue-today" href="<c:out value='${todayUrl}' />">Trở lại hôm nay</a></c:if>
                     </div>
                     <label class="doctor-queue-search-field">
                         <i class="bi bi-search" aria-hidden="true"></i>
@@ -144,7 +145,7 @@
                                     </td>
                                     <td class="text-nowrap">
                                         <div class="fw-semibold text-dark doctor-queue-time"><i class="bi bi-clock text-teal me-1" aria-hidden="true"></i><c:out value="${item.timeSlot}" default="--:--" /><c:if test="${not empty item.endTime}"> - <c:out value="${item.endTime}" /></c:if></div>
-                                        <div class="text-muted small"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i><c:out value="${item.appointmentDate}" /></div>
+                                        <div class="text-muted small"><i class="bi bi-calendar3 me-1" aria-hidden="true"></i><fmt:formatDate value="${item.appointmentDate}" pattern="dd/MM/yyyy" /></div>
                                         <div class="text-muted small">Check-in <c:out value="${fn:substring(item.checkinTime, 11, 16)}" default="--:--" /></div>
                                         <c:if test="${startWindowState eq 'late' && (item.status eq 'Confirmed' || item.status eq 'In_Progress')}">
                                             <div class="small doctor-queue-overdue-label">Quá giờ hẹn</div>
@@ -166,8 +167,14 @@
                                     <td class="text-center text-nowrap"><div class="action-btns doctor-queue-actions">
                                         <a class="action-btn" title="Xem hồ sơ" aria-label="Xem hồ sơ"
                                            href="${pageContext.request.contextPath}/doctor/patient-detail?id=${item.id}">
-                                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                                            <i class="bi bi-folder2-open" aria-hidden="true"></i>
                                         </a>
+                                        <c:if test="${item.status eq 'Completed'}">
+                                            <a class="action-btn" title="In phiếu khám và đơn thuốc (nếu có)" aria-label="In phiếu khám và đơn thuốc (nếu có)"
+                                               href="${pageContext.request.contextPath}/doctor/examination/print?id=${item.id}&amp;autoPrint=1" target="_blank" rel="noopener">
+                                                <i class="bi bi-printer" aria-hidden="true"></i>
+                                            </a>
+                                        </c:if>
                                         <c:if test="${item.status eq 'Confirmed'}">
                                             <form action="${pageContext.request.contextPath}/doctor/waiting-list" method="post">
                                                 <input type="hidden" name="action" value="start">
@@ -205,7 +212,9 @@
                                                         </button>
                                                     </c:when>
                                                     <c:otherwise>
-                                                        <button class="action-btn checkin" type="submit" title="Gọi vào khám" aria-label="Gọi vào khám">
+                                                        <button class="action-btn checkin" type="button" title="Gọi vào khám" aria-label="Gọi vào khám"
+                                                                data-bs-toggle="modal" data-bs-target="#examWindowModal" data-window-state="open"
+                                                                data-appointment-id="${item.id}" data-patient-name="<c:out value='${item.patientName}' />">
                                                             <i class="bi bi-play-fill" aria-hidden="true"></i>
                                                         </button>
                                                     </c:otherwise>
@@ -215,7 +224,7 @@
                                         <c:if test="${item.status eq 'In_Progress'}">
                                             <c:if test="${not completionReadyIds.contains(item.id)}">
                                                 <a class="action-btn" href="${pageContext.request.contextPath}/doctor/examination?id=${item.id}" title="Điền kết quả khám, chẩn đoán và kết luận" aria-label="Điền phiếu khám">
-                                                    <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i>
+                                                    <i class="bi bi-pencil-square" aria-hidden="true"></i>
                                                 </a>
                                             </c:if>
                                             <c:if test="${completionReadyIds.contains(item.id)}">
@@ -300,12 +309,13 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
             <div class="modal-body">
-                <div class="modal-icon-warning"><i class="bi bi-clock-history" aria-hidden="true"></i></div>
+                <div class="modal-icon-warning" id="examWindowModalIcon"><i class="bi bi-clock-history" aria-hidden="true"></i></div>
                 <h3 class="modal-title-custom" id="examWindowModalTitle">Chưa đến giờ khám</h3>
                 <p class="modal-text" id="examWindowModalText"></p>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-modal-danger" id="cancelFromWindowButton">Hủy khám</button>
-                    <button type="button" class="btn btn-modal-warning d-none" id="continueExamButton">Tiếp tục khám</button>
+                    <button type="button" class="btn btn-modal-cancel" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-modal-danger d-none" id="cancelFromWindowButton">Hủy khám</button>
+                    <button type="button" class="btn btn-modal-warning d-none" id="continueExamButton">Gọi vào khám</button>
                 </div>
             </div>
         </div>
@@ -346,13 +356,20 @@
         examWindowTrigger = event.relatedTarget;
         var state = event.relatedTarget.getAttribute('data-window-state');
         var messages = {
+            open: ['Gọi bệnh nhân vào khám?', 'Xác nhận gọi bệnh nhân ' + (event.relatedTarget.getAttribute('data-patient-name') || '') + ' vào khám (ca #APT-' + event.relatedTarget.getAttribute('data-appointment-id') + ').'],
             early: ['Chưa đến giờ khám', 'Ca này còn hơn 1 giờ mới đến giờ hẹn. Bạn vẫn có thể tiếp tục khám.'],
             late: ['Đã quá giờ khám', 'Ca này đã quá 1 giờ sau giờ hẹn. Bạn vẫn có thể tiếp tục khám.'],
             invalid: ['Không xác định được giờ hẹn', 'Vui lòng liên hệ bộ phận tiếp nhận để kiểm tra lịch hẹn.']
         };
         var message = messages[state] || messages.invalid;
-        examStartForm = state === 'early' || state === 'late' ? event.relatedTarget.closest('form') : null;
+        examStartForm = state === 'open' || state === 'early' || state === 'late' ? event.relatedTarget.closest('form') : null;
         document.getElementById('continueExamButton').classList.toggle('d-none', !examStartForm);
+        document.getElementById('continueExamButton').textContent = state === 'open' ? 'Gọi vào khám' : 'Tiếp tục khám';
+        document.getElementById('continueExamButton').classList.toggle('confirm-start', state === 'open');
+        document.getElementById('cancelFromWindowButton').classList.toggle('d-none', state !== 'late');
+        document.getElementById('examWindowModalIcon').classList.toggle('modal-icon-success', state === 'open');
+        document.getElementById('examWindowModalIcon').classList.toggle('modal-icon-warning', state !== 'open');
+        document.querySelector('#examWindowModalIcon i').className = state === 'open' ? 'bi bi-person-check' : 'bi bi-clock-history';
         document.getElementById('examWindowModalTitle').textContent = message[0];
         document.getElementById('examWindowModalText').textContent = message[1];
     });

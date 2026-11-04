@@ -14,6 +14,13 @@ public class DBContext {
             Properties props = new Properties();
             if (is != null) {
                 props.load(is);
+                // Local credentials override the shared project defaults.
+                try (InputStream local = DBContext.class.getClassLoader()
+                        .getResourceAsStream("db.local.properties")) {
+                    if (local != null) {
+                        props.load(local);
+                    }
+                }
                 DRIVER   = props.getProperty("db.driver");
                 URL      = props.getProperty("db.url");
                 USERNAME = props.getProperty("db.username");

@@ -362,6 +362,7 @@ CREATE TABLE [dbo].[Medical_Record](
 	[Appointment_ID] [int] NOT NULL,
 	[Doctor_Employee_ID] [int] NOT NULL,
 	[Clinical_Diagnosis] [nvarchar](max) NULL,
+	[Staff_Notes] [nvarchar](max) NULL,
 	[examination_result] [nvarchar](max) NULL,
 	[conclusion] [nvarchar](max) NULL,
 	[Staff_Notes] [nvarchar](max) NULL,
@@ -393,10 +394,11 @@ CREATE TABLE [dbo].[Examination_Detail](
     [Anterior_Findings] [nvarchar](2000) NULL,
     [Posterior_Findings] [nvarchar](2000) NULL,
     [Follow_Up_Date] [date] NULL,
+    [Surgery_Indication] [nvarchar](1000) NULL,
     CONSTRAINT [FK_Examination_Detail_Record] FOREIGN KEY ([Record_ID])
         REFERENCES [dbo].[Medical_Record]([Record_ID]),
-    CONSTRAINT [CHK_Exam_OD_IOP] CHECK ([OD_IOP] IS NULL OR [OD_IOP] BETWEEN 0 AND 80),
-    CONSTRAINT [CHK_Exam_OS_IOP] CHECK ([OS_IOP] IS NULL OR [OS_IOP] BETWEEN 0 AND 80)
+    CONSTRAINT [CHK_Exam_OD_IOP] CHECK ([OD_IOP] IS NULL OR [OD_IOP] BETWEEN 5 AND 70),
+    CONSTRAINT [CHK_Exam_OS_IOP] CHECK ([OS_IOP] IS NULL OR [OS_IOP] BETWEEN 5 AND 70)
 );
 GO
 
@@ -409,6 +411,7 @@ CREATE TABLE [dbo].[Prescription](
 	[Prescription_ID] [int] IDENTITY(1,1) NOT NULL,
 	[Record_ID] [int] NOT NULL,
 	[Doctor_Notes] [nvarchar](max) NULL,
+	[Follow_Up_Date] [date] NULL,
 	[created_at] [datetime2](7) NOT NULL,
 PRIMARY KEY CLUSTERED 
 (
@@ -454,6 +457,12 @@ CREATE TABLE [dbo].[Prescription_Detail](
 	[Quantity] [int] NOT NULL,
 	[Dosage_Instruction] [nvarchar](max) NULL,
 	[Medicine_Name] [nvarchar](255) NOT NULL,
+	[Strength] [nvarchar](100) NULL,
+	[Dosage] [nvarchar](255) NULL,
+	[Frequency] [nvarchar](255) NULL,
+	[Duration] [nvarchar](100) NULL,
+	[Unit] [nvarchar](50) NULL,
+	[Additional_Instruction] [nvarchar](255) NULL,
 	[Morning_Dose] [nvarchar](100) NULL,
 	[Afternoon_Dose] [nvarchar](100) NULL,
 	[Evening_Dose] [nvarchar](100) NULL,
@@ -466,6 +475,24 @@ PRIMARY KEY CLUSTERED
 
 ALTER TABLE [dbo].[Prescription_Detail]  WITH CHECK ADD  CONSTRAINT [CHK_Medicine_Quantity] CHECK  (([Quantity]>(0)))
 ALTER TABLE [dbo].[Prescription_Detail] CHECK CONSTRAINT [CHK_Medicine_Quantity]
+GO
+
+CREATE TABLE [dbo].[Eyeglass_Prescription](
+    [Prescription_ID] [int] NOT NULL PRIMARY KEY,
+    [OD_SPH] [decimal](5,2) NULL,
+    [OD_CYL] [decimal](5,2) NULL,
+    [OD_AXIS] [smallint] NULL,
+    [OD_ADD] [decimal](5,2) NULL,
+    [OS_SPH] [decimal](5,2) NULL,
+    [OS_CYL] [decimal](5,2) NULL,
+    [OS_AXIS] [smallint] NULL,
+    [OS_ADD] [decimal](5,2) NULL,
+    [PD] [decimal](4,1) NULL,
+    [Lens_Type] [varchar](30) NULL,
+    [Glasses_Notes] [nvarchar](1000) NULL,
+    CONSTRAINT [FK_Eyeglass_Prescription_Prescription]
+        FOREIGN KEY ([Prescription_ID]) REFERENCES [dbo].[Prescription]([Prescription_ID])
+);
 GO
 
 -- -----------------------------------------------------
