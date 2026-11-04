@@ -1576,6 +1576,7 @@ public class AppointmentDAO {
         if (status != null && !status.trim().isEmpty() && !"all".equalsIgnoreCase(status) && !"all_queue".equalsIgnoreCase(status)) {
             if ("doctor_day".equalsIgnoreCase(status)) {
                 sql.append(" AND a.Status IN ('Confirmed', 'In_Progress', 'Completed', 'Canceled')");
+                sql.append(" AND (a.Status IN ('Completed','Canceled') OR " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF + ")");
             } else if ("all_day".equalsIgnoreCase(status)) {
                 sql.append(" AND a.Status IN ('Confirmed', 'In_Progress', 'Completed')");
             } else if ("In_Progress".equalsIgnoreCase(status)) {

@@ -151,8 +151,9 @@
                 <div class="d-flex align-items-center gap-2">
                   <i class="bi bi-person-badge text-teal fs-5"></i>
                   <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                    <span class="small text-muted">Bác sĩ chỉ định:</span>
-                    <strong class="text-dark small"><c:out value="${record.doctorName != null ? record.doctorName : order.doctorName}" /></strong>
+                    <c:if test="${not empty order.requesterName}"><span class="small text-muted">Staff chuyển ca: <strong><c:out value="${order.requesterName}"/></strong></span></c:if>
+                    <span class="small text-muted">Thông tin bác sĩ khám (nếu có):</span>
+                    <strong class="text-dark small"><c:out value="${record.doctorName != null ? record.doctorName : order.doctorName}" default="Chưa có thông tin bác sĩ khám" /></strong>
                     <span class="badge bg-light text-secondary border fw-medium" style="font-size: 10.5px;">
                       <c:out value="${record.doctorSpecialty != null ? record.doctorSpecialty : 'Chuyên khoa Mắt'}" />
                     </span>
@@ -188,7 +189,7 @@
                 </div>
                 <c:if test="${not empty order.referralNotes}">
                   <div class="referral-note-inline">
-                    <span class="referral-note-tag">Ghi chú chỉ định:</span>
+                    <span class="referral-note-tag">Ghi chú chuyển ca:</span>
                     <span class="referral-note-content"><c:out value="${order.referralNotes}" /></span>
                   </div>
                 </c:if>
@@ -484,10 +485,19 @@
             <div class="p-4">
 
               <!-- FORM CHÍNH CỦA SPECIALIST -->
+              <c:if test="${not canEditProcedure}"><div class="alert alert-info"><c:out value="${procedureReadOnlyReason}"/></div></c:if>
+              <c:if test="${canAcceptProcedure}">
+                <form action="${pageContext.request.contextPath}/specialist/procedure-detail" method="post" class="mb-3">
+                  <input type="hidden" name="orderId" value="${order.orderId}">
+                  <input type="hidden" name="action" value="accept">
+                  <input type="hidden" name="csrfToken" value="<c:out value='${sessionScope.procedureCsrf}'/>">
+                  <button class="btn btn-success" type="submit">Nhận ca thủ thuật</button>
+                </form>
+              </c:if>
               <form action="${pageContext.request.contextPath}/specialist/procedure-detail" method="POST" id="protocolForm" data-can-edit="${canEditProcedure}">
                 <input type="hidden" name="orderId" value="${order.orderId}">
-                <input type="hidden" name="action" id="formAction" value="${order.status == 'Completed' ? 'updateResults' : 'complete'}">
-                <input type="hidden" name="noFurtherDoctorWork" id="noFurtherDoctorWork" value="false">
+                <input type="hidden" name="csrfToken" value="<c:out value='${sessionScope.procedureCsrf}'/>">
+                <input type="hidden" name="action" id="formAction" value="completeAndClose">
                 <!-- Giữ nguyên kết quả khám của Bác sĩ trong trường ẩn để không bị ghi đè mất mát -->
                 <input type="hidden" name="doctor_exam_findings" id="doctorExamFindingsInput" value="<c:out value='${protocol["doctor_exam_findings"]}' />">
                 <!-- Mắt thực hiện (Hidden input được cập nhật qua các nút bấm) -->
@@ -541,7 +551,7 @@
                             id="postCare" 
                             name="post_care" 
                             rows="3" 
-                            placeholder="Ghi nhận lời dặn chăm sóc, theo dõi và bàn giao sau thủ thuật..."><c:out value="${protocol['post_care']}" /></textarea>
+                            placeholder="Ghi nhận lời dặn chăm sóc và theo dõi sau thủ thuật..."><c:out value="${protocol['post_care']}" /></textarea>
                 </div>
 
                 <!-- 5. KẾT LUẬN & BÀN GIAO TRẢ VỀ BÁC SĨ -->
@@ -554,7 +564,7 @@
                             id="conclusion" 
                             name="conclusion" 
                             rows="2" 
-                            placeholder="Ghi kết luận thực hiện và hướng bàn giao..."><c:out value="${protocol['ktv_conclusion']}" /></textarea>
+                            placeholder="Ghi kết luận thực hiện thủ thuật..."><c:out value="${protocol['ktv_conclusion']}" /></textarea>
                 </div>
 
                 <!-- 6. ACTION BUTTONS -->
@@ -571,19 +581,16 @@
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                       <c:choose>
                         <c:when test="${order.status != 'Completed'}">
-                          <button type="submit" name="action" value="complete" onclick="document.getElementById('formAction').value = 'complete'; document.getElementById('noFurtherDoctorWork').value = 'false';" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm fw-bold">
-                            Trả kết quả về BS
+                          <button type="submit" name="action" value="saveDraft" onclick="document.getElementById('formAction').value = 'saveDraft';" class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-bold">
+                            Lưu nháp
                           </button>
-                          <button type="submit" name="action" value="completeAndClose" onclick="document.getElementById('formAction').value = 'completeAndClose'; document.getElementById('noFurtherDoctorWork').value = 'true';" class="btn btn-success rounded-pill px-4 py-2 shadow-sm fw-bold">
-                            Kết thúc ca khám
+                          <button type="submit" name="action" value="completeAndClose" onclick="document.getElementById('formAction').value = 'completeAndClose';" class="btn btn-success rounded-pill px-4 py-2 shadow-sm fw-bold">
+                            Hoàn tất thủ thuật
                           </button>
                         </c:when>
                         <c:otherwise>
                           <!-- Trạng thái Completed -->
-                          <button type="submit" name="action" value="updateResults" onclick="document.getElementById('formAction').value = 'updateResults'; document.getElementById('noFurtherDoctorWork').value = 'false';" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm fw-semibold">
-                            Lưu cập nhật biên bản
-                          </button>
-                          <button type="submit" name="action" value="completeAndClose" onclick="document.getElementById('formAction').value = 'completeAndClose'; document.getElementById('noFurtherDoctorWork').value = 'true';" class="btn btn-success rounded-pill px-4 py-2 shadow-sm fw-bold">
+                          <button type="submit" name="action" value="completeAndClose" onclick="document.getElementById('formAction').value = 'completeAndClose';" class="btn btn-success rounded-pill px-4 py-2 shadow-sm fw-bold">
                             Kết thúc ca khám
                           </button>
                         </c:otherwise>
@@ -593,6 +600,17 @@
                 </div>
 
               </form>
+              <c:if test="${canEditProcedure and order.status != 'Completed'}">
+                <form action="${pageContext.request.contextPath}/specialist/procedure-detail" method="post" class="mt-4 border-top pt-3">
+                  <input type="hidden" name="orderId" value="${order.orderId}">
+                  <input type="hidden" name="action" value="cancel">
+                  <input type="hidden" name="csrfToken" value="<c:out value='${sessionScope.procedureCsrf}'/>">
+                  <label for="cancellationReason" class="form-label">Không đủ điều kiện thực hiện / Lý do</label>
+                  <textarea id="cancellationReason" name="cancellationReason" class="form-control mb-2" rows="2" maxlength="2000" required></textarea>
+                  <button type="submit" class="btn btn-outline-danger">Ghi nhận không thực hiện</button>
+                  <p class="small text-muted mt-2">Staff sẽ phối hợp xử lý tiếp. Thao tác này không tự hoàn tiền hoặc hủy toàn bộ lượt khám.</p>
+                </form>
+              </c:if>
             </div>
           </div>
 
@@ -811,10 +829,7 @@
               return;
             }
             if (action === 'completeAndClose') {
-              if (document.getElementById('noFurtherDoctorWork')) {
-                document.getElementById('noFurtherDoctorWork').value = 'true';
-              }
-              if (!confirm('Xác nhận hoàn tất thủ thuật và kết thúc ca khám này?')) {
+              if (!confirm('Xác nhận hoàn tất thủ thuật? Ca khám sẽ kết thúc khi tất cả thủ thuật đã được xử lý.')) {
                 e.preventDefault();
                 return false;
               }

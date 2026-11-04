@@ -415,7 +415,7 @@ public class DoctorFormDAO {
         String authorized = "SELECT a.Appointment_ID FROM Appointment a WITH (UPDLOCK, HOLDLOCK) " +
                 "JOIN Work_Schedule ws ON ws.Schedule_ID = a.Schedule_ID " +
                 "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ? " +
-                "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL";
+                "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL AND " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF;
         try (PreparedStatement ps = conn.prepareStatement(authorized)) {
             ps.setInt(1, appointmentId);
             ps.setInt(2, doctorId);
@@ -424,7 +424,14 @@ public class DoctorFormDAO {
             }
         }
         int recordId = findRecordId(conn, appointmentId);
-        if (recordId != 0) return recordId;
+        if (recordId != 0) {
+            // A direct procedure intake may have no Doctor until an actual consultation occurs.
+            try(PreparedStatement ps=conn.prepareStatement("UPDATE Medical_Record SET Doctor_Employee_ID=? "
+                    + "WHERE Record_ID=? AND Doctor_Employee_ID IS NULL")) {
+                ps.setInt(1,doctorId);ps.setInt(2,recordId);ps.executeUpdate();
+            }
+            return recordId;
+        }
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO Medical_Record (Appointment_ID, Doctor_Employee_ID, Created_At) " +
                 "VALUES (?, ?, SYSUTCDATETIME())", Statement.RETURN_GENERATED_KEYS)) {

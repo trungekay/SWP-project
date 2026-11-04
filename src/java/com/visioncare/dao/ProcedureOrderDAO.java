@@ -16,6 +16,122 @@ import java.util.List;
 import java.util.Map;
 
 public class ProcedureOrderDAO {
+    // Appointment alias is 'a' in clinical queues and authorization queries.
+    public static final String NO_PROCEDURE_HANDOFF = "NOT EXISTS (SELECT 1 FROM Procedure_Order handoff "
+            + "JOIN Medical_Record handoff_record ON handoff_record.Record_ID=handoff.Record_ID "
+            + "WHERE handoff_record.Appointment_ID=a.Appointment_ID AND handoff.Status<>'Cancelled')";
+
+    @FunctionalInterface public interface Connections { Connection open() throws Exception; }
+    private final Connections connections;
+    public ProcedureOrderDAO() { this(DBContext::getConnection); }
+    public ProcedureOrderDAO(Connections connections) { this.connections = connections; }
+
+    public boolean isStaffRequestSchemaReady() throws Exception {
+        try (Connection c = connections.open(); PreparedStatement p = c.prepareStatement(
+                "SELECT CASE WHEN COL_LENGTH('dbo.Procedure_Order','Requested_By_Employee_ID') IS NOT NULL "
+                + "AND COL_LENGTH('dbo.Procedure_Order','Requested_At') IS NOT NULL "
+                + "AND COLUMNPROPERTY(OBJECT_ID('dbo.Medical_Record'),'Doctor_Employee_ID','AllowsNull')=1 THEN 1 ELSE 0 END")) {
+            try (ResultSet r = p.executeQuery()) { return r.next() && r.getInt(1) == 1; }
+        }
+    }
+
+    public List<Map<String,Object>> getProcedureRequestPatients() throws Exception {
+        List<Map<String,Object>> rows = new ArrayList<>();
+        try (Connection c = connections.open(); PreparedStatement p = c.prepareStatement(
+                "SELECT a.Appointment_ID,p.Patient_ID,p.Full_Name,p.Phone,ws.Work_Date,ws.Start_Time "
+                + "FROM Appointment a JOIN Patient p ON p.Patient_ID=a.Patient_ID "
+                + "JOIN Work_Schedule ws ON ws.Schedule_ID=a.Schedule_ID "
+                + "WHERE a.checkin_time IS NOT NULL AND a.Status IN ('Confirmed','In_Progress') "
+                + "AND ws.Work_Date=CAST(DATEADD(HOUR,7,SYSUTCDATETIME()) AS date) "
+                + "ORDER BY a.checkin_time,a.Appointment_ID")) {
+            try (ResultSet r=p.executeQuery()) { while(r.next()) {
+                Map<String,Object> row=new HashMap<>();
+                row.put("appointmentId",r.getInt("Appointment_ID")); row.put("patientId",r.getInt("Patient_ID"));
+                row.put("name",r.getString("Full_Name")); row.put("phone",r.getString("Phone"));
+                rows.add(row);
+            }}
+        }
+        return rows;
+    }
+
+    public List<Map<String,Object>> getProcedureRequestServices() throws Exception {
+        List<Map<String,Object>> rows=new ArrayList<>();
+        try(Connection c=connections.open(); PreparedStatement p=c.prepareStatement(
+                "SELECT Service_ID,Service_Name,Price FROM Service_Catalog "
+                + "WHERE Service_Code LIKE 'PT-%' ORDER BY Service_Name")) {
+            try(ResultSet r=p.executeQuery()){while(r.next()){
+                Map<String,Object> row=new HashMap<>();row.put("id",r.getInt(1));
+                row.put("name",r.getString(2));row.put("price",r.getBigDecimal(3));rows.add(row);
+            }}
+        }
+        return rows;
+    }
+
+    public Map<String,Object> getProcedureRequestContext(int appointmentId) throws Exception {
+        Map<String,Object> row=new HashMap<>();
+        try(Connection c=connections.open(); PreparedStatement p=c.prepareStatement(
+                "SELECT a.Appointment_ID,p.Full_Name,p.Phone,mr.Record_ID,mr.Clinical_Diagnosis,mr.examination_result,mr.conclusion, "
+                + "doc.Full_Name AS Doctor_Name FROM Appointment a JOIN Patient p ON p.Patient_ID=a.Patient_ID "
+                + "LEFT JOIN Medical_Record mr ON mr.Appointment_ID=a.Appointment_ID "
+                + "LEFT JOIN Employee_Profile doc ON doc.Employee_ID=mr.Doctor_Employee_ID WHERE a.Appointment_ID=?")) {
+            p.setInt(1,appointmentId);try(ResultSet r=p.executeQuery()){if(r.next()){
+                row.put("name",r.getString("Full_Name"));row.put("phone",r.getString("Phone"));
+                row.put("doctor",r.getString("Doctor_Name"));row.put("diagnosis",r.getString("Clinical_Diagnosis"));
+                row.put("recordId",r.getInt("Record_ID"));
+                row.put("findings",r.getString("examination_result"));row.put("conclusion",r.getString("conclusion"));
+            }}
+        }
+        return row;
+    }
+
+    /** Lock the visit before creating an order, so duplicate submits and visit closure serialize. */
+    public int createStaffRequest(int appointmentId,int serviceId,int staffId,String notes) throws Exception {
+        if(appointmentId<=0||serviceId<=0||staffId<=0||notes==null||notes.length()>2000)
+            throw new IllegalArgumentException("Thông tin chuyển ca không hợp lệ (ghi chú tối đa 2.000 ký tự).");
+        try(Connection c=connections.open()) {
+            c.setAutoCommit(false);
+            try {
+                try(PreparedStatement p=c.prepareStatement("SELECT 1 FROM Employee_Profile e JOIN Account a ON a.Account_ID=e.Account_ID "
+                        + "WHERE e.Employee_ID=? AND a.Role_ID=5 AND a.Account_Status='Active'")) {
+                    p.setInt(1,staffId);try(ResultSet r=p.executeQuery()){if(!r.next())throw new IllegalStateException("Chỉ nhân viên tiếp nhận được gửi ca.");}
+                }
+                try(PreparedStatement p=c.prepareStatement("SELECT a.Appointment_ID FROM Appointment a WITH (UPDLOCK,HOLDLOCK) "
+                        + "JOIN Work_Schedule ws ON ws.Schedule_ID=a.Schedule_ID WHERE a.Appointment_ID=? "
+                        + "AND a.Status IN ('Confirmed','In_Progress') AND a.checkin_time IS NOT NULL "
+                        + "AND ws.Work_Date=CAST(DATEADD(HOUR,7,SYSUTCDATETIME()) AS date) "
+                        + "AND NOT EXISTS(SELECT 1 FROM Master_Invoice mi JOIN Invoice_Checkout checkout ON checkout.Invoice_ID=mi.Invoice_ID "
+                        + "WHERE mi.Appointment_ID=a.Appointment_ID AND checkout.Finalized_At IS NOT NULL)")) {
+                    p.setInt(1,appointmentId);try(ResultSet r=p.executeQuery()){if(!r.next())throw new IllegalStateException("Lượt khám chưa check-in, đã kết thúc hoặc không thuộc hôm nay.");}
+                }
+                int recordId=0;
+                try(PreparedStatement p=c.prepareStatement("SELECT Record_ID FROM Medical_Record WITH (UPDLOCK,HOLDLOCK) WHERE Appointment_ID=?")) {
+                    p.setInt(1,appointmentId);try(ResultSet r=p.executeQuery()){if(r.next())recordId=r.getInt(1);}
+                }
+                if(recordId==0)try(PreparedStatement p=c.prepareStatement("INSERT INTO Medical_Record(Appointment_ID,Doctor_Employee_ID,Created_At) "
+                        + "OUTPUT INSERTED.Record_ID VALUES(?,NULL,DATEADD(HOUR,7,SYSUTCDATETIME()))")) {
+                    p.setInt(1,appointmentId);try(ResultSet r=p.executeQuery()){if(!r.next())throw new SQLException("Không tạo được hồ sơ tiếp nhận.");recordId=r.getInt(1);}
+                }
+                try(PreparedStatement p=c.prepareStatement("SELECT Order_ID FROM Procedure_Order WITH (UPDLOCK,HOLDLOCK) "
+                        + "WHERE Record_ID=? AND Service_ID=? AND Status<>'Cancelled'")) {
+                    p.setInt(1,recordId);p.setInt(2,serviceId);try(ResultSet r=p.executeQuery()){
+                        if(r.next())throw new IllegalStateException("Dịch vụ này đã được gửi hoặc thực hiện trong lượt khám. Vui lòng kiểm tra ca đã có.");
+                    }
+                }
+                int orderId;
+                try(PreparedStatement p=c.prepareStatement("INSERT INTO Procedure_Order(Record_ID,Service_ID,Status,Actual_Price,Referral_Notes,Requested_By_Employee_ID,Requested_At) "
+                        + "OUTPUT INSERTED.Order_ID SELECT ?,Service_ID,'Pending',Price,?,?,DATEADD(HOUR,7,SYSUTCDATETIME()) "
+                        + "FROM Service_Catalog WITH (HOLDLOCK) WHERE Service_ID=? AND Service_Code LIKE 'PT-%'")) {
+                    p.setInt(1,recordId);p.setNString(2,notes.trim());p.setInt(3,staffId);p.setInt(4,serviceId);
+                    try(ResultSet r=p.executeQuery()){if(!r.next())throw new IllegalStateException("Dịch vụ thủ thuật không hợp lệ.");orderId=r.getInt(1);}
+                }
+                // Sending to a Specialist starts this clinical visit without requiring a Doctor to call it.
+                try(PreparedStatement p=c.prepareStatement("UPDATE Appointment SET Status='In_Progress' WHERE Appointment_ID=? AND Status='Confirmed'")) {
+                    p.setInt(1,appointmentId);p.executeUpdate();
+                }
+                c.commit();return orderId;
+            }catch(Exception e){c.rollback();throw e;}
+        }
+    }
 
     private static final String BASE_SELECT_ORDER = 
         "SELECT " +
@@ -25,6 +141,7 @@ public class ProcedureOrderDAO {
         "    po.Service_ID, " +
         "    po.Status, " +
         "    po.Referral_Notes, " +
+        "    CAST(NULL AS nvarchar(255)) AS Requester_Name, " +
         "    s.Service_Code, pr.Status AS Payment_Status, " +
         "    s.Service_Name, " +
         "    po.Actual_Price AS Service_Price, " +
@@ -49,9 +166,17 @@ public class ProcedureOrderDAO {
         "JOIN Medical_Record mr ON po.Record_ID = mr.Record_ID " +
         "JOIN Appointment a ON mr.Appointment_ID = a.Appointment_ID " +
         "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
-        "JOIN Employee_Profile doc ON mr.Doctor_Employee_ID = doc.Employee_ID " +
+        "LEFT JOIN Employee_Profile doc ON mr.Doctor_Employee_ID = doc.Employee_ID " +
         "LEFT JOIN Employee_Profile spec ON po.Specialist_Employee_ID = spec.Employee_ID " +
         "LEFT JOIN Room r ON spec.Room_ID = r.Room_ID ";
+
+    private String orderQuery() throws Exception {
+        if(!isStaffRequestSchemaReady())return BASE_SELECT_ORDER;
+        return BASE_SELECT_ORDER
+                .replace("CAST(NULL AS nvarchar(255)) AS Requester_Name", "requester.Full_Name AS Requester_Name")
+                .replace("mr.Created_At AS Record_Created_At", "COALESCE(po.Requested_At,mr.Created_At) AS Record_Created_At")
+                + "LEFT JOIN Employee_Profile requester ON requester.Employee_ID=po.Requested_By_Employee_ID ";
+    }
 
     // ==========================================
     // SCREEN 34: SPECIALIST WAITING LIST SCREEN
@@ -66,7 +191,8 @@ public class ProcedureOrderDAO {
      */
     public List<ProcedureOrder> getWaitingList(Integer specialistId, String status, String keyword, Date workDate) throws Exception {
         List<ProcedureOrder> list = new ArrayList<>();
-        StringBuilder sql = new StringBuilder(BASE_SELECT_ORDER);
+        String base=orderQuery();
+        StringBuilder sql = new StringBuilder(base);
         sql.append("WHERE 1=1 ");
 
         List<Object> params = new ArrayList<>();
@@ -94,7 +220,9 @@ public class ProcedureOrderDAO {
         }
 
         if (workDate != null) {
-            sql.append("AND CAST(mr.Created_At AS DATE) = ? ");
+            sql.append(base.contains("COALESCE(po.Requested_At")
+                    ? "AND CAST(COALESCE(po.Requested_At,mr.Created_At) AS DATE) = ? "
+                    : "AND CAST(mr.Created_At AS DATE) = ? ");
             params.add(workDate);
         }
 
@@ -237,7 +365,7 @@ public class ProcedureOrderDAO {
                      "FROM Medical_Record mr " +
                      "JOIN Appointment a ON mr.Appointment_ID = a.Appointment_ID " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
-                     "JOIN Employee_Profile doc ON mr.Doctor_Employee_ID = doc.Employee_ID " +
+                     "LEFT JOIN Employee_Profile doc ON mr.Doctor_Employee_ID = doc.Employee_ID " +
                      "WHERE p.Patient_ID = ? " +
                      "ORDER BY mr.Created_At DESC";
 
@@ -275,7 +403,7 @@ public class ProcedureOrderDAO {
      */
     public List<ProcedureOrder> getOrdersByPatientId(int patientId) throws Exception {
         List<ProcedureOrder> list = new ArrayList<>();
-        String sql = BASE_SELECT_ORDER + "WHERE p.Patient_ID = ? ORDER BY po.Order_ID DESC";
+        String sql = orderQuery() + "WHERE p.Patient_ID = ? ORDER BY po.Order_ID DESC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, patientId);
@@ -296,7 +424,7 @@ public class ProcedureOrderDAO {
      * Lấy chi tiết 1 order cụ thể kèm thông tin bệnh nhân, bác sĩ, chẩn đoán
      */
     public ProcedureOrder getOrderById(int orderId) throws Exception {
-        String sql = BASE_SELECT_ORDER + "WHERE po.Order_ID = ?";
+        String sql = orderQuery() + "WHERE po.Order_ID = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, orderId);
@@ -314,7 +442,7 @@ public class ProcedureOrderDAO {
      */
     public List<ProcedureOrder> getTodoListByRecordId(int recordId) throws Exception {
         List<ProcedureOrder> list = new ArrayList<>();
-        String sql = BASE_SELECT_ORDER + "WHERE po.Record_ID = ? ORDER BY po.Order_ID ASC";
+        String sql = orderQuery() + "WHERE po.Record_ID = ? ORDER BY po.Order_ID ASC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, recordId);
@@ -339,7 +467,7 @@ public class ProcedureOrderDAO {
                      "FROM Medical_Record mr " +
                      "JOIN Appointment a ON mr.Appointment_ID = a.Appointment_ID " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
-                     "JOIN Employee_Profile doc ON mr.Doctor_Employee_ID = doc.Employee_ID " +
+                     "LEFT JOIN Employee_Profile doc ON mr.Doctor_Employee_ID = doc.Employee_ID " +
                      "WHERE mr.Record_ID = ?";
 
         try (Connection conn = DBContext.getConnection();
@@ -474,6 +602,7 @@ public class ProcedureOrderDAO {
         po.setServiceId(rs.getInt("Service_ID"));
         po.setStatus(rs.getString("Status"));
         po.setReferralNotes(rs.getString("Referral_Notes"));
+        po.setRequesterName(rs.getString("Requester_Name"));
         po.setServiceCode(rs.getString("Service_Code"));
         po.setPaymentStatus(rs.getString("Payment_Status"));
 

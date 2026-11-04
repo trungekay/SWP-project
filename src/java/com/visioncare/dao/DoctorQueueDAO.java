@@ -25,7 +25,8 @@ public class DoctorQueueDAO {
         String sql = "SELECT a.Appointment_ID FROM Appointment a "
                 + "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID "
                 + "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? "
-                + "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL AND " + EXAMINATION_READY;
+                + "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL AND " + EXAMINATION_READY
+                + " AND " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF;
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, doctorEmployeeId);
@@ -49,7 +50,7 @@ public class DoctorQueueDAO {
                 String assignedSql = "SELECT a.Status, a.checkin_time, ws.Schedule_ID "
                         + "FROM Appointment a WITH (UPDLOCK, HOLDLOCK) "
                         + "JOIN Work_Schedule ws WITH (UPDLOCK, HOLDLOCK) ON a.Schedule_ID = ws.Schedule_ID "
-                        + "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ?";
+                        + "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ? AND " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF;
                 try (PreparedStatement ps = conn.prepareStatement(assignedSql)) {
                     ps.setInt(1, appointmentId);
                     ps.setInt(2, doctorEmployeeId);
@@ -138,7 +139,8 @@ public class DoctorQueueDAO {
                 + "FROM Appointment a "
                 + "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID "
                 + "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? "
-                + "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL AND " + EXAMINATION_READY;
+                + "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL AND " + EXAMINATION_READY
+                + " AND " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF;
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, appointmentId);
@@ -157,7 +159,7 @@ public class DoctorQueueDAO {
                 String assignedSql = "SELECT ws.Work_Date, ws.Start_Time FROM Appointment a WITH (UPDLOCK, HOLDLOCK) "
                         + "JOIN Work_Schedule ws WITH (UPDLOCK, HOLDLOCK) ON a.Schedule_ID = ws.Schedule_ID "
                         + "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ? "
-                        + "AND a.Status = 'Confirmed' AND a.checkin_time IS NOT NULL";
+                        + "AND a.Status = 'Confirmed' AND a.checkin_time IS NOT NULL AND " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF;
                 try (PreparedStatement ps = conn.prepareStatement(assignedSql)) {
                     ps.setInt(1, appointmentId);
                     ps.setInt(2, doctorEmployeeId);
@@ -176,7 +178,8 @@ public class DoctorQueueDAO {
 
                 String busySql = "SELECT TOP 1 a.Appointment_ID FROM Appointment a WITH (UPDLOCK, HOLDLOCK) "
                         + "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID "
-                        + "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? AND a.Status = 'In_Progress'";
+                        + "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? AND a.Status = 'In_Progress' AND "
+                        + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF;
                 try (PreparedStatement ps = conn.prepareStatement(busySql)) {
                     ps.setInt(1, doctorEmployeeId);
                     ps.setDate(2, workDate);
