@@ -96,9 +96,14 @@ public class DoctorFormsServlet extends HttpServlet {
                 }
                 request.setAttribute("printReady", printReady);
                 if (printExamination) {
+                    DoctorFormDAO.PrescriptionSnapshot savedPrescription = formDAO.loadPrescription(appointmentId);
                     response.setHeader("Cache-Control", "no-store");
                     request.setAttribute("appointment", appointment);
                     request.setAttribute("formValues", formValues);
+                    request.setAttribute("medicineRows", savedPrescription.getMedicines());
+                    request.setAttribute("prescriptionValues", savedPrescription.getValues());
+                    request.setAttribute("autoPrint", "Completed".equals(appointment.getStatus())
+                            && "1".equals(request.getParameter("autoPrint")));
                     request.getRequestDispatcher("/views/doctor/examination-print.jsp")
                             .forward(request, response);
                     return;

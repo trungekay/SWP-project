@@ -11,8 +11,8 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css">
     <jsp:include page="/views/admin/layout/admin-css.jsp" />
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=9">
-    <script defer charset="UTF-8" src="${pageContext.request.contextPath}/assets/js/doctor-forms.js?v=10"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=10">
+    <script defer charset="UTF-8" src="${pageContext.request.contextPath}/assets/js/doctor-forms.js?v=13"></script>
 </head>
 <body>
 <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
@@ -96,13 +96,13 @@
                         <table class="doctor-form-matrix">
                             <thead><tr><th scope="col">Chỉ số</th><th scope="col">Mắt phải (OD)</th><th scope="col">Mắt trái (OS)</th></tr></thead>
                             <tbody>
-                                <tr><th scope="row">Thị lực không kính</th><td><input aria-label="Thị lực không kính mắt phải" name="odUncorrected" type="text" maxlength="20" placeholder="VD: 7/10" value="<c:out value='${formValues.odUncorrected}' />"></td><td><input aria-label="Thị lực không kính mắt trái" name="osUncorrected" type="text" maxlength="20" placeholder="VD: 8/10" value="<c:out value='${formValues.osUncorrected}' />"></td></tr>
-                                <tr><th scope="row">Thị lực có kính</th><td><input aria-label="Thị lực có kính mắt phải" name="odCorrected" type="text" maxlength="20" placeholder="VD: 10/10" value="<c:out value='${formValues.odCorrected}' />"></td><td><input aria-label="Thị lực có kính mắt trái" name="osCorrected" type="text" maxlength="20" placeholder="VD: 10/10" value="<c:out value='${formValues.osCorrected}' />"></td></tr>
-                                <tr><th scope="row">Nhãn áp (mmHg)</th><td><input aria-label="Nhãn áp mắt phải" name="odIop" type="number" min="0" max="80" step="0.1" placeholder="VD: 16" value="<c:out value='${formValues.odIop}' />"></td><td><input aria-label="Nhãn áp mắt trái" name="osIop" type="number" min="0" max="80" step="0.1" placeholder="VD: 17" value="<c:out value='${formValues.osIop}' />"></td></tr>
+                                <tr><th scope="row">Thị lực không kính</th><td><input aria-label="Thị lực không kính mắt phải" name="odUncorrected" type="text" inputmode="decimal" data-visual-acuity maxlength="20" placeholder="VD: 7" value="<c:out value='${formValues.odUncorrected}' />"></td><td><input aria-label="Thị lực không kính mắt trái" name="osUncorrected" type="text" inputmode="decimal" data-visual-acuity maxlength="20" placeholder="VD: 8" value="<c:out value='${formValues.osUncorrected}' />"></td></tr>
+                                <tr><th scope="row">Thị lực có kính</th><td><input aria-label="Thị lực có kính mắt phải" name="odCorrected" type="text" inputmode="decimal" data-visual-acuity maxlength="20" placeholder="VD: 10" value="<c:out value='${formValues.odCorrected}' />"></td><td><input aria-label="Thị lực có kính mắt trái" name="osCorrected" type="text" inputmode="decimal" data-visual-acuity maxlength="20" placeholder="VD: 10" value="<c:out value='${formValues.osCorrected}' />"></td></tr>
+                                <tr><th scope="row">Nhãn áp (mmHg)</th><td><input aria-label="Nhãn áp mắt phải" name="odIop" type="number" min="5" max="70" step="0.1" placeholder="VD: 16" value="<c:out value='${formValues.odIop}' />"></td><td><input aria-label="Nhãn áp mắt trái" name="osIop" type="number" min="5" max="70" step="0.1" placeholder="VD: 17" value="<c:out value='${formValues.osIop}' />"></td></tr>
                             </tbody>
                         </table>
                     </div>
-                    <p class="doctor-form-hint">Ghi thị lực theo chuẩn đang sử dụng tại phòng khám.</p>
+                    <p class="doctor-form-hint">Thị lực: nhập số nguyên từ 1 đến 10; dưới 1 có thể nhập số thập phân. Dấu phẩy được đổi thành dấu chấm.</p>
                 </section>
 
                 <section class="doctor-form-card" aria-labelledby="exam-findings-heading">

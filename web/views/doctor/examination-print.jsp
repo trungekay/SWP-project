@@ -32,18 +32,21 @@
         .signature { margin: 35px 0 8px auto; width: 230px; text-align: center; break-inside: avoid; }
         .signature strong { display: block; margin-top: 50px; }
         section { break-inside: avoid; }
+        .prescription-page { margin-top: 38px; padding-top: 24px; border-top: 2px solid #087e69; }
+        .prescription-page td:first-child { width: 40px; text-align: center; }
         @media print {
             body { max-width: none; margin: 0; padding: 0; color: #000; }
             .print-actions { display: none; }
             h2, .letterhead strong { color: #000; }
             .staff-notes, th { background: #fff; }
+            .prescription-page { break-before: page; page-break-before: always; margin-top: 0; padding-top: 0; border-top: 0; }
         }
     </style>
 </head>
 <body>
     <div class="print-actions">
         <a href="${pageContext.request.contextPath}/doctor/examination?id=${appointment.id}">Quay lại phiếu khám</a>
-        <button type="button" onclick="window.print()">In phiếu khám</button>
+        <button type="button" onclick="window.print()">In phiếu khám và đơn thuốc (nếu có)</button>
     </div>
     <header class="letterhead">
         <div><strong>VISIONCARE</strong><span>Hồ sơ khám chuyên khoa mắt</span></div>
@@ -113,5 +116,54 @@
         </section>
     </c:if>
     <div class="signature">Bác sĩ khám bệnh<strong><c:out value="${appointment.doctorName}" default="________________" /></strong></div>
+    <c:if test="${not empty medicineRows}">
+        <div class="prescription-page">
+            <header class="letterhead">
+                <div><strong>VISIONCARE</strong><span>Đơn thuốc điều trị</span></div>
+                <div class="code">Mã ca khám: #APPT-<c:out value="${appointment.id}" /><br>
+                    Ngày khám: <fmt:formatDate value="${appointment.appointmentDate}" pattern="dd/MM/yyyy" /></div>
+            </header>
+            <h1>Đơn thuốc</h1>
+            <section>
+                <div class="details">
+                    <div><span class="label">Bệnh nhân:</span> <strong><c:out value="${appointment.patientName}" /></strong></div>
+                    <div><span class="label">Ngày sinh:</span> <c:choose><c:when test="${not empty appointment.dob}"><fmt:formatDate value="${appointment.dob}" pattern="dd/MM/yyyy" /></c:when><c:otherwise>—</c:otherwise></c:choose></div>
+                    <div><span class="label">Bác sĩ:</span> <c:out value="${appointment.doctorName}" default="—" /></div>
+                    <div><span class="label">Chẩn đoán:</span> <c:out value="${formValues.clinicalDiagnosis}" default="—" /></div>
+                </div>
+            </section>
+            <section>
+                <h2>Thuốc được kê</h2>
+                <table>
+                    <thead><tr><th>STT</th><th>Tên thuốc / dạng dùng</th><th>Số lượng</th><th>Liều dùng và hướng dẫn</th></tr></thead>
+                    <tbody>
+                        <c:forEach var="medicine" items="${medicineRows}" varStatus="row">
+                            <tr>
+                                <td><c:out value="${row.count}" /></td>
+                                <td><strong><c:out value="${medicine.medicineName}" /></strong><c:if test="${not empty medicine.strength}"><br><c:out value="${medicine.strength}" /></c:if></td>
+                                <td><c:out value="${medicine.quantity}" /> <c:out value="${medicine.unit}" /></td>
+                                <td>
+                                    <c:if test="${not empty medicine.morningDose}">Sáng: <c:out value="${medicine.morningDose}" /><br></c:if>
+                                    <c:if test="${not empty medicine.afternoonDose}">Chiều: <c:out value="${medicine.afternoonDose}" /><br></c:if>
+                                    <c:if test="${not empty medicine.eveningDose}">Tối: <c:out value="${medicine.eveningDose}" /><br></c:if>
+                                    <c:if test="${not empty medicine.legacySchedule}"><c:out value="${medicine.legacySchedule}" /><br></c:if>
+                                    <c:if test="${not empty medicine.duration}">Thời gian dùng: <c:out value="${medicine.duration}" /><br></c:if>
+                                    <c:out value="${medicine.instructions}" />
+                                </td>
+                            </tr>
+                        </c:forEach>
+                    </tbody>
+                </table>
+            </section>
+            <c:if test="${not empty prescriptionValues.doctorNotes}">
+                <section><h2>Lời dặn của bác sĩ</h2><div class="block"><c:out value="${prescriptionValues.doctorNotes}" /></div></section>
+            </c:if>
+            <c:if test="${not empty prescriptionValues.followUpDate}">
+                <div class="block"><strong>Ngày tái khám dự kiến:</strong> <c:out value="${prescriptionValues.followUpDate}" /></div>
+            </c:if>
+            <div class="signature">Bác sĩ kê đơn<strong><c:out value="${appointment.doctorName}" default="________________" /></strong></div>
+        </div>
+    </c:if>
+    <c:if test="${autoPrint}"><script>window.addEventListener('load', function () { window.print(); });</script></c:if>
 </body>
 </html>

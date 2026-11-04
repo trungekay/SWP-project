@@ -169,6 +169,12 @@
                                            href="${pageContext.request.contextPath}/doctor/patient-detail?id=${item.id}">
                                             <i class="bi bi-folder2-open" aria-hidden="true"></i>
                                         </a>
+                                        <c:if test="${item.status eq 'Completed'}">
+                                            <a class="action-btn" title="In phiếu khám và đơn thuốc (nếu có)" aria-label="In phiếu khám và đơn thuốc (nếu có)"
+                                               href="${pageContext.request.contextPath}/doctor/examination/print?id=${item.id}&amp;autoPrint=1" target="_blank" rel="noopener">
+                                                <i class="bi bi-printer" aria-hidden="true"></i>
+                                            </a>
+                                        </c:if>
                                         <c:if test="${item.status eq 'Confirmed'}">
                                             <form action="${pageContext.request.contextPath}/doctor/waiting-list" method="post">
                                                 <input type="hidden" name="action" value="start">

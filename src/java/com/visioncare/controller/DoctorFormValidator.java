@@ -22,15 +22,15 @@ public final class DoctorFormValidator {
         required(values, "conclusion", "Kết luận", 4000, errors);
         optional(values, "chiefComplaint", "Triệu chứng chính", 1000, errors);
         optional(values, "medicalHistory", "Tiền sử", 1000, errors);
-        optional(values, "odUncorrected", "Thị lực không kính OD", 20, errors);
-        optional(values, "osUncorrected", "Thị lực không kính OS", 20, errors);
-        optional(values, "odCorrected", "Thị lực có kính OD", 20, errors);
-        optional(values, "osCorrected", "Thị lực có kính OS", 20, errors);
+        visualAcuity(values, "odUncorrected", "Thị lực không kính OD", errors);
+        visualAcuity(values, "osUncorrected", "Thị lực không kính OS", errors);
+        visualAcuity(values, "odCorrected", "Thị lực có kính OD", errors);
+        visualAcuity(values, "osCorrected", "Thị lực có kính OS", errors);
         optional(values, "anteriorFindings", "Bán phần trước", 2000, errors);
         optional(values, "posteriorFindings", "Bán phần sau", 2000, errors);
         optional(values, "surgeryIndication", "Chỉ định phẫu thuật", 2000, errors);
-        decimal(values, "odIop", "Nhãn áp OD", "0", "80", 1, errors);
-        decimal(values, "osIop", "Nhãn áp OS", "0", "80", 1, errors);
+        decimal(values, "odIop", "Nhãn áp OD", "5", "70", 1, errors);
+        decimal(values, "osIop", "Nhãn áp OS", "5", "70", 1, errors);
         date(values, "followUpDate", "Ngày tái khám", errors);
         return errors;
     }
@@ -114,19 +114,39 @@ public final class DoctorFormValidator {
         }
     }
 
+    private static void visualAcuity(Map<String, String> values, String key, String label, List<String> errors) {
+        String raw = values.getOrDefault(key, "");
+        if (raw.isBlank()) return;
+        String normalized = raw.replace(',', '.');
+        if (normalized.length() > 20 || !normalized.matches("[0-9]+(?:\\.[0-9]+)?")) {
+            errors.add(label + " phải là số từ 0 đến 10 (dùng dấu chấm hoặc dấu phẩy cho số thập phân).");
+            return;
+        }
+        BigDecimal number = new BigDecimal(normalized);
+        if (number.compareTo(BigDecimal.TEN) > 0
+                || (number.compareTo(BigDecimal.ONE) >= 0 && number.stripTrailingZeros().scale() > 0)) {
+            errors.add(label + " phải là số nguyên từ 1 đến 10; chỉ thị lực dưới 1 được nhập số thập phân.");
+            return;
+        }
+        values.put(key, normalized);
+    }
+
     private static void decimal(Map<String, String> values, String key, String label,
             String min, String max, int scale, List<String> errors) {
         String raw = values.getOrDefault(key, "");
         if (raw.isBlank()) return;
         try {
-            BigDecimal number = new BigDecimal(raw);
+            String normalized = raw.replace(',', '.');
+            if (!normalized.matches("[0-9]+(?:\\.[0-9]+)?")) throw new NumberFormatException();
+            BigDecimal number = new BigDecimal(normalized);
             if (number.compareTo(new BigDecimal(min)) < 0
                     || number.compareTo(new BigDecimal(max)) > 0
                     || number.scale() > scale) {
                 throw new NumberFormatException();
             }
+            values.put(key, normalized);
         } catch (NumberFormatException invalid) {
-            errors.add(label + " không hợp lệ.");
+            errors.add(label + " phải từ " + min + " đến " + max + " mmHg, tối đa " + scale + " chữ số thập phân.");
         }
     }
 

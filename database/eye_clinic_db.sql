@@ -397,8 +397,8 @@ CREATE TABLE [dbo].[Examination_Detail](
     [Surgery_Indication] [nvarchar](1000) NULL,
     CONSTRAINT [FK_Examination_Detail_Record] FOREIGN KEY ([Record_ID])
         REFERENCES [dbo].[Medical_Record]([Record_ID]),
-    CONSTRAINT [CHK_Exam_OD_IOP] CHECK ([OD_IOP] IS NULL OR [OD_IOP] BETWEEN 0 AND 80),
-    CONSTRAINT [CHK_Exam_OS_IOP] CHECK ([OS_IOP] IS NULL OR [OS_IOP] BETWEEN 0 AND 80)
+    CONSTRAINT [CHK_Exam_OD_IOP] CHECK ([OD_IOP] IS NULL OR [OD_IOP] BETWEEN 5 AND 70),
+    CONSTRAINT [CHK_Exam_OS_IOP] CHECK ([OS_IOP] IS NULL OR [OS_IOP] BETWEEN 5 AND 70)
 );
 GO
 
