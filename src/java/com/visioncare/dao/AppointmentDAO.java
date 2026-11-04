@@ -1069,8 +1069,7 @@ public class AppointmentDAO {
             } else if ("CancellationRequested".equalsIgnoreCase(status)) {
                 sql.append(" AND (" + RefundPolicy.CANCELLATION_REQUESTED + ")");
             } else if ("RefundEligible".equalsIgnoreCase(status)) {
-                sql.append(" AND " + RefundPolicy.ELIGIBLE.replace("i.", "mi.")
-                        + " AND " + RefundPolicy.NO_ACTIVE_REQUEST.replace("i.", "mi."));
+                sql.append(" AND " + RefundPolicy.APPROVED_FOR_PAYOUT.replace("i.", "mi."));
             } else if ("CheckedIn".equalsIgnoreCase(status)) {
                 sql.append(" AND a.checkin_time IS NOT NULL AND a.Status NOT IN ('Canceled')");
             } else if ("In_Progress".equalsIgnoreCase(status)) {
