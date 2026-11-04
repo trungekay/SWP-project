@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css">
     <jsp:include page="/views/admin/layout/admin-css.jsp" />
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-waiting-list.css?v=13">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-waiting-list.css?v=15">
 </head>
 <body class="doctor-queue-body">
 <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
@@ -89,11 +89,13 @@
                     <input type="hidden" name="status" value="<c:out value='${selectedStatus}' />">
                     <div class="doctor-queue-date-controls" aria-label="Chọn ngày khám">
                         <a href="<c:out value='${previousUrl}' />" aria-label="Ngày trước" title="Ngày trước"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
-                        <label class="doctor-queue-date-field">
-                            <i class="bi bi-calendar-event" aria-hidden="true"></i>
-                            <span class="doctor-queue-date-label"><c:out value="${displayDate}" /></span>
-                            <input type="date" name="date" lang="vi-VN" aria-label="Chọn ngày khám" value="<c:out value='${selectedDate}' />" onchange="this.form.requestSubmit()">
-                        </label>
+                        <span class="doctor-queue-date-field">
+                            <button type="button" class="doctor-queue-date-picker-button" id="doctorQueueDateButton" aria-label="Chọn ngày khám, hiện tại <c:out value='${displayDate}' />">
+                                <span><c:out value="${displayDate}" /></span>
+                                <i class="bi bi-calendar3" aria-hidden="true"></i>
+                            </button>
+                            <input type="date" id="doctorQueueDatePicker" name="date" value="<c:out value='${selectedDate}' />" tabindex="-1" aria-hidden="true">
+                        </span>
                         <a href="<c:out value='${nextUrl}' />" aria-label="Ngày sau" title="Ngày sau"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
                         <c:if test="${not isToday}"><a class="doctor-queue-today" href="<c:out value='${todayUrl}' />">Trở lại hôm nay</a></c:if>
                     </div>
@@ -335,6 +337,15 @@
 </c:if>
 <script src="${pageContext.request.contextPath}/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script>
+    var datePicker = document.getElementById('doctorQueueDatePicker');
+    document.getElementById('doctorQueueDateButton').addEventListener('click', function () {
+        if (datePicker.showPicker) datePicker.showPicker();
+        else { datePicker.focus(); datePicker.click(); }
+    });
+    datePicker.addEventListener('change', function () {
+        if (datePicker.value) datePicker.form.requestSubmit();
+    });
+
     document.getElementById('cancelExamModal').addEventListener('show.bs.modal', function (event) {
         var trigger = event.relatedTarget;
         var id = trigger.getAttribute('data-appointment-id');
