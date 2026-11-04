@@ -365,7 +365,6 @@ CREATE TABLE [dbo].[Medical_Record](
 	[Staff_Notes] [nvarchar](max) NULL,
 	[examination_result] [nvarchar](max) NULL,
 	[conclusion] [nvarchar](max) NULL,
-	[Staff_Notes] [nvarchar](max) NULL,
 	[Created_At] [datetime2](7) NOT NULL,
 PRIMARY KEY CLUSTERED 
 (
