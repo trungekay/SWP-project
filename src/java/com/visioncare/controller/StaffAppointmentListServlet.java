@@ -116,6 +116,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
             response.getWriter().write(json.toString());
             return;
         }
+        com.visioncare.util.WorkflowTokens.ensure(request.getSession());
         java.util.List<java.util.Map<String, Object>> refundInvoices = new com.visioncare.dao.RefundDAO().getInvoicesForStaffRefundSelection();
         request.setAttribute("availableInvoices", refundInvoices);
         java.util.Map<Integer, Boolean> refundEligible = new java.util.HashMap<>();
@@ -179,7 +180,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
             long completedCount = allDayAppointments.stream().filter(a -> "Completed".equalsIgnoreCase(a.getEffectiveStatus())).count();
             long canceledCount = allDayAppointments.stream().filter(a -> "Canceled".equalsIgnoreCase(a.getStatus())).count();
             request.setAttribute("cancellationRequestedCount", appointmentDAO.getStaffAppointments(null, "CancellationRequested", null, null).size());
-            request.setAttribute("refundEligibleCount", refundInvoices.size());
+            request.setAttribute("refundEligibleCount", appointmentDAO.getStaffAppointments(null, "RefundEligible", null, null).size());
 
             // Lấy danh sách lịch hẹn theo trạng thái đang chọn (Mặc định: Pending - Chờ tiếp đón)
             List<Appointment> appointments = appointmentDAO.getStaffAppointments(queryDate, filterStatus, doctorId, keyword);

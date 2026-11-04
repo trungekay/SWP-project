@@ -405,12 +405,14 @@
                                                                 </a>
 
 <c:if test="${appt.status == 'Confirmed' && empty appt.checkinTime && !isPastAppt}"><a href="${pageContext.request.contextPath}/staff/reschedule?appointmentId=${appt.id}" class="action-btn" title="Đổi lịch khám cho bệnh nhân" aria-label="Đổi lịch khám cho bệnh nhân" data-bs-toggle="tooltip"><i class="bi bi-calendar2-range"></i></a></c:if>
-<c:if test="${refundEligible[appt.id]}"><a href="${pageContext.request.contextPath}/staff/refund-request?appointmentId=${appt.id}" class="action-btn warning" title="Tạo yêu cầu hoàn tiền" aria-label="Tạo yêu cầu hoàn tiền" data-bs-toggle="tooltip"><i class="bi bi-cash-coin"></i></a></c:if>
+<c:if test="${refundEligible[appt.id] && empty activeAppointmentRefunds[appt.id]}"><a href="${pageContext.request.contextPath}/staff/refund-request?appointmentId=${appt.id}" class="action-btn warning" title="Tạo yêu cầu hoàn tiền" aria-label="Tạo yêu cầu hoàn tiền" data-bs-toggle="tooltip"><i class="bi bi-cash-coin"></i></a></c:if>
 <c:if test="${not empty activeAppointmentRefunds[appt.id]}">
     <c:set var="existingRefund" value="${activeAppointmentRefunds[appt.id]}" />
     <button type="button" class="action-btn" title="${existingRefund.code}: ${existingRefund.statusLabel}" aria-label="Xem yêu cầu hoàn tiền hiện có"
         data-bs-toggle="modal" data-bs-target="#existingRefundModal" data-refund-code="${existingRefund.code}" data-invoice-id="${existingRefund.invoiceId}"
         data-invoice-code="${existingRefund.invoiceCode}" data-status="${existingRefund.statusLabel}"
+        data-refund-id="${existingRefund.id}" data-refund-status="${existingRefund.status}"
+        data-decision-note="${fn:escapeXml(existingRefund.decisionNote)}"
         data-amount="${existingRefund.amountLabel}" data-reason="${fn:escapeXml(existingRefund.reason)}">
         <i class="bi bi-receipt"></i>
     </button>

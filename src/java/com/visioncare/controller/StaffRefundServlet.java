@@ -37,6 +37,26 @@ public class StaffRefundServlet extends HttpServlet {
                 return;
             }
 
+            // Existing requests are read-only on the creation page, including rejected requests.
+            String requestedAppointment = request.getParameter("appointmentId");
+            String requestedInvoice = request.getParameter("invoiceId");
+            if ((requestedAppointment != null && !requestedAppointment.isBlank())
+                    || (requestedInvoice != null && !requestedInvoice.isBlank())) {
+                try {
+                    Integer appointmentId = requestedAppointment == null || requestedAppointment.isBlank() ? null : Integer.valueOf(requestedAppointment);
+                    Integer invoiceId = requestedInvoice == null || requestedInvoice.isBlank() ? null : Integer.valueOf(requestedInvoice);
+                    for (java.util.Map.Entry<Integer, java.util.Map<String, Object>> entry : refundDAO.getActiveRefundsForStaffAppointments().entrySet()) {
+                        if ((appointmentId == null || appointmentId.equals(entry.getKey()))
+                                && (invoiceId == null || invoiceId.equals(entry.getValue().get("invoiceId")))) {
+                            request.setAttribute("existingRefund", entry.getValue());
+                            break;
+                        }
+                    }
+                } catch (NumberFormatException ex) {
+                    response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                    return;
+                }
+            }
             java.util.List<java.util.Map<String, Object>> availableInvoices = refundDAO.getInvoicesForStaffRefundSelection();
             request.setAttribute("availableInvoices", availableInvoices);
 
