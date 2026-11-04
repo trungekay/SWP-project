@@ -24,6 +24,7 @@ public class StaffRefundSettlementServlet extends HttpServlet {
  }
  @Override protected void doPost(HttpServletRequest req,HttpServletResponse res)throws IOException,ServletException {
   req.setCharacterEncoding("UTF-8");User user=authorize(req,res,false);if(user==null)return;
+  boolean returnToAppointments="appointments".equals(req.getParameter("returnTo"));
   int invoice=0;
   try{
    if(!WorkflowTokens.valid(req)){res.sendError(403);return;}
@@ -34,8 +35,8 @@ public class StaffRefundSettlementServlet extends HttpServlet {
    int employee=0;try(var c=DBContext.getConnection();var p=c.prepareStatement("SELECT Employee_ID FROM Employee_Profile WHERE Account_ID=?")){p.setInt(1,user.getId());try(var r=p.executeQuery()){if(r.next())employee=r.getInt(1);}}
    Part file=req.getPart("evidence");byte[] bytes=null;if(file!=null&&file.getSize()>0){if(file.getSize()>5242880)throw new IllegalArgumentException("Ảnh tối đa 5 MB.");try(InputStream stream=file.getInputStream()){bytes=stream.readNBytes(5242881);}}
    if(!dao.complete(id,employee,req.getParameter("completionNote"),bytes))throw new IllegalArgumentException("Yêu cầu chưa được duyệt, đã chi trả hoặc khoản hoàn không còn đủ điều kiện.");
-   req.getSession().setAttribute("invoiceSuccess","Đã ghi nhận hoàn tiền và điều chỉnh doanh thu.");
-  }catch(Exception e){log("Refund completion rejected",e);req.getSession().setAttribute("invoiceError",e instanceof IllegalArgumentException?e.getMessage():"Không thể xác nhận hoàn tiền. Kiểm tra ảnh PNG/JPEG tối đa 5 MB và tải lại trang.");}
-  res.sendRedirect(req.getContextPath()+"/staff/invoices"+(invoice>0?"/detail?id="+invoice:""));
+   req.getSession().setAttribute(returnToAppointments?"successMessage":"invoiceSuccess","Đã ghi nhận hoàn tiền và điều chỉnh doanh thu.");
+  }catch(Exception e){log("Refund completion rejected",e);req.getSession().setAttribute(returnToAppointments?"errorMessage":"invoiceError",e instanceof IllegalArgumentException?e.getMessage():"Không thể xác nhận hoàn tiền. Kiểm tra ảnh PNG/JPEG tối đa 5 MB và tải lại trang.");}
+  res.sendRedirect(req.getContextPath()+(returnToAppointments?"/staff/appointments?date=all":"/staff/invoices"+(invoice>0?"/detail?id="+invoice:"")));
  }
 }

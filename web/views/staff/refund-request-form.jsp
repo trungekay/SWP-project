@@ -231,7 +231,7 @@
             <!-- Page Header -->
             <div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
                 <div class="page-title">
-                    <h2 class="mb-0">Tạo yêu cầu hoàn tiền</h2>
+                    <h2 class="mb-0">${not empty existingRefund ? 'Xem phiếu yêu cầu hoàn tiền' : 'Tạo yêu cầu hoàn tiền'}</h2>
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     <a href="${pageContext.request.contextPath}/staff/appointments" class="btn btn-outline-secondary d-flex align-items-center gap-2">
@@ -243,6 +243,20 @@
 
             <!-- Form Body -->
             <c:choose>
+                <c:when test="${not empty existingRefund}">
+                    <div class="form-card">
+                        <div class="form-card-title"><i class="bi bi-receipt"></i><span>Phiếu yêu cầu hoàn tiền đã gửi</span></div>
+                        <div class="alert alert-info">Lịch hẹn đã có phiếu yêu cầu hoàn tiền. Bạn chỉ có thể xem lại phiếu, không thể gửi thêm yêu cầu.</div>
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Mã yêu cầu</dt><dd class="col-sm-8"><c:out value="${existingRefund.code}" /></dd>
+                            <dt class="col-sm-4">Hóa đơn</dt><dd class="col-sm-8"><c:out value="${existingRefund.invoiceCode}" /></dd>
+                            <dt class="col-sm-4">Trạng thái</dt><dd class="col-sm-8"><c:out value="${existingRefund.statusLabel}" /></dd>
+                            <dt class="col-sm-4">Số tiền hoàn</dt><dd class="col-sm-8"><c:out value="${existingRefund.amountLabel}" /></dd>
+                            <dt class="col-sm-4">Lý do yêu cầu</dt><dd class="col-sm-8 text-break"><c:out value="${existingRefund.reason}" /></dd>
+                            <dt class="col-sm-4">Ghi chú / Lý do quyết định</dt><dd class="col-sm-8 text-break"><c:out value="${not empty existingRefund.decisionNote ? existingRefund.decisionNote : 'Chưa có ghi chú quyết định'}" /></dd>
+                        </dl>
+                    </div>
+                </c:when>
                 <c:when test="${empty availableInvoices}">
                     <div class="empty-invoices-notice my-4">
                         <div class="mb-3">
@@ -251,7 +265,7 @@
                         <h5 class="fw-bold text-dark">Hiện tại không có lịch hẹn nào đủ điều kiện hoàn tiền</h5>
                         <p class="text-muted small max-w-500 mx-auto mb-4" style="max-width: 550px;">
                             Điều kiện hoàn tiền: Lịch hẹn phải ở trạng thái <strong>Đã hủy trước khi check-in tiếp đón</strong>, 
-                            hóa đơn đã được thanh toán và chưa có phiếu hoàn tiền đang xử lý.
+                            hóa đơn đã được thanh toán và chưa từng có phiếu yêu cầu hoàn tiền.
                         </p>
                         <a href="${pageContext.request.contextPath}/staff/appointments" class="btn btn-teal">
                             <i class="bi bi-calendar2-check me-2"></i>Xem Danh Sách Lịch Hẹn
@@ -260,7 +274,7 @@
                 </c:when>
 
                 <c:otherwise>
-                    <form action="${pageContext.request.contextPath}/staff/refund-request" method="POST" id="refundForm" onsubmit="return validateRefundForm();">
+                    <form action="${pageContext.request.contextPath}/staff/refund-request" method="POST" id="refundForm" novalidate onsubmit="return validateRefundForm();">
                         <input type="hidden" name="action" value="create">
                         <input type="hidden" name="patientId" id="hiddenPatientId" value="">
 
@@ -591,25 +605,47 @@
             document.getElementById('summarySubText').textContent = sel.value ? 'Thông tin hợp lệ đủ điều kiện hoàn' : 'Vui lòng chọn hóa đơn';
         }
 
+        function clearRefundFieldError(field) {
+            if (!field || !field.id) return;
+            field.classList.remove('is-invalid');
+            field.removeAttribute('aria-invalid');
+            const errorId = field.id + 'Error';
+            const error = document.getElementById(errorId);
+            if (error) error.remove();
+            const descriptions = (field.getAttribute('aria-describedby') || '').split(/\s+/).filter(id => id && id !== errorId);
+            if (descriptions.length) field.setAttribute('aria-describedby', descriptions.join(' '));
+            else field.removeAttribute('aria-describedby');
+        }
+
+        function showRefundFieldError(field, message) {
+            clearRefundFieldError(field);
+            field.classList.add('is-invalid');
+            field.setAttribute('aria-invalid', 'true');
+            const error = document.createElement('div');
+            error.id = field.id + 'Error';
+            error.className = 'invalid-feedback d-block';
+            error.setAttribute('role', 'alert');
+            error.textContent = message;
+            const anchor = field.closest('.input-group') || field;
+            anchor.insertAdjacentElement('afterend', error);
+            field.setAttribute('aria-describedby', ((field.getAttribute('aria-describedby') || '') + ' ' + error.id).trim());
+            field.focus();
+            return false;
+        }
+
         function validateRefundForm() {
             const invoiceSelect = document.getElementById('invoiceSelect');
             if (!invoiceSelect.value) {
-                alert('Vui lòng chọn hóa đơn cần tạo yêu cầu hoàn tiền!');
-                invoiceSelect.focus();
-                return false;
+                return showRefundFieldError(invoiceSelect, 'Vui lòng chọn hóa đơn cần tạo yêu cầu hoàn tiền!');
             }
 
             const amountInput = document.getElementById('refundAmount');
             const amt = parseFloat(amountInput.value) || 0;
             if (amt < 10000) {
-                alert('Số tiền hoàn tiền tối thiểu là 10,000 đ!');
-                amountInput.focus();
-                return false;
+                return showRefundFieldError(amountInput, 'Số tiền hoàn tiền tối thiểu là 10,000 đ!');
             }
             if (currentMaxRefundable > 0 && amt > currentMaxRefundable) {
-                alert('Số tiền hoàn (' + amt.toLocaleString('vi-VN') + ' đ) không được lớn hơn số tiền đã đóng (' + currentMaxRefundable.toLocaleString('vi-VN') + ' đ)!');
-                amountInput.focus();
-                return false;
+                return showRefundFieldError(amountInput, 'Số tiền hoàn (' + amt.toLocaleString('vi-VN') + ' đ) không được lớn hơn số tiền đã đóng (' + currentMaxRefundable.toLocaleString('vi-VN') + ' đ)!');
             }
 
             const methodBank = document.querySelector('input[name="refundMethod"][value="Bank_Transfer"]');
@@ -617,22 +653,16 @@
                 const accNum = document.getElementById('accountNumberInput').value.trim();
                 const accHolder = document.getElementById('accountHolderInput').value.trim();
                 if (!accNum) {
-                    alert('Vui lòng nhập số tài khoản ngân hàng của bệnh nhân!');
-                    document.getElementById('accountNumberInput').focus();
-                    return false;
+                    return showRefundFieldError(document.getElementById('accountNumberInput'), 'Vui lòng nhập số tài khoản ngân hàng của bệnh nhân!');
                 }
                 if (!accHolder) {
-                    alert('Vui lòng nhập tên chủ tài khoản ngân hàng!');
-                    document.getElementById('accountHolderInput').focus();
-                    return false;
+                    return showRefundFieldError(document.getElementById('accountHolderInput'), 'Vui lòng nhập tên chủ tài khoản ngân hàng!');
                 }
             }
 
             const reason = document.getElementById('refundReason').value.trim();
             if (!reason) {
-                alert('Vui lòng nhập lý do hoàn tiền!');
-                document.getElementById('refundReason').focus();
-                return false;
+                return showRefundFieldError(document.getElementById('refundReason'), 'Vui lòng nhập lý do hoàn tiền!');
             }
 
             return true;
@@ -641,6 +671,16 @@
         // Initialize state on DOM ready
         document.addEventListener('DOMContentLoaded', function() {
             onInvoiceChanged();
+            const form = document.getElementById('refundForm');
+            if (form) {
+                ['input', 'change'].forEach(eventName => form.addEventListener(eventName, event => {
+                    clearRefundFieldError(event.target);
+                    if (event.target.name === 'refundMethod') {
+                        clearRefundFieldError(document.getElementById('accountNumberInput'));
+                        clearRefundFieldError(document.getElementById('accountHolderInput'));
+                    }
+                }));
+            }
         });
     </script>
 </body>

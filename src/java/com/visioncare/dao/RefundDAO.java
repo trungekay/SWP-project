@@ -275,7 +275,7 @@ public class RefundDAO {
     /** Existing requests are visible to reception without permitting a duplicate refund. */
     public Map<Integer, Map<String, Object>> getActiveRefundsForStaffAppointments() {
         Map<Integer, Map<String, Object>> results = new HashMap<>();
-        String sql = "SELECT i.Appointment_ID, i.Invoice_ID, r.Refund_ID, r.Status, r.Refund_Amount, r.Reason "
+        String sql = "SELECT i.Appointment_ID, i.Invoice_ID, r.Refund_ID, r.Status, r.Refund_Amount, r.Reason, r.Decision_Note "
                 + "FROM Refund_Request r JOIN Master_Invoice i ON i.Invoice_ID = r.Invoice_ID "
                 + "JOIN Appointment a ON a.Appointment_ID = i.Appointment_ID "
                 + "WHERE r.Status IN ('Pending', 'Approved', 'Rejected', 'Completed') ORDER BY r.Refund_ID DESC";
@@ -294,6 +294,7 @@ public class RefundDAO {
                 refund.put("amount", rs.getLong("Refund_Amount"));
                 refund.put("amountLabel", String.format("%,d đ", rs.getLong("Refund_Amount")));
                 refund.put("reason", rs.getString("Reason"));
+                refund.put("decisionNote", rs.getString("Decision_Note"));
                 results.put(appointmentId, refund);
             }
         } catch (Exception e) { e.printStackTrace(); }
@@ -302,7 +303,7 @@ public class RefundDAO {
 
     private String getStatusVn(String st) {
         if ("Pending".equalsIgnoreCase(st)) return "Chờ duyệt";
-        if ("Approved".equalsIgnoreCase(st)) return "Đã duyệt · Chờ staff hoàn tiền";
+        if ("Approved".equalsIgnoreCase(st)) return "Đã duyệt";
         if ("Completed".equalsIgnoreCase(st)) return "Đã hoàn tiền";
         if ("Rejected".equalsIgnoreCase(st)) return "Từ chối";
         return st != null ? st : "";
