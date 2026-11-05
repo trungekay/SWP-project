@@ -66,6 +66,22 @@
             background-color: #f8fafc;
         }
 
+        .patient-table {
+            width: 100%;
+            table-layout: auto;
+        }
+
+        .patient-table th,
+        .patient-table td {
+            white-space: nowrap;
+            word-break: normal;
+            overflow-wrap: normal;
+        }
+
+        .patient-table .patient-id-badge {
+            display: inline-block;
+            white-space: nowrap;
+        }
         .patient-id-badge {
             font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
             font-size: 12px;
@@ -77,6 +93,12 @@
             border: 1px solid #cbd5e1;
         }
 
+        .badge-portal,
+        .badge-counter {
+            display: inline-flex;
+            align-items: center;
+            white-space: nowrap;
+        }
         .badge-portal {
             background-color: #ecfdf5;
             color: #059669;
@@ -258,7 +280,7 @@
 
                 <!-- Patient Table -->
                 <div class="table-responsive">
-                    <table class="table mb-0 align-middle">
+                    <table class="table patient-table mb-0 align-middle">
                         <thead>
                             <tr>
                                 <th style="width: 110px;">Mã BN</th>
@@ -289,7 +311,7 @@
                                                 </a>
                                             </td>
                                             <td>
-                                                <span class="fw-medium text-dark"><i class="bi bi-telephone text-muted me-1"></i><c:out value="${p.phone}"/></span>
+                                                <span class="fw-medium text-dark text-nowrap"><c:out value="${p.phone}"/></span>
                                             </td>
                                             <td class="text-nowrap">
                                                 <c:choose>
