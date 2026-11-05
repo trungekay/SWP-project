@@ -31,17 +31,10 @@ public class EmployeeScheduleServlet extends HttpServlet {
             HttpSession session = request.getSession();
             User currentUser = (User) session.getAttribute("user");
             if (currentUser == null) {
-                currentUser = workScheduleDAO.getActorProfile(1, "doctor");
-                if (currentUser == null) {
-                    currentUser = new User();
-                    currentUser.setId(3);
-                    currentUser.setActorId(1);
-                    currentUser.setFullName("BS. Trần Văn Nam");
-                    currentUser.setRole("doctor");
-                    currentUser.setSpecialty("Khám mắt tổng quát");
-                    currentUser.setRoomName("Phòng Khám Mắt 101");
-                }
-                session.setAttribute("user", currentUser);
+                response.sendRedirect(request.getContextPath()+"/login");return;
+            }
+            if (currentUser.getRoleId()<1 || currentUser.getRoleId()>5) {
+                response.sendError(403,"Bạn không có quyền xem lịch làm việc nhân viên.");return;
             }
             String viewActorIdParam = request.getParameter("viewActorId");
             String viewRoleParam = request.getParameter("viewRole");

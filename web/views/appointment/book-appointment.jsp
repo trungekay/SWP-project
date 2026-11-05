@@ -2077,6 +2077,7 @@
                 const currentApptId = '${appointmentId != null ? appointmentId : appointment.id}';
                 let pollAttempts = 0;
                 let checkInterval = null;
+                let countdownInterval = null;
 
                 // Khởi tạo thời hạn thanh toán dynamic theo cấu hình hệ thống (mặc định 15 phút) lưu trong sessionStorage để không bị reset khi F5
                 const totalHoldMinutes = parseInt('${not empty pendingHoldMinutes ? pendingHoldMinutes : 15}');
@@ -2147,7 +2148,7 @@
                 }
 
                 updatePaymentCountdown();
-                const countdownInterval = setInterval(updatePaymentCountdown, 1000);
+                countdownInterval = setInterval(updatePaymentCountdown, 1000);
 
                 if (currentApptId) {
                   checkInterval = setInterval(function () {

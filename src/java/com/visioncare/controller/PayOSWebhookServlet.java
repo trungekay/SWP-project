@@ -47,6 +47,10 @@ public class PayOSWebhookServlet extends HttpServlet {
                 }
 
                 int appointmentId = (int) (orderCode > 1000000L ? (orderCode / 1000000L) : orderCode);
+                Appointment paymentAppointment=appointmentDAO.getAppointmentDetailById(appointmentId);
+                if(paymentAppointment==null||!com.visioncare.util.BookingPaymentSession.matches(appointmentId,orderCode,paymentAppointment.getFee(),PayOSUtil.getVerifiedReceipt(orderCode))) {
+                    response.setStatus(409);response.getWriter().write("{\"success\":false,\"message\":\"Payment not verified\"}");return;
+                }
 
                 // Cập nhật trạng thái thành Confirmed & Paid
                 if (!appointmentDAO.confirmPayment(appointmentId)) {
