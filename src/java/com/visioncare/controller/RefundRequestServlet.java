@@ -42,11 +42,11 @@ public class RefundRequestServlet extends HttpServlet {
                     ok = invoiceDAO.createRefundRequestForAppointment(apptId, currentUser.getId(), amount, reason);
                     session.setAttribute(ok ? "successMessage" : "errorMessage", ok
                         ? "Đã gửi yêu cầu hoàn tiền #APT-" + apptId
-                        : "Chỉ được hoàn tiền cho lịch đã được staff duyệt hủy trước check-in, đã thanh toán và chưa có yêu cầu hoàn tiền đang xử lý.");
+                        : "Lịch phải được Staff duyệt huỷ trước check-in, đã thanh toán và chưa từng có yêu cầu hoàn tiền, kể cả yêu cầu đã bị từ chối.");
                 } else if (invoiceIdParam != null && !invoiceIdParam.trim().isEmpty()) {
                     int invoiceId = Integer.parseInt(invoiceIdParam.replaceAll("[^0-9]", ""));
-                    if (invoiceDAO.hasActiveRefundRequest(invoiceId)) {
-                        session.setAttribute("errorMessage", "Hóa đơn #INV-" + String.format("%05d", invoiceId) + " đã có yêu cầu hoàn tiền đang được xử lý hoặc đã duyệt thành công. Vui lòng không gửi yêu cầu trùng lặp!");
+                    if (invoiceDAO.hasRefundRequest(invoiceId)) {
+                        session.setAttribute("errorMessage", "Hoá đơn đã có yêu cầu hoàn tiền. Bạn không thể gửi thêm yêu cầu; vui lòng xem kết quả xét duyệt.");
                     } else {
                         ok = invoiceDAO.createRefundRequest(invoiceId, currentUser.getId(), amount, reason);
                         if (ok) {

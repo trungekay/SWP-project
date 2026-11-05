@@ -7,6 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AppointmentDAO {
+    private final StaffInvoiceDAO.Connections walkinConnections;
+    public AppointmentDAO() { this(DBContext::getConnection); }
+    public AppointmentDAO(StaffInvoiceDAO.Connections source) { this.walkinConnections = source; }
 
     public int createPendingAppointment(Appointment a, int serviceId, long fee) throws Exception {
         Connection conn = null;
@@ -408,6 +411,11 @@ public class AppointmentDAO {
         throw new SQLException("Cannot create schedule");
     }
 
+    // Counter-only: paid cancellation requests stay active; expired unpaid holds do not.
+    private static final String WALKIN_OCCUPIED = "(a.Status IN ('Confirmed','In_Progress','Completed') "
+            + "OR (a.Status='Pending' AND (EXISTS(SELECT 1 FROM Master_Invoice pi "
+            + "WHERE pi.Appointment_ID=a.Appointment_ID AND pi.Status IN ('Paid','Partial_Paid')) "
+            + "OR DATEDIFF(SECOND,a.created_at,DATEADD(HOUR,7,SYSUTCDATETIME())) < ?)))";
     public int createWalkinAppointment(Appointment a, int staffEmployeeId) throws Exception {
         return createWalkinAppointment(a, staffEmployeeId, false);
     }
@@ -415,33 +423,84 @@ public class AppointmentDAO {
     public int createWalkinAppointment(Appointment a, int staffEmployeeId, boolean isPendingPayment) throws Exception {
         Connection conn = null;
         try {
-            conn = DBContext.getConnection();
+            conn = walkinConnections.open();
             conn.setAutoCommit(false);
 
-            String timeSlotPrefix = (a.getTimeSlot() != null && a.getTimeSlot().length() >= 5) ? a.getTimeSlot().substring(0, 5) : a.getTimeSlot();
-
-            // 1. KIỂM TRA SLOT KHÁM: Bác sĩ trong khung giờ đó đã có bệnh nhân nào đặt chưa
-            String sqlCheckSlot = "SELECT a.Appointment_ID, a.Status, p.Full_Name, doc.Full_Name AS Doctor_Name " +
-                                  "FROM Appointment a " +
-                                  "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
-                                  "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
-                                  "LEFT JOIN Employee_Profile doc ON ws.Doctor_Employee_ID = doc.Employee_ID " +
-                                  "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? AND CAST(ws.Start_Time AS VARCHAR(5)) = ? " +
-                                  "  AND a.Status != 'Canceled'";
-            try (PreparedStatement psCheck = conn.prepareStatement(sqlCheckSlot)) {
-                psCheck.setInt(1, a.getDoctorId());
-                psCheck.setDate(2, a.getAppointmentDate());
-                psCheck.setString(3, timeSlotPrefix);
-                try (ResultSet rs = psCheck.executeQuery()) {
-                    if (rs.next()) {
-                        String docName = rs.getString("Doctor_Name") != null ? rs.getString("Doctor_Name") : "Bác sĩ";
-                        String bookedPatient = rs.getString("Full_Name");
-                        int existingApptId = rs.getInt("Appointment_ID");
-                        throw new Exception("Khung giờ " + timeSlotPrefix + " của " + docName + " đã có bệnh nhân (" + bookedPatient + " - #APT-" + existingApptId + ") đặt lịch! Vui lòng chọn khung giờ trống khác hoặc chọn bác sĩ khác.");
+            String timeSlotPrefix = a.getTimeSlot().substring(0, 5);
+            int holdSeconds = TimeSlotDAO.getPendingHoldMinutes() * 60;
+            // setAutoCommit(false) alone does not start SQL Server's implicit transaction.
+            // A table read starts it even when the phone has no existing patient row.
+            try (PreparedStatement lock = conn.prepareStatement(
+                    "DECLARE @probe int; SELECT @probe=1 FROM Patient WHERE Phone=?; "
+                    + "DECLARE @result int; EXEC @result = sys.sp_getapplock @Resource=?, "
+                    + "@LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000; SELECT @result")) {
+                lock.setString(1, a.getPhone().trim());
+                lock.setString(2, "walkin-patient:" + a.getPhone().trim());
+                try (ResultSet rs = lock.executeQuery()) {
+                    if (!rs.next()) throw new SQLException("Không nhận được kết quả khoá hồ sơ tiếp đón.");
+                    int result = rs.getInt(1);
+                    if (result < 0) {
+                        String message = result == -1
+                                ? "Hồ sơ đang được tiếp đón ở quầy khác. Vui lòng thử lại."
+                                : "Không thể khoá hồ sơ tiếp đón. Vui lòng thử lại.";
+                        throw new SQLException(message, "HY000", result);
                     }
                 }
             }
-
+            int scheduleId = a.getScheduleId();
+            if (scheduleId <= 0) scheduleId = getOrCreateSchedule(conn, a);
+            Time newStart, newEnd;
+            try (PreparedStatement slot = conn.prepareStatement(
+                    "SELECT Start_Time, End_Time FROM Work_Schedule WITH (UPDLOCK,HOLDLOCK) "
+                    + "WHERE Schedule_ID=? AND Doctor_Employee_ID=? AND Work_Date=? "
+                    + "AND CONVERT(VARCHAR(5),Start_Time,108)=?")) {
+                slot.setInt(1, scheduleId);
+                slot.setInt(2, a.getDoctorId());
+                slot.setDate(3, a.getAppointmentDate());
+                slot.setString(4, timeSlotPrefix);
+                try (ResultSet rs = slot.executeQuery()) {
+                    if (!rs.next()) throw new SQLException("Khung giờ khám không hợp lệ.");
+                    newStart = rs.getTime("Start_Time");
+                    newEnd = rs.getTime("End_Time");
+                    if (newStart == null || newEnd == null || !newEnd.after(newStart)) {
+                        throw new SQLException("Khoảng thời gian khám không hợp lệ.");
+                    }
+                }
+            }
+            String sqlCheckSlot = "SELECT a.Appointment_ID FROM Appointment a "
+                    + "JOIN Work_Schedule ws ON ws.Schedule_ID=a.Schedule_ID "
+                    + "WHERE ws.Doctor_Employee_ID=? AND ws.Work_Date=? "
+                    + "AND ws.Start_Time<CAST(? AS TIME) AND ws.End_Time>CAST(? AS TIME) AND " + WALKIN_OCCUPIED;
+            try (PreparedStatement check = conn.prepareStatement(sqlCheckSlot)) {
+                check.setInt(1, a.getDoctorId());
+                check.setDate(2, a.getAppointmentDate());
+                check.setTime(3, newEnd);
+                check.setTime(4, newStart);
+                check.setInt(5, holdSeconds);
+                try (ResultSet rs = check.executeQuery()) {
+                    if (rs.next()) throw new SQLException("Bác sĩ đã có lịch trong khung giờ này (#APT-"
+                            + rs.getInt("Appointment_ID") + "). Vui lòng chọn giờ hoặc bác sĩ khác.");
+                }
+            }
+            // Only the counter flow checks the patient's other appointments, across doctors.
+            String overlap = "SELECT a.Appointment_ID, ws.Start_Time, ws.End_Time "
+                    + "FROM Appointment a JOIN Patient p ON p.Patient_ID=a.Patient_ID "
+                    + "JOIN Work_Schedule ws ON ws.Schedule_ID=a.Schedule_ID "
+                    + "WHERE p.Phone=? AND ws.Work_Date=? AND ws.Start_Time<CAST(? AS TIME) AND ws.End_Time>CAST(? AS TIME) "
+                    + "AND a.Status<>'Completed' AND " + WALKIN_OCCUPIED;
+            try (PreparedStatement check = conn.prepareStatement(overlap)) {
+                check.setString(1, a.getPhone().trim());
+                check.setDate(2, a.getAppointmentDate());
+                check.setTime(3, newEnd);
+                check.setTime(4, newStart);
+                check.setInt(5, holdSeconds);
+                try (ResultSet rs = check.executeQuery()) {
+                    if (rs.next()) throw new SQLException("Bệnh nhân đã có lịch #APT-"
+                            + rs.getInt("Appointment_ID") + " (" + rs.getTime("Start_Time").toString().substring(0,5)
+                            + " - " + rs.getTime("End_Time").toString().substring(0,5)
+                            + ") chồng giờ. Vui lòng dùng lịch hiện có hoặc chọn giờ khác.");
+                }
+            }
             // 2. KIỂM TRA BỆNH NHÂN THEO SỐ ĐIỆN THOẠI
             int patientId = -1;
             String sqlFindPatient = "SELECT Patient_ID, Full_Name, DOB FROM Patient WHERE Phone = ?";
@@ -450,34 +509,7 @@ public class AppointmentDAO {
                 try (ResultSet rs = psFind.executeQuery()) {
                     if (rs.next()) {
                         patientId = rs.getInt("Patient_ID");
-                        String existingName = rs.getString("Full_Name");
-
-                        // 2.1. Kiểm tra xem bệnh nhân này ĐÃ CÓ LỊCH HẸN HÔM NAY chưa?
-                        String sqlCheckApptToday = "SELECT a.Appointment_ID, a.Status, CAST(ws.Start_Time AS VARCHAR(5)) AS Start_Time, doc.Full_Name AS Doctor_Name " +
-                                                   "FROM Appointment a " +
-                                                   "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
-                                                   "LEFT JOIN Employee_Profile doc ON ws.Doctor_Employee_ID = doc.Employee_ID " +
-                                                   "WHERE a.Patient_ID = ? AND ws.Work_Date = ? AND a.Status != 'Canceled'";
-                        try (PreparedStatement psCheckAppt = conn.prepareStatement(sqlCheckApptToday)) {
-                            psCheckAppt.setInt(1, patientId);
-                            psCheckAppt.setDate(2, a.getAppointmentDate());
-                            try (ResultSet rsAppt = psCheckAppt.executeQuery()) {
-                                if (rsAppt.next()) {
-                                    int exApptId = rsAppt.getInt("Appointment_ID");
-                                    String exStatus = rsAppt.getString("Status");
-                                    String exTime = rsAppt.getString("Start_Time");
-                                    String docName = rsAppt.getString("Doctor_Name") != null ? rsAppt.getString("Doctor_Name") : "Bác sĩ";
-
-                                    if ("Pending".equalsIgnoreCase(exStatus)) {
-                                        throw new Exception("Bệnh nhân " + existingName + " (SĐT: " + a.getPhone() + ") đã có lịch hẹn trước (#APT-" + exApptId + ") lúc " + exTime + " hôm nay với " + docName + "! Vui lòng tìm kiếm trên Danh sách Lịch hẹn và bấm Check-in tiếp đón thay vì tạo mới.");
-                                    } else if ("Confirmed".equalsIgnoreCase(exStatus) || "In_Progress".equalsIgnoreCase(exStatus)) {
-                                        throw new Exception("Bệnh nhân " + existingName + " (SĐT: " + a.getPhone() + ") hiện đã được tiếp đón và đang nằm trong Hàng đợi khám (#APT-" + exApptId + ") với " + docName + "!");
-                                    }
-                                }
-                            }
-                        }
-
-                        // 2.2. Bệnh nhân cũ chưa có lịch hôm nay -> Cập nhật thông tin mới nhất nếu có
+                        // Reuse the existing profile for another non-overlapping appointment.
                         String sqlUpdatePatient = "UPDATE Patient SET Full_Name = COALESCE(NULLIF(?, ''), Full_Name), DOB = COALESCE(?, DOB) WHERE Patient_ID = ?";
                         try (PreparedStatement psUpd = conn.prepareStatement(sqlUpdatePatient)) {
                             psUpd.setString(1, a.getPatientName());
@@ -503,12 +535,6 @@ public class AppointmentDAO {
                         }
                     }
                 }
-            }
-
-            // 3. Tìm hoặc tạo ca làm việc của bác sĩ trong ngày
-            int scheduleId = a.getScheduleId();
-            if (scheduleId <= 0) {
-                scheduleId = getOrCreateSchedule(conn, a);
             }
 
             // Payment and reception are separate: only staff check-in admits a walk-in to the queue.
@@ -829,34 +855,33 @@ public class AppointmentDAO {
         return null;
     }
 
-    public Appointment getPatientActiveAppointmentToday(String phone, Date date) {
-        if (phone == null || phone.trim().isEmpty() || date == null) return null;
-        String sql = "SELECT a.Appointment_ID, a.Status, CAST(ws.Start_Time AS VARCHAR(5)) AS Start_Time, doc.Full_Name AS Doctor_Name " +
-                     "FROM Appointment a " +
-                     "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
-                     "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +
-                     "LEFT JOIN Employee_Profile doc ON ws.Doctor_Employee_ID = doc.Employee_ID " +
-                     "WHERE p.Phone = ? AND ws.Work_Date = ? AND a.Status != 'Canceled'";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+    public List<Appointment> getPatientAppointmentsToday(String phone, Date date) {
+        List<Appointment> appointments = new ArrayList<>();
+        if (phone == null || phone.trim().isEmpty() || date == null) return appointments;
+        String sql = "SELECT a.Appointment_ID, a.Status, ws.Start_Time, ws.End_Time, doc.Full_Name AS Doctor_Name "
+                + "FROM Appointment a JOIN Patient p ON a.Patient_ID=p.Patient_ID "
+                + "JOIN Work_Schedule ws ON a.Schedule_ID=ws.Schedule_ID "
+                + "LEFT JOIN Employee_Profile doc ON ws.Doctor_Employee_ID=doc.Employee_ID "
+                + "WHERE p.Phone=? AND ws.Work_Date=? AND " + WALKIN_OCCUPIED
+                + " ORDER BY ws.Start_Time, a.Appointment_ID";
+        try (Connection conn = DBContext.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, phone.trim());
             ps.setDate(2, date);
+            ps.setInt(3, TimeSlotDAO.getPendingHoldMinutes() * 60);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
+                while (rs.next()) {
                     Appointment a = new Appointment();
                     a.setId(rs.getInt("Appointment_ID"));
                     a.setStatus(rs.getString("Status"));
-                    a.setTimeSlot(rs.getString("Start_Time"));
+                    a.setTimeSlot(rs.getTime("Start_Time").toString().substring(0,5)
+                            + " - " + rs.getTime("End_Time").toString().substring(0,5));
                     a.setDoctorName(rs.getString("Doctor_Name"));
-                    return a;
+                    appointments.add(a);
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+        } catch (Exception e) { e.printStackTrace(); }
+        return appointments;
     }
-
     public List<String> getBookedSlotsForDoctorToday(int doctorId, Date date) {
         List<String> list = new ArrayList<>();
         String sql = "SELECT DISTINCT CAST(ws.Start_Time AS VARCHAR(5)) AS SlotTime " +
@@ -910,7 +935,7 @@ public class AppointmentDAO {
                      "       p.Full_Name, p.Phone, p.DOB, ws.Start_Time, ws.Doctor_Employee_ID, p.Account_ID, ws.Work_Date, e.Full_Name AS Doctor_Name, " +
                      "       i.Invoice_ID, i.Deposit_Amount, i.Total_Amount, i.Balance_Due, i.Status AS Invoice_Status, " +
                      "       mr.Clinical_Diagnosis, mr.conclusion, CASE WHEN " + RefundPolicy.CANCELLATION_REQUESTED + " THEN 1 ELSE 0 END AS Cancellation_Requested, " +
-                     "       CASE WHEN EXISTS (SELECT 1 FROM Refund_Request r WHERE r.Invoice_ID = i.Invoice_ID AND r.Status IN ('Pending', 'Approved', 'Completed')) THEN 1 ELSE 0 END AS Has_Refund_Request " +
+                     "       CASE WHEN EXISTS (SELECT 1 FROM Refund_Request r WHERE r.Invoice_ID = i.Invoice_ID) THEN 1 ELSE 0 END AS Has_Refund_Request " +
                      "FROM Appointment a " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
                      "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID " +

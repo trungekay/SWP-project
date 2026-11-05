@@ -478,11 +478,12 @@ public class InvoiceDAO {
         List<Map<String, Object>> list = new ArrayList<>();
         String sql = "SELECT i.Invoice_ID, i.Total_Amount, i.Deposit_Amount, i.Close_At, i.Create_At, a.Appointment_ID, " +
                      "       r.Refund_ID, r.Status AS Refund_Status, " +
-                     "       CASE WHEN r.Refund_ID IS NOT NULL THEN 1 ELSE 0 END AS Has_Refund " +
+                     "       CASE WHEN r.Refund_ID IS NOT NULL THEN 1 ELSE 0 END AS Has_Refund, " +
+                     "       CASE WHEN " + RefundPolicy.ELIGIBLE + " AND r.Refund_ID IS NULL THEN 1 ELSE 0 END AS Is_Eligible " +
                      "FROM Master_Invoice i " +
                      "JOIN Appointment a ON i.Appointment_ID = a.Appointment_ID " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
-                     "LEFT JOIN Refund_Request r ON i.Invoice_ID = r.Invoice_ID AND r.Status IN ('Pending', 'Approved', 'Completed', 'Success') " +
+                     "OUTER APPLY (SELECT TOP 1 rr.Refund_ID, rr.Status FROM Refund_Request rr WHERE rr.Invoice_ID = i.Invoice_ID ORDER BY rr.Refund_ID DESC) r " +
                      "WHERE p.Account_ID = ? AND i.Status = 'Paid' " +
                      "ORDER BY i.Invoice_ID DESC";
         try (Connection conn = connections.open();
@@ -510,7 +511,7 @@ public class InvoiceDAO {
                     map.put("appointmentId", apptId);
                     map.put("formattedApptId", "#APT-" + apptId);
                     map.put("hasRefund", hasRefund);
-                    map.put("isEligible", !hasRefund);
+                    map.put("isEligible", rs.getInt("Is_Eligible") == 1);
                     map.put("refundStatus", refStatus != null ? refStatus : "");
                     map.put("refundId", refId);
                     list.add(map);
@@ -522,148 +523,87 @@ public class InvoiceDAO {
         return list;
     }
 
-    /**
-     * Check if invoice has an active refund request (Pending, Approved, Success)
-     */
-    public boolean hasActiveRefundRequest(int invoiceId) {
-        String sql = "SELECT COUNT(*) FROM Refund_Request WHERE Invoice_ID = ? AND Status IN ('Pending', 'Approved', 'Completed', 'Success')";
-        try (Connection conn = connections.open();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+    /** Any previous request, including a rejection, prevents another request. */
+    public boolean hasRefundRequest(int invoiceId) {
+        try (Connection conn = connections.open()) {
+            return hasRefundRequest(conn, invoiceId);
+        } catch (Exception e) {
+            throw new IllegalStateException("Cannot check existing refund requests", e);
+        }
+    }
+
+    private boolean hasRefundRequest(Connection conn, int invoiceId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT TOP 1 Refund_ID FROM Refund_Request WHERE Invoice_ID = ?")) {
             ps.setInt(1, invoiceId);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
-                }
+                return rs.next();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
-        return false;
     }
 
-    /**
-     * Create patient refund request
-     */
     public boolean createRefundRequest(int invoiceId, int accountId, long amount, String reason) {
-        // Chặn tạo trùng yêu cầu hoàn tiền nếu hóa đơn đã có yêu cầu đang xử lý hoặc thành công
-        if (hasActiveRefundRequest(invoiceId)) {
-            System.err.println("Prevent duplicate refund request for invoice #" + invoiceId);
-            return false;
-        }
-
-        String findPatient = "SELECT Patient_ID FROM Patient WHERE Account_ID = ?";
-        String findStaff = "SELECT TOP 1 Employee_ID FROM Employee_Profile";
-        String insertSql = "INSERT INTO Refund_Request (Invoice_ID, created_by_employee_id, Patient_ID, Refund_Amount, Reason, Status, Created_At, Update_At) " +
-                           "VALUES (?, ?, ?, ?, ?, 'Pending', DATEADD(HOUR, 7, SYSUTCDATETIME()), DATEADD(HOUR, 7, SYSUTCDATETIME()))";
-        try (Connection conn = connections.open()) {
-            int patientId = 0;
-            try (PreparedStatement psP = conn.prepareStatement(findPatient)) {
-                psP.setInt(1, accountId);
-                try (ResultSet rsP = psP.executeQuery()) {
-                    if (rsP.next()) patientId = rsP.getInt(1);
-                }
-            }
-            if (patientId == 0) return false;
-
-            int staffId = 1;
-            try (PreparedStatement psE = conn.prepareStatement(findStaff);
-                 ResultSet rs = psE.executeQuery()) {
-                if (rs.next()) staffId = rs.getInt(1);
-            }
-
-            try (PreparedStatement psIns = conn.prepareStatement(insertSql)) {
-                psIns.setInt(1, invoiceId);
-                psIns.setInt(2, staffId);
-                psIns.setInt(3, patientId);
-                psIns.setLong(4, amount);
-                psIns.setString(5, reason);
-                return psIns.executeUpdate() > 0;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+        return createPatientRefund(invoiceId, null, accountId, amount, reason);
     }
 
-    /**
-     * Create patient refund request by Appointment ID
-     */
     public boolean createRefundRequestForAppointment(int appointmentId, int accountId, long amount, String reason) {
-        int invoiceId = 0;
-        int patientId = 0;
-        long depositAmount = 0;
-        String sql = "SELECT mi.Invoice_ID, mi.Deposit_Amount, mi.Total_Amount, a.Patient_ID " +
-                     "FROM Master_Invoice mi " +
-                     "JOIN Appointment a ON mi.Appointment_ID = a.Appointment_ID " +
-                     "WHERE a.Appointment_ID = ?";
-        try (Connection conn = connections.open();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, appointmentId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    invoiceId = rs.getInt("Invoice_ID");
-                    depositAmount = rs.getLong("Deposit_Amount");
-                    patientId = rs.getInt("Patient_ID");
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        return createPatientRefund(null, appointmentId, accountId, amount, reason);
+    }
 
-        if (invoiceId > 0 && hasActiveRefundRequest(invoiceId)) {
-            System.err.println("Prevent duplicate refund request for appointment #" + appointmentId + " (Invoice #" + invoiceId + ")");
-            return false;
-        }
-
-        if (invoiceId <= 0) {
-            String sqlCreateInv = "INSERT INTO Master_Invoice (Appointment_ID, Total_Amount, Deposit_Amount, Balance_Due, Status, Create_At) VALUES (?, ?, ?, 0, 'Paid', DATEADD(HOUR, 7, SYSUTCDATETIME()))";
-            try (Connection conn = connections.open();
-                 PreparedStatement ps = conn.prepareStatement(sqlCreateInv, Statement.RETURN_GENERATED_KEYS)) {
-                long defAmt = amount > 0 ? amount : 200000;
-                ps.setInt(1, appointmentId);
-                ps.setLong(2, defAmt);
-                ps.setLong(3, defAmt);
-                ps.executeUpdate();
-                try (ResultSet keys = ps.getGeneratedKeys()) {
-                    if (keys.next()) invoiceId = keys.getInt(1);
+    private boolean createPatientRefund(Integer invoiceId, Integer appointmentId,
+            int accountId, long amount, String reason) {
+        if (amount <= 0 || reason == null || reason.trim().isEmpty()) return false;
+        // Lock the same invoice row as the staff flow until the insert commits.
+        String sql = "SELECT i.Invoice_ID, a.Patient_ID, "
+                + "CASE WHEN i.Status='Partial_Paid' THEN i.Total_Amount-i.Balance_Due ELSE i.Total_Amount END AS Paid_Amount "
+                + "FROM Master_Invoice i WITH (UPDLOCK,HOLDLOCK) "
+                + "JOIN Appointment a WITH (UPDLOCK,HOLDLOCK) ON a.Appointment_ID=i.Appointment_ID "
+                + "JOIN Patient p ON p.Patient_ID=a.Patient_ID "
+                + "WHERE " + (invoiceId != null ? "i.Invoice_ID=?" : "a.Appointment_ID=?")
+                + " AND p.Account_ID=? AND " + RefundPolicy.ELIGIBLE;
+        try (Connection conn = connections.open()) {
+            conn.setAutoCommit(false);
+            try {
+                int resolvedInvoice, patientId;
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setInt(1, invoiceId != null ? invoiceId : appointmentId);
+                    ps.setInt(2, accountId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (!rs.next() || amount > rs.getLong("Paid_Amount")) {
+                            conn.rollback();
+                            return false;
+                        }
+                        resolvedInvoice = rs.getInt("Invoice_ID");
+                        patientId = rs.getInt("Patient_ID");
+                    }
                 }
+                if (hasRefundRequest(conn, resolvedInvoice)) {
+                    conn.rollback();
+                    return false;
+                }
+                int staffId;
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "SELECT TOP 1 Employee_ID FROM Employee_Profile ORDER BY Employee_ID");
+                     ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) { conn.rollback(); return false; }
+                    staffId = rs.getInt(1);
+                }
+                String insert = "INSERT INTO Refund_Request (Invoice_ID, created_by_employee_id, Patient_ID, Refund_Amount, Reason, Status, Created_At, Update_At) "
+                        + "VALUES (?, ?, ?, ?, ?, 'Pending', SYSUTCDATETIME(), SYSUTCDATETIME())";
+                try (PreparedStatement ps = conn.prepareStatement(insert)) {
+                    ps.setInt(1, resolvedInvoice);
+                    ps.setInt(2, staffId);
+                    ps.setInt(3, patientId);
+                    ps.setLong(4, amount);
+                    ps.setString(5, reason.trim());
+                    if (ps.executeUpdate() != 1) { conn.rollback(); return false; }
+                }
+                conn.commit();
+                return true;
             } catch (Exception e) {
-                e.printStackTrace();
+                conn.rollback();
+                throw e;
             }
-        }
-
-        long refundAmount = (amount > 0) ? amount : (depositAmount > 0 ? depositAmount : 200000);
-
-        if (patientId <= 0) {
-            String findPatient = "SELECT Patient_ID FROM Patient WHERE Account_ID = ?";
-            try (Connection conn = connections.open();
-                 PreparedStatement psP = conn.prepareStatement(findPatient)) {
-                psP.setInt(1, accountId);
-                try (ResultSet rsP = psP.executeQuery()) {
-                    if (rsP.next()) patientId = rsP.getInt(1);
-                }
-            } catch (Exception ignored) {}
-        }
-        if (patientId <= 0) return false;
-
-        int staffId = 1;
-        String findStaff = "SELECT TOP 1 Employee_ID FROM Employee_Profile";
-        try (Connection conn = connections.open();
-             PreparedStatement psE = conn.prepareStatement(findStaff);
-             ResultSet rsE = psE.executeQuery()) {
-            if (rsE.next()) staffId = rsE.getInt(1);
-        } catch (Exception ignored) {}
-
-        String insertSql = "INSERT INTO Refund_Request (Invoice_ID, created_by_employee_id, Patient_ID, Refund_Amount, Reason, Status, Created_At, Update_At) " +
-                           "VALUES (?, ?, ?, ?, ?, 'Pending', DATEADD(HOUR, 7, SYSUTCDATETIME()), DATEADD(HOUR, 7, SYSUTCDATETIME()))";
-        try (Connection conn = connections.open();
-             PreparedStatement psIns = conn.prepareStatement(insertSql)) {
-            psIns.setInt(1, invoiceId);
-            psIns.setInt(2, staffId);
-            psIns.setInt(3, patientId);
-            psIns.setLong(4, refundAmount);
-            psIns.setString(5, reason);
-            return psIns.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();
             return false;

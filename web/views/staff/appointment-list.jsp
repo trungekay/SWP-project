@@ -406,16 +406,11 @@
 
 <c:if test="${appt.status == 'Confirmed' && empty appt.checkinTime && !isPastAppt}"><a href="${pageContext.request.contextPath}/staff/reschedule?appointmentId=${appt.id}" class="action-btn" title="Đổi lịch khám cho bệnh nhân" aria-label="Đổi lịch khám cho bệnh nhân" data-bs-toggle="tooltip"><i class="bi bi-calendar2-range"></i></a></c:if>
 <c:if test="${refundEligible[appt.id] && empty activeAppointmentRefunds[appt.id]}"><a href="${pageContext.request.contextPath}/staff/refund-request?appointmentId=${appt.id}" class="action-btn warning" title="Tạo yêu cầu hoàn tiền" aria-label="Tạo yêu cầu hoàn tiền" data-bs-toggle="tooltip"><i class="bi bi-cash-coin"></i></a></c:if>
-<c:if test="${not empty activeAppointmentRefunds[appt.id]}">
-    <c:set var="existingRefund" value="${activeAppointmentRefunds[appt.id]}" />
-    <button type="button" class="action-btn" title="${existingRefund.code}: ${existingRefund.statusLabel}" aria-label="Xem yêu cầu hoàn tiền hiện có"
-        data-bs-toggle="modal" data-bs-target="#existingRefundModal" data-refund-code="${existingRefund.code}" data-invoice-id="${existingRefund.invoiceId}"
-        data-invoice-code="${existingRefund.invoiceCode}" data-status="${existingRefund.statusLabel}"
-        data-refund-id="${existingRefund.id}" data-refund-status="${existingRefund.status}"
-        data-decision-note="${fn:escapeXml(existingRefund.decisionNote)}"
-        data-amount="${existingRefund.amountLabel}" data-reason="${fn:escapeXml(existingRefund.reason)}">
-        <i class="bi bi-receipt"></i>
-    </button>
+<c:if test="${activeAppointmentRefunds[appt.id].status == 'Approved'}">
+    <a href="${pageContext.request.contextPath}/staff/invoices/detail?id=${activeAppointmentRefunds[appt.id].invoiceId}#refund-settlement"
+        class="action-btn warning" title="Xác nhận hoàn tiền" aria-label="Xác nhận hoàn tiền" data-bs-toggle="tooltip">
+        <i class="bi bi-check2-circle"></i>
+    </a>
 </c:if>
 <c:if test="${appt.cancellationRequested}">
 <button type="button" class="action-btn" title="Duyệt yêu cầu hủy lịch" aria-label="Duyệt yêu cầu hủy lịch"
@@ -609,7 +604,7 @@
                                         <button type="button" class="btn btn-modal-cancel"
                                             data-bs-dismiss="modal">Đóng</button>
                                         <button type="submit" class="btn btn-modal-danger">
-                                            <i class="bi bi-x-circle me-1"></i> Hủy lịch
+                                            Hủy lịch
                                         </button>
                                     </div>
                                 </form>
@@ -744,7 +739,7 @@
                                                 <label class="form-label small fw-semibold text-dark mb-0">
                                                     Khung giờ khám <span class="text-danger">*</span>
                                                 </label>
-                                                
+
                                             </div>
                                             <select name="timeSlot" id="walkinTimeSlot" class="form-select form-select-sm shadow-none"
                                                 style="border-radius: 8px; font-size: 13px; padding: 7px 12px;">
@@ -1278,19 +1273,27 @@
                                             }
                                         }
 
-                                        if (data.hasApptToday) {
-                                            var statusLabel = data.apptStatus === 'Pending' ? 'Chờ tiếp đón' : (data.apptStatus === 'Confirmed' ? 'Chờ khám' : data.apptStatus);
-                                            var isPending = data.apptStatus === 'Pending';
-                                            feedback.innerHTML = '<div class="alert alert-warning py-1 px-2 mb-0 mt-1 d-flex align-items-center justify-content-between" style="font-size: 11.5px; border-radius: 6px;">' +
-                                                '<div><i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>' +
-                                                'Đã có hẹn <strong>#APT-' + data.apptId + '</strong> (' + (data.apptTime || '') + ' - ' + (data.doctorName || '') + ' - ' + statusLabel + ')</div>' +
-                                                (isPending ? '<button type="button" class="btn btn-warning py-0 px-2 fw-semibold ms-2 text-nowrap" style="font-size: 11px;" onclick="quickCheckinFromWalkin(' + data.apptId + ', \'' + (data.name || '').replace(/'/g, "\\'") + '\')">Check-in ngay</button>' : '') +
-                                                '</div>';
-                                            if (submitBtn) submitBtn.disabled = true;
+                                        var appointments = data.appointmentsToday || [];
+                                        feedback.replaceChildren();
+                                        if (appointments.length) {
+                                            var notice = document.createElement('div');
+                                            notice.className = 'alert alert-info py-2 px-2 mb-0 mt-1 small';
+                                            var labels = { Pending: 'Chờ xử lý / thanh toán', Confirmed: 'Đã xác nhận', In_Progress: 'Đang khám', Completed: 'Đã khám xong' };
+                                            appointments.forEach(function(appt) {
+                                                var link = document.createElement('a');
+                                                link.className = 'd-block mt-1';
+                                                link.href = '${pageContext.request.contextPath}/staff/appointments?date=all&keyword=' + encodeURIComponent(appt.id);
+                                                link.textContent = '#APT-' + appt.id + ' · ' + appt.time + ' · ' + appt.doctorName + ' · ' + (labels[appt.status] || appt.status);
+                                                notice.appendChild(link);
+                                            });
+                                            feedback.appendChild(notice);
                                         } else {
-                                            feedback.innerHTML = '<span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2" style="font-size: 11.5px;"><i class="bi bi-person-check-fill me-1"></i>Đã tìm thấy: <strong>' + (data.name || '') + '</strong> (Đã tự động điền)</span>';
-                                            if (submitBtn) submitBtn.disabled = false;
+                                            var found = document.createElement('span');
+                                            found.className = 'badge bg-success-subtle text-success border border-success-subtle py-1 px-2';
+                                            found.textContent = 'Đã tìm thấy: ' + (data.name || '') + ' (Đã tự động điền)';
+                                            feedback.appendChild(found);
                                         }
+                                        if (submitBtn) submitBtn.disabled = false;
                                     } else {
                                         if (nameInput) nameInput.classList.remove('is-valid');
                                         if (dobInput) dobInput.classList.remove('is-valid');
@@ -2138,7 +2141,7 @@
             </style>
 
             <jsp:include page="/views/staff/refund-create-modal.jsp" />
-            <jsp:include page="/views/staff/refund-status-modal.jsp" />
+
 
             <!-- Modal: Xác nhận Duyệt Yêu Cầu Hủy Lịch Khám -->
             <div class="modal fade" id="confirmApproveCancelModal" tabindex="-1" aria-labelledby="confirmApproveCancelLabel" aria-hidden="true">
