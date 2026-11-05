@@ -79,16 +79,18 @@ public class StaffAppointmentListServlet extends HttpServlet {
                     json.append("\"found\":true,");
                     json.append("\"name\":\"").append(escapeJson(p.getFullName())).append("\",");
                     json.append("\"dob\":\"").append(p.getDob() != null ? p.getDob().toString() : "").append("\",");
-                    Appointment activeAppt = appointmentDAO.getPatientActiveAppointmentToday(phone, Date.valueOf(LocalDate.now()));
-                    if (activeAppt != null) {
-                        json.append("\"hasApptToday\":true,");
-                        json.append("\"apptId\":").append(activeAppt.getId()).append(",");
-                        json.append("\"apptStatus\":\"").append(escapeJson(activeAppt.getStatus())).append("\",");
-                        json.append("\"apptTime\":\"").append(escapeJson(activeAppt.getTimeSlot())).append("\",");
-                        json.append("\"doctorName\":\"").append(escapeJson(activeAppt.getDoctorName() != null ? activeAppt.getDoctorName() : "")).append("\"");
-                    } else {
-                        json.append("\"hasApptToday\":false");
+                    List<Appointment> todayAppointments = appointmentDAO.getPatientAppointmentsToday(phone, Date.valueOf(LocalDate.now()));
+                    json.append("\"appointmentsToday\":[");
+                    for (int n = 0; n < todayAppointments.size(); n++) {
+                        Appointment existing = todayAppointments.get(n);
+                        if (n > 0) json.append(",");
+                        json.append("{\"id\":").append(existing.getId())
+                            .append(",\"status\":\"").append(escapeJson(existing.getStatus()))
+                            .append("\",\"time\":\"").append(escapeJson(existing.getTimeSlot()))
+                            .append("\",\"doctorName\":\"").append(escapeJson(existing.getDoctorName() != null ? existing.getDoctorName() : ""))
+                            .append("\"}");
                     }
+                    json.append("]");
                 } else {
                     json.append("\"found\":false");
                 }
