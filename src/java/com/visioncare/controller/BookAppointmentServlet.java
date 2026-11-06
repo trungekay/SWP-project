@@ -34,10 +34,27 @@ public class BookAppointmentServlet extends HttpServlet {
     private final WorkScheduleDAO workScheduleDAO = new WorkScheduleDAO();
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
 
+    private boolean ownsAppointment(HttpServletRequest request,HttpServletResponse response,String raw)throws IOException {
+        User user=(User)request.getSession().getAttribute("user");
+        if(user==null){response.sendRedirect(request.getContextPath()+"/login");return false;}
+        try {
+            Appointment appointment=appointmentDAO.getAppointmentDetailById(Integer.parseInt(raw));
+            if(appointment==null||appointment.getUserId()!=user.getId()){response.sendError(403);return false;}
+            return true;
+        }catch(NumberFormatException e){response.sendError(400);return false;}
+        catch(Exception e){response.sendError(500,"Không kiểm tra được lịch hẹn.");return false;}
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String action = request.getParameter("action");
+        String requestedStep=request.getParameter("step");
+        if ("checkPayment".equalsIgnoreCase(action)||"cancelPending".equalsIgnoreCase(action)
+                ||"payment".equalsIgnoreCase(requestedStep)||"success".equalsIgnoreCase(requestedStep)) {
+            String target="checkPayment".equalsIgnoreCase(action)?request.getParameter("appointmentId"):request.getParameter("id");
+            if(!ownsAppointment(request,response,target))return;
+        }
 
         // AJAX: Tự động kiểm tra trạng thái thanh toán đơn hàng (Auto Polling cho PayOS)
         if ("checkPayment".equalsIgnoreCase(action)) {
@@ -61,8 +78,8 @@ public class BookAppointmentServlet extends HttpServlet {
                             orderCode = (sessionOrder != null) ? sessionOrder : apptId;
                         }
 
-                        String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(orderCode);
-                        if ("PAID".equalsIgnoreCase(payosStatus)) {
+                        com.visioncare.util.PayOSUtil.VerifiedReceipt receipt = com.visioncare.util.PayOSUtil.getVerifiedReceipt(orderCode);
+                        if (com.visioncare.util.BookingPaymentSession.matches(apptId, orderCode, appt.getFee(), receipt)) {
                             if (!appointmentDAO.confirmPayment(apptId)) {
                                 throw new IllegalStateException("Bác sĩ không còn làm việc trong khung giờ đã chọn hoặc lịch hẹn không còn hợp lệ. Nếu đã thanh toán, vui lòng liên hệ phòng khám để xử lý.");
                             }
@@ -135,6 +152,7 @@ public class BookAppointmentServlet extends HttpServlet {
                     int apptId = Integer.parseInt(apptIdParam);
                     Appointment fullAppt = appointmentDAO.getAppointmentDetailById(apptId);
                     if (fullAppt != null) {
+                        if(!fullAppt.isDepositPaid()){response.sendRedirect(request.getContextPath()+"/book-appointment?step=payment&id="+apptId);return;}
                         // Gửi email dự phòng nếu luồng trước chưa kịp gửi
                         try {
                             String emailSentKey = "email_sent_appt_" + apptId;
@@ -179,6 +197,8 @@ public class BookAppointmentServlet extends HttpServlet {
                     int apptId = Integer.parseInt(apptIdParam);
                     Appointment pendingAppt = appointmentDAO.getAppointmentDetailById(apptId);
                     if (pendingAppt != null) {
+                        if(pendingAppt.isDepositPaid()) {response.sendRedirect(request.getContextPath()+"/book-appointment?step=success&id="+apptId);return;}
+                        if(!pendingAppt.isAwaitingPayment()) {response.sendRedirect(request.getContextPath()+"/views/profile/appointment-history.jsp");return;}
                         String paymentError = (String) request.getSession().getAttribute("paymentError");
                         if (paymentError != null) {
                             request.setAttribute("error", paymentError);
@@ -196,7 +216,7 @@ public class BookAppointmentServlet extends HttpServlet {
                         String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
                         String cancelUrl = baseUrl + "/book-appointment?action=cancelPending&id=" + apptId;
                         String returnUrl = baseUrl + "/book-appointment?step=success&id=" + apptId;
-                        com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(orderCode, (int) fee, payosDesc, cancelUrl, returnUrl);
+                        com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.BookingPaymentSession.link(request.getSession(), apptId, Math.toIntExact(fee), cancelUrl, returnUrl);
 
                         String qrUrl = null;
                         String payosCheckoutUrl = null;
@@ -212,7 +232,9 @@ public class BookAppointmentServlet extends HttpServlet {
                         }
 
                         if (qrUrl == null || qrUrl.isEmpty()) {
-                            qrUrl = "https://img.vietqr.io/image/MB-0877757889-compact2.png?amount=" + fee + "&addInfo=" + URLEncoder.encode(payosDesc + " " + phoneSafe, StandardCharsets.UTF_8) + "&accountName=NGUYEN%20DINH%20TRUNG";
+                            request.getSession().setAttribute("errorMessage", "Chưa tạo được QR từ cổng thanh toán. Vui lòng thử lại từ lịch sử hẹn khám; không chuyển tiền bằng QR cũ hoặc QR tĩnh.");
+                            response.sendRedirect(request.getContextPath()+"/views/profile/appointment-history.jsp");
+                            return;
                         }
 
                         int pendingHoldMinutes = com.visioncare.dao.TimeSlotDAO.getPendingHoldMinutes();
@@ -419,6 +441,7 @@ public class BookAppointmentServlet extends HttpServlet {
 
         // BƯỚC 2: Bệnh nhân quét mã QR và nhấn "Xác nhận tôi đã thanh toán (Verify Payment)"
         if ("confirmPayment".equalsIgnoreCase(action)) {
+            if(!ownsAppointment(request,response,request.getParameter("appointmentId")))return;
             try {
                 String apptIdStr = request.getParameter("appointmentId");
                 if (apptIdStr == null || apptIdStr.isEmpty()) {
@@ -439,10 +462,11 @@ public class BookAppointmentServlet extends HttpServlet {
                 }
 
                 // Kiểm tra trạng thái thanh toán từ cổng PayOS
-                String payosStatus = com.visioncare.util.PayOSUtil.getPaymentStatus(orderCode);
+                Appointment paymentAppointment = appointmentDAO.getAppointmentDetailById(appointmentId);
+                com.visioncare.util.PayOSUtil.VerifiedReceipt receipt = com.visioncare.util.PayOSUtil.getVerifiedReceipt(orderCode);
 
                 // Nếu chưa thanh toán thành công trên cổng ngân hàng/PayOS, không cho xác nhận
-                if (!"PAID".equalsIgnoreCase(payosStatus)) {
+                if (paymentAppointment == null || !com.visioncare.util.BookingPaymentSession.matches(appointmentId, orderCode, paymentAppointment.getFee(), receipt)) {
                     session.setAttribute("paymentError", "Hệ thống chưa ghi nhận được thanh toán từ ngân hàng (Trạng thái đơn: Chưa thanh toán). Quý khách vui lòng quét mã QR chuyển khoản và chờ hệ thống xử lý trong ít giây!");
                     response.sendRedirect(request.getContextPath() + "/book-appointment?step=payment&id=" + appointmentId);
                     return;
@@ -672,7 +696,7 @@ public class BookAppointmentServlet extends HttpServlet {
             String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
             String cancelUrl = baseUrl + "/book-appointment?action=cancelPending&id=" + newId;
             String returnUrl = baseUrl + "/book-appointment?step=success&id=" + newId;
-            com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.PayOSUtil.createPaymentLink(orderCode, (int) fee, payosDesc, cancelUrl, returnUrl);
+            com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.BookingPaymentSession.link(request.getSession(), newId, Math.toIntExact(fee), cancelUrl, returnUrl);
 
             String qrUrl = null;
             String payosCheckoutUrl = null;
@@ -688,8 +712,10 @@ public class BookAppointmentServlet extends HttpServlet {
             }
 
             if (qrUrl == null || qrUrl.isEmpty()) {
-                qrUrl = "https://img.vietqr.io/image/MB-0877757889-compact2.png?amount=" + fee + "&addInfo=" + URLEncoder.encode(payosDesc + " " + phoneSafe, StandardCharsets.UTF_8) + "&accountName=NGUYEN%20DINH%20TRUNG";
-            }
+                            request.getSession().setAttribute("errorMessage", "Chưa tạo được QR từ cổng thanh toán. Vui lòng thử lại từ lịch sử hẹn khám; không chuyển tiền bằng QR cũ hoặc QR tĩnh.");
+                            response.sendRedirect(request.getContextPath()+"/views/profile/appointment-history.jsp");
+                            return;
+                        }
 
             Appointment fullAppt = appointmentDAO.getAppointmentDetailById(newId);
             if (fullAppt != null) {

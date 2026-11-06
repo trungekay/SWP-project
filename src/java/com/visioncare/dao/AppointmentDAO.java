@@ -151,8 +151,9 @@ public class AppointmentDAO {
     public boolean confirmPayment(int appointmentId) throws Exception {
         Connection conn = null;
         try {
-            conn = DBContext.getConnection();
+            conn = walkinConnections.open();
             conn.setAutoCommit(false);
+            conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 
             // Recheck under a lock: leave may have been approved after booking.
             String availabilitySql = "SELECT ws.Status FROM Work_Schedule ws WITH (UPDLOCK, HOLDLOCK) "
@@ -165,6 +166,19 @@ public class AppointmentDAO {
                         conn.rollback();
                         return false;
                     }
+                }
+            }
+
+            // Polling, the return page and the webhook may arrive together.
+            // Lock and recognize the existing receipt before inserting another one.
+            try (PreparedStatement ps=conn.prepareStatement(
+                    "SELECT a.Status,i.Status AS Invoice_Status,"
+                    +"(SELECT COUNT(*) FROM Payment_Transaction t WHERE t.Invoice_ID=i.Invoice_ID AND t.Gateway_Status='Success') AS Receipts "
+                    +"FROM Appointment a WITH(UPDLOCK,HOLDLOCK) LEFT JOIN Master_Invoice i WITH(UPDLOCK,HOLDLOCK) ON i.Appointment_ID=a.Appointment_ID WHERE a.Appointment_ID=?")) {
+                ps.setInt(1,appointmentId);
+                try(ResultSet r=ps.executeQuery()) {
+                    if(!r.next()||!("Pending".equals(r.getString("Status"))||"Confirmed".equals(r.getString("Status")))){conn.rollback();return false;}
+                    if("Confirmed".equals(r.getString("Status"))&&("Paid".equals(r.getString("Invoice_Status"))||"Partial_Paid".equals(r.getString("Invoice_Status")))&&r.getInt("Receipts")>0){conn.commit();return true;}
                 }
             }
 

@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 
-@WebFilter(urlPatterns = {"/my-appointments", "/profile/*", "/views/profile/*", "/book-appointment", "/admin/*", "/director", "/director/*", "/views/director/*", "/views/staff/invoice-list.jsp", "/views/staff/invoice-detail.jsp", "/views/staff/invoice-export.jsp", "/views/admin/refund-management.jsp", "/views/employee/reschedule-requests.jsp", "/views/employee/leave-requests.jsp", "/staff/*", "/employee/*", "/specialist/*", "/doctor/*"})
+@WebFilter(urlPatterns = {"/my-appointments", "/profile/*", "/views/profile/*", "/book-appointment", "/admin/*", "/director", "/director/*", "/views/director/*", "/views/staff/*", "/views/admin/refund-management.jsp", "/views/employee/*", "/staff/*", "/employee/*", "/specialist/*", "/doctor/*"})
 public class AuthenticationFilter implements Filter {
 
     @Override
@@ -27,6 +27,18 @@ public class AuthenticationFilter implements Filter {
                 
                 // 2. Fix Authorization Bypass for Admin
                 String uri = httpRequest.getRequestURI();
+                com.visioncare.model.User actor = (com.visioncare.model.User) session.getAttribute("user");
+                String path = uri.substring(httpRequest.getContextPath().length());
+                if ((path.startsWith("/employee/") || path.startsWith("/views/employee/"))
+                        && (actor.getRoleId() < 1 || actor.getRoleId() > 5)) {
+                    httpResponse.sendError(403, "Bạn không có quyền truy cập khu vực nhân viên.");return;
+                }
+                if (path.startsWith("/views/staff/") && actor.getRoleId()!=1 && actor.getRoleId()!=2 && actor.getRoleId()!=5) {
+                    httpResponse.sendError(403, "Bạn không có quyền truy cập khu vực lễ tân.");return;
+                }
+                if (path.equals("/views/staff/invoice-checkout.jsp")) {
+                    httpResponse.sendRedirect(httpRequest.getContextPath()+"/staff/invoices");return;
+                }
                 if(uri.equals(httpRequest.getContextPath()+"/views/employee/leave-requests.jsp")) {httpResponse.sendRedirect(httpRequest.getContextPath()+"/employee/leave-requests");return;}
                 if (java.util.Set.of("/views/profile/invoice-detail.jsp","/views/profile/reschedule.jsp","/views/director/refund-detail.jsp").contains(uri.substring(httpRequest.getContextPath().length()))) {httpResponse.sendError(404);return;}
 

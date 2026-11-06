@@ -476,7 +476,7 @@ public class InvoiceDAO {
      */
     public List<Map<String, Object>> getPaidInvoicesForPatient(int accountId) {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT i.Invoice_ID, i.Total_Amount, i.Deposit_Amount, i.Close_At, i.Create_At, a.Appointment_ID, " +
+        String sql = "SELECT i.Invoice_ID, i.Total_Amount, i.Deposit_Amount, i.Balance_Due, i.Status AS Invoice_Status, i.Close_At, i.Create_At, a.Appointment_ID, " +
                      "       r.Refund_ID, r.Status AS Refund_Status, " +
                      "       CASE WHEN r.Refund_ID IS NOT NULL THEN 1 ELSE 0 END AS Has_Refund, " +
                      "       CASE WHEN " + RefundPolicy.ELIGIBLE + " AND r.Refund_ID IS NULL THEN 1 ELSE 0 END AS Is_Eligible " +
@@ -484,7 +484,7 @@ public class InvoiceDAO {
                      "JOIN Appointment a ON i.Appointment_ID = a.Appointment_ID " +
                      "JOIN Patient p ON a.Patient_ID = p.Patient_ID " +
                      "OUTER APPLY (SELECT TOP 1 rr.Refund_ID, rr.Status FROM Refund_Request rr WHERE rr.Invoice_ID = i.Invoice_ID ORDER BY rr.Refund_ID DESC) r " +
-                     "WHERE p.Account_ID = ? AND i.Status = 'Paid' " +
+                     "WHERE p.Account_ID = ? AND " + RefundPolicy.ELIGIBLE + " AND " + RefundPolicy.NO_ACTIVE_REQUEST + " " +
                      "ORDER BY i.Invoice_ID DESC";
         try (Connection conn = connections.open();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -493,7 +493,7 @@ public class InvoiceDAO {
                 while (rs.next()) {
                     Map<String, Object> map = new HashMap<>();
                     int id = rs.getInt("Invoice_ID");
-                    long amt = rs.getLong("Total_Amount");
+                    long amt = "Partial_Paid".equals(rs.getString("Invoice_Status")) ? rs.getLong("Total_Amount") - rs.getLong("Balance_Due") : rs.getLong("Total_Amount");
                     long depAmt = rs.getLong("Deposit_Amount");
                     int apptId = rs.getInt("Appointment_ID");
                     boolean hasRefund = rs.getInt("Has_Refund") == 1;
@@ -503,7 +503,7 @@ public class InvoiceDAO {
                     map.put("id", id);
                     map.put("formattedId", String.format("#INV-%05d", id));
                     map.put("amount", amt);
-                    map.put("depositAmount", depAmt > 0 ? depAmt : amt);
+                    map.put("depositAmount", amt);
                     map.put("amountFmt", formatVND(amt));
                     Timestamp t = rs.getTimestamp("Close_At");
                     if (t == null) t = rs.getTimestamp("Create_At");

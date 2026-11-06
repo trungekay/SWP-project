@@ -37,8 +37,17 @@ public class StaffInvoiceServlet extends HttpServlet {
     if(!invoice.finalized||!"Paid".equals(invoice.invoiceStatus)||invoice.getDue()!=0||invoice.isBlocked()){res.sendError(409,"Chỉ xuất hóa đơn đã chốt và thanh toán đủ.");return;}
     req.getRequestDispatcher("/views/staff/invoice-export.jsp").forward(req,res);return;
    }
-   req.setAttribute("checkout",path.endsWith("/checkout"));req.getRequestDispatcher("/views/staff/invoice-detail.jsp").forward(req,res);
+   boolean checkout=path.endsWith("/checkout");
+   if(checkout&&!invoice.finalized&&invoice.activePayment==null&&!reviewed(session,invoice)) {
+    session.setAttribute("invoiceError","Vui lòng đối chiếu và xác nhận các khoản thu trước khi thanh toán.");
+    res.sendRedirect(req.getContextPath()+"/staff/invoices/detail?id="+id);return;
+   }
+   req.setAttribute("checkout",checkout);
+   req.getRequestDispatcher(checkout?"/views/staff/invoice-checkout.jsp":"/views/staff/invoice-detail.jsp").forward(req,res);
   }catch(IllegalArgumentException e){res.sendError(400,e.getMessage());}catch(Exception e){log("Cannot read staff invoice",e);res.sendError(500,"Không tải được hóa đơn. Vui lòng thử lại.");}
+ }
+ private boolean reviewed(HttpSession session,StaffInvoice invoice){
+  return invoice.fingerprint().equals(session.getAttribute("invoiceReviewed:"+invoice.id));
  }
  private int employee(User u)throws Exception{
   try(java.sql.Connection c=DBContext.getConnection();java.sql.PreparedStatement ps=c.prepareStatement("SELECT Employee_ID FROM Employee_Profile WHERE Account_ID=?")){ps.setInt(1,u.getId());try(java.sql.ResultSet r=ps.executeQuery()){if(r.next())return r.getInt(1);}}throw new IllegalArgumentException("Tài khoản chưa có hồ sơ nhân viên.");
@@ -50,11 +59,23 @@ public class StaffInvoiceServlet extends HttpServlet {
   String token=(String)req.getSession().getAttribute("invoiceCsrf"),provided=req.getParameter("csrfToken");
   if(token==null||provided==null||!MessageDigest.isEqual(token.getBytes(StandardCharsets.UTF_8),provided.getBytes(StandardCharsets.UTF_8))){if(polling)InvoicePollingResponse.send(res,403,"SessionExpired","Phiên xác nhận đã hết hạn. Đang làm mới trang.");else res.sendError(403,"Phiên thao tác đã hết hạn. Hãy tải lại trang.");return;}
   int id;try{id=Integer.parseInt(req.getParameter("invoiceId"));}catch(Exception e){if(polling)InvoicePollingResponse.send(res,400,"InvalidRequest","Mã hóa đơn không hợp lệ.");else res.sendError(400);return;}
+  boolean reviewAction="decline".equals(action)||"confirmReview".equals(action);
+  String destination=reviewAction?"/staff/invoices/detail":"/staff/invoices/checkout";
   try {
-   if(!"/staff/invoices/checkout".equals(req.getServletPath())){if(polling)InvoicePollingResponse.send(res,405,"InvalidRequest","Đường dẫn theo dõi không hợp lệ.");else res.sendError(405);return;}
+   if(!destination.equals(req.getServletPath())){if(polling)InvoicePollingResponse.send(res,405,"InvalidRequest","Đường dẫn theo dõi không hợp lệ.");else res.sendError(405);return;}
    int employee=polling?0:employee(user);
    String expected=req.getParameter("fingerprint");
-   if("decline".equals(action)){dao.decline(id,req.getParameter("itemKey"),employee,expected);req.getSession().setAttribute("invoiceSuccess","Đã bỏ khoản khách từ chối và tính lại hóa đơn.");}
+   if("confirmReview".equals(action)) {
+    StaffInvoice invoice=dao.get(id);
+    if(!invoice.isCanCheckout()||!invoice.fingerprint().equals(expected))throw new IllegalArgumentException("Hóa đơn đã thay đổi hoặc chưa đủ điều kiện thanh toán. Vui lòng đối chiếu lại.");
+    req.getSession().setAttribute("invoiceReviewed:"+id,invoice.fingerprint());
+    destination="/staff/invoices/checkout";
+   }
+   else if("decline".equals(action)){dao.decline(id,req.getParameter("itemKey"),employee,expected);req.getSession().removeAttribute("invoiceReviewed:"+id);req.getSession().setAttribute("invoiceSuccess","Đã bỏ khoản khách từ chối và tính lại hóa đơn.");}
+   else if(!polling&&!("createQr".equals(action)&&dao.get(id).activePayment!=null)&&!reviewed(req.getSession(),dao.get(id))) {
+    destination="/staff/invoices/detail";
+    throw new IllegalArgumentException("Vui lòng xác nhận lại các khoản thu trước khi thanh toán.");
+   }
    else if("cash".equals(action)){if(!"yes".equals(req.getParameter("cashReceived")))throw new IllegalArgumentException("Cần xác nhận đã nhận và đối chiếu tiền mặt.");dao.cash(id,employee,expected);req.getSession().setAttribute("invoiceSuccess","Đã xác nhận tiền mặt và chốt hóa đơn.");}
    else if("createQr".equals(action)) {
     if(PayOSUtil.getClientId().isEmpty()||PayOSUtil.getApiKey().isEmpty()||PayOSUtil.getChecksumKey().isEmpty())throw new IllegalStateException("Chưa cấu hình PayOS. Vui lòng chọn tiền mặt hoặc cấu hình cổng thanh toán.");
@@ -72,6 +93,6 @@ public class StaffInvoiceServlet extends HttpServlet {
    else if(polling){long order=Long.parseLong(req.getParameter("orderCode"));String status=StaffCheckoutPayments.refresh(order,id);InvoicePollingResponse.send(res,200,status,"Paid".equals(status)?"Thanh toán hoàn thành.":"Đang chờ xác nhận thanh toán.");return;}
    else throw new IllegalArgumentException("Thao tác không hợp lệ.");
   }catch(Exception e){if(polling){InvoicePollingResponse.send(res,409,"Retry","Chưa xác minh được giao dịch. Hệ thống sẽ tự thử lại.");return;}req.getSession().setAttribute("invoiceError",e instanceof IllegalArgumentException||e instanceof IllegalStateException?e.getMessage():"Không thể cập nhật hóa đơn. Vui lòng tải lại.");log("Staff invoice operation did not finish",e);}
-  res.sendRedirect(req.getContextPath()+"/staff/invoices/checkout?id="+id);
+  res.sendRedirect(req.getContextPath()+destination+"?id="+id);
  }
 }
