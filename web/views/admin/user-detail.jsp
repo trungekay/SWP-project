@@ -379,75 +379,62 @@
                         <!-- Right Column: Role Assignment -->
                         <div class="col-lg-6 ps-lg-4 border-start">
                             <h5 class="section-title"><i class="bi bi-shield-check"></i> Phân quyền Người dùng</h5>
-                            <label class="form-label mb-2">Chọn vai trò đảm nhiệm</label>
+                            <c:choose>
+                                <c:when test="${canAssignRole}">
+                                    <label class="form-label mb-2">Chọn vai trò đảm nhiệm</label>
 
-                            <div class="role-grid">
-                                <label class="role-card ${user.roleId == 1 ? 'selected' : ''}" onclick="selectRole(this)">
-                                    <input type="radio" name="roleId" value="1" ${user.roleId == 1 ? 'checked' : ''}>
-                                    <div class="role-content">
-                                        <div class="radio-custom"></div>
-                                        <div class="role-info">
-                                            <span class="title">System Admin</span>
-                                            <span class="desc">Toàn quyền quản trị kỹ thuật và bảo mật hệ thống</span>
-                                        </div>
-                                    </div>
-                                </label>
+                                    <div class="role-grid">
+                                        <label class="role-card ${user.roleId == 3 ? 'selected' : ''}" onclick="selectRole(this)">
+                                            <input type="radio" name="roleId" value="3" ${user.roleId == 3 ? 'checked' : ''}>
+                                            <div class="role-content">
+                                                <div class="radio-custom"></div>
+                                                <div class="role-info">
+                                                    <span class="title">Doctor</span>
+                                                    <span class="desc">Bác sĩ khám mắt, chẩn đoán và chỉ định điều trị</span>
+                                                </div>
+                                            </div>
+                                        </label>
 
-                                <label class="role-card ${user.roleId == 2 ? 'selected' : ''}" onclick="selectRole(this)">
-                                    <input type="radio" name="roleId" value="2" ${user.roleId == 2 ? 'checked' : ''}>
-                                    <div class="role-content">
-                                        <div class="radio-custom"></div>
-                                        <div class="role-info">
-                                            <span class="title">Director</span>
-                                            <span class="desc">Quản lý hoạt động chuyên môn và điều hành phòng khám</span>
-                                        </div>
-                                    </div>
-                                </label>
+                                        <label class="role-card ${user.roleId == 4 ? 'selected' : ''}" onclick="selectRole(this)">
+                                            <input type="radio" name="roleId" value="4" ${user.roleId == 4 ? 'checked' : ''}>
+                                            <div class="role-content">
+                                                <div class="radio-custom"></div>
+                                                <div class="role-info">
+                                                    <span class="title">Medical Specialist</span>
+                                                    <span class="desc">Kỹ thuật viên khúc xạ, thực hiện thủ thuật &amp; cận lâm sàng</span>
+                                                </div>
+                                            </div>
+                                        </label>
 
-                                <label class="role-card ${user.roleId == 3 ? 'selected' : ''}" onclick="selectRole(this)">
-                                    <input type="radio" name="roleId" value="3" ${user.roleId == 3 ? 'checked' : ''}>
-                                    <div class="role-content">
-                                        <div class="radio-custom"></div>
-                                        <div class="role-info">
-                                            <span class="title">Doctor</span>
-                                            <span class="desc">Bác sĩ khám mắt, chẩn đoán và chỉ định điều trị</span>
-                                        </div>
-                                    </div>
-                                </label>
+                                        <label class="role-card ${user.roleId == 5 ? 'selected' : ''}" onclick="selectRole(this)">
+                                            <input type="radio" name="roleId" value="5" ${user.roleId == 5 ? 'checked' : ''}>
+                                            <div class="role-content">
+                                                <div class="radio-custom"></div>
+                                                <div class="role-info">
+                                                    <span class="title">Staff</span>
+                                                    <span class="desc">Nhân viên lễ tân, tiếp đón bệnh nhân và thu ngân</span>
+                                                </div>
+                                            </div>
+                                        </label>
 
-                                <label class="role-card ${user.roleId == 4 ? 'selected' : ''}" onclick="selectRole(this)">
-                                    <input type="radio" name="roleId" value="4" ${user.roleId == 4 ? 'checked' : ''}>
-                                    <div class="role-content">
-                                        <div class="radio-custom"></div>
-                                        <div class="role-info">
-                                            <span class="title">Medical Specialist</span>
-                                            <span class="desc">Kỹ thuật viên khúc xạ, thực hiện thủ thuật &amp; cận lâm sàng</span>
-                                        </div>
                                     </div>
-                                </label>
-
-                                <label class="role-card ${user.roleId == 5 ? 'selected' : ''}" onclick="selectRole(this)">
-                                    <input type="radio" name="roleId" value="5" ${user.roleId == 5 ? 'checked' : ''}>
-                                    <div class="role-content">
-                                        <div class="radio-custom"></div>
-                                        <div class="role-info">
-                                            <span class="title">Staff</span>
-                                            <span class="desc">Nhân viên lễ tân, tiếp đón bệnh nhân và thu ngân</span>
-                                        </div>
+                                </c:when>
+                                <c:otherwise>
+                                    <input type="hidden" name="roleId" value="${user.roleId}">
+                                    <label class="form-label mb-2">Vai trò hiện tại</label>
+                                    <div class="fw-semibold">
+                                        <c:choose>
+                                            <c:when test="${user.roleId == 1}">System Admin</c:when>
+                                            <c:when test="${user.roleId == 2}">Director</c:when>
+                                            <c:when test="${user.roleId == 3}">Doctor</c:when>
+                                            <c:when test="${user.roleId == 4}">Medical Specialist</c:when>
+                                            <c:when test="${user.roleId == 5}">Staff</c:when>
+                                            <c:when test="${user.roleId == 6}">Patient</c:when>
+                                            <c:otherwise><c:out value="${user.role}" /></c:otherwise>
+                                        </c:choose>
                                     </div>
-                                </label>
-
-                                <label class="role-card ${user.roleId == 6 ? 'selected' : ''}" onclick="selectRole(this)">
-                                    <input type="radio" name="roleId" value="6" ${user.roleId == 6 ? 'checked' : ''}>
-                                    <div class="role-content">
-                                        <div class="radio-custom"></div>
-                                        <div class="role-info">
-                                            <span class="title">Patient</span>
-                                            <span class="desc">Khách hàng / bệnh nhân đặt lịch và khám bệnh</span>
-                                        </div>
-                                    </div>
-                                </label>
-                            </div>
+                                </c:otherwise>
+                            </c:choose>
                         </div>
                     </div>
 
@@ -481,7 +468,6 @@
                 radio.checked = true;
                 const roleId = parseInt(radio.value);
                 const employeeFields = document.getElementById('employee-fields');
-                const patientFields = document.getElementById('patient-fields');
 
                 if (roleId === 3 || roleId === 4) {
                     if (employeeFields) employeeFields.style.display = 'block';
@@ -489,11 +475,6 @@
                     if (employeeFields) employeeFields.style.display = 'none';
                 }
 
-                if (roleId === 6) {
-                    if (patientFields) patientFields.style.display = 'block';
-                } else {
-                    if (patientFields) patientFields.style.display = 'none';
-                }
             }
         }
     </script>
