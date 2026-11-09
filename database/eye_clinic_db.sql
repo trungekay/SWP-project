@@ -3242,3 +3242,40 @@ BEGIN
         ON dbo.Doctor_Schedule_Change(Source_Schedule_ID, Changed_At DESC);
 END;
 GO
+
+-- Danh mục mẫu cho thuốc viên uống có thể được bác sĩ mắt chỉ định.
+-- Giá là dữ liệu mẫu theo từng viên, cần được quản trị viên xác nhận trước khi thu phí.
+-- Có thể chạy lại: thuốc cùng tên sẽ không được thêm lần nữa.
+BEGIN TRANSACTION;
+
+INSERT INTO dbo.Medical_Supply (Supply_Name, Category, Price)
+SELECT source.Supply_Name, N'Thuốc & Dung dịch', source.Price
+FROM (VALUES
+    (N'Acetazolamide viên uống 125 mg', 2000),
+    (N'Acetazolamide viên uống 250 mg', 3000),
+    (N'Methazolamide viên uống 25 mg', 4000),
+    (N'Methazolamide viên uống 50 mg', 6000),
+    (N'Acyclovir viên uống 400 mg', 3000),
+    (N'Acyclovir viên uống 800 mg', 5000),
+    (N'Valacyclovir viên uống 500 mg', 12000),
+    (N'Valacyclovir viên uống 1000 mg', 20000),
+    (N'Famciclovir viên uống 250 mg', 18000),
+    (N'Famciclovir viên uống 500 mg', 30000),
+    (N'Doxycycline viên uống 50 mg', 2000),
+    (N'Doxycycline viên uống 100 mg', 3000),
+    (N'Azithromycin viên uống 250 mg', 8000),
+    (N'Azithromycin viên uống 500 mg', 14000),
+    (N'Prednisolone viên uống 5 mg', 2000),
+    (N'Prednisolone viên uống 20 mg', 5000),
+    (N'Methylprednisolone viên uống 4 mg', 2500),
+    (N'Methylprednisolone viên uống 16 mg', 6000),
+    (N'Loratadine viên uống 10 mg', 3000),
+    (N'Cetirizine viên uống 10 mg', 2500)
+) AS source(Supply_Name, Price)
+WHERE NOT EXISTS (
+    SELECT 1 FROM dbo.Medical_Supply WITH (UPDLOCK, HOLDLOCK)
+    WHERE Supply_Name = source.Supply_Name
+);
+
+COMMIT TRANSACTION;
+GO

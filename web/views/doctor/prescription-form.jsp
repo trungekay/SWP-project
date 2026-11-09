@@ -11,8 +11,8 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css">
     <jsp:include page="/views/admin/layout/admin-css.jsp" />
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=9">
-    <script defer charset="UTF-8" src="${pageContext.request.contextPath}/assets/js/doctor-forms.js?v=10"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=10">
+    <script defer charset="UTF-8" src="${pageContext.request.contextPath}/assets/js/doctor-forms.js?v=14"></script>
 </head>
 <body>
 <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
@@ -111,6 +111,7 @@
                                         <option value="chai" ${medicine.unit eq 'chai' or empty medicine.unit ? 'selected' : ''}>Chai</option>
                                         <option value="hộp" ${medicine.unit eq 'hộp' ? 'selected' : ''}>Hộp</option>
                                         <option value="viên" ${medicine.unit eq 'viên' ? 'selected' : ''}>Viên</option>
+                                        <option value="vỉ" ${medicine.unit eq 'vỉ' ? 'selected' : ''}>Vỉ</option>
                                         <option value="tuýp" ${medicine.unit eq 'tuýp' ? 'selected' : ''}>Tuýp</option>
                                         <option value="lọ" ${medicine.unit eq 'lọ' ? 'selected' : ''}>Lọ</option>
                                         <option value="khác" ${medicine.unit eq 'khác' ? 'selected' : ''}>Khác</option>
@@ -134,13 +135,13 @@
                         <table class="doctor-form-matrix doctor-form-glasses-table">
                             <thead><tr><th scope="col">Mắt</th><th scope="col">SPH</th><th scope="col">CYL</th><th scope="col">AXIS</th><th scope="col">ADD</th></tr></thead>
                             <tbody>
-                                <tr><th scope="row">Phải (OD)</th><td><input name="odSph" type="number" step="0.25" min="-30" max="30" aria-label="SPH mắt phải" placeholder="0.00" value="<c:out value='${formValues.odSph}' />"></td><td><input name="odCyl" type="number" step="0.25" min="-15" max="15" aria-label="CYL mắt phải" placeholder="0.00" value="<c:out value='${formValues.odCyl}' />"></td><td><input name="odAxis" type="number" step="1" min="0" max="180" aria-label="AXIS mắt phải" placeholder="0–180" value="<c:out value='${formValues.odAxis}' />"></td><td><input name="odAdd" type="number" step="0.25" min="0" max="6" aria-label="ADD mắt phải" placeholder="0.00" value="<c:out value='${formValues.odAdd}' />"></td></tr>
-                                <tr><th scope="row">Trái (OS)</th><td><input name="osSph" type="number" step="0.25" min="-30" max="30" aria-label="SPH mắt trái" placeholder="0.00" value="<c:out value='${formValues.osSph}' />"></td><td><input name="osCyl" type="number" step="0.25" min="-15" max="15" aria-label="CYL mắt trái" placeholder="0.00" value="<c:out value='${formValues.osCyl}' />"></td><td><input name="osAxis" type="number" step="1" min="0" max="180" aria-label="AXIS mắt trái" placeholder="0–180" value="<c:out value='${formValues.osAxis}' />"></td><td><input name="osAdd" type="number" step="0.25" min="0" max="6" aria-label="ADD mắt trái" placeholder="0.00" value="<c:out value='${formValues.osAdd}' />"></td></tr>
+                                <tr><th scope="row">Phải (OD)</th><td><input name="odSph" type="text" inputmode="decimal" data-glasses-number data-min="-30" data-max="30" data-step="0.25" maxlength="20" aria-label="SPH mắt phải" placeholder="0.00" value="<c:out value='${formValues.odSph}' />"></td><td><input name="odCyl" type="text" inputmode="decimal" data-glasses-number data-min="-15" data-max="15" data-step="0.25" maxlength="20" aria-label="CYL mắt phải" placeholder="0.00" value="<c:out value='${formValues.odCyl}' />"></td><td><input name="odAxis" type="text" inputmode="decimal" data-glasses-number data-min="0" data-max="180" data-step="1" maxlength="20" aria-label="AXIS mắt phải" placeholder="0–180" value="<c:out value='${formValues.odAxis}' />"></td><td><input name="odAdd" type="text" inputmode="decimal" data-glasses-number data-min="0" data-max="6" data-step="0.25" maxlength="20" aria-label="ADD mắt phải" placeholder="0.00" value="<c:out value='${formValues.odAdd}' />"></td></tr>
+                                <tr><th scope="row">Trái (OS)</th><td><input name="osSph" type="text" inputmode="decimal" data-glasses-number data-min="-30" data-max="30" data-step="0.25" maxlength="20" aria-label="SPH mắt trái" placeholder="0.00" value="<c:out value='${formValues.osSph}' />"></td><td><input name="osCyl" type="text" inputmode="decimal" data-glasses-number data-min="-15" data-max="15" data-step="0.25" maxlength="20" aria-label="CYL mắt trái" placeholder="0.00" value="<c:out value='${formValues.osCyl}' />"></td><td><input name="osAxis" type="text" inputmode="decimal" data-glasses-number data-min="0" data-max="180" data-step="1" maxlength="20" aria-label="AXIS mắt trái" placeholder="0–180" value="<c:out value='${formValues.osAxis}' />"></td><td><input name="osAdd" type="text" inputmode="decimal" data-glasses-number data-min="0" data-max="6" data-step="0.25" maxlength="20" aria-label="ADD mắt trái" placeholder="0.00" value="<c:out value='${formValues.osAdd}' />"></td></tr>
                             </tbody>
                         </table>
                     </div>
                     <div class="doctor-form-fields doctor-form-glasses-extra">
-                        <label class="doctor-form-field"><span>Khoảng cách đồng tử (PD, mm)</span><input name="pd" type="number" min="40" max="80" step="0.5" placeholder="VD: 62" value="<c:out value='${formValues.pd}' />"></label>
+                        <label class="doctor-form-field"><span>Khoảng cách đồng tử (PD, mm)</span><input name="pd" type="text" inputmode="decimal" data-glasses-number data-min="40" data-max="85" data-step="0.5" maxlength="20" placeholder="VD: 62" value="<c:out value='${formValues.pd}' />"></label>
                         <label class="doctor-form-field"><span>Loại kính</span><select name="lensType"><option value="">Chọn loại kính</option><option value="distance" ${formValues.lensType eq 'distance' ? 'selected' : ''}>Kính nhìn xa</option><option value="near" ${formValues.lensType eq 'near' ? 'selected' : ''}>Kính đọc gần</option><option value="progressive" ${formValues.lensType eq 'progressive' ? 'selected' : ''}>Kính đa tròng</option><option value="other" ${formValues.lensType eq 'other' ? 'selected' : ''}>Khác</option></select></label>
                         <label class="doctor-form-field doctor-form-span"><span>Ghi chú về kính</span><textarea name="glassesNotes" rows="2" maxlength="1000" placeholder="Chất liệu tròng, lớp phủ, thời gian đeo..."><c:out value="${formValues.glassesNotes}" /></textarea></label>
                     </div>
@@ -149,11 +150,10 @@
                 <section class="doctor-form-card" aria-labelledby="prescription-notes-heading">
                     <div class="doctor-form-card-heading">
                         <span class="doctor-form-icon amber"><i class="bi bi-file-text" aria-hidden="true"></i></span>
-                        <div><h2 id="prescription-notes-heading">Dặn dò bệnh nhân</h2><p>Hướng dẫn dùng thuốc, theo dõi và tái khám</p></div>
+                        <div><h2 id="prescription-notes-heading">Dặn dò bệnh nhân</h2><p>Hướng dẫn dùng thuốc và theo dõi</p></div>
                     </div>
                     <div class="doctor-form-fields">
                         <label class="doctor-form-field doctor-form-span"><span>Lời dặn của bác sĩ</span><textarea name="doctorNotes" rows="4" maxlength="2000" placeholder="Ví dụ: Nhỏ thuốc đúng giờ; quay lại khi đau, đỏ hoặc nhìn mờ tăng..."><c:out value="${formValues.doctorNotes}" /></textarea></label>
-                        <label class="doctor-form-field"><span>Ngày tái khám dự kiến</span><input name="followUpDate" type="date" value="<c:out value='${formValues.followUpDate}' />"></label>
                     </div>
                 </section>
 
@@ -193,7 +193,7 @@
                 </div>
             </div>
             <label class="doctor-form-field doctor-form-span"><span>Thời gian dùng</span><input data-name="duration" type="text" maxlength="100" placeholder="VD: 7 ngày"></label>
-            <div class="doctor-form-quantity-unit doctor-form-span"><label class="doctor-form-field"><span>Số lượng <em>*</em></span><input data-name="quantity" type="number" min="1" max="999" step="1" placeholder="VD: 1" required></label><label class="doctor-form-field"><span>Đơn vị</span><select data-name="unit"><option value="chai">Chai</option><option value="hộp">Hộp</option><option value="viên">Viên</option><option value="tuýp">Tuýp</option><option value="lọ">Lọ</option><option value="khác">Khác</option></select></label></div>
+            <div class="doctor-form-quantity-unit doctor-form-span"><label class="doctor-form-field"><span>Số lượng <em>*</em></span><input data-name="quantity" type="number" min="1" max="999" step="1" placeholder="VD: 1" required></label><label class="doctor-form-field"><span>Đơn vị</span><select data-name="unit"><option value="chai">Chai</option><option value="hộp">Hộp</option><option value="viên">Viên</option><option value="vỉ">Vỉ</option><option value="tuýp">Tuýp</option><option value="lọ">Lọ</option><option value="khác">Khác</option></select></label></div>
             <label class="doctor-form-field doctor-form-span"><span>Hướng dẫn thêm</span><input data-name="instructions" type="text" maxlength="255" placeholder="VD: Nhỏ cách các thuốc khác ít nhất 5 phút"></label>
         </div>
     </fieldset>

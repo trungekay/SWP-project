@@ -158,9 +158,6 @@
             <c:if test="${not empty prescriptionValues.doctorNotes}">
                 <section><h2>Lời dặn của bác sĩ</h2><div class="block"><c:out value="${prescriptionValues.doctorNotes}" /></div></section>
             </c:if>
-            <c:if test="${not empty prescriptionValues.followUpDate}">
-                <div class="block"><strong>Ngày tái khám dự kiến:</strong> <c:out value="${prescriptionValues.followUpDate}" /></div>
-            </c:if>
             <div class="signature">Bác sĩ kê đơn<strong><c:out value="${appointment.doctorName}" default="________________" /></strong></div>
         </div>
     </c:if>

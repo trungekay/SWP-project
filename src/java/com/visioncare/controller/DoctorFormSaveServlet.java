@@ -37,7 +37,7 @@ public class DoctorFormSaveServlet extends HttpServlet {
     };
     private static final String[] PRESCRIPTION_FIELDS = {
         "odSph", "odCyl", "odAxis", "odAdd", "osSph", "osCyl", "osAxis", "osAdd",
-        "pd", "lensType", "glassesNotes", "doctorNotes", "followUpDate"
+        "pd", "lensType", "glassesNotes", "doctorNotes"
     };
     private static final String[] MEDICINE_FIELDS = {
         "medicineName", "strength", "morning", "morningDose", "afternoon", "afternoonDose",
@@ -47,6 +47,7 @@ public class DoctorFormSaveServlet extends HttpServlet {
     private final DoctorFormDAO formDAO = new DoctorFormDAO();
     private final MedicineDAO medicineDAO = new MedicineDAO();
 
+    /** Kiểm tra quyền, CSRF và dữ liệu biểu mẫu trước khi lưu phiếu khám hoặc đơn. */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -145,6 +146,7 @@ public class DoctorFormSaveServlet extends HttpServlet {
         }
     }
 
+    /** Đọc và loại khoảng trắng thừa ở các trường biểu mẫu được cho phép. */
     private Map<String, String> values(HttpServletRequest request, String[] keys) {
         Map<String, String> result = new HashMap<>();
         for (String key : keys) {
@@ -154,6 +156,7 @@ public class DoctorFormSaveServlet extends HttpServlet {
         return result;
     }
 
+    /** Gom các dòng thuốc theo chỉ số liên tiếp và giới hạn tối đa 20 dòng. */
     private List<Map<String, String>> medicineRows(HttpServletRequest request) {
         Set<Integer> indexes = new TreeSet<>();
         for (String name : request.getParameterMap().keySet()) {

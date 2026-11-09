@@ -150,6 +150,7 @@ public class DoctorQueueDAO {
         }
     }
 
+    /** Khóa ca đã check-in và chỉ bắt đầu khi bác sĩ chưa có ca đang khám cùng ngày. */
     public boolean startExamination(int appointmentId, int doctorEmployeeId) throws Exception {
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
