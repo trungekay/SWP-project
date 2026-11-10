@@ -8,6 +8,7 @@
         const form = page.querySelector("#examination-form");
         const acuityInputs = [...form.querySelectorAll("[data-visual-acuity]")];
         const iopInputs = [...form.querySelectorAll('[name="odIop"], [name="osIop"]')];
+        // Hiển thị lỗi cạnh ô nhập và cập nhật thuộc tính hỗ trợ trình đọc màn hình.
         const showInputError = (input, message) => {
             let feedback = input.parentElement.querySelector(".doctor-form-input-error");
             if (!feedback) {
@@ -21,6 +22,7 @@
             if (message) input.setAttribute("aria-describedby", feedback.id);
             else input.removeAttribute("aria-describedby");
         };
+        // Kiểm tra thang thị lực; chỉ giá trị dưới 1 được có phần thập phân.
         const validateAcuity = input => {
             const normalized = input.value.trim().replace(',', '.');
             const valid = normalized === "" || (/^[0-9]+(?:\.[0-9]+)?$/.test(normalized)
@@ -31,6 +33,7 @@
             if (/^[0-9]+(?:\.[0-9]+)?$/.test(normalized)) input.value = normalized;
             return valid;
         };
+        // Kiểm tra nhãn áp trong khoảng 5–70 mmHg với tối đa một chữ số thập phân.
         const validateIop = input => {
             const raw = input.value.trim();
             const valid = !input.validity.badInput && (raw === "" || (/^[0-9]+(?:\.[0-9])?$/.test(raw)
@@ -70,6 +73,7 @@
         });
     }
 
+    // Chỉ yêu cầu liều dùng khi buổi uống và phần đơn thuốc đều được chọn.
     function syncDoseRow(row) {
         const selected = row.querySelector("[data-dose-toggle]");
         const dose = row.querySelector("[data-dose-input]");
@@ -81,6 +85,7 @@
         dose.required = active;
     }
 
+    // Đồng bộ số thứ tự, tên trường gửi lên server và giới hạn số dòng thuốc.
     function renumberMedicines() {
         const rows = [...document.querySelectorAll("[data-medicine-list] .doctor-form-medicine")];
         const medicationToggle = document.querySelector('[data-section-toggle="medication"]');
@@ -106,6 +111,7 @@
         if (addButton) addButton.disabled = rows.length >= 20 || (medicationToggle && !medicationToggle.checked);
     }
 
+    // Thêm một dòng thuốc từ mẫu và chuyển focus tới tên thuốc khi cần.
     function addMedicine(focusNewRow = true) {
         const template = document.querySelector("#medicine-row-template");
         const list = document.querySelector("[data-medicine-list]");
@@ -129,6 +135,7 @@
     document.querySelectorAll("[data-section-toggle]").forEach(toggle => {
         const section = document.getElementById(toggle.dataset.sectionToggle + "-section");
         if (!section) return;
+        // Bật hoặc tắt toàn bộ ô nhập theo lựa chọn kê thuốc/kính.
         const sync = () => {
             section.hidden = !toggle.checked;
             section.querySelectorAll("input,select,textarea,button").forEach(control => {
@@ -141,10 +148,60 @@
     });
 
     if (page.dataset.doctorForm === "prescription") {
+        const form = page.querySelector("#prescription-form");
+        const glassesInputs = [...form.querySelectorAll("[data-glasses-number]")];
+        const validateGlassesNumber = input => {
+            const raw = input.value.trim();
+            const min = Number(input.dataset.min);
+            const max = Number(input.dataset.max);
+            const step = Number(input.dataset.step);
+            const number = Number(raw);
+            const numericFormat = step === 1 ? /^[0-9]+$/ : /^[+-]?[0-9]+(?:\.[0-9]+)?$/;
+            const valid = raw === "" || (numericFormat.test(raw)
+                && number >= min && number <= max
+                && Math.abs(number / step - Math.round(number / step)) < 1e-9);
+            const label = input.getAttribute("aria-label") || "PD";
+            const message = valid ? "" : label + " phải từ " + min + " đến " + max
+                + (step === 1 ? " (số nguyên)." : " và theo bước " + step + ".");
+            let feedback = input.parentElement.querySelector(".doctor-form-input-error");
+            if (!feedback) {
+                feedback = document.createElement("small");
+                feedback.className = "doctor-form-input-error";
+                feedback.id = input.name + "-error";
+                input.parentElement.appendChild(feedback);
+            }
+            feedback.textContent = message;
+            input.setAttribute("aria-invalid", String(!valid));
+            if (valid) input.removeAttribute("aria-describedby");
+            else input.setAttribute("aria-describedby", feedback.id);
+            return valid;
+        };
+        glassesInputs.forEach(input => {
+            input.addEventListener("input", () => {
+                const start = input.selectionStart;
+                const end = input.selectionEnd;
+                input.value = input.value.replace(/,/g, ".");
+                input.setSelectionRange(start, end);
+                validateGlassesNumber(input);
+            });
+            input.addEventListener("blur", () => validateGlassesNumber(input));
+        });
+        form.addEventListener("submit", event => {
+            let firstInvalid = null;
+            glassesInputs.forEach(input => {
+                if (!input.disabled && !validateGlassesNumber(input) && !firstInvalid) firstInvalid = input;
+            });
+            if (firstInvalid) {
+                event.preventDefault();
+                firstInvalid.focus();
+            }
+        });
         const list = document.querySelector("[data-medicine-list]");
         const catalog = [...document.querySelectorAll("#doctor-medicine-catalog option")]
             .map(option => option.value).filter(Boolean);
+        // Chuẩn hóa tiếng Việt để tìm tên thuốc không phụ thuộc dấu và chữ hoa.
         const normalize = value => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("vi");
+        // Đóng danh sách gợi ý và xóa trạng thái lựa chọn cho trình đọc màn hình.
         const closeSuggestions = combo => {
             const input = combo.querySelector("[data-name='medicineName']");
             const suggestions = combo.querySelector("[data-medicine-suggestions]");
@@ -152,6 +209,7 @@
             input.setAttribute("aria-expanded", "false");
             input.removeAttribute("aria-activedescendant");
         };
+        // Đánh dấu gợi ý đang chọn khi điều hướng bằng bàn phím.
         const setActiveSuggestion = (combo, index) => {
             const input = combo.querySelector("[data-name='medicineName']");
             const options = [...combo.querySelectorAll("[data-medicine-option]")];
@@ -164,6 +222,7 @@
             if (options[index]) input.setAttribute("aria-activedescendant", options[index].id);
             else input.removeAttribute("aria-activedescendant");
         };
+        // Lọc tối đa tám thuốc phù hợp và hiển thị danh sách gợi ý.
         const renderSuggestions = combo => {
             list.querySelectorAll("[data-medicine-combobox]").forEach(other => {
                 if (other !== combo) closeSuggestions(other);
@@ -202,6 +261,7 @@
             input.setAttribute("aria-expanded", "true");
             input.removeAttribute("aria-activedescendant");
         };
+        // Đưa thuốc được chọn vào ô nhập và đóng danh sách gợi ý.
         const selectSuggestion = option => {
             const combo = option.closest("[data-medicine-combobox]");
             const input = combo.querySelector("[data-name='medicineName']");
@@ -255,6 +315,7 @@
     const surgeryToggle = page.querySelector("[data-surgery-toggle]");
     const surgeryPanel = page.querySelector("[data-surgery-panel]");
     if (surgeryToggle && surgeryPanel) {
+        // Đồng bộ trạng thái hiển thị của phần chỉ định phẫu thuật.
         const syncSurgery = open => {
             surgeryPanel.hidden = !open;
             surgeryToggle.setAttribute("aria-expanded", String(open));

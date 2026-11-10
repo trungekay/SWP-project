@@ -351,6 +351,7 @@
 
     <script src="${pageContext.request.contextPath}/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Mở hộp thoại xác nhận hoàn tất ca khám từ trang chi tiết bệnh nhân.
         function openDoctorCompleteModal() {
             var modalEl = document.getElementById('doctorCompleteModal');
             if (modalEl) {

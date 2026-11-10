@@ -257,7 +257,7 @@
                                             <button class="action-btn delete" type="button" title="${item.status eq 'In_Progress' ? 'Dừng khám' : 'Hủy khám'}" aria-label="${item.status eq 'In_Progress' ? 'Dừng khám' : 'Hủy khám'}"
                                                     data-bs-toggle="modal" data-bs-target="#cancelExamModal" data-appointment-id="${item.id}"
                                                     data-exam-status="${item.status}" data-patient-name="<c:out value='${item.patientName}' />">
-                                                <i class="bi bi-trash" aria-hidden="true"></i>
+                                                <i class="bi bi-x-lg" aria-hidden="true"></i>
                                             </button>
                                         </c:if>
                                     </div></td>
@@ -325,6 +325,7 @@
 </div>
 <c:if test="${isToday}">
     <script>
+        // Làm mới danh sách hôm nay khi người dùng không nhập tìm kiếm hoặc mở hộp thoại.
         setInterval(function () {
             var active = document.activeElement;
             if (document.visibilityState === 'visible'
@@ -346,6 +347,7 @@
         if (datePicker.value) datePicker.form.requestSubmit();
     });
 
+    // Điền thông tin ca khám và câu hỏi xác nhận tương ứng với trạng thái hiện tại.
     document.getElementById('cancelExamModal').addEventListener('show.bs.modal', function (event) {
         var trigger = event.relatedTarget;
         var id = trigger.getAttribute('data-appointment-id');
@@ -363,6 +365,7 @@
 
     var examStartForm = null;
     var examWindowTrigger = null;
+    // Hiển thị cảnh báo giờ hẹn và chỉ cho tiếp tục khi giờ hẹn hợp lệ.
     document.getElementById('examWindowModal').addEventListener('show.bs.modal', function (event) {
         examWindowTrigger = event.relatedTarget;
         var state = event.relatedTarget.getAttribute('data-window-state');
@@ -387,6 +390,7 @@
     document.getElementById('continueExamButton').addEventListener('click', function () {
         if (examStartForm) examStartForm.requestSubmit();
     });
+    // Chuyển từ cảnh báo quá giờ sang hộp thoại hủy ca khám.
     document.getElementById('cancelFromWindowButton').addEventListener('click', function () {
         if (!examWindowTrigger) return;
         var trigger = examWindowTrigger;
