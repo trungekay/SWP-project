@@ -47,6 +47,7 @@ public class StaffInvoiceDAO {
  public List<Map<String,Object>> list(String search,String status,String date) throws Exception {
   String sql="SELECT a.Appointment_ID,p.Full_Name,p.Phone,ws.Work_Date,a.Status AS Appointment_Status,i.Invoice_ID,i.Status,i.Total_Amount,i.Balance_Due,co.Finalized_At,CASE WHEN EXISTS(SELECT 1 FROM Refund_Request rr WHERE rr.Invoice_ID=i.Invoice_ID AND rr.Status IN ('Pending','Approved')) THEN 1 ELSE 0 END AS Has_Refund,CASE WHEN EXISTS(SELECT 1 FROM Payment_Transaction pt WHERE pt.Invoice_ID=i.Invoice_ID AND pt.Gateway_Status='Success' AND pt.Amount>0) OR co.Opening_Paid>0 THEN 1 ELSE 0 END AS Has_Payment "
    +",COALESCE((SELECT SUM(rr.Refund_Amount) FROM Refund_Request rr WHERE rr.Invoice_ID=i.Invoice_ID AND rr.Status='Completed'),0) AS Refund_Total,(SELECT TOP 1 rr.Status FROM Refund_Request rr WHERE rr.Invoice_ID=i.Invoice_ID ORDER BY rr.Refund_ID DESC) AS Refund_Status "
+   +",CASE WHEN EXISTS(SELECT 1 FROM Procedure_Order po JOIN Medical_Record mr ON mr.Record_ID=po.Record_ID WHERE mr.Appointment_ID=a.Appointment_ID AND po.Status='Pending') OR EXISTS(SELECT 1 FROM Invoice_Checkout_Item ci WHERE ci.Invoice_ID=i.Invoice_ID AND ci.Item_Key LIKE 'PROCEDURE:%' AND ci.Declined=1) THEN 1 ELSE 0 END AS Has_Procedure_Reconciliation "
    +"FROM Appointment a JOIN Patient p ON p.Patient_ID=a.Patient_ID JOIN Work_Schedule ws ON ws.Schedule_ID=a.Schedule_ID "
    +"LEFT JOIN Master_Invoice i ON i.Appointment_ID=a.Appointment_ID LEFT JOIN Invoice_Checkout co ON co.Invoice_ID=i.Invoice_ID WHERE 1=1 ";
   List<Object> params=new ArrayList<>();
@@ -65,6 +66,7 @@ public class StaffInvoiceDAO {
    m.put("refundPending",refundPending);
    m.put("progress",displayedProgress);m.put("progressLabel",refundPending?"Chờ hoàn tiền":partialRefund?"Đã hoàn tiền một phần":progress.getLabel());m.put("progressColor",refundPending?"refund-pending":partialRefund?"refunded":progress.getColor());
    m.put("canOpenCheckout",progress==InvoiceProgress.Examined && !r.getBoolean("Has_Refund"));
+   m.put("canReconcileProcedure",!m.get("finalized").equals(true)&&"In_Progress".equals(r.getString("Appointment_Status"))&&!r.getBoolean("Has_Refund")&&r.getBoolean("Has_Procedure_Reconciliation"));
    if(status==null||status.isBlank()||"all".equals(status)||displayedProgress.equals(status)||"Refunded".equals(status)&&partialRefund)rows.add(m);
   }}}return rows;
  }
@@ -88,8 +90,8 @@ public class StaffInvoiceDAO {
   else if("Canceled".equals(inv.appointmentStatus)||"Canceled".equals(inv.invoiceStatus)||"Refunded".equals(inv.invoiceStatus))inv.items.add(new Item("RECORDED","Giá trị hóa đơn đã ghi nhận","Hóa đơn hủy / Hoàn tiền",1,inv.recordedTotal,false,false,false));
   else {
    inv.items.add(new Item("CONSULT","Phí khám / đăng ký khám","Khám bệnh",1,inv.baseAmount,false,false,false));
-   sql="SELECT po.Order_ID,s.Service_Name,po.Actual_Price,po.Status,pr.Status AS Request_Status,COALESCE(pr.Credit_Amount,0) AS Credit_Amount FROM Procedure_Order po JOIN Medical_Record mr ON mr.Record_ID=po.Record_ID JOIN Service_Catalog s ON s.Service_ID=po.Service_ID LEFT JOIN Procedure_Payment_Request pr ON pr.Order_ID=po.Order_ID WHERE mr.Appointment_ID=? AND po.Status<>'Cancelled' AND s.Service_ID<>1 AND s.Service_Name<>N'Khám mắt tổng quát' ORDER BY po.Order_ID";
-   try(PreparedStatement ps=c.prepareStatement(sql)){ps.setInt(1,inv.appointmentId);try(ResultSet r=ps.executeQuery()){while(r.next()){boolean pending="Pending".equals(r.getString("Status"));long price=r.getLong("Actual_Price")-r.getLong("Credit_Amount");if(price<0)throw new IllegalStateException("Phí thủ thuật thấp hơn khoản đã khấu trừ.");inv.items.add(new Item("PROCEDURE:"+r.getInt("Order_ID"),r.getString("Service_Name"),"Thủ thuật",1,price,pending&&!"Paid".equals(r.getString("Request_Status")),false,pending));}}}
+   sql="SELECT po.Order_ID,s.Service_Name,po.Actual_Price,po.Status,po.Completed_At,po.Result_Text,po.Result_Conclusion,pr.Status AS Request_Status,pr.Transaction_ID,COALESCE(pr.Credit_Amount,0) AS Credit_Amount FROM Procedure_Order po JOIN Medical_Record mr ON mr.Record_ID=po.Record_ID JOIN Service_Catalog s ON s.Service_ID=po.Service_ID LEFT JOIN Procedure_Payment_Request pr ON pr.Order_ID=po.Order_ID WHERE mr.Appointment_ID=? AND po.Status<>'Cancelled' AND s.Service_ID<>1 AND s.Service_Name<>N'Khám mắt tổng quát' ORDER BY po.Order_ID";
+   try(PreparedStatement ps=c.prepareStatement(sql)){ps.setInt(1,inv.appointmentId);try(ResultSet r=ps.executeQuery()){while(r.next()){boolean pending="Pending".equals(r.getString("Status"));long price=r.getLong("Actual_Price")-r.getLong("Credit_Amount");if(price<0)throw new IllegalStateException("Phí thủ thuật thấp hơn khoản đã khấu trừ.");boolean removable=pending&&r.getTimestamp("Completed_At")==null&&blank(r.getString("Result_Text"))&&blank(r.getString("Result_Conclusion"))&&!"Paid".equals(r.getString("Request_Status"))&&r.getObject("Transaction_ID")==null;inv.items.add(new Item("PROCEDURE:"+r.getInt("Order_ID"),r.getString("Service_Name"),"Thủ thuật",1,price,removable,false,pending));}}}
    sql="SELECT pd.Detail_ID,pd.Medicine_Name,pd.Quantity,pd.Is_Custom_Medicine,ms.Price FROM Prescription_Detail pd JOIN Prescription pr ON pr.Prescription_ID=pd.Prescription_ID JOIN Medical_Record mr ON mr.Record_ID=pr.Record_ID OUTER APPLY(SELECT TOP 1 Price FROM Medical_Supply s WHERE s.Supply_Name=pd.Medicine_Name ORDER BY s.Supply_ID) ms WHERE mr.Appointment_ID=? ORDER BY pd.Detail_ID";
    try(PreparedStatement ps=c.prepareStatement(sql)){ps.setInt(1,inv.appointmentId);try(ResultSet r=ps.executeQuery()){while(r.next())inv.items.add(new Item("MEDICINE:"+r.getInt("Detail_ID"),r.getString("Medicine_Name"),"Thuốc / Vật tư",r.getInt("Quantity"),r.getLong("Price"),true,r.getObject("Price")==null,false));}}
    Set<String> live=new HashSet<>();for(Item i:inv.items){live.add(i.key);Item old=saved.get(i.key);if(old!=null&&old.declined)i.declined=true;}
@@ -99,7 +101,21 @@ public class StaffInvoiceDAO {
   inv.refundedAmount=ItemRefundDAO.refunded(c,id);
   try(PreparedStatement p=c.prepareStatement("SELECT ri.Item_Key,SUM(ri.Quantity),SUM(ri.Quantity*ri.Unit_Price) FROM Refund_Request_Item ri JOIN Refund_Request rr ON rr.Refund_ID=ri.Refund_ID WHERE rr.Invoice_ID=? AND rr.Status='Completed' GROUP BY ri.Item_Key")){p.setInt(1,id);try(ResultSet r=p.executeQuery()){while(r.next())for(Item item:inv.items)if(item.key.equals(r.getString(1))){item.refundedQuantity=r.getInt(2);item.refundedAmount=r.getLong(3);}}}
   inv.activePayment=active(c,id);
+  if("In_Progress".equals(inv.appointmentStatus))inv.declinedVisitReady=declinedVisitReady(c,inv);
   return inv;
+ }
+ private static boolean blank(String value){return value==null||value.isBlank();}
+ /** Do not let declining a procedure bypass an unfinished doctor's examination or another active order. */
+ private boolean declinedVisitReady(Connection c,StaffInvoice inv)throws Exception {
+  // Older installations do not yet support direct staff procedure intake.
+  boolean staffIntake=false;
+  try(PreparedStatement p=c.prepareStatement("SELECT COL_LENGTH('dbo.Procedure_Order','Requested_By_Employee_ID')")){try(ResultSet r=p.executeQuery()){staffIntake=r.next()&&r.getObject(1)!=null;}}
+  String sql="SELECT 1 FROM Appointment a JOIN Medical_Record mr ON mr.Appointment_ID=a.Appointment_ID WHERE a.Appointment_ID=? AND a.Status='In_Progress' AND a.checkin_time IS NOT NULL "
+   +"AND EXISTS(SELECT 1 FROM Procedure_Order po JOIN Invoice_Checkout_Item ci ON ci.Item_Key=CONCAT('PROCEDURE:',po.Order_ID) AND ci.Invoice_ID=? AND ci.Declined=1 WHERE po.Record_ID=mr.Record_ID AND po.Status='Cancelled') "
+   +"AND NOT EXISTS(SELECT 1 FROM Procedure_Order po JOIN Medical_Record other ON other.Record_ID=po.Record_ID WHERE other.Appointment_ID=a.Appointment_ID AND po.Status NOT IN ('Completed','Cancelled')) "
+   +"AND ((mr.Doctor_Employee_ID IS NOT NULL AND NULLIF(LTRIM(RTRIM(mr.Clinical_Diagnosis)),'') IS NOT NULL AND NULLIF(LTRIM(RTRIM(mr.examination_result)),'') IS NOT NULL AND NULLIF(LTRIM(RTRIM(mr.conclusion)),'') IS NOT NULL AND EXISTS(SELECT 1 FROM Examination_Detail ed WHERE ed.Record_ID=mr.Record_ID)) "
+   +(staffIntake?"OR (mr.Doctor_Employee_ID IS NULL AND EXISTS(SELECT 1 FROM Procedure_Order po WHERE po.Record_ID=mr.Record_ID AND po.Requested_By_Employee_ID IS NOT NULL)))":")");
+  try(PreparedStatement p=c.prepareStatement(sql)){p.setInt(1,inv.appointmentId);p.setInt(2,inv.id);try(ResultSet r=p.executeQuery()){return r.next();}}
  }
  private Map<String,Object> active(Connection c,int id)throws Exception{
   try(PreparedStatement ps=c.prepareStatement("SELECT * FROM Invoice_Checkout_Payment WHERE Invoice_ID=? AND Status IN ('Creating','Pending') ORDER BY Created_At DESC")){ps.setInt(1,id);try(ResultSet r=ps.executeQuery()){return r.next()?paymentRow(r):null;}}
@@ -118,9 +134,23 @@ public class StaffInvoiceDAO {
   try(PreparedStatement ps=c.prepareStatement("UPDATE Master_Invoice SET Total_Amount=?, Deposit_Amount=CASE WHEN COALESCE(Deposit_Amount,0)>? THEN ? ELSE Deposit_Amount END,Balance_Due=?,Status=?,Close_At=CASE WHEN ?=0 THEN Close_At ELSE NULL END WHERE Invoice_ID=?")){long total=inv.getTotal();ps.setLong(1,total);ps.setLong(2,total);ps.setLong(3,total);ps.setLong(4,inv.getDue());ps.setString(5,inv.getDue()==0?"Paid":inv.paid>0?"Partial_Paid":"Unpaid");ps.setLong(6,inv.getDue());ps.setInt(7,inv.id);ps.executeUpdate();}
  }
  public void decline(int id,String key,int employee,String expected)throws Exception {
-  try(Connection c=connections.open()){c.setAutoCommit(false);c.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);try{StaffInvoice inv=load(c,id,true);expect(inv,expected);editable(inv);Item chosen=inv.items.stream().filter(i->i.key.equals(key)).findFirst().orElseThrow(()->new IllegalArgumentException("Không tìm thấy khoản thu."));if(!chosen.removable||chosen.declined)throw new IllegalArgumentException("Không được bỏ khoản đã thực hiện hoặc đã thanh toán riêng.");chosen.declined=true;if(inv.getOverpaid()>0)throw new IllegalStateException("Khoản tiền đã thu vượt tổng mới. Cần xử lý hoàn tiền, không được xóa khoản thu.");
-   if(key.startsWith("PROCEDURE:")){try(PreparedStatement ps=c.prepareStatement("UPDATE Procedure_Order SET Status='Cancelled' WHERE Order_ID=? AND Status='Pending' AND NOT EXISTS(SELECT 1 FROM Procedure_Payment_Request pr WHERE pr.Order_ID=Procedure_Order.Order_ID AND pr.Status='Paid')")){ps.setInt(1,Integer.parseInt(key.substring(10)));if(ps.executeUpdate()!=1)throw new IllegalStateException("Dịch vụ đã được xử lý. Hãy tải lại hóa đơn.");}}
+  try(Connection c=connections.open()){c.setAutoCommit(false);c.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);try{StaffInvoice inv=load(c,id,true);expect(inv,expected);Item chosen=inv.items.stream().filter(i->i.key.equals(key)).findFirst().orElseThrow(()->new IllegalArgumentException("Không tìm thấy khoản thu."));if(!(chosen.isProcedure()&&inv.isCanDeclineProcedure()))editable(inv);if(!chosen.removable||chosen.declined)throw new IllegalArgumentException("Không được bỏ khoản đã thực hiện, có biên bản hoặc đã thanh toán riêng.");chosen.declined=true;if(inv.getOverpaid()>0)throw new IllegalStateException("Khoản tiền đã thu vượt tổng mới. Cần xử lý hoàn tiền, không được xóa khoản thu.");
+   if(chosen.isProcedure()){try(PreparedStatement ps=c.prepareStatement("UPDATE Procedure_Order SET Status='Cancelled' WHERE Order_ID=? AND Status='Pending' AND Completed_At IS NULL AND NULLIF(LTRIM(RTRIM(Result_Text)),'') IS NULL AND NULLIF(LTRIM(RTRIM(Result_Conclusion)),'') IS NULL AND NOT EXISTS(SELECT 1 FROM Procedure_Payment_Request pr WHERE pr.Order_ID=Procedure_Order.Order_ID AND (pr.Status='Paid' OR pr.Transaction_ID IS NOT NULL))")){ps.setInt(1,Integer.parseInt(key.substring(10)));if(ps.executeUpdate()!=1)throw new IllegalStateException("Dịch vụ đã được xử lý. Hãy tải lại hóa đơn.");}}
    snapshot(c,inv,employee);updateTotal(c,inv);c.commit();}catch(Exception e){c.rollback();throw e;}}
+ }
+ /** Explicit staff confirmation closes only a visit whose remaining procedure was declined. */
+ public StaffInvoice confirmItems(int id,int employee,String expected)throws Exception {
+  try(Connection c=connections.open()){c.setAutoCommit(false);c.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);try{
+   StaffInvoice inv=load(c,id,true);expect(inv,expected);
+   if(!inv.isCanConfirmItems())throw new IllegalStateException("Ca khám chưa kết thúc hoặc còn khoản thu cần xử lý.");
+   if(!inv.isClinicalComplete()){
+    try(PreparedStatement p=c.prepareStatement("UPDATE Appointment SET Status='Completed' WHERE Appointment_ID=? AND Status='In_Progress' AND checkin_time IS NOT NULL")){
+     p.setInt(1,inv.appointmentId);if(p.executeUpdate()!=1)throw new IllegalStateException("Ca khám đã thay đổi. Hãy tải lại.");
+    }
+    inv=load(c,id,true);
+   }
+   ready(inv);snapshot(c,inv,employee);updateTotal(c,inv);inv=load(c,id,true);c.commit();return inv;
+  }catch(Exception e){c.rollback();throw e;}}
  }
  private void finalizeInvoice(Connection c,StaffInvoice inv,Integer employee,String method,long amount,Long order)throws Exception {
   if(amount>0){int tx;try(PreparedStatement ps=c.prepareStatement("INSERT INTO Payment_Transaction(Invoice_ID,Amount,Gateway_Status,Payment_Gateway,Trans_Date) VALUES(?,?,'Success',?,SYSUTCDATETIME())",Statement.RETURN_GENERATED_KEYS)){ps.setInt(1,inv.id);ps.setLong(2,amount);ps.setString(3,method);ps.executeUpdate();try(ResultSet r=ps.getGeneratedKeys()){r.next();tx=r.getInt(1);}}
