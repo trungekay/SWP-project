@@ -16,6 +16,12 @@ import java.util.List;
 import java.util.Map;
 
 public class ProcedureOrderDAO {
+    private static final String SAVED_DOCTOR_EXAM =
+            "mr.Doctor_Employee_ID IS NOT NULL "
+            + "AND EXISTS (SELECT 1 FROM Examination_Detail ed WHERE ed.Record_ID=mr.Record_ID) "
+            + "AND NULLIF(LTRIM(RTRIM(mr.Clinical_Diagnosis)), '') IS NOT NULL "
+            + "AND NULLIF(LTRIM(RTRIM(mr.examination_result)), '') IS NOT NULL "
+            + "AND NULLIF(LTRIM(RTRIM(mr.conclusion)), '') IS NOT NULL ";
     // Appointment alias is 'a' in clinical queues and authorization queries.
     public static final String NO_PROCEDURE_HANDOFF = "NOT EXISTS (SELECT 1 FROM Procedure_Order handoff "
             + "JOIN Medical_Record handoff_record ON handoff_record.Record_ID=handoff.Record_ID "
@@ -71,6 +77,7 @@ public class ProcedureOrderDAO {
         Map<String,Object> row=new HashMap<>();
         try(Connection c=connections.open(); PreparedStatement p=c.prepareStatement(
                 "SELECT a.Appointment_ID,p.Full_Name,p.Phone,mr.Record_ID,mr.Clinical_Diagnosis,mr.examination_result,mr.conclusion, "
+                + "CASE WHEN " + SAVED_DOCTOR_EXAM + "THEN 1 ELSE 0 END AS Examination_Ready, "
                 + "doc.Full_Name AS Doctor_Name FROM Appointment a JOIN Patient p ON p.Patient_ID=a.Patient_ID "
                 + "LEFT JOIN Medical_Record mr ON mr.Appointment_ID=a.Appointment_ID "
                 + "LEFT JOIN Employee_Profile doc ON doc.Employee_ID=mr.Doctor_Employee_ID WHERE a.Appointment_ID=?")) {
@@ -78,6 +85,7 @@ public class ProcedureOrderDAO {
                 row.put("name",r.getString("Full_Name"));row.put("phone",r.getString("Phone"));
                 row.put("doctor",r.getString("Doctor_Name"));row.put("diagnosis",r.getString("Clinical_Diagnosis"));
                 row.put("recordId",r.getInt("Record_ID"));
+                row.put("examinationReady",r.getBoolean("Examination_Ready"));
                 row.put("findings",r.getString("examination_result"));row.put("conclusion",r.getString("conclusion"));
             }}
         }
@@ -104,13 +112,12 @@ public class ProcedureOrderDAO {
                     p.setInt(1,appointmentId);try(ResultSet r=p.executeQuery()){if(!r.next())throw new IllegalStateException("Lượt khám chưa check-in, đã kết thúc hoặc không thuộc hôm nay.");}
                 }
                 int recordId=0;
-                try(PreparedStatement p=c.prepareStatement("SELECT Record_ID FROM Medical_Record WITH (UPDLOCK,HOLDLOCK) WHERE Appointment_ID=?")) {
+                try(PreparedStatement p=c.prepareStatement("SELECT mr.Record_ID FROM Medical_Record mr WITH (UPDLOCK,HOLDLOCK) "
+                        + "WHERE mr.Appointment_ID=? AND " + SAVED_DOCTOR_EXAM)) {
                     p.setInt(1,appointmentId);try(ResultSet r=p.executeQuery()){if(r.next())recordId=r.getInt(1);}
                 }
-                if(recordId==0)try(PreparedStatement p=c.prepareStatement("INSERT INTO Medical_Record(Appointment_ID,Doctor_Employee_ID,Created_At) "
-                        + "OUTPUT INSERTED.Record_ID VALUES(?,NULL,DATEADD(HOUR,7,SYSUTCDATETIME()))")) {
-                    p.setInt(1,appointmentId);try(ResultSet r=p.executeQuery()){if(!r.next())throw new SQLException("Không tạo được hồ sơ tiếp nhận.");recordId=r.getInt(1);}
-                }
+                if(recordId==0)throw new IllegalStateException(
+                        "Cần bác sĩ lưu đầy đủ chẩn đoán, kết quả khám và kết luận trước khi chuyển sang BSPT.");
                 try(PreparedStatement p=c.prepareStatement("SELECT Order_ID FROM Procedure_Order WITH (UPDLOCK,HOLDLOCK) "
                         + "WHERE Record_ID=? AND Service_ID=? AND Status<>'Cancelled'")) {
                     p.setInt(1,recordId);p.setInt(2,serviceId);try(ResultSet r=p.executeQuery()){
@@ -124,7 +131,7 @@ public class ProcedureOrderDAO {
                     p.setInt(1,recordId);p.setNString(2,notes.trim());p.setInt(3,staffId);p.setInt(4,serviceId);
                     try(ResultSet r=p.executeQuery()){if(!r.next())throw new IllegalStateException("Dịch vụ thủ thuật không hợp lệ.");orderId=r.getInt(1);}
                 }
-                // Sending to a Specialist starts this clinical visit without requiring a Doctor to call it.
+                // Preserve the active visit when handing the examined patient to a Specialist.
                 try(PreparedStatement p=c.prepareStatement("UPDATE Appointment SET Status='In_Progress' WHERE Appointment_ID=? AND Status='Confirmed'")) {
                     p.setInt(1,appointmentId);p.executeUpdate();
                 }
