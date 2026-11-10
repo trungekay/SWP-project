@@ -10,11 +10,12 @@ import java.util.Set;
 
 /** Server-side validation; browser constraints are only a convenience. */
 public final class DoctorFormValidator {
-    private static final Set<String> UNITS = Set.of("chai", "hộp", "viên", "tuýp", "lọ", "khác");
+    private static final Set<String> UNITS = Set.of("chai", "hộp", "viên", "vỉ", "tuýp", "lọ", "khác");
     private static final Set<String> LENS_TYPES = Set.of("", "distance", "near", "progressive", "other");
 
     private DoctorFormValidator() {}
 
+    /** Kiểm tra các trường bắt buộc và chỉ số mắt của phiếu khám. */
     public static List<String> examination(Map<String, String> values) {
         List<String> errors = new ArrayList<>();
         required(values, "clinicalDiagnosis", "Chẩn đoán lâm sàng", 255, errors);
@@ -35,6 +36,7 @@ public final class DoctorFormValidator {
         return errors;
     }
 
+    /** Kiểm tra phần thuốc, kính và các giới hạn của từng dòng đơn. */
     public static List<String> prescription(Map<String, String> values,
             List<Map<String, String>> medicines, boolean includeMedication, boolean includeGlasses) {
         List<String> errors = new ArrayList<>();
@@ -42,7 +44,6 @@ public final class DoctorFormValidator {
             errors.add("Chọn thuốc hoặc kính để kê đơn.");
         }
         optional(values, "doctorNotes", "Lời dặn", 2000, errors);
-        date(values, "followUpDate", "Ngày tái khám", errors);
         if (includeMedication) {
             if (medicines.isEmpty() || medicines.size() > 20) {
                 errors.add("Đơn thuốc phải có từ 1 đến 20 dòng thuốc.");
@@ -85,7 +86,7 @@ public final class DoctorFormValidator {
             steppedDecimal(values, "osCyl", "CYL mắt trái", "-15", "15", "0.25", errors);
             steppedDecimal(values, "odAdd", "ADD mắt phải", "0", "6", "0.25", errors);
             steppedDecimal(values, "osAdd", "ADD mắt trái", "0", "6", "0.25", errors);
-            steppedDecimal(values, "pd", "PD", "40", "80", "0.5", errors);
+            steppedDecimal(values, "pd", "PD", "40", "85", "0.5", errors);
             axis(values, "odAxis", "AXIS mắt phải", errors);
             axis(values, "osAxis", "AXIS mắt trái", errors);
             optional(values, "glassesNotes", "Ghi chú về kính", 1000, errors);
@@ -102,18 +103,21 @@ public final class DoctorFormValidator {
         return errors;
     }
 
+    /** Báo lỗi khi trường bắt buộc trống hoặc vượt độ dài cho phép. */
     private static void required(Map<String, String> values, String key, String label, int max, List<String> errors) {
         String value = values.getOrDefault(key, "");
         if (value.isBlank()) errors.add(label + " không được để trống.");
         else if (value.length() > max) errors.add(label + " vượt quá " + max + " ký tự.");
     }
 
+    /** Giới hạn độ dài của trường không bắt buộc. */
     private static void optional(Map<String, String> values, String key, String label, int max, List<String> errors) {
         if (values.getOrDefault(key, "").length() > max) {
             errors.add(label + " vượt quá " + max + " ký tự.");
         }
     }
 
+    /** Chuẩn hóa dấu thập phân và kiểm tra thang thị lực từ 0 đến 10. */
     private static void visualAcuity(Map<String, String> values, String key, String label, List<String> errors) {
         String raw = values.getOrDefault(key, "");
         if (raw.isBlank()) return;
@@ -131,6 +135,7 @@ public final class DoctorFormValidator {
         values.put(key, normalized);
     }
 
+    /** Kiểm tra khoảng giá trị và số chữ số thập phân của nhãn áp. */
     private static void decimal(Map<String, String> values, String key, String label,
             String min, String max, int scale, List<String> errors) {
         String raw = values.getOrDefault(key, "");
@@ -150,22 +155,27 @@ public final class DoctorFormValidator {
         }
     }
 
+    /** Kiểm tra thông số kính theo khoảng và bước tăng hợp lệ. */
     private static void steppedDecimal(Map<String, String> values, String key, String label,
             String min, String max, String step, List<String> errors) {
         String raw = values.getOrDefault(key, "");
         if (raw.isBlank()) return;
         try {
-            BigDecimal number = new BigDecimal(raw);
+            String normalized = raw.replace(',', '.');
+            if (!normalized.matches("[+-]?[0-9]+(?:\\.[0-9]+)?")) throw new NumberFormatException();
+            BigDecimal number = new BigDecimal(normalized);
             if (number.compareTo(new BigDecimal(min)) < 0
                     || number.compareTo(new BigDecimal(max)) > 0
                     || number.remainder(new BigDecimal(step)).compareTo(BigDecimal.ZERO) != 0) {
                 throw new NumberFormatException();
             }
+            values.put(key, normalized);
         } catch (NumberFormatException invalid) {
             errors.add(label + " không hợp lệ hoặc sai bước " + step + ".");
         }
     }
 
+    /** Kiểm tra trục kính là số nguyên từ 0 đến 180 độ. */
     private static void axis(Map<String, String> values, String key, String label, List<String> errors) {
         String raw = values.getOrDefault(key, "");
         if (raw.isBlank()) return;
@@ -177,6 +187,7 @@ public final class DoctorFormValidator {
         }
     }
 
+    /** Kiểm tra ngày tái khám theo định dạng ngày ISO. */
     private static void date(Map<String, String> values, String key, String label, List<String> errors) {
         String raw = values.getOrDefault(key, "");
         if (raw.isBlank()) return;

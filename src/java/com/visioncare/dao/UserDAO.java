@@ -195,7 +195,9 @@ public class UserDAO {
             "SELECT a.Account_ID, a.Email, a.Account_Status, a.Role_ID, a.Password, r.Role_Name, " +
             "COALESCE(p.Full_Name, e.Full_Name, a.Email) AS Full_Name, " +
             "COALESCE(e.Employee_ID, p.Patient_ID, 0) AS Actor_ID, " +
-            "COALESCE(p.Phone, e.Phone) AS Phone, p.DOB, p.Address, " +
+            "COALESCE(p.Phone, e.Phone) AS Phone, " +
+            "CASE WHEN a.Role_ID = 6 THEN p.DOB ELSE e.DOB END AS DOB, " +
+            "CASE WHEN a.Role_ID = 6 THEN p.Address ELSE e.Address END AS Address, " +
             "e.License_Number, e.Specialty, e.Room_ID, e.Biography " +
             "FROM Account a JOIN Role r ON a.Role_ID = r.Role_ID " +
             "LEFT JOIN Patient p ON a.Account_ID = p.Account_ID " +
@@ -261,104 +263,153 @@ public class UserDAO {
         }
     }
 
-    public void updateUserRole(int accountId, int newRoleId) throws Exception {
-        try (Connection conn = DBContext.getConnection()) {
-            String fullName = "";
-            String phone = "";
-            java.sql.Date dob = null;
-            String address = "";
-            int currentRoleId = 0;
-            String getInfo = "SELECT a.Role_ID, COALESCE(p.Full_Name, e.Full_Name) as fn, COALESCE(p.Phone, e.Phone) as ph, " +
-                             "COALESCE(p.DOB, e.DOB) as dob, COALESCE(p.Address, e.Address) as addr " +
-                             "FROM Account a " +
-                             "LEFT JOIN Patient p ON a.Account_ID = p.Account_ID " +
-                             "LEFT JOIN Employee_Profile e ON a.Account_ID = e.Account_ID " +
-                             "WHERE a.Account_ID = ?";
-            try (PreparedStatement ps = conn.prepareStatement(getInfo)) {
-                ps.setInt(1, accountId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        currentRoleId = rs.getInt("Role_ID");
-                        fullName = rs.getString("fn");
-                        phone = rs.getString("ph");
-                        dob = rs.getDate("dob");
-                        address = rs.getString("addr");
-                    }
-                }
-            }
+    public static boolean canAssignManagedRole(int operatorRoleId, int targetRoleId) {
+        return operatorRoleId == 1 && isAssignableEmployeeRole(targetRoleId);
+    }
 
+    private static boolean isAssignableEmployeeRole(int roleId) {
+        return roleId == 3 || roleId == 4 || roleId == 5;
+    }
+
+    public void updateManagedUser(int operatorId, User user, Integer roomId) throws Exception {
+        Date dob = user.getDob() == null ? null : Date.valueOf(user.getDob());
+        int accountId = user.getId();
+        int newRoleId = user.getRoleId();
+
+        try (Connection conn = DBContext.getConnection()) {
+            conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             conn.setAutoCommit(false);
             try {
-                if (currentRoleId != newRoleId && currentRoleId != 0) {
-                    String checkSchedule = "SELECT COUNT(*) FROM Work_Schedule ws " +
-                                           "JOIN Employee_Profile ep ON ws.Doctor_Employee_ID = ep.Employee_ID OR ws.Specialist_Employee_ID = ep.Employee_ID OR ws.Staff_Employee_ID = ep.Employee_ID " +
-                                           "WHERE ep.Account_ID = ? AND ws.Work_Date >= CAST(GETDATE() AS DATE)";
-                    try (PreparedStatement psCheck = conn.prepareStatement(checkSchedule)) {
-                        psCheck.setInt(1, accountId);
-                        try (ResultSet rsCheck = psCheck.executeQuery()) {
-                            if (rsCheck.next() && rsCheck.getInt(1) > 0) {
-                                String reason = "đang có lịch làm việc sắp tới";
-                                if (currentRoleId == 3 || currentRoleId == 4) {
-                                    reason = "đang có ca khám bệnh hoặc lịch làm việc sắp tới";
-                                }
-                                String roleName = (currentRoleId == 3 || currentRoleId == 4) ? "Bác sĩ" : "Nhân sự";
-                                throw new Exception("Không thể thay đổi quyền vì " + roleName + " này " + reason + ". Hãy xóa hoặc hoàn tất lịch trước.");
+                int currentRoleId;
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "SELECT Role_ID FROM Account WITH (UPDLOCK) WHERE Account_ID = ?")) {
+                    ps.setInt(1, accountId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (!rs.next()) {
+                            throw new IllegalArgumentException("Không tìm thấy tài khoản.");
+                        }
+                        currentRoleId = rs.getInt("Role_ID");
+                    }
+                }
+
+                if (currentRoleId != newRoleId) {
+                    checkManagedRoleAssignment(conn, operatorId, accountId, currentRoleId, newRoleId);
+                }
+
+                if (roomId != null) {
+                    try (PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM Room WHERE Room_ID = ?")) {
+                        ps.setInt(1, roomId);
+                        try (ResultSet rs = ps.executeQuery()) {
+                            if (!rs.next()) {
+                                throw new IllegalArgumentException("Phòng làm việc không tồn tại.");
                             }
                         }
                     }
                 }
 
-            String sql = "UPDATE Account SET Role_ID = ? WHERE Account_ID = ?";
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, newRoleId);
-                ps.setInt(2, accountId);
-                ps.executeUpdate();
-            }
-            
-            if (newRoleId == 6) { // Patient
-                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM Employee_Profile WHERE Account_ID = ?")) {
-                    ps.setInt(1, accountId);
-                    ps.executeUpdate();
+                if (currentRoleId != newRoleId) {
+                    changeManagedUserRole(conn, accountId, currentRoleId, newRoleId);
                 }
-                try (PreparedStatement ps = conn.prepareStatement(
-                    "IF NOT EXISTS (SELECT 1 FROM Patient WHERE Account_ID = ?) " +
-                    "INSERT INTO Patient (Account_ID, Full_Name, Phone, DOB, Address) VALUES (?, ?, ?, ?, ?)")) {
-                    ps.setInt(1, accountId);
-                    ps.setInt(2, accountId);
-                    ps.setString(3, fullName);
-                    ps.setString(4, phone);
-                    ps.setDate(5, dob);
-                    ps.setString(6, address);
-                    ps.executeUpdate();
+                saveManagedProfile(conn, user, dob);
+                if (newRoleId == 3 || newRoleId == 4) {
+                    updateDoctorProfile(conn, user, roomId);
                 }
-            } else { // Employee
-                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM Patient WHERE Account_ID = ?")) {
-                    ps.setInt(1, accountId);
-                    ps.executeUpdate();
-                }
-                try (PreparedStatement ps = conn.prepareStatement(
-                    "IF NOT EXISTS (SELECT 1 FROM Employee_Profile WHERE Account_ID = ?) " +
-                    "INSERT INTO Employee_Profile (Account_ID, Full_Name, Phone, DOB, Address, License_Number) VALUES (?, ?, ?, ?, ?, ?)")) {
-                    ps.setInt(1, accountId);
-                    ps.setInt(2, accountId);
-                    ps.setString(3, fullName);
-                    ps.setString(4, phone);
-                    ps.setDate(5, dob);
-                    ps.setString(6, address);
-                    ps.setNull(7, java.sql.Types.VARCHAR);
-                    ps.executeUpdate();
-                }
-            }
-            conn.commit();
-            } catch (java.sql.SQLException ex) {
-                conn.rollback();
-                if (ex.getMessage() != null && ex.getMessage().contains("REFERENCE constraint")) {
-                    throw new Exception("Không thể chuyển đổi quyền này vì người dùng đã có dữ liệu lịch sử. Bạn chỉ có thể chuyển đổi các tài khoản chưa phát sinh dữ liệu.");
+                conn.commit();
+            } catch (Exception ex) {
+                try {
+                    conn.rollback();
+                } catch (SQLException rollbackFailure) {
+                    ex.addSuppressed(rollbackFailure);
                 }
                 throw ex;
-            } finally {
-                conn.setAutoCommit(true);
             }
+        }
+    }
+
+    private void checkManagedRoleAssignment(Connection conn, int operatorId, int accountId,
+            int currentRoleId, int newRoleId) throws SQLException {
+        if (operatorId == accountId || !isAssignableEmployeeRole(currentRoleId) || !isAssignableEmployeeRole(newRoleId)) {
+            throw new SecurityException("Chỉ được đổi quyền giữa Staff, Doctor và Medical Specialist của tài khoản khác.");
+        }
+
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT Role_ID FROM Account WHERE Account_ID = ? AND Account_Status = 'Active'")) {
+            ps.setInt(1, operatorId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next() || !canAssignManagedRole(rs.getInt("Role_ID"), currentRoleId)) {
+                    throw new SecurityException("Chỉ System Admin được đổi quyền tài khoản nhân sự.");
+                }
+            }
+        }
+    }
+
+    private void changeManagedUserRole(Connection conn, int accountId, int currentRoleId, int newRoleId)
+            throws SQLException {
+        String checkSchedule = "SELECT COUNT(*) FROM Work_Schedule ws "
+                + "JOIN Employee_Profile ep ON ws.Doctor_Employee_ID = ep.Employee_ID "
+                + "OR ws.Specialist_Employee_ID = ep.Employee_ID OR ws.Staff_Employee_ID = ep.Employee_ID "
+                + "WHERE ep.Account_ID = ? AND ws.Work_Date >= CAST(GETDATE() AS DATE)";
+        try (PreparedStatement ps = conn.prepareStatement(checkSchedule)) {
+            ps.setInt(1, accountId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    String roleName = (currentRoleId == 3 || currentRoleId == 4) ? "Bác sĩ" : "Nhân sự";
+                    throw new IllegalStateException("Không thể thay đổi quyền vì " + roleName
+                            + " này đang có lịch làm việc sắp tới. Hãy xóa hoặc hoàn tất lịch trước.");
+                }
+            }
+        }
+
+        try (PreparedStatement ps = conn.prepareStatement("UPDATE Account SET Role_ID = ? WHERE Account_ID = ?")) {
+            ps.setInt(1, newRoleId);
+            ps.setInt(2, accountId);
+            requireManagedUserWrite(ps.executeUpdate());
+        }
+    }
+
+    private void saveManagedProfile(Connection conn, User user, Date dob) throws SQLException {
+        boolean patient = user.getRoleId() == 6;
+        String targetTable = patient ? "Patient" : "Employee_Profile";
+        String otherTable = patient ? "Employee_Profile" : "Patient";
+        try (PreparedStatement ps = conn.prepareStatement("DELETE FROM " + otherTable + " WHERE Account_ID = ?")) {
+            ps.setInt(1, user.getId());
+            ps.executeUpdate();
+        } catch (SQLException ex) {
+            if (ex.getMessage() != null && ex.getMessage().contains("REFERENCE constraint")) {
+                throw new IllegalStateException("Không thể chuyển đổi quyền này vì người dùng đã có dữ liệu lịch sử. "
+                        + "Bạn chỉ có thể chuyển đổi các tài khoản chưa phát sinh dữ liệu.", ex);
+            }
+            throw ex;
+        }
+
+        String update = "UPDATE " + targetTable + " SET Full_Name = ?, Phone = ?, DOB = ?, Address = ? WHERE Account_ID = ?";
+        try (PreparedStatement ps = conn.prepareStatement(update)) {
+            bindManagedProfile(ps, user, dob);
+            int updated = ps.executeUpdate();
+            if (updated != 0) {
+                requireManagedUserWrite(updated);
+                return;
+            }
+        }
+
+        String insert = "INSERT INTO " + targetTable + " (Full_Name, Phone, DOB, Address, Account_ID) VALUES (?, ?, ?, ?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(insert)) {
+            bindManagedProfile(ps, user, dob);
+            requireManagedUserWrite(ps.executeUpdate());
+        }
+    }
+
+    private void bindManagedProfile(PreparedStatement ps, User user, Date dob) throws SQLException {
+        ps.setString(1, user.getFullName());
+        ps.setString(2, user.getPhone());
+        ps.setDate(3, dob);
+        ps.setString(4, user.getAddress());
+        ps.setInt(5, user.getId());
+    }
+
+    private void requireManagedUserWrite(int updated) {
+        if (updated != 1) {
+            throw new IllegalStateException("Không thể lưu đầy đủ hồ sơ người dùng.");
         }
     }
 
@@ -489,50 +540,6 @@ public class UserDAO {
         }
     }
 
-    public boolean updateUserProfile(int accountId, String fullName, String phone, String dob, String address) throws Exception {
-        try (Connection conn = DBContext.getConnection()) {
-            String table;
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT CASE WHEN EXISTS (SELECT 1 FROM Patient WHERE Account_ID = ?) " +
-                    "THEN 'Patient' ELSE 'Employee_Profile' END")) {
-                ps.setInt(1, accountId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    rs.next();
-                    table = rs.getString(1);
-                }
-            }
-            if ("Patient".equals(table)) {
-                try (PreparedStatement ps = conn.prepareStatement(
-                        "UPDATE Patient SET Full_Name = ?, Phone = ?, DOB = ?, Address = ? WHERE Account_ID = ?")) {
-                    ps.setString(1, fullName);
-                    ps.setString(2, phone);
-                    if (dob != null && !dob.trim().isEmpty()) {
-                        ps.setDate(3, java.sql.Date.valueOf(dob));
-                    } else {
-                        ps.setNull(3, java.sql.Types.DATE);
-                    }
-                    ps.setString(4, address != null ? address : "");
-                    ps.setInt(5, accountId);
-                    return ps.executeUpdate() > 0;
-                }
-            } else {
-                try (PreparedStatement ps = conn.prepareStatement(
-                        "UPDATE Employee_Profile SET Full_Name = ?, Phone = ?, DOB = ?, Address = ? WHERE Account_ID = ?")) {
-                    ps.setString(1, fullName);
-                    ps.setString(2, phone);
-                    if (dob != null && !dob.trim().isEmpty()) {
-                        ps.setDate(3, java.sql.Date.valueOf(dob));
-                    } else {
-                        ps.setNull(3, java.sql.Types.DATE);
-                    }
-                    ps.setString(4, address != null ? address : "");
-                    ps.setInt(5, accountId);
-                    return ps.executeUpdate() > 0;
-                }
-            }
-        }
-    }
-
     public boolean updatePassword(int accountId, String newPassword) throws Exception {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement("UPDATE Account SET Password = ? WHERE Account_ID = ?")) {
@@ -648,20 +655,15 @@ public class UserDAO {
         return false;
     }
 
-    public boolean updateDoctorProfile(int accountId, String license, String specialty, String roomIdStr, String biography) throws Exception {
+    private void updateDoctorProfile(Connection conn, User user, Integer roomId) throws SQLException {
         String sql = "UPDATE Employee_Profile SET License_Number = ?, Specialty = ?, Room_ID = ?, Biography = ? WHERE Account_ID = ?";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, license);
-            ps.setString(2, specialty);
-            if (roomIdStr == null || roomIdStr.trim().isEmpty()) {
-                ps.setNull(3, java.sql.Types.INTEGER);
-            } else {
-                ps.setInt(3, Integer.parseInt(roomIdStr.trim()));
-            }
-            ps.setString(4, biography);
-            ps.setInt(5, accountId);
-            return ps.executeUpdate() > 0;
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, user.getLicenseNumber());
+            ps.setString(2, user.getSpecialty());
+            ps.setObject(3, roomId, Types.INTEGER);
+            ps.setString(4, user.getBiography());
+            ps.setInt(5, user.getId());
+            requireManagedUserWrite(ps.executeUpdate());
         }
     }
 }
