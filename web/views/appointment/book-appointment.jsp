@@ -315,294 +315,19 @@
 
                       <div class="p-4 p-md-5">
 
-                        <%--========================================================--%>
-                          <%-- MÀN HÌNH 3: XÁC NHẬN THÀNH CÔNG (SUCCESS SCREEN) --%>
+                        <%--=========================================================================--%>
+                        <%-- [MÀN HÌNH 1, 2, 3]: FORM ĐẶT LỊCH KHÁM MẮT (WIZARD STEPS 1 -> 2 -> 3)    --%>
+                        <%--=========================================================================--%>
+                        <c:if test="${step == null || step == 'form'}">
+                          <form id="bookingWizardForm" method="post"
+                            action="${pageContext.request.contextPath}/book-appointment">
+                            <input type="hidden" name="action" value="verify">
+                            <input type="hidden" name="scheduleId" id="selectedScheduleId" value="">
+
                             <%--========================================================--%>
-                              <c:if test="${step == 'success'}">
-                                <div class="text-center py-4">
-                                  <div
-                                    class="d-inline-flex p-3 rounded-circle bg-success bg-opacity-10 text-success mb-3">
-                                    <i class="bi bi-check-circle-fill" style="font-size: 64px;"></i>
-                                  </div>
-                                  <h2 class="fw-bold text-success mb-2">Đặt Lịch &amp; Thanh Toán Thành Công!</h2>
-                                  <p class="text-muted fs-6 mb-4">
-                                    Hệ thống VisionCare đã ghi nhận vé khám và cập nhật trạng thái đã thanh toán.
-                                  </p>
-
-                                  <div class="ticket-card text-start mx-auto mb-4" style="max-width: 620px;">
-                                    <div
-                                      class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
-                                      <div>
-                                        <span class="text-muted small text-uppercase fw-bold">Mã Phiếu Hẹn</span>
-                                        <h4 class="fw-bold text-teal mb-0" style="color: #0d9488;">#VC${appointment.id}
-                                        </h4>
-                                      </div>
-                                      <span class="badge bg-success px-3 py-2 fs-6 rounded-pill">
-                                        <i class="bi bi-shield-check me-1"></i>ĐÃ XÁC NHẬN &amp; THANH TOÁN
-                                      </span>
-                                    </div>
-
-                                    <div class="row g-3">
-                                      <div class="col-sm-6">
-                                        <span class="text-muted small d-block">Họ và tên bệnh nhân:</span>
-                                        <strong class="fs-6 text-dark">${appointment.patientName}</strong>
-                                      </div>
-                                      <div class="col-sm-6">
-                                        <span class="text-muted small d-block">Số điện thoại:</span>
-                                        <strong class="fs-6 text-dark">${appointment.phone}</strong>
-                                      </div>
-                                      <div class="col-sm-6">
-                                        <span class="text-muted small d-block">Bác sĩ phụ trách:</span>
-                                        <strong class="fs-6 text-primary">${appointment.doctorName}</strong>
-                                      </div>
-                                      <div class="col-sm-6">
-                                        <span class="text-muted small d-block">Chuyên khoa:</span>
-                                        <strong class="fs-6 text-dark">${appointment.department}</strong>
-                                      </div>
-                                      <div class="col-sm-6">
-                                        <span class="text-muted small d-block">Ngày khám hẹn:</span>
-                                        <strong class="fs-6 text-danger">${appointment.appointmentDate}</strong>
-                                      </div>
-                                      <div class="col-sm-6">
-                                        <span class="text-muted small d-block">Khung giờ tiếp đón:</span>
-                                        <strong class="fs-6 text-danger">${appointment.timeSlot}</strong>
-                                      </div>
-                                      <div class="col-12 border-top pt-2 mt-2">
-                                        <div class="d-flex justify-content-between">
-                                          <span class="text-muted">
-                                            <c:choose>
-                                              <c:when test="${appointment.balanceDue > 0}">Tiền cọc giữ chỗ đã thanh toán:</c:when>
-                                              <c:otherwise>Chi phí dịch vụ đã thanh toán:</c:otherwise>
-                                            </c:choose>
-                                          </span>
-                                          <strong class="text-success fs-5">
-                                            <fmt:formatNumber value="${appointment.fee}" type="number"
-                                              groupingUsed="true" /> ₫
-                                          </strong>
-                                        </div>
-                                        <c:if test="${appointment.balanceDue > 0}">
-                                          <div class="d-flex justify-content-between mt-2 pt-2 border-top">
-                                            <span class="text-muted small">Tổng chi phí gói dịch vụ:</span>
-                                            <span class="text-dark small fw-semibold">
-                                              <fmt:formatNumber value="${appointment.totalAmount}" type="number" groupingUsed="true" /> ₫
-                                            </span>
-                                          </div>
-                                          <div class="d-flex justify-content-between mt-1 text-danger small">
-                                            <span>Số tiền còn lại (thanh toán sau khám tại quầy):</span>
-                                            <strong>
-                                              <fmt:formatNumber value="${appointment.balanceDue}" type="number" groupingUsed="true" /> ₫
-                                            </strong>
-                                          </div>
-                                        </c:if>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div class="alert alert-info d-inline-block text-start rounded-3 p-3 mb-4"
-                                    style="max-width: 620px;">
-                                    <i class="bi bi-envelope-check-fill me-2 fs-5 text-primary"></i>
-                                    <span>Email xác nhận và phiếu hướng dẫn chuẩn bị khám đã được tự động gửi tới:
-                                      <b>${appointment.email}</b>. Vui lòng kiểm tra hộp thư của bạn!</span>
-                                  </div>
-
-                                  <div class="d-flex justify-content-center gap-3">
-                                    <a href="${pageContext.request.contextPath}/home"
-                                      class="btn btn-outline-secondary px-4 py-2 rounded-pill">
-                                      <i class="bi bi-house me-2"></i>Về trang chủ
-                                    </a>
-                                    <a href="${pageContext.request.contextPath}/views/profile/appointment-history.jsp"
-                                      class="btn btn-primary px-4 py-2 rounded-pill"
-                                      style="background: #0d9488; border-color: #0d9488;">
-                                      <i class="bi bi-calendar-check me-2"></i>Xem lịch hẹn của tôi
-                                    </a>
-                                  </div>
-                                </div>
-                              </c:if>
-
-                              <%--========================================================--%>
-                                <%-- MÀN HÌNH 2: XÁC THỰC THANH TOÁN QR (PAYMENT SCREEN) --%>
-                                  <%--========================================================--%>
-                                    <c:if test="${step == 'payment'}">
-                                      <c:if test="${not empty error}">
-                                        <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert">
-                                          <div class="d-flex align-items-center">
-                                            <i class="bi bi-exclamation-octagon-fill fs-4 me-3 text-danger"></i>
-                                            <div>
-                                              <strong class="d-block">Chưa thể xác nhận thanh toán</strong>
-                                              <span>${error}</span>
-                                            </div>
-                                          </div>
-                                          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                        </div>
-                                      </c:if>
-                                      <div class="row align-items-center g-4">
-                                        <div class="col-md-5 text-center">
-                                          <div class="qr-box">
-                                            <h5 class="fw-bold text-dark mb-1">Quét mã VietQR</h5>
-                                            <p class="text-muted small mb-3">Mở ứng dụng Ngân hàng hoặc Ví điện tử để
-                                              quét</p>
-
-                                            <div class="position-relative d-inline-block">
-                                              <img src="${qrUrl}" alt="VietQR VisionCare"
-                                                class="img-fluid rounded-3 border"
-                                                style="max-width: 260px; min-height: 260px;">
-                                            </div>
-
-                                            <%-- ĐỒNG HỒ ĐẾM NGƯỢC THỜI HẠN THANH TOÁN (COUNTDOWN TIMER) --%>
-                                            <div class="mt-3 p-3 rounded-4 border bg-white shadow-sm text-start" id="paymentCountdownCard">
-                                              <div class="d-flex align-items-center justify-content-between mb-2">
-                                                <span class="text-muted small fw-semibold">
-                                                  <i class="bi bi-stopwatch text-danger me-1"></i>Thời gian giữ chỗ:
-                                                </span>
-                                                <span class="fs-5 fw-bold text-danger font-monospace" id="paymentCountdownTimer">${not empty pendingHoldMinutes ? (pendingHoldMinutes < 10 ? '0' : '') : ''}${not empty pendingHoldMinutes ? pendingHoldMinutes : 15}:00</span>
-                                              </div>
-                                              <div class="progress" style="height: 6px; border-radius: 6px; background-color: #f1f5f9;">
-                                                <div id="countdownProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-danger"
-                                                  role="progressbar" style="width: 100%; transition: width 1s linear;"></div>
-                                              </div>
-                                              <div class="d-flex justify-content-between align-items-center mt-2">
-                                                <small class="text-muted" style="font-size: 11px;">
-                                                  <i class="bi bi-shield-lock me-1 text-teal" style="color: #0d9488;"></i>Đang giữ chỗ lịch hẹn
-                                                </small>
-                                                <small class="text-danger fw-semibold" style="font-size: 11px;" id="countdownStatusText">
-                                                  Còn hiệu lực
-                                                </small>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-
-                                        <div class="col-md-7">
-                                          <div class="ticket-card mb-4">
-                                            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Chi tiết phiếu đặt
-                                              lịch khám</h5>
-                                            <div class="row g-2 small">
-                                              <div class="col-6 text-muted">Mã lịch hẹn:</div>
-                                              <div class="col-6 fw-bold text-dark text-end">#VC${appointment.id}</div>
-
-                                              <div class="col-6 text-muted">Bệnh nhân:</div>
-                                              <div class="col-6 fw-bold text-dark text-end">${appointment.patientName}
-                                              </div>
-
-                                              <div class="col-6 text-muted">Bác sĩ khám:</div>
-                                              <div class="col-6 fw-bold text-primary text-end">${appointment.doctorName}
-                                              </div>
-
-                                              <div class="col-6 text-muted">Thời gian hẹn:</div>
-                                              <div class="col-6 fw-bold text-danger text-end">${appointment.timeSlot} —
-                                                ${appointment.appointmentDate}</div>
-
-                                              <div class="col-6 text-muted">Thời hạn thanh toán:</div>
-                                              <div class="col-6 fw-bold text-end">
-                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle font-monospace px-2 py-1" id="ticketCountdownBadge">
-                                                  <i class="bi bi-stopwatch me-1"></i>${not empty pendingHoldMinutes ? (pendingHoldMinutes < 10 ? '0' : '') : ''}${not empty pendingHoldMinutes ? pendingHoldMinutes : 15}:00
-                                                </span>
-                                              </div>
-
-
-                                              <div class="col-12 border-top my-2"></div>
-
-                                              <div class="col-6 text-muted">Ngân hàng:</div>
-                                              <div class="col-6 fw-bold text-dark text-end">${bankName}</div>
-
-                                              <div class="col-6 text-muted">Số tài khoản:</div>
-                                              <div class="col-6 fw-bold text-dark text-end">${accountNumber}</div>
-
-                                              <div class="col-6 text-muted">Chủ tài khoản:</div>
-                                              <div class="col-6 fw-bold text-dark text-end">${accountHolder}</div>
-
-                                              <div class="col-6 text-muted">Nội dung chuyển khoản:</div>
-                                              <div class="col-6 fw-bold text-danger text-end">
-                                                <code class="p-1 rounded bg-light border">${paymentDesc}</code>
-                                              </div>
-
-                                              <div class="col-6 fs-6 text-dark fw-bold mt-2">
-                                                <c:choose>
-                                                  <c:when test="${appointment.balanceDue > 0}">Tiền cọc cần thanh toán:</c:when>
-                                                  <c:otherwise>Tổng phí khám cần thanh toán:</c:otherwise>
-                                                </c:choose>
-                                              </div>
-                                              <div class="col-6 fs-5 fw-bold text-success text-end mt-2">
-                                                <fmt:formatNumber value="${fee}" type="number" groupingUsed="true" /> ₫
-                                              </div>
-                                              <c:if test="${appointment.balanceDue > 0}">
-                                                <div class="col-6 text-muted small">Tổng giá gói dịch vụ:</div>
-                                                <div class="col-6 text-muted small text-end fw-semibold">
-                                                  <fmt:formatNumber value="${appointment.totalAmount}" type="number" groupingUsed="true" /> ₫
-                                                </div>
-                                                <div class="col-6 text-danger small">Số tiền còn lại (thanh toán tại phòng khám):</div>
-                                                <div class="col-6 text-danger small text-end fw-bold">
-                                                  <fmt:formatNumber value="${appointment.balanceDue}" type="number" groupingUsed="true" /> ₫
-                                                </div>
-                                              </c:if>
-                                              <%-- Hiển thị ưu đãi hoàn trừ nếu dịch vụ đã đặt là tiền phẫu/điều kiện cho dịch vụ khác
-                                                   Dùng cờ isPrerequisiteService được tính từ DB: dịch vụ này có được tham chiếu bởi
-                                                   Prerequisite_Service_ID của dịch vụ khác không?
-                                                   Fallback an toàn: kiểm tra tên dịch vụ (vì appointment chỉ lưu serviceName, không lưu requiresPreOp) --%>
-                                              <c:if test="${fn:contains(appointment.serviceName, 'tiền phẫu') or fn:contains(appointment.serviceName, 'tầm soát') or fn:contains(appointment.serviceName, 'Tiền phẫu') or fn:contains(appointment.serviceName, 'Tầm soát')}">
-                                                <div class="col-12 mt-2">
-                                                  <div class="alert alert-success py-2 px-3 small rounded-3 mb-0 text-start">
-                                                    <i class="bi bi-gift-fill me-1"></i> <b>Chính sách ưu đãi:</b> 100% phí khám tiền phẫu này sẽ được <b>khấu trừ trực tiếp vào chi phí ca mổ</b> nếu quý khách đủ điều kiện và tiến hành phẫu thuật tại VisionCare.
-                                                  </div>
-                                                </div>
-                                              </c:if>
-                                            </div>
-                                          </div>
-
-                                          <div id="paymentActionArea">
-                                            <form method="post"
-                                              action="${pageContext.request.contextPath}/book-appointment">
-                                              <input type="hidden" name="action" value="confirmPayment">
-                                              <input type="hidden" name="appointmentId" value="${appointment.id}">
-                                              <input type="hidden" name="orderCode" value="${orderCode}">
-                                              <input type="hidden" name="email" value="${appointment.email}">
-
-                                              <div class="d-grid gap-2">
-                                                <div class="alert alert-info py-2 px-3 small rounded-3 mb-2 d-flex align-items-center">
-                                                  <div class="spinner-grow spinner-grow-sm text-info me-2" role="status"></div>
-                                                  <span>Hệ thống tự động kiểm tra biến động số dư. Trang sẽ <b>tự động chuyển sang Thành công</b> ngay khi hoàn tất chuyển khoản!</span>
-                                                </div>
-                                                <button type="submit"
-                                                  class="btn btn-success btn-lg py-3 rounded-3 shadow-sm fw-bold">
-                                                  <i class="bi bi-shield-check me-2"></i>Tôi đã chuyển khoản (Kiểm tra thanh toán)
-                                                </button>
-                                                <a href="${pageContext.request.contextPath}/book-appointment?action=cancelPending&id=${appointment.id != null ? appointment.id : appointmentId}"
-                                                  class="btn btn-link text-muted text-center mt-2">
-                                                  <i class="bi bi-arrow-left me-1"></i>Hủy và chọn lại lịch khác
-                                                </a>
-                                              </div>
-                                            </form>
-                                          </div>
-
-                                          <div id="paymentExpiredArea" class="d-none text-center">
-                                            <div class="alert alert-danger rounded-4 p-4 shadow-sm mb-3">
-                                              <i class="bi bi-exclamation-octagon-fill text-danger fs-1 d-block mb-2"></i>
-                                              <h5 class="fw-bold text-danger mb-1">Mã QR đã hết hạn thanh toán (Quá ${not empty pendingHoldMinutes ? pendingHoldMinutes : 15} phút)</h5>
-                                              <p class="text-muted small mb-0">
-                                                Khung giờ này đã tạm hết thời gian giữ chỗ ưu tiên. Quý khách vui lòng tạo lại lịch hẹn mới để hoàn tất đặt chỗ.
-                                              </p>
-                                            </div>
-                                            <a href="${pageContext.request.contextPath}/book-appointment?action=cancelPending&id=${appointment.id != null ? appointment.id : appointmentId}" class="btn btn-primary btn-lg py-3 rounded-pill shadow-sm fw-bold w-100" style="background:#0d9488; border-color:#0d9488;">
-                                              <i class="bi bi-arrow-repeat me-2"></i>Đặt lại lịch hẹn mới
-                                            </a>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </c:if>
-
-                                    <%--========================================================--%>
-                                      <%-- MÀN HÌNH 1: FORM CHỌN BỆNH, BÁC SĨ & GIỜ (WIZARD FORM) --%>
-                                        <%--========================================================--%>
-                                          <c:if test="${step == null || step == 'form'}">
-                                            <form id="bookingWizardForm" method="post"
-                                              action="${pageContext.request.contextPath}/book-appointment">
-                                              <input type="hidden" name="action" value="verify">
-                                              <input type="hidden" name="scheduleId" id="selectedScheduleId" value="">
-
-                                              <%--========================================================--%>
-                                                <%-- BƯỚC 1: CHỌN DỊCH VỤ KHÁM & BÁC SĨ PHỤ TRÁCH --%>
-                                                  <%--========================================================--%>
-                                                    <div id="wizardSection1">
+                            <%-- [MÀN HÌNH 1]: CHỌN BỆNH LÝ / DỊCH VỤ KHÁM MẮT & BÁC SĨ --%>
+                            <%--========================================================--%>
+                            <div id="wizardSection1">
                                                       <div class="d-flex align-items-center mb-3">
                                                         <span class="badge rounded-circle text-white me-2 p-2"
                                                           style="background:#0d9488; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;">1</span>
@@ -957,8 +682,8 @@
                                                     </div>
 
                                                     <%--========================================================--%>
-                                                      <%-- BƯỚC 2: CHỌN NGÀY VÀ KHUNG GIỜ TIẾP NHẬN --%>
-                                                        <%--========================================================--%>
+                                                    <%-- [MÀN HÌNH 2]: CHỌN NGÀY VÀ KHUNG GIỜ TIẾP NHẬN (SLOT ĐỘNG) --%>
+                                                    <%--========================================================--%>
                                                           <div id="wizardSection2" style="display: none;">
                                                             <div class="d-flex align-items-center mb-3">
                                                               <span class="badge rounded-circle text-white me-2 p-2"
@@ -1034,9 +759,6 @@
                                                                             class="badge-session badge-morning me-2"><i
                                                                               class="bi bi-sun me-1"></i>Ca Sáng</span>
                                                                           <small class="text-muted" id="morningTimeRangeLabel">${sessionEndBufferEnabled ? '(08:00 — 11:00)' : '(08:00 — 11:30)'}</small>
-                                                                          <span id="morningBufferBadge" class="badge ${sessionEndBufferEnabled ? '' : 'd-none'}" style="font-size:11.5px; background-color: #fef3c7; color: #78350f; border: 1px solid #f59e0b; font-weight: 700; padding: 3px 8px; border-radius: 6px;">
-                                                                            <i class="bi bi-shield-lock me-1"></i>11:00 - 11:30: Ca đệm
-                                                                          </span>
                                                                         </div>
                                                                         <div class="d-flex flex-wrap gap-2"
                                                                           id="morningSlotsContainer"></div>
@@ -1050,9 +772,6 @@
                                                                                 class="bi bi-brightness-high me-1"></i>Ca
                                                                               Chiều</span>
                                                                             <small class="text-muted" id="afternoonTimeRangeLabel">${sessionEndBufferEnabled ? '(13:30 — 16:30)' : '(13:30 — 17:00)'}</small>
-                                                                          <span id="afternoonBufferBadge" class="badge ${sessionEndBufferEnabled ? '' : 'd-none'}" style="font-size:11.5px; background-color: #fef3c7; color: #78350f; border: 1px solid #f59e0b; font-weight: 700; padding: 3px 8px; border-radius: 6px;">
-                                                                            <i class="bi bi-shield-lock me-1"></i>16:30 - 17:00: Ca đệm
-                                                                          </span>
                                                                           </div>
                                                                           <div class="d-flex flex-wrap gap-2"
                                                                             id="afternoonSlotsContainer"></div>
@@ -1088,8 +807,8 @@
                                                           </div>
 
                                                           <%--========================================================--%>
-                                                            <%-- BƯỚC 3: THÔNG TIN BỆNH NHÂN & XÁC NHẬN --%>
-                                                              <%--========================================================--%>
+                                                          <%-- [MÀN HÌNH 3]: THÔNG TIN NGƯỜI KHÁM & TÙY CHỌN ĐẶT HỘ --%>
+                                                          <%--========================================================--%>
                                                                 <div id="wizardSection3" style="display: none;">
                                                                   <div class="d-flex align-items-center mb-3">
                                                                     <span
@@ -1264,6 +983,271 @@
                                             </form>
                                           </c:if>
 
+                        <%--=========================================================================--%>
+                        <%-- [MÀN HÌNH 4]: THANH TOÁN VIETQR & ĐẾM NGƯỢC GIỮ CHỖ 15 PHÚT (PAYMENT)    --%>
+                        <%--   Hiển thị khi step = 'payment' sau khi người dùng submit ở Màn hình 3   --%>
+                        <%--=========================================================================--%>
+                        <c:if test="${step == 'payment'}">
+                          <c:if test="${not empty error}">
+                            <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert">
+                              <div class="d-flex align-items-center">
+                                <i class="bi bi-exclamation-octagon-fill fs-4 me-3 text-danger"></i>
+                                <div>
+                                  <strong class="d-block">Chưa thể xác nhận thanh toán</strong>
+                                  <span>${error}</span>
+                                </div>
+                              </div>
+                              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                          </c:if>
+
+                          <div class="row align-items-center g-4">
+                            <%-- Cột bên trái: Mã VietQR động & Đồng hồ đếm ngược giữ chỗ 15 phút --%>
+                            <div class="col-md-5 text-center">
+                              <div class="qr-box">
+                                <h5 class="fw-bold text-dark mb-1">Quét mã VietQR</h5>
+                                <p class="text-muted small mb-3">Mở ứng dụng Ngân hàng hoặc Ví điện tử để quét</p>
+
+                                <div class="position-relative d-inline-block">
+                                  <img src="${qrUrl}" alt="VietQR VisionCare"
+                                    class="img-fluid rounded-3 border"
+                                    style="max-width: 260px; min-height: 260px;">
+                                </div>
+
+                                <%-- ĐỒNG HỒ ĐẾM NGƯỢC THỜI HẠN THANH TOÁN (COUNTDOWN TIMER) --%>
+                                <div class="mt-3 p-3 rounded-4 border bg-white shadow-sm text-start" id="paymentCountdownCard">
+                                  <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted small fw-semibold">
+                                      <i class="bi bi-stopwatch text-danger me-1"></i>Thời gian giữ chỗ:
+                                    </span>
+                                    <span class="fs-5 fw-bold text-danger font-monospace" id="paymentCountdownTimer">${not empty pendingHoldMinutes ? (pendingHoldMinutes < 10 ? '0' : '') : ''}${not empty pendingHoldMinutes ? pendingHoldMinutes : 15}:00</span>
+                                  </div>
+                                  <div class="progress" style="height: 6px; border-radius: 6px; background-color: #f1f5f9;">
+                                    <div id="countdownProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-danger"
+                                      role="progressbar" style="width: 100%; transition: width 1s linear;"></div>
+                                  </div>
+                                  <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted" style="font-size: 11px;">
+                                      <i class="bi bi-shield-lock me-1 text-teal" style="color: #0d9488;"></i>Đang giữ chỗ lịch hẹn
+                                    </small>
+                                    <small class="text-danger fw-semibold" style="font-size: 11px;" id="countdownStatusText">
+                                      Còn hiệu lực
+                                    </small>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <%-- Cột bên phải: Chi tiết phiếu hẹn khám & Thông tin chuyển khoản --%>
+                            <div class="col-md-7">
+                              <div class="ticket-card mb-4">
+                                <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Chi tiết phiếu đặt lịch khám</h5>
+                                <div class="row g-2 small">
+                                  <div class="col-6 text-muted">Mã lịch hẹn:</div>
+                                  <div class="col-6 fw-bold text-dark text-end">#VC${appointment.id}</div>
+
+                                  <div class="col-6 text-muted">Bệnh nhân:</div>
+                                  <div class="col-6 fw-bold text-dark text-end">${appointment.patientName}</div>
+
+                                  <div class="col-6 text-muted">Bác sĩ khám:</div>
+                                  <div class="col-6 fw-bold text-primary text-end">${appointment.doctorName}</div>
+
+                                  <div class="col-6 text-muted">Thời gian hẹn:</div>
+                                  <div class="col-6 fw-bold text-danger text-end">${appointment.timeSlot} — ${appointment.appointmentDate}</div>
+
+                                  <div class="col-6 text-muted">Thời hạn thanh toán:</div>
+                                  <div class="col-6 fw-bold text-end">
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle font-monospace px-2 py-1" id="ticketCountdownBadge">
+                                      <i class="bi bi-stopwatch me-1"></i>${not empty pendingHoldMinutes ? (pendingHoldMinutes < 10 ? '0' : '') : ''}${not empty pendingHoldMinutes ? pendingHoldMinutes : 15}:00
+                                    </span>
+                                  </div>
+
+                                  <div class="col-12 border-top my-2"></div>
+
+                                  <div class="col-6 text-muted">Ngân hàng:</div>
+                                  <div class="col-6 fw-bold text-dark text-end">${bankName}</div>
+
+                                  <div class="col-6 text-muted">Số tài khoản:</div>
+                                  <div class="col-6 fw-bold text-dark text-end">${accountNumber}</div>
+
+                                  <div class="col-6 text-muted">Chủ tài khoản:</div>
+                                  <div class="col-6 fw-bold text-dark text-end">${accountHolder}</div>
+
+                                  <div class="col-6 text-muted">Nội dung chuyển khoản:</div>
+                                  <div class="col-6 fw-bold text-danger text-end">
+                                    <code class="p-1 rounded bg-light border">${paymentDesc}</code>
+                                  </div>
+
+                                  <div class="col-6 fs-6 text-dark fw-bold mt-2">
+                                    <c:choose>
+                                      <c:when test="${appointment.balanceDue > 0}">Tiền cọc cần thanh toán:</c:when>
+                                      <c:otherwise>Tổng phí khám cần thanh toán:</c:otherwise>
+                                    </c:choose>
+                                  </div>
+                                  <div class="col-6 fs-5 fw-bold text-success text-end mt-2">
+                                    <fmt:formatNumber value="${fee}" type="number" groupingUsed="true" /> ₫
+                                  </div>
+                                  <c:if test="${appointment.balanceDue > 0}">
+                                    <div class="col-6 text-muted small">Tổng giá gói dịch vụ:</div>
+                                    <div class="col-6 text-muted small text-end fw-semibold">
+                                      <fmt:formatNumber value="${appointment.totalAmount}" type="number" groupingUsed="true" /> ₫
+                                    </div>
+                                    <div class="col-6 text-danger small">Số tiền còn lại (thanh toán tại phòng khám):</div>
+                                    <div class="col-6 text-danger small text-end fw-bold">
+                                      <fmt:formatNumber value="${appointment.balanceDue}" type="number" groupingUsed="true" /> ₫
+                                    </div>
+                                  </c:if>
+
+                                  <c:if test="${fn:contains(appointment.serviceName, 'tiền phẫu') or fn:contains(appointment.serviceName, 'tầm soát') or fn:contains(appointment.serviceName, 'Tiền phẫu') or fn:contains(appointment.serviceName, 'Tầm soát')}">
+                                    <div class="col-12 mt-2">
+                                      <div class="alert alert-success py-2 px-3 small rounded-3 mb-0 text-start">
+                                        <i class="bi bi-gift-fill me-1"></i> <b>Chính sách ưu đãi:</b> 100% phí khám tiền phẫu này sẽ được <b>khấu trừ trực tiếp vào chi phí ca mổ</b> nếu quý khách đủ điều kiện và tiến hành phẫu thuật tại VisionCare.
+                                      </div>
+                                    </div>
+                                  </c:if>
+                                </div>
+                              </div>
+
+                              <%-- Nút bấm xác nhận & kiểm tra thanh toán --%>
+                              <div id="paymentActionArea">
+                                <form method="post" action="${pageContext.request.contextPath}/book-appointment">
+                                  <input type="hidden" name="action" value="confirmPayment">
+                                  <input type="hidden" name="appointmentId" value="${appointment.id}">
+                                  <input type="hidden" name="orderCode" value="${orderCode}">
+                                  <input type="hidden" name="email" value="${appointment.email}">
+
+                                  <div class="d-grid gap-2">
+                                    <div class="alert alert-info py-2 px-3 small rounded-3 mb-2 d-flex align-items-center">
+                                      <div class="spinner-grow spinner-grow-sm text-info me-2" role="status"></div>
+                                      <span>Hệ thống tự động kiểm tra biến động số dư. Trang sẽ <b>tự động chuyển sang Thành công</b> ngay khi hoàn tất chuyển khoản!</span>
+                                    </div>
+                                    <button type="submit" class="btn btn-success btn-lg py-3 rounded-3 shadow-sm fw-bold">
+                                      <i class="bi bi-shield-check me-2"></i>Tôi đã chuyển khoản (Kiểm tra thanh toán)
+                                    </button>
+                                    <a href="${pageContext.request.contextPath}/book-appointment?action=cancelPending&id=${appointment.id != null ? appointment.id : appointmentId}"
+                                      class="btn btn-link text-muted text-center mt-2">
+                                      <i class="bi bi-arrow-left me-1"></i>Hủy và chọn lại lịch khác
+                                    </a>
+                                  </div>
+                                </form>
+                              </div>
+
+                              <%-- Cảnh báo hết hạn giữ chỗ (sau 15 phút) --%>
+                              <div id="paymentExpiredArea" class="d-none text-center">
+                                <div class="alert alert-danger rounded-4 p-4 shadow-sm mb-3">
+                                  <i class="bi bi-exclamation-octagon-fill text-danger fs-1 d-block mb-2"></i>
+                                  <h5 class="fw-bold text-danger mb-1">Mã QR đã hết hạn thanh toán (Quá ${not empty pendingHoldMinutes ? pendingHoldMinutes : 15} phút)</h5>
+                                  <p class="text-muted small mb-0">
+                                    Khung giờ này đã tạm hết thời gian giữ chỗ ưu tiên. Quý khách vui lòng tạo lại lịch hẹn mới để hoàn tất đặt chỗ.
+                                  </p>
+                                </div>
+                                <a href="${pageContext.request.contextPath}/book-appointment?action=cancelPending&id=${appointment.id != null ? appointment.id : appointmentId}" class="btn btn-primary btn-lg py-3 rounded-pill shadow-sm fw-bold w-100" style="background:#0d9488; border-color:#0d9488;">
+                                  <i class="bi bi-arrow-repeat me-2"></i>Đặt lại lịch hẹn mới
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        </c:if>
+
+                        <%--=========================================================================--%>
+                        <%-- [MÀN HÌNH 5]: XÁC NHẬN THÀNH CÔNG & XUẤT VÉ KHÁM ĐIỆN TỬ (SUCCESS)       --%>
+                        <%--   Hiển thị khi step = 'success' sau khi thanh toán thành công           --%>
+                        <%--=========================================================================--%>
+                        <c:if test="${step == 'success'}">
+                          <div class="text-center py-4">
+                            <div class="d-inline-flex p-3 rounded-circle bg-success bg-opacity-10 text-success mb-3">
+                              <i class="bi bi-check-circle-fill" style="font-size: 64px;"></i>
+                            </div>
+                            <h2 class="fw-bold text-success mb-2">Đặt Lịch &amp; Thanh Toán Thành Công!</h2>
+                            <p class="text-muted fs-6 mb-4">
+                              Hệ thống VisionCare đã ghi nhận vé khám và cập nhật trạng thái đã thanh toán.
+                            </p>
+
+                            <div class="ticket-card text-start mx-auto mb-4" style="max-width: 620px;">
+                              <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                                <div>
+                                  <span class="text-muted small text-uppercase fw-bold">Mã Phiếu Hẹn</span>
+                                  <h4 class="fw-bold text-teal mb-0" style="color: #0d9488;">#VC${appointment.id}</h4>
+                                </div>
+                                <span class="badge bg-success px-3 py-2 fs-6 rounded-pill">
+                                  <i class="bi bi-shield-check me-1"></i>ĐÃ XÁC NHẬN &amp; THANH TOÁN
+                                </span>
+                              </div>
+
+                              <div class="row g-3">
+                                <div class="col-sm-6">
+                                  <span class="text-muted small d-block">Họ và tên bệnh nhân:</span>
+                                  <strong class="fs-6 text-dark">${appointment.patientName}</strong>
+                                </div>
+                                <div class="col-sm-6">
+                                  <span class="text-muted small d-block">Số điện thoại:</span>
+                                  <strong class="fs-6 text-dark">${appointment.phone}</strong>
+                                </div>
+                                <div class="col-sm-6">
+                                  <span class="text-muted small d-block">Bác sĩ phụ trách:</span>
+                                  <strong class="fs-6 text-primary">${appointment.doctorName}</strong>
+                                </div>
+                                <div class="col-sm-6">
+                                  <span class="text-muted small d-block">Chuyên khoa:</span>
+                                  <strong class="fs-6 text-dark">${appointment.department}</strong>
+                                </div>
+                                <div class="col-sm-6">
+                                  <span class="text-muted small d-block">Ngày khám hẹn:</span>
+                                  <strong class="fs-6 text-danger">${appointment.appointmentDate}</strong>
+                                </div>
+                                <div class="col-sm-6">
+                                  <span class="text-muted small d-block">Khung giờ tiếp đón:</span>
+                                  <strong class="fs-6 text-danger">${appointment.timeSlot}</strong>
+                                </div>
+                                <div class="col-12 border-top pt-2 mt-2">
+                                  <div class="d-flex justify-content-between">
+                                    <span class="text-muted">
+                                      <c:choose>
+                                        <c:when test="${appointment.balanceDue > 0}">Tiền cọc giữ chỗ đã thanh toán:</c:when>
+                                        <c:otherwise>Chi phí dịch vụ đã thanh toán:</c:otherwise>
+                                      </c:choose>
+                                    </span>
+                                    <strong class="text-success fs-5">
+                                      <fmt:formatNumber value="${appointment.fee}" type="number" groupingUsed="true" /> ₫
+                                    </strong>
+                                  </div>
+                                  <c:if test="${appointment.balanceDue > 0}">
+                                    <div class="d-flex justify-content-between mt-2 pt-2 border-top">
+                                      <span class="text-muted small">Tổng chi phí gói dịch vụ:</span>
+                                      <span class="text-dark small fw-semibold">
+                                        <fmt:formatNumber value="${appointment.totalAmount}" type="number" groupingUsed="true" /> ₫
+                                      </span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-1 text-danger small">
+                                      <span>Số tiền còn lại (thanh toán sau khám tại quầy):</span>
+                                      <strong>
+                                        <fmt:formatNumber value="${appointment.balanceDue}" type="number" groupingUsed="true" /> ₫
+                                      </strong>
+                                    </div>
+                                  </c:if>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="alert alert-info d-inline-block text-start rounded-3 p-3 mb-4" style="max-width: 620px;">
+                              <i class="bi bi-envelope-check-fill me-2 fs-5 text-primary"></i>
+                              <span>Email xác nhận và phiếu hướng dẫn chuẩn bị khám đã được tự động gửi tới:
+                                <b>${appointment.email}</b>. Vui lòng kiểm tra hộp thư của bạn!</span>
+                            </div>
+
+                            <div class="d-flex justify-content-center gap-3">
+                              <a href="${pageContext.request.contextPath}/home" class="btn btn-outline-secondary px-4 py-2 rounded-pill">
+                                <i class="bi bi-house me-2"></i>Về trang chủ
+                              </a>
+                              <a href="${pageContext.request.contextPath}/views/profile/appointment-history.jsp"
+                                class="btn btn-primary px-4 py-2 rounded-pill"
+                                style="background: #0d9488; border-color: #0d9488;">
+                                <i class="bi bi-calendar-check me-2"></i>Xem lịch hẹn của tôi
+                              </a>
+                            </div>
+                          </div>
+                        </c:if>
+
                       </div>
                   </div>
 
@@ -1277,7 +1261,13 @@
           <jsp:include page="/views/common/footer.jsp" />
 
           <script>
-            // Lịch làm việc 7 ngày tới, pre-load từ server để filter bác sĩ client-side theo ngày (Option C)
+            /* =========================================================================
+             * [PHẦN 1]: CẤU HÌNH DỮ LIỆU & ĐIỀU HƯỚNG WIZARD (CHUNG CHO BƯỚC 1, 2, 3)
+             *   - Lịch làm việc 7 ngày (doctorScheduleMap)
+             *   - Ràng buộc ngày tối thiểu (min = today)
+             *   - Chuyển bước Wizard: nextWizardStep(), prevWizardStep(), goToWizardStep(), jumpToWizardStep()
+             * ========================================================================= */
+            // Lịch làm việc 7 ngày tới, pre-load từ server để filter bác sĩ client-side theo ngày 
             const doctorScheduleMap = ${not empty doctorScheduleMapJson ? doctorScheduleMapJson : '{}'};
             let currentWizardStep = 1;
 
@@ -1429,6 +1419,14 @@
               }
             }
 
+            /* =========================================================================
+             * [PHẦN 2: MÀN HÌNH 1 JAVASCRIPT]: CHỌN DỊCH VỤ / BỆNH LÝ & BÁC SĨ
+             *   - filterDoctorsByService(radioElement): Tự động chỉ định bác sĩ đúng chuyên khoa
+             *   - onDoctorSelectChange(): Khi bệnh nhân chủ động chọn bác sĩ trong dropdown
+             *   - updateDoctorPreview(): Hiển thị card xem trước hồ sơ bác sĩ (ảnh, chuyên khoa, phòng khám)
+             *   - filterBookingCategory(group, btn): Phân loại danh mục dịch vụ khám mắt
+             *   - selectServiceFromModal(serviceId): Chọn dịch vụ từ popup modal chi tiết
+             * ========================================================================= */
             // Lọc bác sĩ theo chuyên khoa khi người dùng nhấn chọn dịch vụ / bệnh lý (KHÔNG ẨN BÁC SĨ NÀO)
             function filterDoctorsByService(radioElement) {
               if (!radioElement) return;
@@ -1769,6 +1767,11 @@
               previewCard.classList.remove('d-none');
             }
 
+            /* =========================================================================
+             * [PHẦN 3: MÀN HÌNH 2 JAVASCRIPT]: CHỌN NGÀY & KHUNG GIỜ TIẾP NHẬN (AJAX SLOTS)
+             *   - onDoctorOrDateChange(): Gửi AJAX getSlots lấy ca làm việc và danh sách slot theo thời gian thực
+             *   - onSlotSelected(radio): Xử lý khi bệnh nhân click chọn một khung giờ khám
+             * ========================================================================= */
             // Tải danh sách slots qua AJAX khi người dùng thay đổi Bác sĩ hoặc Ngày
             function onDoctorOrDateChange() {
               const docSelect = document.getElementById('doctorSelect');
@@ -1862,31 +1865,13 @@
 
                   const isBuffer = Boolean(data.sessionEndBufferEnabled);
                   const mLabel = document.getElementById('morningTimeRangeLabel');
-                  const mBadge = document.getElementById('morningBufferBadge');
                   const aLabel = document.getElementById('afternoonTimeRangeLabel');
-                  const aBadge = document.getElementById('afternoonBufferBadge');
                   if (isBuffer) {
                     if (mLabel) mLabel.textContent = '(08:00 — 11:00)';
-                    if (mBadge) mBadge.classList.remove('d-none');
                     if (aLabel) aLabel.textContent = '(13:30 — 16:30)';
-                    if (aBadge) aBadge.classList.remove('d-none');
-                    if (hasMorning && morningSlotsContainer) {
-                      const bufItem = document.createElement('div');
-                      bufItem.className = 'position-relative';
-                      bufItem.innerHTML = '<label class="slot-btn slot-btn-past" style="opacity:0.85; cursor:not-allowed; border:1px solid #f59e0b; background:#fffbeb; color:#78350f; font-weight:600;" title="Ca đệm bù giờ phát sinh (11:00 - 11:30): Dành riêng cho bác sĩ hoàn tất các ca khám phức tạp, không nhận đặt trước">11:00 — 11:30 <span class="badge ms-1" style="font-size:10.5px; background:#fef3c7; color:#78350f; border:1px solid #f59e0b; font-weight:700;"><i class="bi bi-shield-lock-fill me-1" style="color:#d97706;"></i>Ca đệm</span></label>';
-                      morningSlotsContainer.appendChild(bufItem);
-                    }
-                    if (hasAfternoon && afternoonSlotsContainer) {
-                      const bufItem = document.createElement('div');
-                      bufItem.className = 'position-relative';
-                      bufItem.innerHTML = '<label class="slot-btn slot-btn-past" style="opacity:0.85; cursor:not-allowed; border:1px solid #f59e0b; background:#fffbeb; color:#78350f; font-weight:600;" title="Ca đệm bù giờ phát sinh (16:30 - 17:00): Dành riêng cho bác sĩ hoàn tất các ca khám phức tạp, không nhận đặt trước">16:30 — 17:00 <span class="badge ms-1" style="font-size:10.5px; background:#fef3c7; color:#78350f; border:1px solid #f59e0b; font-weight:700;"><i class="bi bi-shield-lock-fill me-1" style="color:#d97706;"></i>Ca đệm</span></label>';
-                      afternoonSlotsContainer.appendChild(bufItem);
-                    }
                   } else {
                     if (mLabel) mLabel.textContent = '(08:00 — 11:30)';
-                    if (mBadge) mBadge.classList.add('d-none');
                     if (aLabel) aLabel.textContent = '(13:30 — 17:00)';
-                    if (aBadge) aBadge.classList.add('d-none');
                   }
 
                   if (hasMorning && morningSection) morningSection.classList.remove('d-none');
@@ -1918,6 +1903,14 @@
               }
             }
 
+            /* =========================================================================
+             * [PHẦN 4: MÀN HÌNH 3 JAVASCRIPT]: THÔNG TIN NGƯỜI KHÁM, TÍNH PHÍ & 3 NÚT BẤM
+             *   - updateFeeDisplay(): Cập nhật bảng phân tích chi phí khám mắt & tiền cọc giữ chỗ
+             *   - loggedUserProfile: Hồ sơ tài khoản bệnh nhân đang đăng nhập
+             *   - setBookingForOther(): Đăng ký cho người khác / người thân (xóa trắng form)
+             *   - refillMyInfo(): Đặt cho bản thân (tự động nạp lại thông tin)
+             *   - clearPatientForm(): Điền lại thông tin từ đầu (reset form với xác nhận)
+             * ========================================================================= */
             // Cập nhật hiển thị phí khám động theo dịch vụ được chọn (Chi phí giữ chỗ & tiền phẫu)
             function updateFeeDisplay() {
               const checkedSvc = document.querySelector('input[name="serviceId"]:checked');
@@ -1971,7 +1964,7 @@
               }
             }
 
-            // Xử lý chuyển đổi: Đặt cho bản thân / Đăng ký cho người khác / Điền lại thông tin
+            // --- 3 NÚT BẤM THÔNG TIN NGƯỜI KHÁM (Đặt hộ / Điền lại / Bản thân) ---
             const loggedUserProfile = {
               name: '<c:out value="${loggedUser.fullName}" default="" />',
               phone: '<c:out value="${loggedUser.phone}" default="" />',
@@ -2029,7 +2022,12 @@
               }
             }
 
-            // Tự động khởi tạo khi tải trang
+            /* =========================================================================
+             * [PHẦN 6: KHỞI TẠO TẢI TRANG (DOMContentLoaded)]
+             *   - Ràng buộc ngày khám tối thiểu = hôm nay
+             *   - Gắn sự kiện click trực tiếp vào từng service-card
+             *   - Tự động chọn bác sĩ ban đầu theo chuyên khoa dịch vụ
+             * ========================================================================= */
             document.addEventListener('DOMContentLoaded', function () {
               const apptDateInput = document.getElementById('appointmentDate');
               if (apptDateInput) {
@@ -2072,7 +2070,12 @@
                 updateDoctorPreview();
               }
 
-              // Tự động kiểm tra trạng thái thanh toán PayOS (Auto Polling) & Đồng hồ đếm ngược (Countdown Timer)
+              /* =========================================================================
+               * [PHẦN 5: MÀN HÌNH 4 JAVASCRIPT]: THANH TOÁN VIETQR & ĐẾM NGƯỢC GIỮ CHỖ 15 PHÚT
+               *   - Đồng hồ đếm ngược giữ chỗ (updatePaymentCountdown)
+               *   - Tự động kiểm tra trạng thái thanh toán PayOS (Auto Polling 2.5s)
+               *   - Tự động giải phóng slot khi hết thời hạn 15 phút
+               * ========================================================================= */
               <c:if test="${step == 'payment'}">
                 const currentApptId = '${appointmentId != null ? appointmentId : appointment.id}';
                 let pollAttempts = 0;

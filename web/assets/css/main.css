@@ -223,7 +223,7 @@ h6 {
 --------------------------------------------------------------*/
 .header {
   color: var(--default-color);
-  transition: all 0.5s;
+  transition: none;
   z-index: 997;
   background-color: var(--background-color);
 }
@@ -233,7 +233,7 @@ h6 {
   height: 40px;
   padding: 0;
   font-size: 14px;
-  transition: all 0.5s;
+  transition: none;
 }
 
 .header .topbar .contact-info i {
@@ -335,9 +335,9 @@ h6 {
 }
 
 .scrolled .header .topbar {
-  height: 0;
-  visibility: hidden;
-  overflow: hidden;
+  height: 40px;
+  visibility: visible;
+  overflow: visible;
 }
 
 /*--------------------------------------------------------------

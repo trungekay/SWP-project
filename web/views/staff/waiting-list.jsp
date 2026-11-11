@@ -78,9 +78,31 @@
                         </c:if>
 
                         <!-- Page Header -->
-                        <div class="page-header d-flex align-items-center justify-content-between mb-3">
+                        <div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
                             <div class="page-title">
                                 <h2 class="mb-0">Danh Sách Chờ</h2>
+                            </div>
+                            <div class="d-flex align-items-center flex-wrap gap-2">
+                                <!-- Nút gạt Ca đệm (Buffer Slot) dành cho Staff tiếp đón -->
+                                <div class="buffer-slot-widget d-flex align-items-center gap-2 px-3 py-1.5 rounded-3 border shadow-sm bg-white" 
+                                     id="staffBufferSlotWidget"
+                                     style="border-color: ${sessionEndBufferEnabled ? '#f59e0b' : '#e2e8f0'} !important; min-height: 38px;">
+                                    <div class="form-check form-switch m-0 d-flex align-items-center gap-2 p-0" style="min-height: 24px;">
+                                        <input class="form-check-input ms-0 me-2" type="checkbox" role="switch" id="staffBufferSlotToggle" 
+                                               style="cursor: pointer; width: 2.2rem; height: 1.15rem; margin-top: 0;"
+                                               ${sessionEndBufferEnabled ? 'checked' : ''} onchange="toggleStaffBufferSlot(this)">
+                                        <label class="form-check-label user-select-none fw-semibold d-flex align-items-center gap-1 text-dark" for="staffBufferSlotToggle" style="font-size: 13px; cursor: pointer;">
+                                            <i class="bi bi-shield-lock-fill ${sessionEndBufferEnabled ? 'text-warning' : 'text-secondary'}" id="staffBufferSlotIcon" style="font-size: 14px;"></i>
+                                            <span>Ca đệm (11:00 & 16:30)</span>
+                                        </label>
+                                    </div>
+                                    <span id="staffBufferSlotStatusBadge" class="badge ${sessionEndBufferEnabled ? 'bg-warning-subtle text-warning-emphasis border border-warning' : 'bg-light text-muted border'}" style="font-size: 11px; font-weight: 700; padding: 4px 7px;">
+                                        ${sessionEndBufferEnabled ? 'ĐANG BẬT' : 'ĐANG TẮT'}
+                                    </span>
+                                    <button type="button" class="btn btn-sm btn-link p-0 text-secondary" data-bs-toggle="modal" data-bs-target="#bufferSlotInfoModal" title="Tìm hiểu về cơ chế Ca Đệm phòng khám" style="text-decoration: none;">
+                                        <i class="bi bi-info-circle" style="font-size: 13px;"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -592,7 +614,206 @@
                             window.location.reload();
                         }
                     }, 15000);
+                    // Toggle Buffer Slot bằng AJAX cho Staff Tiếp đón
+                    function toggleStaffBufferSlot(el) {
+                        if (!el) return;
+                        var isChecked = el.checked;
+                        var badge = document.getElementById('staffBufferSlotStatusBadge');
+                        var icon = document.getElementById('staffBufferSlotIcon');
+                        var widget = document.getElementById('staffBufferSlotWidget');
+
+                        el.disabled = true;
+                        if (badge) {
+                            badge.className = 'badge bg-secondary-subtle text-secondary border';
+                            badge.innerHTML = '<span class="spinner-border spinner-border-sm me-1" style="width:9px;height:9px;"></span>Đang lưu...';
+                        }
+
+                        var params = new URLSearchParams();
+                        params.append('action', 'toggleBufferSlot');
+                        params.append('sessionEndBufferEnabled', isChecked ? 'true' : 'false');
+                        params.append('ajax', 'true');
+
+                        fetch('${pageContext.request.contextPath}/staff/appointments', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: params.toString()
+                        })
+                        .then(function(res) {
+                            if (!res.ok) throw new Error('HTTP ' + res.status);
+                            return res.json();
+                        })
+                        .then(function(data) {
+                            el.disabled = false;
+                            if (data && data.success) {
+                                var enabled = Boolean(data.sessionEndBufferEnabled);
+                                el.checked = enabled;
+                                if (badge) {
+                                    if (enabled) {
+                                        badge.className = 'badge bg-warning-subtle text-warning-emphasis border border-warning';
+                                        badge.textContent = 'ĐANG BẬT';
+                                    } else {
+                                        badge.className = 'badge bg-light text-muted border';
+                                        badge.textContent = 'ĐANG TẮT';
+                                    }
+                                }
+                                if (icon) {
+                                    icon.className = 'bi bi-shield-lock-fill ' + (enabled ? 'text-warning' : 'text-secondary');
+                                }
+                                if (widget) {
+                                    widget.style.borderColor = enabled ? '#f59e0b' : '#e2e8f0';
+                                }
+                                showBufferSlotToast(enabled);
+                            } else {
+                                throw new Error('Cập nhật trạng thái không thành công');
+                            }
+                        })
+                        .catch(function(err) {
+                            el.disabled = false;
+                            el.checked = !isChecked; // Khôi phục trạng thái cũ
+                            if (badge) {
+                                badge.className = !isChecked ? 'badge bg-warning-subtle text-warning-emphasis border border-warning' : 'badge bg-light text-muted border';
+                                badge.textContent = !isChecked ? 'ĐANG BẬT' : 'ĐANG TẮT';
+                            }
+                            if (icon) {
+                                icon.className = 'bi bi-shield-lock-fill ' + (!isChecked ? 'text-warning' : 'text-secondary');
+                            }
+                            if (widget) {
+                                widget.style.borderColor = !isChecked ? '#f59e0b' : '#e2e8f0';
+                            }
+                            alert('Không thể lưu cấu hình Ca đệm: ' + (err.message || 'Lỗi mạng'));
+                        });
+                    }
+
+                    // Toast thông báo nổi khi đổi trạng thái Ca đệm
+                    function showBufferSlotToast(enabled) {
+                        var container = document.getElementById('staffBufferToastContainer');
+                        if (!container) {
+                            container = document.createElement('div');
+                            container.id = 'staffBufferToastContainer';
+                            container.style.position = 'fixed';
+                            container.style.top = '24px';
+                            container.style.right = '24px';
+                            container.style.zIndex = '99999';
+                            document.body.appendChild(container);
+                        }
+
+                        var toast = document.createElement('div');
+                        toast.className = 'alert shadow-lg d-flex align-items-center gap-3 text-dark border-0 rounded-3 px-3 py-2.5 mb-2';
+                        toast.style.background = enabled ? '#fef3c7' : '#f0fdf4';
+                        toast.style.borderLeft = enabled ? '4px solid #f59e0b' : '4px solid #10b981';
+                        toast.style.maxWidth = '400px';
+                        toast.style.fontSize = '13px';
+                        toast.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)';
+                        toast.style.opacity = '0';
+                        toast.style.transform = 'translateY(-10px)';
+                        toast.style.transition = 'all 0.3s ease';
+
+                        var icon = enabled 
+                            ? '<div style="width:36px;height:36px;border-radius:10px;background:#fde68a;color:#d97706;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;"><i class="bi bi-shield-lock-fill"></i></div>'
+                            : '<div style="width:36px;height:36px;border-radius:10px;background:#bbf7d0;color:#16a34a;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;"><i class="bi bi-check-circle-fill"></i></div>';
+                        var title = enabled ? 'ĐÃ KÍCH HOẠT CA ĐỆM' : 'ĐÃ TẮT CA ĐỆM';
+                        var desc = enabled 
+                            ? 'Khóa 2 ca 11:00-11:30 & 16:30-17:00 trên cổng đặt online để chống quá tải.'
+                            : 'Đã mở lại toàn bộ các ca (đến 11:30 & 17:00) cho bệnh nhân đặt lịch bình thường.';
+
+                        toast.innerHTML = icon + '<div style="flex:1;"><strong style="display:block;font-size:13px;margin-bottom:2px;" class="text-dark">' + title + '</strong><span style="font-size:12px;color:#475569;line-height:1.35;display:block;">' + desc + '</span></div>';
+                        container.appendChild(toast);
+
+                        requestAnimationFrame(function() {
+                            toast.style.opacity = '1';
+                            toast.style.transform = 'translateY(0)';
+                        });
+
+                        setTimeout(function() {
+                            toast.style.opacity = '0';
+                            toast.style.transform = 'translateY(-10px)';
+                            setTimeout(function() { toast.remove(); }, 350);
+                        }, 4000);
+                    }
                 </script>
+
+                <!-- Modal: Giới thiệu & Hướng dẫn Cơ chế Ca Đệm (Buffer Slot) -->
+                <div class="modal fade" id="bufferSlotInfoModal" tabindex="-1" aria-labelledby="bufferSlotInfoModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered" style="max-width: 560px;">
+                        <div class="modal-content border-0 shadow-lg" style="border-radius: 18px; overflow: hidden;">
+                            <div class="modal-header border-0 pb-0 pt-4 px-4 d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(245, 158, 11, 0.15); color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+                                        <i class="bi bi-shield-lock-fill"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="modal-title fw-bold text-dark mb-0" id="bufferSlotInfoModalLabel" style="font-size: 17px;">Cơ chế Ca Đệm (Buffer Slot)</h5>
+                                        <small class="text-secondary" style="font-size: 12.5px;">Phân quyền điều phối tiếp đón & chống quá tải phòng khám</small>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                                <div class="alert alert-warning border-warning-subtle d-flex align-items-start gap-2.5 py-2.5 px-3 rounded-3 mb-3" style="font-size: 12.5px; background-color: #fffbeb;">
+                                    <i class="bi bi-person-badge-fill text-warning flex-shrink-0 mt-0.5" style="font-size: 17px;"></i>
+                                    <div class="text-secondary">
+                                        <strong class="text-dark">Tại sao Nhân viên Lễ tân (Staff) có quyền bật/tắt?</strong><br>
+                                        Lễ tân là bộ phận tiếp xúc trực tiếp tại sảnh chờ, nắm rõ số lượng bệnh nhân thực tế và tiến độ của từng bác sĩ theo thời gian thực. Staff có thể chủ động linh hoạt ứng biến theo tình hình đông/vắng trong ngày.
+                                    </div>
+                                </div>
+
+                                <div class="vstack gap-3" style="font-size: 13px;">
+                                    <div class="p-3 rounded-3 border bg-light">
+                                        <div class="fw-bold text-dark mb-1 d-flex align-items-center gap-1.5">
+                                            <i class="bi bi-clock-history text-teal"></i>
+                                            <span>Khung giờ Ca Đệm được cố định ở đâu?</span>
+                                        </div>
+                                        <div class="text-muted small">
+                                            Hệ thống dành riêng <strong>30 phút cuối</strong> của mỗi ca khám:
+                                            <ul class="mb-0 mt-1 ps-3">
+                                                <li><strong>Ca Sáng:</strong> 11:00 — 11:30</li>
+                                                <li><strong>Ca Chiều:</strong> 16:30 — 17:00</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <div class="p-3 rounded-3 border h-100" style="background: #fffdf5; border-color: #fde68a !important;">
+                                                <div class="fw-bold text-warning mb-1 d-flex align-items-center gap-1">
+                                                    <i class="bi bi-toggle-on fs-5"></i>
+                                                    <span>Khi BẬT Ca Đệm</span>
+                                                </div>
+                                                <div class="text-secondary small" style="font-size: 12px; line-height: 1.45;">
+                                                    Áp dụng vào ngày <strong>đông bệnh nhân</strong> hoặc có nhiều ca khám nặng kéo dài. Hệ thống <strong>khóa 2 ca đệm</strong> trên cổng bệnh nhân đặt online, bảo lưu khung giờ này để Bác sĩ xử lý bù giờ, chống trễ ca.
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-3 rounded-3 border h-100" style="background: #f0fdf4; border-color: #bbf7d0 !important;">
+                                                <div class="fw-bold text-success mb-1 d-flex align-items-center gap-1">
+                                                    <i class="bi bi-toggle-off fs-5"></i>
+                                                    <span>Khi TẮT Ca Đệm</span>
+                                                </div>
+                                                <div class="text-secondary small" style="font-size: 12px; line-height: 1.45;">
+                                                    Áp dụng vào ngày <strong>vắng khách</strong> hoặc tiến độ khám nhanh. Hệ thống <strong>mở 100% tất cả ca</strong> (đến 11:30 & 17:00) cho bệnh nhân đặt online nhằm tối đa hóa công suất phòng khám.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="p-2.5 rounded-3 border bg-white d-flex align-items-center gap-2" style="font-size: 12px;">
+                                        <i class="bi bi-arrow-repeat text-primary fs-5 flex-shrink-0"></i>
+                                        <span class="text-muted">
+                                            Thay đổi có hiệu lực <strong>ngay lập tức (Real-time)</strong> trên trang Đặt lịch Online của Bệnh nhân, Lịch làm việc Bác sĩ và Tiếp đón khách vãng lai.
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer border-0 pt-0 px-4 pb-4">
+                                <button type="button" class="btn btn-teal w-100 py-2 rounded-3 fw-semibold" data-bs-dismiss="modal">Đã hiểu quy trình</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Toast Container for Clean Notifications -->
                 <div id="toastNotificationContainer" class="toast-container position-fixed top-0 end-0 p-3"

@@ -472,106 +472,12 @@ public class WorkScheduleDAO {
                            "  ALTER TABLE [dbo].[Work_Schedule] WITH CHECK ADD CONSTRAINT [CHK_WS_Has_Employee] " +
                            "  CHECK (([Doctor_Employee_ID] IS NOT NULL OR [Specialist_Employee_ID] IS NOT NULL OR [Staff_Employee_ID] IS NOT NULL)); " +
                            "END");
+                // Dọn dẹp sạch toàn bộ các ca demo tự sinh chưa có người đặt để chỉ giữ lại ca khám do Bác sĩ thực sự đăng ký
+                st.execute("DELETE ws FROM Work_Schedule ws " +
+                           "WHERE ws.Status = 'Available' " +
+                           "  AND ws.Work_Date >= CAST(GETDATE() AS DATE) " +
+                           "  AND NOT EXISTS (SELECT 1 FROM Appointment a WHERE a.Schedule_ID = ws.Schedule_ID)");
             } catch (Exception ignored) {}
-
-            // Mẫu slot ca sáng (08:00 - 11:30)
-            String[][] morningSlots = {
-                {"Slot 1", "08:00:00", "08:30:00"},
-                {"Slot 2", "08:30:00", "09:00:00"},
-                {"Slot 3", "09:00:00", "09:30:00"},
-                {"Slot 4", "09:30:00", "10:00:00"},
-                {"Slot 5", "10:00:00", "10:30:00"},
-                {"Slot 6", "10:30:00", "11:00:00"},
-                {"Slot 7", "11:00:00", "11:30:00"}
-            };
-            // Mẫu slot ca chiều (13:30 - 17:00)
-            String[][] afternoonSlots = {
-                {"Slot 8", "13:30:00", "14:00:00"},
-                {"Slot 9", "14:00:00", "14:30:00"},
-                {"Slot 10", "14:30:00", "15:00:00"},
-                {"Slot 11", "15:00:00", "15:30:00"},
-                {"Slot 12", "15:30:00", "16:00:00"},
-                {"Slot 13", "16:00:00", "16:30:00"},
-                {"Slot 14", "16:30:00", "17:00:00"}
-            };
-
-            java.time.LocalDate baseDate = java.time.LocalDate.now();
-
-            // 1. Kiểm tra và bổ sung lịch Bác sĩ (ID 3 đến 8)
-            String insertDocSql = "IF NOT EXISTS (SELECT 1 FROM Work_Schedule WHERE Doctor_Employee_ID = ? AND Work_Date = ? AND Slot = ?) " +
-                                  "INSERT INTO Work_Schedule (Doctor_Employee_ID, Work_Date, Start_Time, End_Time, Slot, Status) VALUES (?, ?, ?, ?, ?, 'Available')";
-            try (PreparedStatement ps = conn.prepareStatement(insertDocSql)) {
-                int[] fullDocs = {3, 6};
-                int[] morningDocs = {4, 7};
-                int[] afternoonDocs = {5, 8};
-                for (int dayOffset = 0; dayOffset < 14; dayOffset++) {
-                    java.time.LocalDate workDate = baseDate.plusDays(dayOffset);
-                    if (workDate.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) continue;
-                    String dateStr = workDate.toString();
-                    for (int docId : fullDocs) {
-                        for (String[] s : morningSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
-                        for (String[] s : afternoonSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
-                    }
-                    for (int docId : morningDocs) {
-                        for (String[] s : morningSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
-                    }
-                    for (int docId : afternoonDocs) {
-                        for (String[] s : afternoonSlots) insertDocSlot(ps, docId, dateStr, s[0], s[1], s[2]);
-                    }
-                }
-            }
-
-            // 2. Kiểm tra và bổ sung lịch KTV / Chuyên viên (ID 9, 10, 11)
-            String specCheckSql = "SELECT COUNT(*) FROM Work_Schedule WHERE Specialist_Employee_ID IS NOT NULL AND Work_Date >= CAST(GETDATE() AS DATE)";
-            boolean needSpecSeed = false;
-            try (Statement st = conn.createStatement();
-                 ResultSet rs = st.executeQuery(specCheckSql)) {
-                if (rs.next() && rs.getInt(1) < 20) {
-                    needSpecSeed = true;
-                }
-            }
-            if (needSpecSeed) {
-                String insertSpecSql = "IF NOT EXISTS (SELECT 1 FROM Work_Schedule WHERE Specialist_Employee_ID = ? AND Work_Date = ? AND Slot = ?) " +
-                                       "INSERT INTO Work_Schedule (Specialist_Employee_ID, Work_Date, Start_Time, End_Time, Slot, Status) VALUES (?, ?, ?, ?, ?, 'Available')";
-                try (PreparedStatement ps = conn.prepareStatement(insertSpecSql)) {
-                    for (int dayOffset = 0; dayOffset < 14; dayOffset++) {
-                        java.time.LocalDate workDate = baseDate.plusDays(dayOffset);
-                        if (workDate.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) continue; // Chủ nhật nghỉ
-                        String dateStr = workDate.toString();
-                        // Specialist 9: Full ngày
-                        for (String[] s : morningSlots) insertSingleRoleSlot(ps, 9, dateStr, s[0], s[1], s[2]);
-                        for (String[] s : afternoonSlots) insertSingleRoleSlot(ps, 9, dateStr, s[0], s[1], s[2]);
-                        // Specialist 10: Ca sáng
-                        for (String[] s : morningSlots) insertSingleRoleSlot(ps, 10, dateStr, s[0], s[1], s[2]);
-                        // Specialist 11: Ca chiều
-                        for (String[] s : afternoonSlots) insertSingleRoleSlot(ps, 11, dateStr, s[0], s[1], s[2]);
-                    }
-                }
-            }
-
-            // 3. Kiểm tra và bổ sung lịch Nhân viên tiếp đón & thu ngân (ID 12)
-            String staffCheckSql = "SELECT COUNT(*) FROM Work_Schedule WHERE (Staff_Employee_ID IS NOT NULL OR (Specialist_Employee_ID IS NOT NULL AND Staff_Employee_ID IS NULL)) AND Work_Date >= CAST(GETDATE() AS DATE)";
-            boolean needStaffSeed = false;
-            try (Statement st = conn.createStatement();
-                 ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM Work_Schedule WHERE Staff_Employee_ID = 12 AND Work_Date >= CAST(GETDATE() AS DATE)")) {
-                if (rs.next() && rs.getInt(1) < 20) {
-                    needStaffSeed = true;
-                }
-            }
-            if (needStaffSeed) {
-                String insertStaffSql = "IF NOT EXISTS (SELECT 1 FROM Work_Schedule WHERE Staff_Employee_ID = ? AND Work_Date = ? AND Slot = ?) " +
-                                        "INSERT INTO Work_Schedule (Staff_Employee_ID, Work_Date, Start_Time, End_Time, Slot, Status) VALUES (?, ?, ?, ?, ?, 'Available')";
-                try (PreparedStatement ps = conn.prepareStatement(insertStaffSql)) {
-                    for (int dayOffset = 0; dayOffset < 14; dayOffset++) {
-                        java.time.LocalDate workDate = baseDate.plusDays(dayOffset);
-                        if (workDate.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) continue; // Chủ nhật nghỉ
-                        String dateStr = workDate.toString();
-                        // Nhân viên 12 trực cả ngày (Ca sáng + Chiều tiếp đón bệnh nhân)
-                        for (String[] s : morningSlots) insertSingleRoleSlot(ps, 12, dateStr, s[0], s[1], s[2]);
-                        for (String[] s : afternoonSlots) insertSingleRoleSlot(ps, 12, dateStr, s[0], s[1], s[2]);
-                    }
-                }
-            }
         } catch (Exception e) {
             System.err.println("ensureRealisticSchedules note: " + e.getMessage());
         }

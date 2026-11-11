@@ -179,6 +179,7 @@ public class StaffWaitingListServlet extends HttpServlet {
             request.setAttribute("totalQueue", totalQueue);
             request.setAttribute("busyDoctorIds", busyDoctorIds);
             request.setAttribute("callableApptIds", callableApptIds);
+            request.setAttribute("sessionEndBufferEnabled", com.visioncare.dao.TimeSlotDAO.isSessionEndBufferEnabled());
 
             request.getRequestDispatcher("/views/staff/waiting-list.jsp").forward(request, response);
         } catch (Exception e) {
