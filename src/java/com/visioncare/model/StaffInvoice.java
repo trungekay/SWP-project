@@ -10,7 +10,7 @@ public class StaffInvoice {
  public Integer finalizedBy;
  public String patientName, phone, date, appointmentStatus, invoiceStatus, finalizedAt, cashierName;
  public long baseAmount, paid, recordedTotal, priorPaid, refundedAmount;
- public boolean finalized, hasActiveRefund;
+ public boolean finalized, hasActiveRefund, declinedVisitReady;
  public List<Item> items = new ArrayList<>();
  public Map<String,Object> activePayment;
  public List<Map<String,Object>> transactions = new ArrayList<>();
@@ -27,6 +27,7 @@ public class StaffInvoice {
   public String getKey(){return key;} public String getName(){return name;} public String getType(){return type;}
   public int getQuantity(){return quantity;} public int getRefundedQuantity(){return refundedQuantity;} public long getRefundedAmount(){return refundedAmount;} public long getUnitPrice(){return unitPrice;} public long getAmount(){return Math.multiplyExact(unitPrice,quantity);}
   public boolean isRemovable(){return removable;} public boolean isDeclined(){return declined;} public boolean isUnpriced(){return unpriced;} public boolean isUnperformed(){return unperformed;}
+  public boolean isProcedure(){return key.startsWith("PROCEDURE:");}
  }
  public int getId(){return id;} public int getAppointmentId(){return appointmentId;}
  public String getPatientName(){return patientName;} public String getPhone(){return phone;} public String getDate(){return date;}
@@ -49,12 +50,17 @@ public class StaffInvoice {
  public boolean isUnpriced(){return items.stream().anyMatch(i->!i.declined&&i.unpriced);}
  public boolean isUnperformed(){return items.stream().anyMatch(i->!i.declined&&i.unperformed);}
  public boolean isCanEdit(){return !finalized&&!isBlocked()&&activePayment==null&&isClinicalComplete();}
+ /** A waiting unpaid procedure may be declined before its handoff closes the visit. */
+ public boolean isCanDeclineProcedure(){return !finalized&&!isBlocked()&&activePayment==null&&"In_Progress".equals(appointmentStatus);}
+ public boolean isCanConfirmItems(){return isCanCheckout()||(isCanDeclineProcedure()&&declinedVisitReady&&!isUnpriced()&&!isUnperformed()&&getOverpaid()==0);}
+ public boolean isDeclinedVisitReady(){return declinedVisitReady;}
  public boolean isCanCheckout(){return isCanEdit()&&!isUnpriced()&&!isUnperformed()&&getOverpaid()==0;}
  public InvoiceProgress getProgress(){return InvoiceProgress.resolve(id>0,appointmentStatus,invoiceStatus,finalized&&!isBlocked()&&getDue()==0,paid>0);}
  public String getPaymentLabel(){return refundedAmount>0&&!isBlocked()?"Đã hoàn tiền một phần":getProgress().getLabel();}
  public String getProgressColor(){return refundedAmount>0&&!isBlocked()?"refunded":getProgress().getColor();}
  public String fingerprint(){
   try {StringBuilder s=new StringBuilder(id+":"+paid+":"+appointmentStatus+":"+invoiceStatus+":"+hasActiveRefund);
+   if(declinedVisitReady)s.append(":declined-visit-ready");
    for(Item i:items)s.append('|').append(i.key).append(':').append(i.quantity).append(':').append(i.unitPrice).append(':').append(i.declined).append(':').append(i.unpriced).append(':').append(i.unperformed);
    return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(s.toString().getBytes(StandardCharsets.UTF_8)));
   }catch(Exception e){throw new IllegalStateException(e);}
