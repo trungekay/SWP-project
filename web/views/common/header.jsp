@@ -75,6 +75,18 @@
             background-color: #fef2f2 !important;
             color: #dc2626 !important;
         }
+        /* Giữ nguyên header và topbar cố định, không co thụt khi cuộn trang để chống giật */
+        .header {
+            transition: none !important;
+        }
+        .header .topbar,
+        .scrolled .header .topbar {
+            height: 40px !important;
+            visibility: visible !important;
+            overflow: visible !important;
+            display: flex !important;
+            transition: none !important;
+        }
       </style>
     </head>
 
@@ -89,7 +101,6 @@
             <div class="contact-info d-flex align-items-center">
               <i class="bi bi-envelope d-flex align-items-center"><a
                   href="mailto:hotro.visioncare@gmail.com">hotro.visioncare@gmail.com</a></i>
-              <i class="bi bi-phone d-flex align-items-center ms-4"><span>1800 599 988</span></i>
             </div>
           </div>
         </div><!-- End Top Bar -->
