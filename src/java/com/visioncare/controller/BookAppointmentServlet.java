@@ -515,33 +515,55 @@ public class BookAppointmentServlet extends HttpServlet {
             // Khởi tạo mã đơn và link PayOS VietQR
             String payosDesc = "VC" + newId;
             long orderCode = ((long) newId * 1000000L) + (System.currentTimeMillis() / 1000L % 1000000L);
+            // Lưu mã đơn hàng PayOS (orderCode) vào Session theo mã lịch hẹn để dùng đối soát trạng thái thanh toán sau này
             request.getSession().setAttribute("payos_order_" + newId, orderCode);
 
             String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
+            
             String cancelUrl = baseUrl + "/book-appointment?action=cancelPending&id=" + newId;
+            
             String returnUrl = baseUrl + "/book-appointment?step=success&id=" + newId;
+            
+            // Gọi session/tiện ích PayOS để tạo link thanh toán
             com.visioncare.util.PayOSUtil.PaymentLinkResult payosRes = com.visioncare.util.BookingPaymentSession.link(request.getSession(), newId, Math.toIntExact(fee), cancelUrl, returnUrl);
 
+            // Khởi tạo 2 biến tạm lưu URL ảnh mã QR và URL trang thanh toán trực tiếp của PayOS
             String qrUrl = null;
             String payosCheckoutUrl = null;
+            
+            // Kiểm tra nếu cổng PayOS phản hồi thành công (kết nối tốt, tạo đơn hợp lệ)
             if (payosRes != null && payosRes.success) {
+                // Lấy link trang thanh toán do PayOS trả về
                 payosCheckoutUrl = payosRes.checkoutUrl;
+                
+                // Nạp link checkout vào request để JSP có thể hiển thị nút "Mở trang PayOS" nếu cần
                 request.setAttribute("payosCheckoutUrl", payosRes.checkoutUrl);
+                
+                // Bật cờ đánh dấu cổng thanh toán PayOS đang hoạt động bình thường
                 request.setAttribute("isPayOSEnabled", true);
+                
+                // Kiểm tra nếu PayOS có trả về chuỗi mã hóa VietQR ngân hàng (chuỗi text chuẩn VietQR)
                 if (payosRes.qrCode != null && !payosRes.qrCode.isEmpty()) {
+                    // Mã hóa URL chuỗi VietQR rồi ghép vào API qrserver.com để tạo ra link ảnh QR code (kích thước 300x300)
                     qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + URLEncoder.encode(payosRes.qrCode, StandardCharsets.UTF_8);
                 }
             } else {
+                // Nếu PayOS phản hồi lỗi hoặc mất kết nối: Đánh dấu cổng thanh toán PayOS bị tắt/lỗi
                 request.setAttribute("isPayOSEnabled", false);
             }
 
+            // Chốt chặn an toàn: Nếu không tạo được link ảnh mã QR (qrUrl bị null hoặc rỗng)
             if (qrUrl == null || qrUrl.isEmpty()) {
                 request.getSession().setAttribute("errorMessage", "Chưa tạo được QR từ cổng thanh toán. Vui lòng thử lại từ lịch sử hẹn khám; không chuyển tiền bằng QR cũ hoặc QR tĩnh.");
+                
                 response.sendRedirect(request.getContextPath() + "/views/profile/appointment-history.jsp");
+                
                 return;
             }
 
+            // 18. Lấy lại toàn bộ thông tin chi tiết của lịch hẹn vừa tạo trong DB (tên bác sĩ, chuyên khoa, phòng khám, ngày giờ...)
             Appointment fullAppt = appointmentDAO.getAppointmentDetailById(newId);
+            
             if (fullAppt != null) {
                 fullAppt.setEmail(appointment.getEmail());
             }

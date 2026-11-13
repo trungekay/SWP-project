@@ -443,9 +443,6 @@
             .slot-summary-card.afternoon-card {
                 border-left: 5px solid #18a05e;
             }
-            .slot-summary-card.buffer-card {
-                border-left: 5px solid #6366f1;
-            }
             .badge-morning-tag {
                 background-color: #fef3c7;
                 color: #78350f;
@@ -476,17 +473,6 @@
                 font-size: 13px;
                 padding: 6px 14px;
                 border-radius: 20px;
-                display: inline-flex;
-                align-items: center;
-            }
-            .badge-buffer-tag {
-                background-color: #fef3c7;
-                color: #78350f;
-                border: 1px solid #f59e0b;
-                font-weight: 700;
-                font-size: 12px;
-                padding: 4px 10px;
-                border-radius: 6px;
                 display: inline-flex;
                 align-items: center;
             }
@@ -578,10 +564,6 @@
                                 <h2>Quy định Thời Gian Giữ Chỗ Đặt Lịch</h2>
                                 <p class="text-muted">Thiết lập thời gian tạm khóa khung giờ (Pending Hold Time) cho lịch hẹn trực tuyến khi chờ thanh toán</p>
                             </c:when>
-                            <c:when test="${currentTab == 'buffer'}">
-                                <h2>Chính sách Ca Đệm Khám Bệnh (Buffer Slot)</h2>
-                                <p class="text-muted">Cấu hình thời gian đệm 30 phút cuối mỗi ca khám để bù giờ cho các ca khám phức tạp</p>
-                            </c:when>
                             <c:when test="${currentTab == 'intro'}">
                                 <h2>Cấu hình Hình ảnh & Giới thiệu Trang chủ</h2>
                                 <p class="text-muted">Quản lý và thay đổi các hình ảnh hiển thị trên trang chủ: Dịch vụ, Banner chính và Về chúng tôi</p>
@@ -612,10 +594,6 @@
                     <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=holdtime"
                        class="config-tab-btn ${currentTab == 'holdtime' ? 'active' : ''}">
                         <i class="bi bi-stopwatch"></i> Thời gian giữ chỗ
-                    </a>
-                    <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=buffer"
-                       class="config-tab-btn ${currentTab == 'buffer' ? 'active' : ''}">
-                        <i class="bi bi-shield-check"></i> Chính sách ca đệm
                     </a>
                     <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=intro"
                        class="config-tab-btn ${currentTab == 'intro' ? 'active' : ''}">
@@ -931,48 +909,6 @@
                         </div>
                     </c:if>
 
-                    <c:if test="${currentTab == 'buffer'}">
-                        <!-- Buffer Slot Policy Card Screen -->
-                        <div class="col-lg-12">
-                            <div class="admin-card">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <div>
-                                        <h5 class="mb-1 fw-bold"><i class="bi bi-shield-check me-2 text-success"></i>Chính sách Ca đệm cuối buổi khám (Buffer Slot)</h5>
-                                        <p class="text-muted small mb-0">Cấu hình có dành riêng 30 phút cuối mỗi ca (11:00 - 11:30 và 16:30 - 17:00) để xử lý bù giờ cho các ca khám phức tạp hay không.</p>
-                                    </div>
-                                </div>
-                                <form action="${pageContext.request.contextPath}/admin/timeslot-config" method="post" class="row g-3 align-items-center">
-                                    <input type="hidden" name="action" value="update_session_buffer">
-                                    <input type="hidden" name="returnTab" value="buffer">
-                                    <div class="col-md-7">
-                                        <div class="form-check form-switch fs-5">
-                                            <input class="form-check-input" type="checkbox" name="sessionEndBufferEnabled" value="true" id="sessionBufferSwitch" ${sessionEndBufferEnabled ? 'checked' : ''}>
-                                            <label class="form-check-label fs-6 fw-semibold ms-2" for="sessionBufferSwitch">
-                                                Dành 30 phút cuối mỗi buổi khám làm thời gian đệm (Buffer Slot)
-                                            </label>
-                                        </div>
-                                        <div class="small text-muted mt-2">
-                                            <c:choose>
-                                                <c:when test="${sessionEndBufferEnabled}">
-                                                    <span class="badge bg-success-subtle text-success me-1"><i class="bi bi-shield-lock me-1"></i>Đang bật</span>
-                                                    Bệnh nhân chỉ được đặt đến <strong>11:00</strong> (ca sáng) và <strong>16:30</strong> (ca chiều). Khung giờ 11:00 - 11:30 và 16:30 - 17:00 được giữ lại để phòng ngừa quá giờ.
-                                                </c:when>
-                                                <c:otherwise>
-                                                    <span class="badge bg-primary-subtle text-primary me-1"><i class="bi bi-calendar-check me-1"></i>Đang tắt</span>
-                                                    Mở toàn bộ ca bác sĩ đăng ký: Bệnh nhân được đặt đến <strong>11:30</strong> (ca sáng có slot 11:00 - 11:30) và <strong>17:00</strong> (ca chiều có slot 16:30 - 17:00).
-                                                </c:otherwise>
-                                            </c:choose>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-5 text-md-end">
-                                        <button type="submit" class="btn btn-success px-4 rounded-pill">
-                                            <i class="bi bi-check-circle me-1"></i> Lưu cấu hình Buffer Slot
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </c:if>
 
                     <c:if test="${currentTab == 'slots'}">
                         <!-- Appointment Time Slots Screen -->
@@ -991,11 +927,11 @@
                             </c:if>
                         </c:forEach>
 
-                        <!-- Shift Overview / Balance Cards (High Contrast 4-Card Grid) -->
+                        <!-- Shift Overview / Balance Cards (3-Card Grid) -->
                         <div class="col-12 mb-4">
                             <div class="row g-3">
                                 <!-- Morning Shift Card -->
-                                <div class="col-md-6 col-xl-3">
+                                <div class="col-md-4">
                                     <div class="slot-summary-card morning-card">
                                         <div>
                                             <div class="d-flex align-items-center justify-content-between mb-3">
@@ -1010,20 +946,13 @@
                                             <p class="text-secondary small mb-0 fw-medium">Thời lượng <strong>3.5 giờ</strong> (7 ca chuẩn, 30p/ca)</p>
                                         </div>
                                         <div class="mt-3 pt-2 border-top">
-                                            <c:choose>
-                                                <c:when test="${sessionEndBufferEnabled}">
-                                                    <span class="badge-buffer-tag"><i class="bi bi-shield-lock-fill me-1" style="color:#d97706;"></i>Buffer: 11:00 - 11:30</span>
-                                                </c:when>
-                                                <c:otherwise>
-                                                    <span class="text-muted small"><i class="bi bi-clock-history me-1 text-success"></i>Mở nhận hẹn suốt ca</span>
-                                                </c:otherwise>
-                                            </c:choose>
+                                            <span class="text-muted small"><i class="bi bi-clock-history me-1 text-success"></i>Mở nhận hẹn suốt ca</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Lunch Break Card -->
-                                <div class="col-md-6 col-xl-3">
+                                <div class="col-md-4">
                                     <div class="slot-summary-card lunch-card">
                                         <div>
                                             <div class="d-flex align-items-center justify-content-between mb-3">
@@ -1046,7 +975,7 @@
                                 </div>
 
                                 <!-- Afternoon Shift Card -->
-                                <div class="col-md-6 col-xl-3">
+                                <div class="col-md-4">
                                     <div class="slot-summary-card afternoon-card">
                                         <div>
                                             <div class="d-flex align-items-center justify-content-between mb-3">
@@ -1061,54 +990,7 @@
                                             <p class="text-secondary small mb-0 fw-medium">Thời lượng <strong>3.5 giờ</strong> (7 ca chuẩn, 30p/ca)</p>
                                         </div>
                                         <div class="mt-3 pt-2 border-top">
-                                            <c:choose>
-                                                <c:when test="${sessionEndBufferEnabled}">
-                                                    <span class="badge-buffer-tag"><i class="bi bi-shield-lock-fill me-1" style="color:#d97706;"></i>Buffer: 16:30 - 17:00</span>
-                                                </c:when>
-                                                <c:otherwise>
-                                                    <span class="text-muted small"><i class="bi bi-clock-history me-1 text-success"></i>Mở nhận hẹn suốt ca</span>
-                                                </c:otherwise>
-                                            </c:choose>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Buffer Policy Summary Card -->
-                                <div class="col-md-6 col-xl-3">
-                                    <div class="slot-summary-card buffer-card">
-                                        <div>
-                                            <div class="d-flex align-items-center justify-content-between mb-3">
-                                                <span class="badge" style="background: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe; font-weight: 700; font-size: 13px; padding: 6px 14px; border-radius: 20px;">
-                                                    <i class="bi bi-shield-check me-1" style="color: #7c3aed;"></i> Ca Đệm (Buffer)
-                                                </span>
-                                                <c:choose>
-                                                    <c:when test="${sessionEndBufferEnabled}">
-                                                        <span class="badge" style="background: #fef3c7; color: #78350f; border: 1px solid #f59e0b; font-weight: 800; font-size: 12px; padding: 5px 10px; border-radius: 6px;">
-                                                            <i class="bi bi-check-circle-fill me-1" style="color: #d97706;"></i>ĐANG BẬT
-                                                        </span>
-                                                    </c:when>
-                                                    <c:otherwise>
-                                                        <span class="badge" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 700; font-size: 12px; padding: 5px 10px; border-radius: 6px;">
-                                                            <i class="bi bi-x-circle me-1"></i>ĐANG TẮT
-                                                        </span>
-                                                    </c:otherwise>
-                                                </c:choose>
-                                            </div>
-                                            <c:choose>
-                                                <c:when test="${sessionEndBufferEnabled}">
-                                                    <h4 class="fw-bold mb-1" style="color: #78350f; letter-spacing: -0.5px;">Dành 30p Cuối Ca</h4>
-                                                    <p class="text-secondary small mb-0 fw-medium">Slot 11h & 16h30 giữ lại xử lý bù giờ cho ca khám dài.</p>
-                                                </c:when>
-                                                <c:otherwise>
-                                                    <h4 class="fw-bold mb-1 text-dark" style="letter-spacing: -0.5px;">Mở Cả 14 Ca Chuẩn</h4>
-                                                    <p class="text-secondary small mb-0 fw-medium">Bệnh nhân được đặt lịch đến tận 11:30 và 17:00.</p>
-                                                </c:otherwise>
-                                            </c:choose>
-                                        </div>
-                                        <div class="mt-3 pt-2 border-top">
-                                            <a href="${pageContext.request.contextPath}/admin/clinic-config?tab=rules" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold w-100 text-truncate" style="font-size: 12px;">
-                                                <i class="bi bi-sliders me-1"></i>Đổi cài đặt Buffer tại Quy tắc
-                                            </a>
+                                            <span class="text-muted small"><i class="bi bi-clock-history me-1 text-success"></i>Mở nhận hẹn suốt ca</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1145,9 +1027,6 @@
                                         </div>
                                         <div class="d-flex align-items-center gap-2">
                                             <span class="badge" style="background: #fef3c7; color: #78350f; border: 1px solid #fde68a; font-weight: 700; font-size: 13px; padding: 6px 14px; border-radius: 20px;">7 Ca Tiêu Chuẩn (3.5h)</span>
-                                            <c:if test="${sessionEndBufferEnabled}">
-                                                <span class="badge-buffer-tag"><i class="bi bi-shield-lock-fill me-1" style="color: #d97706;"></i>Ca 7: Buffer Slot</span>
-                                            </c:if>
                                         </div>
                                     </div>
 
@@ -1169,7 +1048,6 @@
                                                         <c:set var="hasMorningSlot" value="true" />
                                                         <c:set var="sStart" value="${fn:length(slot.startTime) >= 5 ? fn:substring(slot.startTime, 0, 5) : slot.startTime}" />
                                                         <c:set var="sEnd" value="${fn:length(slot.endTime) >= 5 ? fn:substring(slot.endTime, 0, 5) : slot.endTime}" />
-                                                        <c:set var="isMorningBuffer" value="${sessionEndBufferEnabled && sStart == '11:00' && sEnd == '11:30'}" />
                                                         <tr>
                                                             <td class="fw-bold text-dark">
                                                                 <i class="bi bi-clock me-1.5 text-secondary"></i>${slot.slotName}
@@ -1178,19 +1056,9 @@
                                                                 <span class="slot-time-pill">${sStart} — ${sEnd}</span>
                                                             </td>
                                                             <td>
-                                                                <c:choose>
-                                                                    <c:when test="${isMorningBuffer}">
-                                                                        <span class="badge-buffer-tag">
-                                                                            <i class="bi bi-shield-lock-fill me-1" style="color: #d97706;"></i>Ca đệm (Buffer Slot)
-                                                                        </span>
-                                                                        <div class="text-muted small mt-1" style="font-size: 11px;">Dành riêng xử lý bù giờ kéo dài</div>
-                                                                    </c:when>
-                                                                    <c:otherwise>
-                                                                        <span class="badge" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-weight: 600; padding: 5px 10px; border-radius: 6px;">
-                                                                            <i class="bi bi-check2 me-1 text-success fw-bold"></i>Khám tiêu chuẩn (30p)
-                                                                        </span>
-                                                                    </c:otherwise>
-                                                                </c:choose>
+                                                                <span class="badge" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-weight: 600; padding: 5px 10px; border-radius: 6px;">
+                                                                    <i class="bi bi-check2 me-1 text-success fw-bold"></i>Khám tiêu chuẩn (30p)
+                                                                </span>
                                                             </td>
                                                             <td>
                                                                 <c:choose>
@@ -1259,9 +1127,6 @@
                                         </div>
                                         <div class="d-flex align-items-center gap-2">
                                             <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; font-weight: 700; font-size: 13px; padding: 6px 14px; border-radius: 20px;">7 Ca Tiêu Chuẩn (3.5h)</span>
-                                            <c:if test="${sessionEndBufferEnabled}">
-                                                <span class="badge-buffer-tag"><i class="bi bi-shield-lock-fill me-1" style="color: #d97706;"></i>Ca 14: Buffer Slot</span>
-                                            </c:if>
                                         </div>
                                     </div>
 
@@ -1283,7 +1148,6 @@
                                                         <c:set var="hasAfternoonSlot" value="true" />
                                                         <c:set var="sStart" value="${fn:length(slot.startTime) >= 5 ? fn:substring(slot.startTime, 0, 5) : slot.startTime}" />
                                                         <c:set var="sEnd" value="${fn:length(slot.endTime) >= 5 ? fn:substring(slot.endTime, 0, 5) : slot.endTime}" />
-                                                        <c:set var="isAfternoonBuffer" value="${sessionEndBufferEnabled && sStart == '16:30' && sEnd == '17:00'}" />
                                                         <tr>
                                                             <td class="fw-bold text-dark">
                                                                 <i class="bi bi-clock me-1.5 text-secondary"></i>${slot.slotName}
@@ -1292,19 +1156,9 @@
                                                                 <span class="slot-time-pill">${sStart} — ${sEnd}</span>
                                                             </td>
                                                             <td>
-                                                                <c:choose>
-                                                                    <c:when test="${isAfternoonBuffer}">
-                                                                        <span class="badge-buffer-tag">
-                                                                            <i class="bi bi-shield-lock-fill me-1" style="color: #d97706;"></i>Ca đệm (Buffer Slot)
-                                                                        </span>
-                                                                        <div class="text-muted small mt-1" style="font-size: 11px;">Dành riêng xử lý bù giờ kéo dài</div>
-                                                                    </c:when>
-                                                                    <c:otherwise>
-                                                                        <span class="badge" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-weight: 600; padding: 5px 10px; border-radius: 6px;">
-                                                                            <i class="bi bi-check2 me-1 text-success fw-bold"></i>Khám tiêu chuẩn (30p)
-                                                                        </span>
-                                                                    </c:otherwise>
-                                                                </c:choose>
+                                                                <span class="badge" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-weight: 600; padding: 5px 10px; border-radius: 6px;">
+                                                                    <i class="bi bi-check2 me-1 text-success fw-bold"></i>Khám tiêu chuẩn (30p)
+                                                                </span>
                                                             </td>
                                                             <td>
                                                                 <c:choose>

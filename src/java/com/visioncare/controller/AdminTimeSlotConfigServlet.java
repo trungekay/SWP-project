@@ -104,7 +104,7 @@ public class AdminTimeSlotConfigServlet extends HttpServlet {
         }
 
         if ("update_session_buffer".equals(action)) {
-            response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=buffer");
+            response.sendRedirect(request.getContextPath() + "/admin/clinic-config?tab=slots");
             return;
         }
         if ("update_pending_hold_minutes".equals(action)) {
