@@ -73,6 +73,8 @@ public class DatabaseInitializerListener implements ServletContextListener {
                            + "ALTER TABLE dbo.Procedure_Order ADD Completed_At DATETIME2 NULL");
                 stmt.execute("IF COL_LENGTH('dbo.Procedure_Order', 'Referral_Notes') IS NULL "
                            + "ALTER TABLE dbo.Procedure_Order ADD Referral_Notes NVARCHAR(2000) NULL");
+                stmt.execute("IF COL_LENGTH('dbo.Procedure_Order', 'Accepted_At') IS NULL "
+                           + "ALTER TABLE dbo.Procedure_Order ADD Accepted_At DATETIME2 NULL");
             } catch (Exception e) {
                 System.err.println("[VisionCare] Note on Procedure_Order columns check: " + e.getMessage());
             }
@@ -159,6 +161,10 @@ public class DatabaseInitializerListener implements ServletContextListener {
                            + "  ); "
                            + "  CREATE UNIQUE INDEX UX_Checkout_ActivePayment ON dbo.Invoice_Checkout_Payment(Invoice_ID) WHERE Status IN ('Creating','Pending'); "
                            + "END");
+                stmt.execute("IF COL_LENGTH('dbo.Invoice_Checkout_Payment','Procedure_Order_ID') IS NULL "
+                           + "ALTER TABLE dbo.Invoice_Checkout_Payment ADD Procedure_Order_ID int NULL REFERENCES dbo.Procedure_Order(Order_ID)");
+                stmt.execute("IF COL_LENGTH('dbo.Invoice_Checkout_Payment','Procedure_Specialist_ID') IS NULL "
+                           + "ALTER TABLE dbo.Invoice_Checkout_Payment ADD Procedure_Specialist_ID int NULL REFERENCES dbo.Employee_Profile(Employee_ID)");
             } catch (Exception e) {
                 System.err.println("[VisionCare] Note on Invoice_Checkout tables init: " + e.getMessage());
             }

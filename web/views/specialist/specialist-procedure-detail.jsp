@@ -221,6 +221,9 @@
                   <c:when test="${order.status == 'Cancelled'}">
                     <span class="badge-status-cancelled"><i class="bi bi-x-circle-fill"></i>Đã hủy</span>
                   </c:when>
+                  <c:when test="${not order.accepted}">
+                    <span class="badge-status-inprogress">Chờ nhận ca</span>
+                  </c:when>
                   <c:otherwise>
                     <span class="badge-status-inprogress"><span class="pulse-dot"></span>Đang tiếp nhận</span>
                   </c:otherwise>
@@ -366,7 +369,7 @@
                 </label>
                 <c:if test="${not empty examForm.followUpDate}">
                   <label class="doctor-form-field doctor-form-span"><span>Ngày tái khám dự kiến</span>
-                    <input type="text" readonly value="<fmt:formatDate value='${examForm.followUpDate}' pattern='dd/MM/yyyy' />">
+                    <input type="date" readonly value="<c:out value='${examForm.followUpDate}' />">
                   </label>
                 </c:if>
               </div>
@@ -497,7 +500,7 @@
               <form action="${pageContext.request.contextPath}/specialist/procedure-detail" method="POST" id="protocolForm" data-can-edit="${canEditProcedure}">
                 <input type="hidden" name="orderId" value="${order.orderId}">
                 <input type="hidden" name="csrfToken" value="<c:out value='${sessionScope.procedureCsrf}'/>">
-                <input type="hidden" name="action" id="formAction" value="completeAndClose">
+                <input type="hidden" name="action" id="formAction" value="complete">
                 <!-- Giữ nguyên kết quả khám của Bác sĩ trong trường ẩn để không bị ghi đè mất mát -->
                 <input type="hidden" name="doctor_exam_findings" id="doctorExamFindingsInput" value="<c:out value='${protocol["doctor_exam_findings"]}' />">
                 <!-- Mắt thực hiện (Hidden input được cập nhật qua các nút bấm) -->
@@ -554,7 +557,7 @@
                             placeholder="Ghi nhận lời dặn chăm sóc và theo dõi sau thủ thuật..."><c:out value="${protocol['post_care']}" /></textarea>
                 </div>
 
-                <!-- 5. KẾT LUẬN & BÀN GIAO TRẢ VỀ BÁC SĨ -->
+                <!-- Kết luận thủ thuật -->
                 <div class="mb-4">
                   <label for="conclusion" class="form-label-custom">
                     <i class="bi bi-check-circle text-teal me-1"></i>
@@ -567,7 +570,37 @@
                             placeholder="Ghi kết luận thực hiện thủ thuật..."><c:out value="${protocol['ktv_conclusion']}" /></textarea>
                 </div>
 
-                <!-- 6. ACTION BUTTONS -->
+                <c:if test="${not empty medicationRows}">
+                  <details class="mb-4" ${not empty protocol.postMedicine1 ? 'open' : ''}>
+                    <summary class="fw-semibold">Kê thêm thuốc hậu phẫu (nếu cần)</summary>
+                    <p class="small text-muted mt-2">Thuốc được thêm vào đơn của bệnh nhân khi bấm Hoàn tất thủ thuật.</p>
+                    <c:forEach var="row" begin="1" end="${medicationRows}">
+                      <c:set var="medicineKey" value="postMedicine${row}" />
+                      <c:set var="quantityKey" value="postQuantity${row}" />
+                      <c:set var="instructionsKey" value="postInstructions${row}" />
+                      <div class="row g-2 mb-2">
+                        <label class="col-md-5">Thuốc ${row}
+                          <select class="form-select" name="${medicineKey}">
+                            <option value="">Chọn thuốc</option>
+                            <c:forEach var="medicine" items="${medicineCatalog}">
+                              <option value="${medicine.id}" ${protocol[medicineKey] eq medicine.id ? 'selected' : ''}><c:out value="${medicine.name}" /></option>
+                            </c:forEach>
+                          </select>
+                        </label>
+                        <label class="col-md-2">Số lượng
+                          <input class="form-control" type="number" min="1" max="999" name="${quantityKey}"
+                                 value="<c:out value='${protocol[quantityKey]}' />">
+                        </label>
+                        <label class="col-md-5">Cách dùng
+                          <input class="form-control" maxlength="1000" name="${instructionsKey}"
+                                 value="<c:out value='${protocol[instructionsKey]}' />">
+                        </label>
+                      </div>
+                    </c:forEach>
+                  </details>
+                </c:if>
+
+                <!-- Thao tác biên bản -->
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 pt-3 border-top">
                   <div>
                     <!-- Nút In biên bản thủ thuật luôn sẵn sàng -->
@@ -579,22 +612,12 @@
 
                   <c:if test="${canEditProcedure}">
                     <div class="d-flex align-items-center gap-2 flex-wrap">
-                      <c:choose>
-                        <c:when test="${order.status != 'Completed'}">
-                          <button type="submit" name="action" value="saveDraft" onclick="document.getElementById('formAction').value = 'saveDraft';" class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-bold">
+                          <button type="submit" onclick="document.getElementById('formAction').value = 'saveDraft';" class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-bold">
                             Lưu nháp
                           </button>
-                          <button type="submit" name="action" value="completeAndClose" onclick="document.getElementById('formAction').value = 'completeAndClose';" class="btn btn-success rounded-pill px-4 py-2 shadow-sm fw-bold">
+                          <button type="submit" onclick="document.getElementById('formAction').value = 'complete';" class="btn btn-success rounded-pill px-4 py-2 shadow-sm fw-bold">
                             Hoàn tất thủ thuật
                           </button>
-                        </c:when>
-                        <c:otherwise>
-                          <!-- Trạng thái Completed -->
-                          <button type="submit" name="action" value="completeAndClose" onclick="document.getElementById('formAction').value = 'completeAndClose';" class="btn btn-success rounded-pill px-4 py-2 shadow-sm fw-bold">
-                            Kết thúc ca khám
-                          </button>
-                        </c:otherwise>
-                      </c:choose>
                     </div>
                   </c:if>
                 </div>
@@ -814,7 +837,7 @@
         }
         form.addEventListener('submit', function (e) {
           const action = document.getElementById('formAction').value;
-          if (action === 'complete' || action === 'completeAndClose' || action === 'updateResults') {
+          if (action === 'complete') {
             const outcome = (document.getElementById('procedureOutcome') || {}).value || '';
             if (outcome.trim() === '') {
               e.preventDefault();
@@ -827,12 +850,6 @@
               alert('Vui lòng nhập kết luận thủ thuật.');
               document.getElementById('conclusion').focus();
               return;
-            }
-            if (action === 'completeAndClose') {
-              if (!confirm('Xác nhận hoàn tất thủ thuật? Ca khám sẽ kết thúc khi tất cả thủ thuật đã được xử lý.')) {
-                e.preventDefault();
-                return false;
-              }
             }
           }
         });

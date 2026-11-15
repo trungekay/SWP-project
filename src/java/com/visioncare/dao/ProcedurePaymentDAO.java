@@ -12,11 +12,62 @@ import java.util.Map;
 
 /** Staff collection requests for doctor-referred surgery. */
 public class ProcedurePaymentDAO {
+    public List<Map<String, Object>> referralsForRecord(int recordId) throws Exception {
+        String sql = "SELECT po.Order_ID, po.Specialist_Employee_ID, po.Status AS Procedure_Status, "
+                + "sc.Service_Name, po.Actual_Price, pr.Amount, pr.Status AS Payment_Status, po.Referral_Notes, "
+                + "e.Full_Name AS Specialist_Name FROM Procedure_Order po "
+                + "JOIN Service_Catalog sc ON sc.Service_ID=po.Service_ID "
+                + "JOIN Medical_Record mr ON mr.Record_ID=po.Record_ID "
+                + "LEFT JOIN Procedure_Payment_Request pr ON pr.Order_ID=po.Order_ID "
+                + "LEFT JOIN Employee_Profile e ON e.Employee_ID=po.Specialist_Employee_ID "
+                + "WHERE po.Record_ID=? AND mr.Doctor_Employee_ID IS NOT NULL "
+                + "AND po.Referral_Notes IS NOT NULL AND (sc.Service_Code LIKE 'PT-%' OR sc.Service_Code LIKE 'TP-%') ORDER BY po.Order_ID DESC";
+        List<Map<String, Object>> rows = new ArrayList<>();
+        try (Connection c = DBContext.getConnection(); PreparedStatement p = c.prepareStatement(sql)) {
+            p.setInt(1, recordId);
+            try (ResultSet r = p.executeQuery()) {
+                while (r.next()) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("orderId", r.getInt("Order_ID"));
+                    row.put("service", r.getString("Service_Name"));
+                    row.put("price", r.getBigDecimal("Actual_Price"));
+                    row.put("amount", r.getBigDecimal("Amount"));
+                    row.put("paymentStatus", r.getString("Payment_Status"));
+                    row.put("status", r.getString("Procedure_Status"));
+                    row.put("notes", r.getString("Referral_Notes"));
+                    row.put("specialistId", r.getObject("Specialist_Employee_ID"));
+                    row.put("specialist", r.getString("Specialist_Name"));
+                    rows.add(row);
+                }
+            }
+        }
+        return rows;
+    }
+
+    public List<Map<String, Object>> activeSpecialists() throws Exception {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        try (Connection c = DBContext.getConnection(); PreparedStatement p = c.prepareStatement(
+                "SELECT e.Employee_ID,e.Full_Name,e.Specialty FROM Employee_Profile e "
+                + "JOIN Account ac ON ac.Account_ID=e.Account_ID WHERE ac.Role_ID=4 AND ac.Account_Status='Active' "
+                + "ORDER BY e.Full_Name,e.Employee_ID"); ResultSet r = p.executeQuery()) {
+            while (r.next()) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("id", r.getInt("Employee_ID"));
+                row.put("name", r.getString("Full_Name"));
+                row.put("specialty", r.getString("Specialty"));
+                rows.add(row);
+            }
+        }
+        return rows;
+    }
+
     public List<Map<String, Object>> listRequests() throws Exception {
         String sql = "SELECT po.Order_ID, mr.Appointment_ID, p.Full_Name AS Patient_Name, "
                 + "s.Service_Name, po.Actual_Price, pr.Amount, pr.Credit_Amount, "
                 + "pr.Status, pr.Created_At, pr.Confirmed_At, "
-                + "pr.Payment_Method, e.Full_Name AS Confirmed_By "
+                + "pr.Payment_Method, e.Full_Name AS Confirmed_By, po.Specialist_Employee_ID, "
+                + "a.Status AS Visit_Status, CASE WHEN EXISTS(SELECT 1 FROM Master_Invoice i JOIN Invoice_Checkout_Payment cp ON cp.Invoice_ID=i.Invoice_ID "
+                + "WHERE i.Appointment_ID=a.Appointment_ID AND cp.Status IN ('Creating','Pending')) THEN 1 ELSE 0 END AS Has_Active_QR "
                 + "FROM Procedure_Payment_Request pr "
                 + "JOIN Procedure_Order po ON po.Order_ID = pr.Order_ID "
                 + "JOIN Service_Catalog s ON s.Service_ID = po.Service_ID "
@@ -40,6 +91,9 @@ public class ProcedurePaymentDAO {
                 row.put("amount", rs.getBigDecimal("Amount"));
                 row.put("creditAmount", rs.getBigDecimal("Credit_Amount"));
                 row.put("status", rs.getString("Status"));
+                row.put("needsSpecialist", rs.getObject("Specialist_Employee_ID") == null);
+                row.put("clinicalComplete", "Completed".equals(rs.getString("Visit_Status")));
+                row.put("hasActiveQr", rs.getBoolean("Has_Active_QR"));
                 row.put("createdAt", rs.getTimestamp("Created_At"));
                 row.put("confirmedAt", rs.getTimestamp("Confirmed_At"));
                 row.put("paymentMethod", rs.getString("Payment_Method"));
@@ -81,7 +135,8 @@ public class ProcedurePaymentDAO {
                         + "JOIN Master_Invoice i WITH (UPDLOCK, HOLDLOCK) ON i.Appointment_ID = mr.Appointment_ID "
                         + "WHERE pr.Order_ID = ? AND pr.Status = 'Pending' AND po.Status <> 'Cancelled' "
                         + "AND (s.Service_Code LIKE 'PT-%' OR s.Service_Code LIKE 'TP-%') AND po.Referral_Notes IS NOT NULL "
-                        + "AND i.Status NOT IN ('Canceled', 'Refunded') "
+                        + "AND i.Status NOT IN ('Canceled', 'Refunded') AND a.Status='Completed' AND po.Specialist_Employee_ID IS NOT NULL "
+                        + "AND NOT EXISTS (SELECT 1 FROM Invoice_Checkout_Payment cp WHERE cp.Invoice_ID=i.Invoice_ID AND cp.Status IN ('Creating','Pending')) "
                         + "AND NOT EXISTS (SELECT 1 FROM Invoice_Checkout co WHERE co.Invoice_ID=i.Invoice_ID AND co.Finalized_At IS NOT NULL)";
                 int invoiceId;
                 BigDecimal amount;

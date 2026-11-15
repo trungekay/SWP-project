@@ -130,7 +130,7 @@
                                 <c:choose>
                                     <c:when test="${readOnly && fn:contains(formValues.surgeryResult, '<VISIT_CLOSURE>')}">Bác sĩ phẫu thuật đã hoàn tất và kết thúc ca khám.</c:when>
                                     <c:when test="${readOnly}">Ca khám đã kết thúc. Kết quả được lưu để xem lại.</c:when>
-                                    <c:otherwise>BSPT đã trả kết quả. Bác sĩ khám cần xem kết quả và tiếp tục xử lý ca khám.</c:otherwise>
+                                    <c:otherwise>Bác sĩ phẫu thuật đã lưu kết quả thủ thuật vào hồ sơ.</c:otherwise>
                                 </c:choose>
                             </p></div>
                         </div>
@@ -171,7 +171,7 @@
                                     </select>
                                 </label>
                                 <label class="doctor-form-field doctor-form-span"><span>Nội dung chỉ định tiểu phẫu <em>*</em></span>
-                                    <textarea name="surgeryIndication" rows="3" maxlength="2000" placeholder="Ghi loại phẫu thuật, mắt cần can thiệp và các lưu ý..."><c:out value="${formValues.surgeryIndication}" /></textarea>
+                                    <textarea name="surgeryIndication" rows="3" maxlength="1000" placeholder="Ghi loại phẫu thuật, mắt cần can thiệp và các lưu ý..."><c:out value="${formValues.surgeryIndication}" /></textarea>
                                 </label>
                             </div>
                         </div>

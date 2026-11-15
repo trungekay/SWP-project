@@ -265,7 +265,10 @@
                                     <td class="fw-bold"><fmt:formatNumber value="${item.amount}" pattern="#,###" /> đ</td>
                                     <td><c:choose><c:when test="${item.status eq 'Paid'}"><span class="badge bg-success">Đã thanh toán</span></c:when><c:otherwise><span class="badge bg-warning text-dark">Chờ thanh toán</span></c:otherwise></c:choose></td>
                                     <td>
-                                        <c:if test="${item.status eq 'Pending'}">
+                                        <c:if test="${item.status eq 'Pending' && not item.clinicalComplete}"><span class="text-muted">Chờ kết thúc khám lâm sàng</span></c:if>
+                                        <c:if test="${item.status eq 'Pending' && item.clinicalComplete && item.needsSpecialist}"><span class="text-muted">Chờ lễ tân chọn bác sĩ và thu phí</span></c:if>
+                                        <c:if test="${item.status eq 'Pending' && item.clinicalComplete && not item.needsSpecialist && item.hasActiveQr}"><span class="text-muted">Chờ xác nhận QR</span></c:if>
+                                        <c:if test="${item.status eq 'Pending' && item.clinicalComplete && not item.needsSpecialist && not item.hasActiveQr}">
                                             <form method="post" action="${pageContext.request.contextPath}${billingPath}" class="d-flex gap-2" onsubmit="return confirm('Xác nhận đã thu tiền cho ca #CD-${item.orderId}?');">
                                                 <input type="hidden" name="action" value="confirm-procedure">
                                                 <input type="hidden" name="orderId" value="${item.orderId}">

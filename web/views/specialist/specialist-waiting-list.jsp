@@ -305,7 +305,7 @@
                       <td class="text-center">
                         <c:choose>
                           <c:when test="${item.status == 'Pending'}">
-                            <span class="badge-status badge-pending">Chờ thực hiện</span>
+                            <span class="badge-status badge-pending">${item.accepted ? 'Đã nhận ca' : 'Chờ nhận ca'}</span>
                           </c:when>
                           <c:when test="${item.status == 'In_Progress'}">
                             <span class="badge-status badge-inprogress"><span class="pulse-dot me-1"></span>Đang làm</span>
@@ -326,9 +326,9 @@
                             <c:when test="${item.status == 'Pending'}">
                               <a href="${pageContext.request.contextPath}/specialist/procedure-detail?orderId=${item.orderId}" 
                                  class="btn-action-execute shadow-sm" 
-                                 title="Thực hiện thủ thuật & ghi nhận kết quả">
+                                 title="${item.accepted ? 'Thực hiện thủ thuật và ghi nhận kết quả' : 'Mở chi tiết để nhận ca'}">
                                 <i class="bi bi-play-fill"></i>
-                                <span>Thực hiện</span>
+                                <span>${item.accepted ? 'Thực hiện' : 'Mở ca'}</span>
                               </a>
                             </c:when>
                             <c:when test="${item.status == 'In_Progress'}">

@@ -410,10 +410,6 @@ public class StaffWaitingListServlet extends HttpServlet {
             }
         } else if ("confirmHandover".equalsIgnoreCase(action) || "completeAppointment".equalsIgnoreCase(action)) {
             apptIdParam = request.getParameter("appointmentId");
-            String paymentGateway = request.getParameter("paymentGateway");
-            if (paymentGateway == null || paymentGateway.trim().isEmpty()) {
-                paymentGateway = "Cash";
-            }
 
             if (apptIdParam != null && !apptIdParam.trim().isEmpty()) {
                 try {
@@ -453,7 +449,7 @@ public class StaffWaitingListServlet extends HttpServlet {
                     }
 
                     int invoiceId = new com.visioncare.dao.StaffInvoiceDAO().invoiceForAppointment(apptId);
-                    String target = request.getContextPath() + "/staff/invoices/checkout?id=" + invoiceId;
+                    String target = request.getContextPath() + "/staff/invoices/detail?id=" + invoiceId;
                     if ("1".equals(request.getParameter("ajax"))) {
                         response.setContentType("application/json;charset=UTF-8");
                         response.getWriter().write("{\"success\":true,\"redirect\":\"" + escapeJson(target) + "\"}");

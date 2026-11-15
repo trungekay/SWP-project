@@ -18,6 +18,10 @@ public class ProcedureOrder {
     public void setRequesterName(String value) { requesterName=value; }
     private String serviceCode;
     private String paymentStatus;
+    private boolean accepted;
+
+    public boolean isAccepted() { return accepted; }
+    public void setAccepted(boolean accepted) { this.accepted = accepted; }
 
     // Service info
     private String serviceName;

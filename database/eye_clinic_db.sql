@@ -510,6 +510,7 @@ CREATE TABLE [dbo].[Procedure_Order](
 	[Result_Conclusion] [nvarchar](max) NULL,
 	[Completed_At] [datetime2] NULL,
 	[Referral_Notes] [nvarchar](2000) NULL,
+	[Accepted_At] [datetime2] NULL,
 PRIMARY KEY CLUSTERED 
 (
 	[Order_ID] ASC
@@ -708,6 +709,11 @@ CONSTRAINT [FK_Invoice_Checkout_Payment_Tx] FOREIGN KEY ([Transaction_ID]) REFER
 
 CREATE UNIQUE INDEX [UX_Checkout_ActivePayment] ON [dbo].[Invoice_Checkout_Payment]([Invoice_ID]) WHERE [Status] IN ('Creating','Pending');
 END;
+GO
+IF COL_LENGTH('dbo.Invoice_Checkout_Payment','Procedure_Order_ID') IS NULL
+    ALTER TABLE dbo.Invoice_Checkout_Payment ADD Procedure_Order_ID int NULL REFERENCES dbo.Procedure_Order(Order_ID);
+IF COL_LENGTH('dbo.Invoice_Checkout_Payment','Procedure_Specialist_ID') IS NULL
+    ALTER TABLE dbo.Invoice_Checkout_Payment ADD Procedure_Specialist_ID int NULL REFERENCES dbo.Employee_Profile(Employee_ID);
 GO
 
 -- -----------------------------------------------------

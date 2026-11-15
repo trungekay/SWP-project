@@ -29,7 +29,7 @@ public final class DoctorFormValidator {
         visualAcuity(values, "osCorrected", "Thị lực có kính OS", errors);
         optional(values, "anteriorFindings", "Bán phần trước", 2000, errors);
         optional(values, "posteriorFindings", "Bán phần sau", 2000, errors);
-        optional(values, "surgeryIndication", "Chỉ định phẫu thuật", 2000, errors);
+        optional(values, "surgeryIndication", "Chỉ định phẫu thuật", 1000, errors);
         String serviceId = values.getOrDefault("surgeryServiceId", "");
         String indication = values.getOrDefault("surgeryIndication", "");
         if (!serviceId.isBlank() || !indication.isBlank()) {

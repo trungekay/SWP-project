@@ -15,9 +15,7 @@ public class DoctorQueueDAO {
             + "WHERE mr.Appointment_ID = a.Appointment_ID "
             + "AND NULLIF(LTRIM(RTRIM(mr.Clinical_Diagnosis)), '') IS NOT NULL "
             + "AND NULLIF(LTRIM(RTRIM(mr.examination_result)), '') IS NOT NULL "
-            + "AND NULLIF(LTRIM(RTRIM(mr.conclusion)), '') IS NOT NULL) "
-            + "AND NOT EXISTS (SELECT 1 FROM Procedure_Order po JOIN Medical_Record pm ON pm.Record_ID=po.Record_ID "
-            + "WHERE pm.Appointment_ID=a.Appointment_ID AND po.Status NOT IN ('Completed','Cancelled'))";
+            + "AND NULLIF(LTRIM(RTRIM(mr.conclusion)), '') IS NOT NULL)";
 
     /** Appointments whose saved examination form has the required result and conclusion. */
     public Set<Integer> readyForCompletion(int doctorEmployeeId, Date clinicDate) throws Exception {
@@ -25,8 +23,7 @@ public class DoctorQueueDAO {
         String sql = "SELECT a.Appointment_ID FROM Appointment a "
                 + "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID "
                 + "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? "
-                + "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL AND " + EXAMINATION_READY
-                + " AND " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF;
+                + "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL AND " + EXAMINATION_READY;
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, doctorEmployeeId);
@@ -50,7 +47,9 @@ public class DoctorQueueDAO {
                 String assignedSql = "SELECT a.Status, a.checkin_time, ws.Schedule_ID "
                         + "FROM Appointment a WITH (UPDLOCK, HOLDLOCK) "
                         + "JOIN Work_Schedule ws WITH (UPDLOCK, HOLDLOCK) ON a.Schedule_ID = ws.Schedule_ID "
-                        + "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ? AND " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF;
+                        + "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ? AND " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF
+                        + " AND NOT EXISTS (SELECT 1 FROM Master_Invoice i JOIN Invoice_Checkout_Payment cp ON cp.Invoice_ID=i.Invoice_ID "
+                        + "WHERE i.Appointment_ID=a.Appointment_ID AND cp.Status IN ('Creating','Pending'))";
                 try (PreparedStatement ps = conn.prepareStatement(assignedSql)) {
                     ps.setInt(1, appointmentId);
                     ps.setInt(2, doctorEmployeeId);
@@ -135,12 +134,11 @@ public class DoctorQueueDAO {
 
     /** Complete only the signed-in doctor's checked-in appointment for today. */
     public boolean completeExamination(int appointmentId, int doctorEmployeeId, Date clinicDate) throws Exception {
-        String sql = "UPDATE a SET a.Status = 'Completed' "
+        String sql = "UPDATE a SET a.Status = 'Completed', a.doctor_completed_at = SYSDATETIME() "
                 + "FROM Appointment a "
                 + "JOIN Work_Schedule ws ON a.Schedule_ID = ws.Schedule_ID "
                 + "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? "
-                + "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL AND " + EXAMINATION_READY
-                + " AND " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF;
+                + "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL AND " + EXAMINATION_READY;
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, appointmentId);
