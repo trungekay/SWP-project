@@ -17,7 +17,7 @@
     <jsp:include page="/views/employee/layout/employee-header.jsp"/>
     <div class="page-content">
         <h1 class="h3 mb-2">Chuyển ca sang bác sĩ phẫu thuật</h1>
-        <p class="text-muted mb-4">Chọn bệnh nhân đã check-in hôm nay và dịch vụ cần thực hiện. BSPT sẽ đánh giá điều kiện trước khi làm thủ thuật.</p>
+        <p class="text-muted mb-4">Chọn bệnh nhân đã check-in hôm nay và dịch vụ cần thực hiện. Chỉ chuyển sang BSPT sau khi bác sĩ đã lưu đầy đủ kết quả khám của lượt này.</p>
         <c:if test="${not schemaReady}"><div class="alert alert-warning">Chức năng chưa sẵn sàng: cơ sở dữ liệu cần được cập nhật trước khi gửi ca.</div></c:if>
         <c:if test="${not empty formError}"><div class="alert alert-danger" role="alert"><c:out value="${formError}"/></div></c:if>
         <c:if test="${not empty sessionScope.procedureRequestSuccess}"><div class="alert alert-success" role="status"><c:out value="${sessionScope.procedureRequestSuccess}"/></div><c:remove var="procedureRequestSuccess" scope="session"/></c:if>
@@ -44,7 +44,8 @@
                     <label for="notes" class="form-label">Thông tin tiếp nhận / Ghi chú chuyển ca</label>
                     <textarea id="notes" name="notes" class="form-control mb-2" rows="5" maxlength="2000" placeholder="Nhu cầu thực hiện, thông tin cần lưu ý khi tiếp nhận..."><c:out value="${draftNotes}"/></textarea>
                     <p class="small text-muted">Tối đa 2.000 ký tự. Ghi chú tiếp nhận không thay thế đánh giá chuyên môn của BSPT.</p>
-                    <button type="submit" class="btn btn-success" ${not schemaReady or not selectedEligible ? 'disabled' : ''}>Gửi sang BSPT</button>
+                    <c:if test="${not empty selectedAppointment and not patientContext.examinationReady}"><div class="alert alert-warning">Cần bác sĩ lưu đầy đủ chẩn đoán, kết quả khám và kết luận trước khi chuyển sang BSPT.</div></c:if>
+                    <button type="submit" class="btn btn-success" ${not schemaReady or not selectedEligible or not patientContext.examinationReady ? 'disabled' : ''}>Gửi sang BSPT</button>
                 </form>
                 <c:if test="${not empty existingOrders}">
                     <h3 class="h6 mt-4">Yêu cầu thủ thuật (CD) thuộc lượt khám #APT-${selectedAppointment}</h3>
@@ -76,7 +77,7 @@
                                     <h3 class="h6">Kết luận</h3><p class="clinical-text"><c:out value="${patientContext.conclusion}" default="Chưa ghi nhận"/></p>
                                 </div>
                             </c:when>
-                            <c:otherwise><div class="alert alert-light border">Chưa có thông tin khám của bác sĩ cho lượt này. Vẫn có thể chuyển thẳng sang BSPT để đánh giá.</div></c:otherwise>
+                            <c:otherwise><div class="alert alert-light border">Chưa có thông tin khám của bác sĩ cho lượt này. Cần bác sĩ lưu kết quả khám trước khi chuyển sang BSPT.</div></c:otherwise>
                         </c:choose>
                     </c:otherwise>
                 </c:choose>

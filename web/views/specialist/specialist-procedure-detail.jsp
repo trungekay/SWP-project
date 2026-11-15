@@ -159,9 +159,7 @@
                     </span>
                   </div>
                 </div>
-                <a href="${pageContext.request.contextPath}/profile/medical-record?id=${order.recordId}" target="_blank" class="badge bg-white text-teal border border-teal-subtle text-decoration-none fw-semibold px-2.5 py-1 rounded-pill shadow-xs d-inline-flex align-items-center gap-1 hover-teal" title="Mở Bệnh án tổng thể">
-                  <i class="bi bi-file-earmark-medical"></i>#BA-${order.recordId} <i class="bi bi-box-arrow-up-right" style="font-size: 8.5px;"></i>
-                </a>
+
               </div>
 
               <!-- Chẩn đoán lâm sàng & Ghi chú chỉ định -->
@@ -242,23 +240,7 @@
         <!-- CỘT TRÁI (COL-LG-5): Y LỆNH & ĐO MẮT BÁC SĨ (READ-ONLY)-->
         <!-- ====================================================== -->
         <div class="col-lg-5">
-          
-          <!-- Header mô phỏng màn hình Bác sĩ thu nhỏ -->
-          <div class="doctor-mini-screen-header mb-3">
-            <div class="d-flex align-items-center justify-content-between">
-              <div>
-                <span class="doctor-form-eyebrow">HỒ SƠ KHÁM LÂM SÀNG</span>
-                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                  <i class="bi bi-file-earmark-medical text-teal"></i>
-                  <span>Phiếu khám của Bác sĩ</span>
-                </h5>
-              </div>
-              <a href="${pageContext.request.contextPath}/profile/medical-record?id=${order.recordId}" target="_blank" class="badge bg-white text-teal border border-teal-subtle text-decoration-none fw-semibold px-2.5 py-1 rounded-pill shadow-xs hover-teal" title="Mở Bệnh án tổng thể">
-                <i class="bi bi-box-arrow-up-right me-1"></i>Hồ sơ gốc
-              </a>
-            </div>
-            <p class="text-muted small mb-0 mt-1">Ghi nhận thị lực, nhãn áp và nhận định ban đầu của Bác sĩ khám.</p>
-          </div>
+
 
           <!-- CỘT TRÁI: MÀN HÌNH KHÁM CỦA BÁC SĨ THU NHỎ (READ-ONLY) -->
           <div class="doctor-form-mini-stack mb-4">
@@ -472,13 +454,7 @@
                   <div class="text-muted" style="font-size: 11.5px;">KTV / Phẫu thuật viên: <strong><c:out value="${order.specialistName != null ? order.specialistName : 'Kỹ thuật viên'}" /></strong></div>
                 </div>
               </div>
-              <c:if test="${order.status == 'Completed'}">
-                <div>
-                  <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1">
-                    <i class="bi bi-check2-circle me-1"></i>Thủ thuật đã hoàn tất
-                  </span>
-                </div>
-              </c:if>
+
             </div>
 
             <!-- Card Body: Form Lập Biên Bản -->
