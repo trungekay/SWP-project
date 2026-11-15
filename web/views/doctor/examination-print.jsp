@@ -98,7 +98,7 @@
         <div class="block"><strong>Kết luận / hướng xử trí:</strong> <c:out value="${formValues.conclusion}" /></div>
         <c:if test="${not empty formValues.followUpDate}"><div class="block"><strong>Ngày tái khám:</strong> <c:out value="${formValues.followUpDate}" /></div></c:if>
     </section>
-    <c:if test="${not empty formValues.surgeryIndication}">
+    <c:if test="${not empty formValues.surgeryIndication and empty formValues.surgeryStatus}">
         <section>
             <h2>Chỉ định phẫu thuật</h2>
             <div class="block"><c:out value="${formValues.surgeryIndication}" /></div>

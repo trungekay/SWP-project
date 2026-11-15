@@ -3,6 +3,7 @@ package com.visioncare.controller;
 import com.visioncare.dao.AppointmentDAO;
 import com.visioncare.dao.DoctorFormDAO;
 import com.visioncare.dao.MedicineDAO;
+import com.visioncare.dao.ProcedureOrderDAO;
 import com.visioncare.model.Appointment;
 import com.visioncare.model.Medicine;
 import com.visioncare.model.User;
@@ -29,8 +30,9 @@ public class DoctorFormsServlet extends HttpServlet {
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
     private final DoctorFormDAO formDAO = new DoctorFormDAO();
     private final MedicineDAO medicineDAO = new MedicineDAO();
+    private final ProcedureOrderDAO procedureOrderDAO = new ProcedureOrderDAO();
 
-    /** Tải phiếu khám hoặc đơn đã lưu; chỉ cho in phiếu khám khi dữ liệu bắt buộc đầy đủ. */
+    /** Load the saved examination form or prescription; allow printing only when required examination data is complete. */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -83,6 +85,11 @@ public class DoctorFormsServlet extends HttpServlet {
                 }
             } else {
                 formValues = formDAO.loadExamination(appointmentId);
+                request.setAttribute("surgeryServices", procedureOrderDAO.getProcedureRequestServices());
+                if ("Pending".equals(formValues.get("surgeryStatus"))
+                        || "In_Progress".equals(formValues.get("surgeryStatus"))) {
+                    request.setAttribute("readOnly", true);
+                }
                 String staffNotes = formValues.get("staffNotes");
                 if (staffNotes != null && (staffNotes.startsWith("Dịch vụ:")
                         || staffNotes.startsWith("Dịch vụ/Bệnh lý:"))) {

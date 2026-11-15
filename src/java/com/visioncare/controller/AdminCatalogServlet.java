@@ -5,7 +5,6 @@ import com.visioncare.dao.CatalogDAO.ImageData;
 import com.visioncare.model.CatalogService;
 import com.visioncare.model.MedicalSupply;
 import com.visioncare.model.ServiceCategory;
-import com.visioncare.model.ServiceWorkflowStep;
 import com.visioncare.model.SupplyCategory;
 import com.visioncare.model.User;
 import jakarta.servlet.ServletException;
@@ -18,7 +17,6 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -145,34 +143,11 @@ public class AdminCatalogServlet extends HttpServlet {
                     } catch (NumberFormatException ignored) {}
                 }
 
-                // Parse dynamic workflow steps
-                List<ServiceWorkflowStep> workflowSteps = new ArrayList<>();
-                String[] stepNames = request.getParameterValues("stepName");
-                String[] stepStages = request.getParameterValues("stepStage");
-                String[] stepOrders = request.getParameterValues("stepOrder");
-                String[] stepDescs = request.getParameterValues("stepDescription");
-
-                if (stepNames != null) {
-                    for (int i = 0; i < stepNames.length; i++) {
-                        String sName = stepNames[i] != null ? stepNames[i].trim() : "";
-                        if (sName.isEmpty()) continue;
-                        String sStage = (stepStages != null && stepStages.length > i && stepStages[i] != null) ? stepStages[i].trim() : "PRE_EXAM";
-                        int sOrder = i + 1;
-                        if (stepOrders != null && stepOrders.length > i && stepOrders[i] != null && !stepOrders[i].trim().isEmpty()) {
-                            try {
-                                sOrder = Integer.parseInt(stepOrders[i].trim());
-                            } catch (NumberFormatException ignored) {}
-                        }
-                        String sDesc = (stepDescs != null && stepDescs.length > i && stepDescs[i] != null) ? stepDescs[i].trim() : null;
-                        workflowSteps.add(new ServiceWorkflowStep(0, id, sName, sStage, sOrder, sDesc));
-                    }
-                }
-
                 savedId = dao.saveService(id, code, name, price, category, summary,
                         description, upload == null ? null : upload.getBytes(),
                         upload == null ? null : upload.getMimeType(),
                         requiresPreOp, prerequisiteServiceId, allowDirectBooking,
-                        workflowSteps);
+                        null);
             } else {
                 String name = field(request, "name", 255, true);
                 String category = field(request, "category", 100, true);

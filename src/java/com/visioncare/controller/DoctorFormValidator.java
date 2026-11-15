@@ -15,7 +15,7 @@ public final class DoctorFormValidator {
 
     private DoctorFormValidator() {}
 
-    /** Kiểm tra các trường bắt buộc và chỉ số mắt của phiếu khám. */
+    /** Validate required examination fields and eye measurements. */
     public static List<String> examination(Map<String, String> values) {
         List<String> errors = new ArrayList<>();
         required(values, "clinicalDiagnosis", "Chẩn đoán lâm sàng", 255, errors);
@@ -30,13 +30,26 @@ public final class DoctorFormValidator {
         optional(values, "anteriorFindings", "Bán phần trước", 2000, errors);
         optional(values, "posteriorFindings", "Bán phần sau", 2000, errors);
         optional(values, "surgeryIndication", "Chỉ định phẫu thuật", 2000, errors);
+        String serviceId = values.getOrDefault("surgeryServiceId", "");
+        String indication = values.getOrDefault("surgeryIndication", "");
+        if (!serviceId.isBlank() || !indication.isBlank()) {
+            if (serviceId.isBlank()) errors.add("Chọn dịch vụ phẫu thuật / thủ thuật.");
+            else {
+                try {
+                    if (Integer.parseInt(serviceId) <= 0) throw new NumberFormatException();
+                } catch (NumberFormatException invalid) {
+                    errors.add("Dịch vụ phẫu thuật / thủ thuật không hợp lệ.");
+                }
+            }
+            if (indication.isBlank()) errors.add("Nhập nội dung chỉ định tiểu phẫu.");
+        }
         decimal(values, "odIop", "Nhãn áp OD", "5", "70", 1, errors);
         decimal(values, "osIop", "Nhãn áp OS", "5", "70", 1, errors);
         date(values, "followUpDate", "Ngày tái khám", errors);
         return errors;
     }
 
-    /** Kiểm tra phần thuốc, kính và các giới hạn của từng dòng đơn. */
+    /** Validate medications, eyeglass parameters, and limits for each prescription line. */
     public static List<String> prescription(Map<String, String> values,
             List<Map<String, String>> medicines, boolean includeMedication, boolean includeGlasses) {
         List<String> errors = new ArrayList<>();
@@ -103,21 +116,21 @@ public final class DoctorFormValidator {
         return errors;
     }
 
-    /** Báo lỗi khi trường bắt buộc trống hoặc vượt độ dài cho phép. */
+    /** Report an error when a required field is empty or exceeds its length limit. */
     private static void required(Map<String, String> values, String key, String label, int max, List<String> errors) {
         String value = values.getOrDefault(key, "");
         if (value.isBlank()) errors.add(label + " không được để trống.");
         else if (value.length() > max) errors.add(label + " vượt quá " + max + " ký tự.");
     }
 
-    /** Giới hạn độ dài của trường không bắt buộc. */
+    /** Enforce the length limit for an optional field. */
     private static void optional(Map<String, String> values, String key, String label, int max, List<String> errors) {
         if (values.getOrDefault(key, "").length() > max) {
             errors.add(label + " vượt quá " + max + " ký tự.");
         }
     }
 
-    /** Chuẩn hóa dấu thập phân và kiểm tra thang thị lực từ 0 đến 10. */
+    /** Normalize the decimal separator and validate visual acuity from 0 to 10. */
     private static void visualAcuity(Map<String, String> values, String key, String label, List<String> errors) {
         String raw = values.getOrDefault(key, "");
         if (raw.isBlank()) return;
@@ -135,7 +148,7 @@ public final class DoctorFormValidator {
         values.put(key, normalized);
     }
 
-    /** Kiểm tra khoảng giá trị và số chữ số thập phân của nhãn áp. */
+    /** Validate the intraocular pressure range and decimal precision. */
     private static void decimal(Map<String, String> values, String key, String label,
             String min, String max, int scale, List<String> errors) {
         String raw = values.getOrDefault(key, "");
@@ -155,7 +168,7 @@ public final class DoctorFormValidator {
         }
     }
 
-    /** Kiểm tra thông số kính theo khoảng và bước tăng hợp lệ. */
+    /** Validate eyeglass parameters against their permitted ranges and increments. */
     private static void steppedDecimal(Map<String, String> values, String key, String label,
             String min, String max, String step, List<String> errors) {
         String raw = values.getOrDefault(key, "");
@@ -175,7 +188,7 @@ public final class DoctorFormValidator {
         }
     }
 
-    /** Kiểm tra trục kính là số nguyên từ 0 đến 180 độ. */
+    /** Validate that the eyeglass axis is an integer from 0 to 180 degrees. */
     private static void axis(Map<String, String> values, String key, String label, List<String> errors) {
         String raw = values.getOrDefault(key, "");
         if (raw.isBlank()) return;
@@ -187,7 +200,7 @@ public final class DoctorFormValidator {
         }
     }
 
-    /** Kiểm tra ngày tái khám theo định dạng ngày ISO. */
+    /** Validate the follow-up date in ISO date format. */
     private static void date(Map<String, String> values, String key, String label, List<String> errors) {
         String raw = values.getOrDefault(key, "");
         if (raw.isBlank()) return;

@@ -58,7 +58,7 @@ public class ProcedureOrderDAO {
         List<Map<String,Object>> rows=new ArrayList<>();
         try(Connection c=connections.open(); PreparedStatement p=c.prepareStatement(
                 "SELECT Service_ID,Service_Name,Price FROM Service_Catalog "
-                + "WHERE Service_Code LIKE 'PT-%' ORDER BY Service_Name")) {
+                + "WHERE Service_Code LIKE 'PT-%' OR Service_Code LIKE 'TP-%' ORDER BY Service_Name")) {
             try(ResultSet r=p.executeQuery()){while(r.next()){
                 Map<String,Object> row=new HashMap<>();row.put("id",r.getInt(1));
                 row.put("name",r.getString(2));row.put("price",r.getBigDecimal(3));rows.add(row);
@@ -120,7 +120,8 @@ public class ProcedureOrderDAO {
                 int orderId;
                 try(PreparedStatement p=c.prepareStatement("INSERT INTO Procedure_Order(Record_ID,Service_ID,Status,Actual_Price,Referral_Notes,Requested_By_Employee_ID,Requested_At) "
                         + "OUTPUT INSERTED.Order_ID SELECT ?,Service_ID,'Pending',Price,?,?,DATEADD(HOUR,7,SYSUTCDATETIME()) "
-                        + "FROM Service_Catalog WITH (HOLDLOCK) WHERE Service_ID=? AND Service_Code LIKE 'PT-%'")) {
+                        + "FROM Service_Catalog WITH (HOLDLOCK) WHERE Service_ID=? "
+                        + "AND (Service_Code LIKE 'PT-%' OR Service_Code LIKE 'TP-%')")) {
                     p.setInt(1,recordId);p.setNString(2,notes.trim());p.setInt(3,staffId);p.setInt(4,serviceId);
                     try(ResultSet r=p.executeQuery()){if(!r.next())throw new IllegalStateException("Dịch vụ thủ thuật không hợp lệ.");orderId=r.getInt(1);}
                 }

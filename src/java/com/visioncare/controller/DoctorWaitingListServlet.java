@@ -38,7 +38,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
     private final DoctorQueueDAO doctorQueueDAO = new DoctorQueueDAO();
 
-    /** Chuẩn bị danh sách ca khám trong ngày, bộ lọc, trạng thái giờ hẹn và quyền hoàn tất. */
+    /** Prepare today's appointment queue, filters, time window states, and completion permissions. */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -129,7 +129,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
         }
     }
 
-    /** Xử lý bắt đầu, hoàn tất hoặc hủy ca khám sau khi kiểm tra bác sĩ và CSRF. */
+    /** Start, complete, or cancel an examination after verifying the doctor. */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -209,7 +209,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
         }
     }
 
-    /** Giữ ngày, trạng thái, từ khóa và cách sắp xếp khi quay lại danh sách chờ. */
+    /** Preserve the date, status, keyword, and sort order when returning to the queue. */
     private String returnToQueue(HttpServletRequest request) {
         String date = request.getParameter("date");
         try {
@@ -228,13 +228,13 @@ public class DoctorWaitingListServlet extends HttpServlet {
                 + "&sort=" + validSort(request.getParameter("sort"));
     }
 
-    /** Chỉ chấp nhận các kiểu sắp xếp mà danh sách chờ hỗ trợ. */
+    /** Accept only sort orders supported by the waiting list. */
     private static String validSort(String sort) {
         if ("time_asc".equals(sort) || "id_asc".equals(sort) || "name_asc".equals(sort)) return sort;
         return "default";
     }
 
-    /** Sắp xếp theo giờ, mã ca hoặc tên bệnh nhân tùy lựa chọn của bác sĩ. */
+    /** Sort by time, appointment ID, or patient name based on the doctor's selection. */
     private static void sortAppointments(List<Appointment> appointments, String sort) {
         if ("time_asc".equals(sort)) {
             appointments.sort(Comparator.comparing(Appointment::getTimeSlot,
@@ -250,7 +250,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
         }
     }
 
-    /** Lấy bác sĩ từ phiên đăng nhập hoặc trả về lỗi điều hướng/quyền truy cập. */
+    /** Get the doctor from the session or return a navigation or access error. */
     private User currentDoctor(HttpServletRequest request, HttpServletResponse response) throws IOException {
         HttpSession session = request.getSession(false);
         User user = session == null ? null : (User) session.getAttribute("user");

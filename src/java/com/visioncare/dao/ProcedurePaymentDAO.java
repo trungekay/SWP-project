@@ -24,7 +24,7 @@ public class ProcedurePaymentDAO {
                 + "JOIN Appointment a ON a.Appointment_ID = mr.Appointment_ID "
                 + "JOIN Patient p ON p.Patient_ID = a.Patient_ID "
                 + "LEFT JOIN Employee_Profile e ON e.Employee_ID = pr.Confirmed_By_Employee_ID "
-                + "WHERE s.Service_Code LIKE 'PT-%' AND po.Status <> 'Cancelled' "
+                + "WHERE (s.Service_Code LIKE 'PT-%' OR s.Service_Code LIKE 'TP-%') AND po.Status <> 'Cancelled' "
                 + "ORDER BY CASE WHEN pr.Status = 'Pending' THEN 0 ELSE 1 END, pr.Created_At DESC";
         List<Map<String, Object>> rows = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
@@ -80,7 +80,7 @@ public class ProcedurePaymentDAO {
                         + "JOIN Appointment a ON a.Appointment_ID = mr.Appointment_ID AND a.Status <> 'Canceled' "
                         + "JOIN Master_Invoice i WITH (UPDLOCK, HOLDLOCK) ON i.Appointment_ID = mr.Appointment_ID "
                         + "WHERE pr.Order_ID = ? AND pr.Status = 'Pending' AND po.Status <> 'Cancelled' "
-                        + "AND s.Service_Code LIKE 'PT-%' AND po.Referral_Notes IS NOT NULL "
+                        + "AND (s.Service_Code LIKE 'PT-%' OR s.Service_Code LIKE 'TP-%') AND po.Referral_Notes IS NOT NULL "
                         + "AND i.Status NOT IN ('Canceled', 'Refunded') "
                         + "AND NOT EXISTS (SELECT 1 FROM Invoice_Checkout co WHERE co.Invoice_ID=i.Invoice_ID AND co.Finalized_At IS NOT NULL)";
                 int invoiceId;

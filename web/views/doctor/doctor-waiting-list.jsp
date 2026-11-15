@@ -73,7 +73,7 @@
                 </div>
             </c:if>
 
-            <section class="doctor-queue-panel" aria-labelledby="queue-heading">
+            <%-- Sort Form --%>
                 <div class="doctor-queue-panel-top">
                     <div>
                         <h2 id="queue-heading">Danh sách bệnh nhân</h2>
@@ -85,7 +85,7 @@
                 <c:url var="previousUrl" value="/doctor/waiting-list"><c:param name="date" value="${previousDate}" /><c:param name="status" value="${selectedStatus}" /><c:param name="keyword" value="${keyword}" /><c:param name="sort" value="${selectedSort}" /></c:url>
                 <c:url var="nextUrl" value="/doctor/waiting-list"><c:param name="date" value="${nextDate}" /><c:param name="status" value="${selectedStatus}" /><c:param name="keyword" value="${keyword}" /><c:param name="sort" value="${selectedSort}" /></c:url>
                 <c:url var="todayUrl" value="/doctor/waiting-list"><c:param name="date" value="${todayDate}" /><c:param name="status" value="${selectedStatus}" /><c:param name="keyword" value="${keyword}" /><c:param name="sort" value="${selectedSort}" /></c:url>
-                <form class="doctor-queue-search" action="${pageContext.request.contextPath}/doctor/waiting-list" method="get" role="search">
+                    <form class="doctor-queue-search" action="${pageContext.request.contextPath}/doctor/waiting-list" method="get" role="search">
                     <input type="hidden" name="status" value="<c:out value='${selectedStatus}' />">
                     <div class="doctor-queue-date-controls" aria-label="Chọn ngày khám">
                         <a href="<c:out value='${previousUrl}' />" aria-label="Ngày trước" title="Ngày trước"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
@@ -123,7 +123,7 @@
                         <a class="doctor-queue-clear" href="<c:out value='${clearSearchUrl}' />">Xóa tìm kiếm</a>
                     </c:if>
                 </form>
-
+                <%-- Get Sort Result --%>
                 <c:choose>
                     <c:when test="${empty appointments}">
                         <div class="doctor-queue-empty" role="status">
@@ -268,7 +268,7 @@
                         </div>
                     </c:otherwise>
                 </c:choose>
-            </section>
+            
     </div>
 </main>
 <div class="modal fade doctor-queue-modal" id="cancelExamModal" tabindex="-1"
@@ -325,7 +325,7 @@
 </div>
 <c:if test="${isToday}">
     <script>
-        // Làm mới danh sách hôm nay khi người dùng không nhập tìm kiếm hoặc mở hộp thoại.
+        // Refresh today's queue when the user is not searching or viewing a dialog.
         setInterval(function () {
             var active = document.activeElement;
             if (document.visibilityState === 'visible'
@@ -347,7 +347,7 @@
         if (datePicker.value) datePicker.form.requestSubmit();
     });
 
-    // Điền thông tin ca khám và câu hỏi xác nhận tương ứng với trạng thái hiện tại.
+    // Fill in appointment details and the confirmation prompt for its current state.
     document.getElementById('cancelExamModal').addEventListener('show.bs.modal', function (event) {
         var trigger = event.relatedTarget;
         var id = trigger.getAttribute('data-appointment-id');
@@ -365,7 +365,7 @@
 
     var examStartForm = null;
     var examWindowTrigger = null;
-    // Hiển thị cảnh báo giờ hẹn và chỉ cho tiếp tục khi giờ hẹn hợp lệ.
+    // Show the appointment time warning and allow continuation only for valid times.
     document.getElementById('examWindowModal').addEventListener('show.bs.modal', function (event) {
         examWindowTrigger = event.relatedTarget;
         var state = event.relatedTarget.getAttribute('data-window-state');
@@ -390,7 +390,7 @@
     document.getElementById('continueExamButton').addEventListener('click', function () {
         if (examStartForm) examStartForm.requestSubmit();
     });
-    // Chuyển từ cảnh báo quá giờ sang hộp thoại hủy ca khám.
+    // Switch from the overdue warning to the examination cancellation dialog.
     document.getElementById('cancelFromWindowButton').addEventListener('click', function () {
         if (!examWindowTrigger) return;
         var trigger = examWindowTrigger;

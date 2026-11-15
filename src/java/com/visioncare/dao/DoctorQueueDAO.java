@@ -150,7 +150,7 @@ public class DoctorQueueDAO {
         }
     }
 
-    /** Khóa ca đã check-in và chỉ bắt đầu khi bác sĩ chưa có ca đang khám cùng ngày. */
+    /** Lock a checked-in appointment and start it only if the doctor has no active examination that day. */
     public boolean startExamination(int appointmentId, int doctorEmployeeId) throws Exception {
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
