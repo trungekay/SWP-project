@@ -20,7 +20,7 @@
 </jsp:include>
 <main class="main-wrapper">
     <jsp:include page="/views/employee/layout/employee-header.jsp" />
-    <div class="page-content doctor-form-page" data-doctor-form="examination" data-readonly="${readOnly}" data-surgery-initial="${not empty formValues.surgeryIndication}">
+    <div class="page-content doctor-form-page" data-doctor-form="examination" data-readonly="${readOnly}" data-surgery-initial="${not empty formValues.surgeryIndication or not empty formValues.surgeryServiceId}">
         <nav class="doctor-form-breadcrumb" aria-label="Điều hướng">
             <a href="${pageContext.request.contextPath}/doctor/waiting-list">Hàng đợi khám bệnh</a>
             <i class="bi bi-chevron-right" aria-hidden="true"></i>
@@ -68,7 +68,7 @@
                 <section class="doctor-form-card" aria-labelledby="exam-complaint-heading">
                     <div class="doctor-form-card-heading">
                         <span class="doctor-form-icon"><i class="bi bi-chat-left-text" aria-hidden="true"></i></span>
-                        <div><h2 id="exam-complaint-heading">Lý do đến khám</h2><p>Triệu chứng và bệnh sử liên quan</p></div>
+                        <div><h2 id="exam-complaint-heading">Lý do đến khám</h2><p>Triệu chứng của bệnh nhân</p></div>
                     </div>
                     <div class="doctor-form-fields">
                         <c:if test="${not empty formValues.staffNotes}">
@@ -76,10 +76,6 @@
                         </c:if>
                         <label class="doctor-form-field doctor-form-span"><span>Triệu chứng chính</span>
                             <textarea name="chiefComplaint" rows="3" maxlength="1000" placeholder="Ví dụ: Nhìn mờ mắt phải trong 2 tuần, tăng khi đọc gần..."><c:out value="${formValues.chiefComplaint}" /></textarea>
-                        </label>
-                        <label class="doctor-form-field doctor-form-span"><span>Tiền sử mắt và bệnh sử liên quan</span>
-                            <textarea name="medicalHistory" rows="2" maxlength="1000" placeholder="Bệnh mắt trước đây, bệnh nền, dị ứng, thuốc đang dùng..."><c:out value="${formValues.medicalHistory}" /></textarea>
-                            <c:if test="${not empty formValues.medicalHistorySource}"><small class="doctor-form-hint"><c:out value="${formValues.medicalHistorySource}" />. Hãy kiểm tra và cập nhật nếu cần.</small></c:if>
                         </label>
                     </div>
                     <c:if test="${not empty formValues.previousDiagnoses}">
@@ -166,7 +162,15 @@
                         </button>
                         <div id="surgery-referral-fields" class="doctor-form-surgery-panel" data-surgery-panel hidden>
                             <div class="doctor-form-fields">
-                                <label class="doctor-form-field doctor-form-span"><span>Nội dung chỉ định tiểu phẫu</span>
+                                <label class="doctor-form-field doctor-form-span"><span>Dịch vụ phẫu thuật / thủ thuật <em>*</em></span>
+                                    <select name="surgeryServiceId" data-surgery-service>
+                                        <option value="">Chọn dịch vụ cần chỉ định</option>
+                                        <c:forEach var="service" items="${surgeryServices}">
+                                            <option value="<c:out value='${service.id}' />" ${formValues.surgeryServiceId eq service.id ? 'selected' : ''}><c:out value="${service.name}" /> — <fmt:formatNumber value="${service.price}" type="number" maxFractionDigits="0" /> đ</option>
+                                        </c:forEach>
+                                    </select>
+                                </label>
+                                <label class="doctor-form-field doctor-form-span"><span>Nội dung chỉ định tiểu phẫu <em>*</em></span>
                                     <textarea name="surgeryIndication" rows="3" maxlength="2000" placeholder="Ghi loại phẫu thuật, mắt cần can thiệp và các lưu ý..."><c:out value="${formValues.surgeryIndication}" /></textarea>
                                 </label>
                             </div>
@@ -180,7 +184,7 @@
                         <c:when test="${printReady}"><a class="doctor-form-button secondary" href="${pageContext.request.contextPath}/doctor/examination/print?id=${appointment.id}" target="_blank" rel="noopener"><i class="bi bi-printer" aria-hidden="true"></i> In phiếu khám đã lưu</a></c:when>
                         <c:otherwise><button class="doctor-form-button secondary" type="button" disabled title="Lưu đầy đủ phiếu khám trước khi in"><i class="bi bi-printer" aria-hidden="true"></i> In phiếu khám</button></c:otherwise>
                     </c:choose>
-                    <c:if test="${not readOnly}"><button class="doctor-form-button primary" type="submit"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> ẽ khám</button></c:if>
+                    <c:if test="${not readOnly}"><button class="doctor-form-button primary" type="submit"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Lưu phiếu khám</button></c:if>
                 </div>
             </form>
             <aside class="doctor-form-aside" aria-label="Các bước trong ca khám">

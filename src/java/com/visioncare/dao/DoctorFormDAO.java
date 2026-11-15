@@ -68,7 +68,7 @@ public class DoctorFormDAO {
                 "FROM Medical_Record m JOIN Procedure_Order po ON po.Record_ID = m.Record_ID " +
                 "JOIN Service_Catalog sc ON sc.Service_ID = po.Service_ID " +
                 "LEFT JOIN Employee_Profile specialist ON specialist.Employee_ID = po.Specialist_Employee_ID " +
-                "WHERE m.Appointment_ID = ? AND po.Referral_Notes IS NOT NULL ORDER BY po.Order_ID DESC";
+                "WHERE m.Appointment_ID = ? AND po.Referral_Notes IS NOT NULL AND po.Status <> 'Cancelled' ORDER BY po.Order_ID DESC";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(referralSql)) {
             ps.setInt(1, appointmentId);
@@ -76,8 +76,10 @@ public class DoctorFormDAO {
                 if (rs.next()) {
                     values.put("surgeryServiceId", String.valueOf(rs.getInt("Service_ID")));
                     put(values, "surgeryNotes", rs.getString("Referral_Notes"));
+                    put(values, "surgeryIndication", rs.getString("Referral_Notes"));
                     put(values, "surgeryStatus", rs.getString("Status"));
                     put(values, "surgeryServiceName", rs.getString("Service_Name"));
+                    put(values, "surgerySpecialist", rs.getString("Specialist_Name"));
                     if ("Completed".equalsIgnoreCase(rs.getString("Status"))) {
                         String result = rs.getString("Result_Text");
                         if (result != null) {
@@ -201,6 +203,46 @@ public class DoctorFormDAO {
                         ps.setInt(1, recordId);
                         setExamFields(ps, values, 2);
                         ps.executeUpdate();
+                    }
+                }
+                String surgeryServiceId = values.getOrDefault("surgeryServiceId", "");
+                if (!surgeryServiceId.isBlank()) {
+                    int serviceId = Integer.parseInt(surgeryServiceId);
+                    try (PreparedStatement ps = conn.prepareStatement(
+                            "SELECT Service_ID FROM Procedure_Order WITH (UPDLOCK, HOLDLOCK) " +
+                            "WHERE Record_ID = ? AND Referral_Notes IS NOT NULL AND Status <> 'Cancelled'")) {
+                        ps.setInt(1, recordId);
+                        try (ResultSet rs = ps.executeQuery()) {
+                            if (rs.next()) {
+                                if (rs.getInt(1) != serviceId) {
+                                    throw new IllegalStateException("Ca khám đã có chỉ định thủ thuật khác.");
+                                }
+                                surgeryServiceId = "";
+                            }
+                        }
+                    }
+                }
+                if (!surgeryServiceId.isBlank()) {
+                    int serviceId = Integer.parseInt(surgeryServiceId);
+                    int orderId;
+                    try (PreparedStatement ps = conn.prepareStatement(
+                            "INSERT INTO Procedure_Order (Record_ID, Service_ID, Status, Actual_Price, Referral_Notes) " +
+                            "OUTPUT INSERTED.Order_ID SELECT ?, Service_ID, 'Pending', Price, ? " +
+                            "FROM Service_Catalog WHERE Service_ID = ? " +
+                            "AND (Service_Code LIKE 'PT-%' OR Service_Code LIKE 'TP-%')")) {
+                        ps.setInt(1, recordId);
+                        ps.setNString(2, values.get("surgeryIndication"));
+                        ps.setInt(3, serviceId);
+                        try (ResultSet rs = ps.executeQuery()) {
+                            if (!rs.next()) throw new IllegalArgumentException("Dịch vụ phẫu thuật / thủ thuật không hợp lệ.");
+                            orderId = rs.getInt(1);
+                        }
+                    }
+                    try (PreparedStatement ps = conn.prepareStatement(
+                            "INSERT INTO Procedure_Payment_Request (Order_ID, Amount) " +
+                            "SELECT Order_ID, Actual_Price FROM Procedure_Order WHERE Order_ID = ?")) {
+                        ps.setInt(1, orderId);
+                        if (ps.executeUpdate() != 1) throw new IllegalStateException("Không tạo được yêu cầu thanh toán thủ thuật.");
                     }
                 }
                 conn.commit();
@@ -420,7 +462,11 @@ public class DoctorFormDAO {
         String authorized = "SELECT a.Appointment_ID FROM Appointment a WITH (UPDLOCK, HOLDLOCK) " +
                 "JOIN Work_Schedule ws ON ws.Schedule_ID = a.Schedule_ID " +
                 "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ? " +
-                "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL AND " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF;
+                "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL " +
+                "AND NOT EXISTS (SELECT 1 FROM Procedure_Order handoff " +
+                "JOIN Medical_Record handoff_record ON handoff_record.Record_ID=handoff.Record_ID " +
+                "WHERE handoff_record.Appointment_ID=a.Appointment_ID " +
+                "AND handoff.Status IN ('Pending','In_Progress'))";
         try (PreparedStatement ps = conn.prepareStatement(authorized)) {
             ps.setInt(1, appointmentId);
             ps.setInt(2, doctorId);

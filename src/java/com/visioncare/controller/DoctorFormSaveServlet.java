@@ -3,6 +3,7 @@ package com.visioncare.controller;
 import com.visioncare.dao.AppointmentDAO;
 import com.visioncare.dao.DoctorFormDAO;
 import com.visioncare.dao.MedicineDAO;
+import com.visioncare.dao.ProcedureOrderDAO;
 import com.visioncare.model.Appointment;
 import com.visioncare.model.Medicine;
 import com.visioncare.model.User;
@@ -30,10 +31,10 @@ public class DoctorFormSaveServlet extends HttpServlet {
     private static final Pattern MEDICINE_NAME =
             Pattern.compile("^medicines\\[(\\d+)\\]\\.medicineName$");
     private static final String[] EXAM_FIELDS = {
-        "chiefComplaint", "medicalHistory", "odUncorrected", "osUncorrected",
+        "chiefComplaint", "odUncorrected", "osUncorrected",
         "odCorrected", "osCorrected", "odIop", "osIop",
         "anteriorFindings", "posteriorFindings", "clinicalDiagnosis",
-        "examinationResult", "conclusion", "followUpDate", "surgeryIndication"
+        "examinationResult", "conclusion", "followUpDate", "surgeryIndication", "surgeryServiceId"
     };
     private static final String[] PRESCRIPTION_FIELDS = {
         "odSph", "odCyl", "odAxis", "odAdd", "osSph", "osCyl", "osAxis", "osAdd",
@@ -46,6 +47,7 @@ public class DoctorFormSaveServlet extends HttpServlet {
     private final AppointmentDAO appointmentDAO = new AppointmentDAO();
     private final DoctorFormDAO formDAO = new DoctorFormDAO();
     private final MedicineDAO medicineDAO = new MedicineDAO();
+    private final ProcedureOrderDAO procedureOrderDAO = new ProcedureOrderDAO();
 
     /** Check permissions, CSRF, and form data before saving an examination form or prescription. */
     @Override
@@ -90,6 +92,11 @@ public class DoctorFormSaveServlet extends HttpServlet {
             boolean prescription = request.getServletPath().contains("/prescription/");
             Map<String, String> values = values(request,
                     prescription ? PRESCRIPTION_FIELDS : EXAM_FIELDS);
+            if (!prescription) {
+                // This field is no longer on the form; retain previously recorded history.
+                values.put("medicalHistory", formDAO.loadExamination(appointmentId)
+                        .getOrDefault("medicalHistory", ""));
+            }
             List<Map<String, String>> medicines = prescription ? medicineRows(request) : new ArrayList<>();
             boolean includeMedication = prescription && "true".equals(request.getParameter("includeMedication"));
             boolean includeGlasses = prescription && "true".equals(request.getParameter("includeGlasses"));
@@ -103,6 +110,7 @@ public class DoctorFormSaveServlet extends HttpServlet {
                     values.put("previousDiagnoses", savedContext.getOrDefault("previousDiagnoses", ""));
                     values.put("staffNotes", savedContext.getOrDefault("staffNotes", ""));
                     values.put("surgeryStatus", savedContext.getOrDefault("surgeryStatus", ""));
+                    request.setAttribute("surgeryServices", procedureOrderDAO.getProcedureRequestServices());
                     request.setAttribute("printReady", formDAO.hasSavedExamination(appointmentId));
                 }
                 if (medicines.isEmpty()) medicines.add(new HashMap<>());

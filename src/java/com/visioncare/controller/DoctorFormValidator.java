@@ -30,6 +30,19 @@ public final class DoctorFormValidator {
         optional(values, "anteriorFindings", "Bán phần trước", 2000, errors);
         optional(values, "posteriorFindings", "Bán phần sau", 2000, errors);
         optional(values, "surgeryIndication", "Chỉ định phẫu thuật", 2000, errors);
+        String serviceId = values.getOrDefault("surgeryServiceId", "");
+        String indication = values.getOrDefault("surgeryIndication", "");
+        if (!serviceId.isBlank() || !indication.isBlank()) {
+            if (serviceId.isBlank()) errors.add("Chọn dịch vụ phẫu thuật / thủ thuật.");
+            else {
+                try {
+                    if (Integer.parseInt(serviceId) <= 0) throw new NumberFormatException();
+                } catch (NumberFormatException invalid) {
+                    errors.add("Dịch vụ phẫu thuật / thủ thuật không hợp lệ.");
+                }
+            }
+            if (indication.isBlank()) errors.add("Nhập nội dung chỉ định tiểu phẫu.");
+        }
         decimal(values, "odIop", "Nhãn áp OD", "5", "70", 1, errors);
         decimal(values, "osIop", "Nhãn áp OS", "5", "70", 1, errors);
         date(values, "followUpDate", "Ngày tái khám", errors);
