@@ -162,11 +162,11 @@
                     </div>
                     <div class="doctor-form-surgery">
                         <button class="doctor-form-button doctor-form-surgery-toggle" type="button" data-surgery-toggle aria-expanded="false" aria-controls="surgery-referral-fields">
-                            <i class="bi bi-clipboard2-plus" aria-hidden="true"></i> Chỉ định phẫu thuật
+                            <i class="bi bi-clipboard2-plus" aria-hidden="true"></i> Đề xuất tiểu phẫu
                         </button>
                         <div id="surgery-referral-fields" class="doctor-form-surgery-panel" data-surgery-panel hidden>
                             <div class="doctor-form-fields">
-                                <label class="doctor-form-field doctor-form-span"><span>Nội dung chỉ định phẫu thuật</span>
+                                <label class="doctor-form-field doctor-form-span"><span>Nội dung đề xuất tiểu phẫu</span>
                                     <textarea name="surgeryIndication" rows="3" maxlength="2000" placeholder="Ghi loại phẫu thuật, mắt cần can thiệp và các lưu ý..."><c:out value="${formValues.surgeryIndication}" /></textarea>
                                 </label>
                             </div>
