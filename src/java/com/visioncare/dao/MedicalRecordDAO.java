@@ -29,7 +29,15 @@ public class MedicalRecordDAO {
         return fetchMedicalRecord(id, accountId);
     }
 
+    public Map<String, Object> getMedicalRecordByAppointment(int appointmentId) throws Exception {
+        return fetchMedicalRecord(appointmentId, null, true);
+    }
+
     private Map<String, Object> fetchMedicalRecord(int id, Integer accountId) throws Exception {
+        return fetchMedicalRecord(id, accountId, false);
+    }
+
+    private Map<String, Object> fetchMedicalRecord(int id, Integer accountId, boolean appointmentOnly) throws Exception {
         Map<String, Object> record = null;
         StringBuilder sql = new StringBuilder(
             "SELECT m.Record_ID, m.Appointment_ID, m.Doctor_Employee_ID, " +
@@ -50,22 +58,22 @@ public class MedicalRecordDAO {
             "LEFT JOIN Employee_Profile doc ON m.Doctor_Employee_ID = doc.Employee_ID " +
             "LEFT JOIN Room r ON doc.Room_ID = r.Room_ID " +
             "LEFT JOIN Master_Invoice inv ON a.Appointment_ID = inv.Appointment_ID " +
-            "WHERE (m.Record_ID = ? OR m.Appointment_ID = ?) "
+            (appointmentOnly ? "WHERE m.Appointment_ID = ? " : "WHERE (m.Record_ID = ? OR m.Appointment_ID = ?) ")
         );
 
         if (accountId != null) {
             sql.append("AND p.Account_ID = ? ");
         }
-        sql.append("ORDER BY CASE WHEN m.Record_ID = ? THEN 0 ELSE 1 END");
+        sql.append(appointmentOnly ? "ORDER BY m.Record_ID DESC" : "ORDER BY CASE WHEN m.Record_ID = ? THEN 0 ELSE 1 END");
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             ps.setInt(1, id);
-            ps.setInt(2, id);
-            if (accountId != null) {
-                ps.setInt(3, accountId);
+            if (!appointmentOnly) {
+                ps.setInt(2, id);
+                if (accountId != null) ps.setInt(3, accountId);
+                ps.setInt(accountId == null ? 3 : 4, id);
             }
-            ps.setInt(accountId == null ? 3 : 4, id);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -184,7 +192,7 @@ public class MedicalRecordDAO {
 
     private void loadExaminationDetail(Connection conn, int recordId, Map<String, Object> record) throws Exception {
         String sql = "SELECT Chief_Complaint, Medical_History, OD_Uncorrected, OS_Uncorrected, " +
-                "OD_Corrected, OS_Corrected, OD_IOP, OS_IOP, Anterior_Findings, Posterior_Findings, Follow_Up_Date " +
+                "OD_Corrected, OS_Corrected, OD_IOP, OS_IOP, Anterior_Findings, Posterior_Findings, Follow_Up_Date, Surgery_Indication " +
                 "FROM Examination_Detail WHERE Record_ID = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, recordId);
@@ -200,6 +208,7 @@ public class MedicalRecordDAO {
                 record.put("osIop", rs.getString("OS_IOP"));
                 record.put("anteriorFindings", rs.getString("Anterior_Findings"));
                 record.put("posteriorFindings", rs.getString("Posterior_Findings"));
+                record.put("surgeryIndication", rs.getString("Surgery_Indication"));
                 java.sql.Date followUp = rs.getDate("Follow_Up_Date");
                 record.put("followUpDate", followUp == null ? null : dateOnlyFormat.format(followUp));
             }

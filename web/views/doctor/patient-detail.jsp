@@ -316,11 +316,11 @@
                             </div>
                         </div>
                         <div class="alert alert-info py-2 px-3 small rounded-3 mb-0" style="font-size: 12px;">
-                            <i class="bi bi-info-circle-fill me-1"></i> Sau khi hoàn tất, thông tin đơn thuốc và kết quả sẽ tự động đồng bộ sang màn hình của <strong>Lễ tân</strong> để bàn giao và hướng dẫn xuất viện.
+                            <i class="bi bi-info-circle-fill me-1"></i> Sau khi kết thúc khám lâm sàng, <strong>Lễ tân</strong> xem hồ sơ và xử lý phí thủ thuật nếu có chỉ định.
                         </div>
                         </c:when>
                         <c:otherwise>
-                            <p class="text-secondary small mb-0">Hãy lưu đầy đủ kết quả khám, chẩn đoán và kết luận trong phiếu khám, đồng thời xử lý các chỉ định còn chờ trước khi xác nhận hoàn thành.</p>
+                            <p class="text-secondary small mb-0">Hãy lưu đầy đủ kết quả khám, chẩn đoán và kết luận trong phiếu khám trước khi xác nhận hoàn thành.</p>
                         </c:otherwise>
                         </c:choose>
                     </div>

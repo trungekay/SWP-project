@@ -12,10 +12,12 @@ import java.security.MessageDigest;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-@WebServlet(name = "StaffInvoiceServlet", urlPatterns = {"/staff/invoices", "/staff/invoices/detail", "/staff/invoices/checkout", "/staff/invoices/export"})
+@WebServlet(name = "StaffInvoiceServlet", urlPatterns = {"/staff/invoices", "/staff/invoices/detail", "/staff/invoices/checkout", "/staff/invoices/export", "/staff/invoices/medical-record"})
 public class StaffInvoiceServlet extends HttpServlet {
 
+    private static final String MEDICAL_RECORD_PATH = "/staff/invoices/medical-record";
     private final StaffInvoiceDAO dao = new StaffInvoiceDAO();
+    private final ProcedurePaymentDAO procedurePayments = new ProcedurePaymentDAO();
 
     private User authorize(HttpServletRequest req, HttpServletResponse res) throws IOException {
         User u = (User) req.getSession().getAttribute("user");
@@ -40,7 +42,8 @@ public class StaffInvoiceServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        if (authorize(req, res) == null) {
+        User user = authorize(req, res);
+        if (user == null) {
             return;
         }
         res.setHeader("Cache-Control", "no-store");
@@ -51,6 +54,11 @@ public class StaffInvoiceServlet extends HttpServlet {
         }
         try {
             String path = req.getServletPath();
+            if (MEDICAL_RECORD_PATH.equals(path)) {
+                if (user.getRoleId() != 5) { res.sendError(403); return; }
+                renderMedicalRecord(req, res, Integer.parseInt(req.getParameter("appointmentId")));
+                return;
+            }
             if ("/staff/invoices".equals(path)) {
                 String search = req.getParameter("search"), status = req.getParameter("status"), date = req.getParameter("date");
                 req.setAttribute("rows", dao.list(search, status, date));
@@ -79,6 +87,11 @@ public class StaffInvoiceServlet extends HttpServlet {
                 return;
             }
             boolean checkout = path.endsWith("/checkout");
+            if (checkout && invoice.activePayment != null && invoice.activePayment.get("procedureOrderId") != null) {
+                res.sendRedirect(req.getContextPath() + "/staff/invoices?search=APT-" + invoice.appointmentId
+                        + (user.getRoleId() == 5 ? "&openRecord=" + invoice.appointmentId : ""));
+                return;
+            }
             if (checkout && !invoice.finalized && invoice.activePayment == null && !reviewed(session, invoice)) {
                 session.setAttribute("invoiceError", "Vui lòng đối chiếu và xác nhận các khoản thu trước khi thanh toán.");
                 res.sendRedirect(req.getContextPath() + "/staff/invoices/detail?id=" + id);
@@ -128,6 +141,11 @@ public class StaffInvoiceServlet extends HttpServlet {
             }
             return;
         }
+        if (MEDICAL_RECORD_PATH.equals(req.getServletPath())) {
+            if (user.getRoleId() != 5) { res.sendError(403); return; }
+            handleProcedurePayment(req, res, user, action);
+            return;
+        }
         int id;
         try {
             id = Integer.parseInt(req.getParameter("invoiceId"));
@@ -175,6 +193,9 @@ public class StaffInvoiceServlet extends HttpServlet {
                 }
                 StaffInvoice invoice = dao.get(id);
                 Map<String, Object> pay = invoice.activePayment;
+                if (pay != null && pay.get("procedureOrderId") != null) {
+                    throw new IllegalStateException("Mở hồ sơ khám để theo dõi giao dịch QR của thủ thuật.");
+                }
                 if (pay == null) {
                     pay = dao.reserveQr(id, employee, expected);
                 } else if (!"Creating".equals(pay.get("status"))) {
@@ -209,5 +230,100 @@ public class StaffInvoiceServlet extends HttpServlet {
             log("Staff invoice operation did not finish", e);
         }
         res.sendRedirect(req.getContextPath() + destination + "?id=" + id);
+    }
+
+    private void renderMedicalRecord(HttpServletRequest req, HttpServletResponse res, int appointmentId)
+            throws Exception {
+        Map<String, Object> record = new MedicalRecordDAO().getMedicalRecordByAppointment(appointmentId);
+        if (record == null) { res.sendError(404, "Lượt khám chưa có hồ sơ."); return; }
+        req.setAttribute("record", record);
+        List<Map<String, Object>> referrals = procedurePayments.referralsForRecord((Integer) record.get("recordId"));
+        req.setAttribute("referrals", referrals);
+        Integer invoiceId = (Integer) record.get("invoiceId");
+        if (invoiceId != null && !referrals.isEmpty()) {
+            StaffInvoice invoice = dao.get(invoiceId);
+            req.setAttribute("canCollectProcedure", invoice.isClinicalComplete()
+                    && !invoice.finalized && !invoice.isBlocked());
+            req.setAttribute("activePayment", invoice.activePayment);
+            req.setAttribute("specialists", procedurePayments.activeSpecialists());
+        }
+        req.getRequestDispatcher("/WEB-INF/views/staff/invoice-medical-record.jsp").forward(req, res);
+    }
+
+    private void handleProcedurePayment(HttpServletRequest req, HttpServletResponse res, User user, String action)
+            throws IOException {
+        int appointmentId;
+        try {
+            appointmentId = Integer.parseInt(req.getParameter("appointmentId"));
+        } catch (NumberFormatException e) {
+            res.sendError(400);
+            return;
+        }
+        if ("checkProcedureQr".equals(action)) {
+            try {
+                int invoiceId = dao.invoiceForAppointment(appointmentId);
+                long orderCode = Long.parseLong(req.getParameter("orderCode"));
+                Map<String, Object> payment = dao.payment(orderCode);
+                if (payment == null || payment.get("procedureOrderId") == null) {
+                    InvoicePollingResponse.send(res, 400, "InvalidRequest", "Giao dịch thủ thuật không hợp lệ.");
+                    return;
+                }
+                String status = StaffCheckoutPayments.refresh(orderCode, invoiceId);
+                InvoicePollingResponse.send(res, 200, status, "Paid".equals(status)
+                        ? "Đã thanh toán chi phí thủ thuật." : "Đang chờ xác nhận thanh toán.");
+            } catch (Exception e) {
+                InvoicePollingResponse.send(res, 409, "Retry", "Chưa xác minh được giao dịch. Hệ thống sẽ tự thử lại.");
+            }
+            return;
+        }
+        try {
+            int invoiceId = dao.invoiceForAppointment(appointmentId);
+            int orderId = Integer.parseInt(req.getParameter("procedureOrderId"));
+            int specialist = Integer.parseInt(req.getParameter("specialistId"));
+            long expected = Long.parseLong(req.getParameter("amount"));
+            int employeeId = employee(user);
+            if ("procedureCash".equals(action)) {
+                if (!"yes".equals(req.getParameter("cashReceived"))) {
+                    throw new IllegalArgumentException("Vui lòng xác nhận đã đối chiếu và nhận đủ tiền.");
+                }
+                dao.payProcedureCash(invoiceId, orderId, specialist, employeeId, expected);
+                req.setAttribute("procedureMessage", "Đã ghi nhận thanh toán và phân công bác sĩ thực hiện thủ thuật.");
+            } else if ("procedureQr".equals(action)) {
+                if (PayOSUtil.getClientId().isEmpty() || PayOSUtil.getApiKey().isEmpty() || PayOSUtil.getChecksumKey().isEmpty()) {
+                    throw new IllegalStateException("Chưa cấu hình PayOS. Vui lòng chọn tiền mặt.");
+                }
+                Map<String, Object> pay = dao.reserveProcedureQr(invoiceId, orderId, specialist, employeeId, expected);
+                long order = (Long) pay.get("orderCode");
+                String base = req.getRequestURL().toString().replace(req.getServletPath(), "");
+                String back = base + "/staff/invoices?search=APT-" + appointmentId + "&openRecord=" + appointmentId;
+                PayOSUtil.PaymentLinkResult result = PayOSUtil.createPaymentLink(order, Math.toIntExact(expected),
+                        "VCPT" + orderId, back, back);
+                if (!result.success || result.checkoutUrl == null || result.qrCode == null || result.qrCode.isBlank()) {
+                    throw new IllegalStateException("Chưa tạo được QR. Hãy thử lại với cùng yêu cầu thanh toán.");
+                }
+                URI url = URI.create(result.checkoutUrl);
+                if (!"https".equalsIgnoreCase(url.getScheme()) || !"pay.payos.vn".equalsIgnoreCase(url.getHost())) {
+                    throw new IllegalStateException("Địa chỉ thanh toán không hợp lệ.");
+                }
+                dao.qrCreated(order, result.checkoutUrl, result.qrCode);
+            } else {
+                res.sendError(400);
+                return;
+            }
+        } catch (NumberFormatException e) {
+            req.setAttribute("procedureError", "Vui lòng kiểm tra thông tin thanh toán và bác sĩ thực hiện.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            req.setAttribute("procedureError", e.getMessage());
+        } catch (Exception e) {
+            log("Cannot collect procedure charge", e);
+            req.setAttribute("procedureError", "Chưa ghi nhận được thanh toán. Vui lòng kiểm tra trạng thái trước khi thử lại.");
+        }
+        try {
+            res.setHeader("Cache-Control", "no-store");
+            renderMedicalRecord(req, res, appointmentId);
+        } catch (Exception e) {
+            log("Cannot refresh procedure payment modal", e);
+            res.sendError(500);
+        }
     }
 }

@@ -9,7 +9,9 @@ public final class InvoicePollingResponse {
     private InvoicePollingResponse() {}
     public static boolean isRequested(HttpServletRequest request) {
         String accept = request.getHeader("Accept");
-        return (request.getContextPath() + "/staff/invoices/checkout").equals(request.getRequestURI())
+        String uri = request.getRequestURI();
+        return ((request.getContextPath() + "/staff/invoices/checkout").equals(uri)
+                || (request.getContextPath() + "/staff/invoices/medical-record").equals(uri))
                 && accept != null && accept.contains("application/json");
     }
     public static void send(HttpServletResponse response, int code, String status, String message) throws IOException {

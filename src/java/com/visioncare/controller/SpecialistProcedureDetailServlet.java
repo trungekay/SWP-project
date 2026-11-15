@@ -1,7 +1,9 @@
 package com.visioncare.controller;
 
 import com.visioncare.dao.DoctorFormDAO;
+import com.visioncare.dao.MedicineDAO;
 import com.visioncare.dao.ProcedureOrderDAO;
+import com.visioncare.dao.SpecialistCompletionDAO;
 import com.visioncare.model.MedicalRecord;
 import com.visioncare.model.ProcedureOrder;
 import com.visioncare.model.User;
@@ -12,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,13 +29,15 @@ import java.util.regex.Pattern;
  * - Hiển thị Read-only thông tin chẩn đoán lâm sàng & kết quả đo khám từ Bác sĩ
  * - Lập Biên bản Thủ thuật (Mắt can thiệp, Phương pháp vô cảm, Diễn biến kỹ
  * thuật, Tình trạng sau mổ, Lời dặn hậu phẫu)
- * - Hoàn tất thủ thuật và trả kết quả về ca khám cho Bác sĩ
+ * - Hoàn tất thủ thuật và lưu thuốc hậu phẫu nếu có
  */
 @WebServlet(name = "SpecialistProcedureDetailServlet", urlPatterns = { "/specialist/procedure-detail" })
 public class SpecialistProcedureDetailServlet extends HttpServlet {
 
     private final ProcedureOrderDAO procedureOrderDAO = new ProcedureOrderDAO();
-    private final com.visioncare.dao.SpecialistCompletionDAO completionDAO = new com.visioncare.dao.SpecialistCompletionDAO();
+    private final SpecialistCompletionDAO completionDAO = new SpecialistCompletionDAO();
+    private final MedicineDAO medicineDAO = new MedicineDAO();
+    private static final int MEDICATION_ROWS = 5;
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -116,10 +121,15 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
             String readOnlyReason = procedureReadOnlyReason(currentUser, order, record);
             if(session.getAttribute("procedureCsrf")==null)
                 session.setAttribute("procedureCsrf",java.util.UUID.randomUUID().toString());
-            request.setAttribute("canAcceptProcedure",currentUser.getRoleId()==4 && currentUser.getActorId()>0
-                    && order.getSpecialistId()==null && "Pending".equals(order.getStatus()) && record!=null
-                    && "In_Progress".equals(record.getAppointmentStatus()) && record.getCheckinTime()!=null);
+            request.setAttribute("canAcceptProcedure", currentUser.getRoleId() == 4 && currentUser.getActorId() > 0
+                    && !order.isAccepted() && ("Pending".equals(order.getStatus()) || "In_Progress".equals(order.getStatus()))
+                    && (order.getSpecialistId() == null || order.getSpecialistId() == currentUser.getActorId())
+                    && record != null && eligibleAppointment(record, order) && record.getCheckinTime() != null);
             request.setAttribute("canEditProcedure", readOnlyReason.isEmpty());
+            if (readOnlyReason.isEmpty() && "Completed".equals(record.getAppointmentStatus())) {
+                request.setAttribute("medicationRows", MEDICATION_ROWS);
+                request.setAttribute("medicineCatalog", medicineDAO.listPrescribable());
+            }
             request.setAttribute("procedureReadOnlyReason", readOnlyReason);
             request.setAttribute("order", order);
             request.setAttribute("record", record);
@@ -143,17 +153,24 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
         if (user.getRoleId() != 4 || user.getActorId() <= 0)
             return "Chỉ bác sĩ phẫu thuật phụ trách được chỉnh sửa biên bản.";
         if (record == null) return "Không tải được thông tin ca khám. Vui lòng tải lại trang.";
-        if ("Completed".equals(record.getAppointmentStatus()))
-            return "Ca khám đã kết thúc. Biên bản chỉ để xem và in.";
+        if ("Completed".equals(order.getStatus()))
+            return "Thủ thuật đã hoàn tất. Biên bản chỉ để xem và in.";
         if ("Canceled".equals(record.getAppointmentStatus()) || "Cancelled".equals(order.getStatus()))
             return "Ca khám hoặc chỉ định đã bị hủy. Biên bản chỉ để xem và in.";
-        if (!"In_Progress".equals(record.getAppointmentStatus()))
-            return "Ca chưa được tiếp nhận hoặc chưa đủ điều kiện thực hiện thủ thuật.";
+        if (!eligibleAppointment(record, order))
+            return "Ca chưa đủ điều kiện thực hiện thủ thuật.";
         if(record.getCheckinTime()==null) return "Bệnh nhân chưa check-in.";
-        if(order.getSpecialistId()==null) return "Nhận ca trước khi nhập biên bản thủ thuật.";
-        if (order.getSpecialistId() != null && order.getSpecialistId().intValue() != user.getActorId())
+        if (order.getSpecialistId() != null && order.getSpecialistId() != user.getActorId())
             return "Ca được phân công cho bác sĩ phẫu thuật khác. Biên bản chỉ để xem và in.";
+        if (!order.isAccepted()) return "Nhận ca trước khi nhập biên bản thủ thuật.";
         return "";
+    }
+
+    private static boolean eligibleAppointment(MedicalRecord record, ProcedureOrder order) {
+        if (order.getPaymentStatus() != null) {
+            return "Completed".equals(record.getAppointmentStatus()) && "Paid".equals(order.getPaymentStatus());
+        }
+        return "In_Progress".equals(record.getAppointmentStatus()) || "Completed".equals(record.getAppointmentStatus());
     }
 
     @Override
@@ -196,7 +213,7 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
 
             // Fallback action nếu form submit qua phím Enter hoặc nút không gửi name
             if (action == null || action.trim().isEmpty()) {
-                action = "Completed".equalsIgnoreCase(order.getStatus()) ? "updateResults" : "complete";
+                action = "complete";
             }
 
             // Lấy ID kỹ thuật viên (Employee_ID)
@@ -223,9 +240,8 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
             // Kiểm tra tính hợp lệ khi bấm "Hoàn thành thủ thuật"
             String procedureOutcome = nvl(request.getParameter("procedure_outcome"));
 
-            boolean closeVisit = "completeAndClose".equalsIgnoreCase(action) || "complete".equalsIgnoreCase(action)
-                    || "updateResults".equalsIgnoreCase(action);
-            if ("complete".equalsIgnoreCase(action) || "updateResults".equalsIgnoreCase(action) || closeVisit) {
+            boolean complete = "complete".equalsIgnoreCase(action);
+            if (complete) {
                 if (procedureOutcome.isEmpty()) {
                     preserveFormInputs(request, session);
                     session.setAttribute("errorMessage",
@@ -238,33 +254,56 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
             // Đóng gói biên bản thủ thuật
             String serializedResult = buildSerializedProtocol(request, order, currentUser.getFullName());
             String conclusion = nvl(request.getParameter("conclusion"));
-            if (("complete".equalsIgnoreCase(action) || closeVisit || "updateResults".equalsIgnoreCase(action))
-                    && conclusion.isEmpty()) {
+            if (complete && conclusion.isEmpty()) {
                 preserveFormInputs(request, session);
                 session.setAttribute("errorMessage", "Vui lòng nhập kết luận thủ thuật trước khi hoàn tất.");
                 response.sendRedirect(request.getContextPath() + "/specialist/procedure-detail?orderId=" + orderId);
                 return;
             }
-            if ("saveDraft".equalsIgnoreCase(action) || "complete".equalsIgnoreCase(action)
-                    || "updateResults".equalsIgnoreCase(action) || closeVisit) {
-                String nextStatus = "saveDraft".equalsIgnoreCase(action) ? "Pending" : "Completed";
-                boolean closed=completionDAO.save(orderId, specialistEmployeeId, serializedResult, conclusion, nextStatus, closeVisit);
-                session.setAttribute("successMessage", closed
-                        ? "Đã hoàn tất thủ thuật và đóng ca khám thành công."
-                        : "saveDraft".equalsIgnoreCase(action) ? "Đã lưu nháp biên bản thủ thuật."
-                        : "updateResults".equalsIgnoreCase(action) ? "Cập nhật biên bản thủ thuật thành công."
-                        : "Đã hoàn tất thủ thuật. Ca còn thủ thuật khác cần xử lý trước khi kết thúc.");
-                response.sendRedirect(request.getContextPath() + "/specialist/procedure-detail?orderId=" + orderId);
-
-            } else {
-                response.sendRedirect(request.getContextPath() + "/specialist/procedure-detail?orderId=" + orderId);
+            if (complete || "saveDraft".equalsIgnoreCase(action)) {
+                List<SpecialistCompletionDAO.Medication> medication;
+                try {
+                    medication = readMedication(request);
+                    completionDAO.save(orderId, specialistEmployeeId, serializedResult, conclusion,
+                            complete ? "Completed" : "Pending", medication);
+                } catch (IllegalArgumentException invalid) {
+                    preserveFormInputs(request, session);
+                    session.setAttribute("errorMessage", invalid.getMessage());
+                    response.sendRedirect(request.getContextPath() + "/specialist/procedure-detail?orderId=" + orderId);
+                    return;
+                }
+                session.setAttribute("successMessage", complete
+                        ? (medication.isEmpty() ? "Đã hoàn tất thủ thuật." : "Đã hoàn tất thủ thuật và lưu thuốc hậu phẫu.")
+                        : "Đã lưu nháp biên bản thủ thuật.");
             }
+            response.sendRedirect(request.getContextPath() + "/specialist/procedure-detail?orderId=" + orderId);
 
         } catch (Exception e) {
             e.printStackTrace();
             session.setAttribute("errorMessage", "Có lỗi khi xử lý thủ thuật: " + e.getMessage());
             response.sendRedirect(request.getContextPath() + "/specialist/waiting-list");
         }
+    }
+
+    private List<SpecialistCompletionDAO.Medication> readMedication(HttpServletRequest request) {
+        List<SpecialistCompletionDAO.Medication> items = new ArrayList<>();
+        for (int row = 1; row <= MEDICATION_ROWS; row++) {
+            String supply = nvl(request.getParameter("postMedicine" + row));
+            String quantity = nvl(request.getParameter("postQuantity" + row));
+            String instructions = nvl(request.getParameter("postInstructions" + row));
+            if (supply.isBlank() && quantity.isBlank() && instructions.isBlank()) continue;
+            try {
+                int supplyId = Integer.parseInt(supply);
+                int count = Integer.parseInt(quantity);
+                if (supplyId <= 0 || count < 1 || count > 999 || instructions.isBlank() || instructions.length() > 1000) {
+                    throw new IllegalArgumentException("Chọn thuốc hậu phẫu, nhập số lượng từ 1 đến 999 và cách dùng.");
+                }
+                items.add(new SpecialistCompletionDAO.Medication(supplyId, count, instructions));
+            } catch (NumberFormatException invalid) {
+                throw new IllegalArgumentException("Chọn thuốc hậu phẫu, nhập số lượng từ 1 đến 999 và cách dùng.");
+            }
+        }
+        return items;
     }
 
     /**
@@ -428,7 +467,13 @@ public class SpecialistProcedureDetailServlet extends HttpServlet {
         map.put("procedure_eye", nvl(request.getParameter("procedure_eye")));
         map.put("procedure_outcome", nvl(request.getParameter("procedure_outcome")));
         map.put("post_care", nvl(request.getParameter("post_care")));
-        map.put("conclusion", nvl(request.getParameter("conclusion")));
+        map.put("ktv_conclusion", nvl(request.getParameter("conclusion")));
+        for (int row = 1; row <= MEDICATION_ROWS; row++) {
+            String supply = nvl(request.getParameter("postMedicine" + row));
+            map.put("postMedicine" + row, supply.matches("[0-9]{1,10}") ? supply : "0");
+            map.put("postQuantity" + row, nvl(request.getParameter("postQuantity" + row)));
+            map.put("postInstructions" + row, nvl(request.getParameter("postInstructions" + row)));
+        }
         session.setAttribute("tempProtocolData:"+request.getParameter("orderId"), map);
     }
 

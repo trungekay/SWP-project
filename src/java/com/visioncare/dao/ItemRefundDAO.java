@@ -19,7 +19,9 @@ public class ItemRefundDAO {
   try(PreparedStatement p=c.prepareStatement("SELECT COALESCE(SUM(Refund_Amount),0) FROM Refund_Request WHERE Invoice_ID=? AND Status='Completed'")){p.setInt(1,invoice);try(ResultSet r=p.executeQuery()){r.next();return r.getLong(1);}}
  }
  private static Connection borrowed(Connection c){return (Connection)java.lang.reflect.Proxy.newProxyInstance(Connection.class.getClassLoader(),new Class[]{Connection.class},(o,m,a)->{if(m.getName().equals("close"))return null;try{return m.invoke(c,a);}catch(java.lang.reflect.InvocationTargetException e){throw e.getCause();}});}
- private static String procedureUnused="po.Status IN ('Pending','Cancelled') AND po.Completed_At IS NULL AND NULLIF(LTRIM(RTRIM(po.Result_Text)),N'') IS NULL AND NULLIF(LTRIM(RTRIM(po.Result_Conclusion)),N'') IS NULL";
+ private static final String procedureUnused="po.Status IN ('Pending','Cancelled') AND po.Completed_At IS NULL "
+  +"AND NULLIF(LTRIM(RTRIM(po.Result_Text)),N'') IS NULL "
+  +"AND (po.Status='Cancelled' OR NULLIF(LTRIM(RTRIM(po.Result_Conclusion)),N'') IS NULL)";
  public List<Map<String,Object>> candidates(int invoice)throws Exception {try(Connection c=connections.open()){return candidates(c,invoice,0);}}
  private Map<String,Object> candidate(String key,String name,String type,int quantity,long price){Map<String,Object> m=new HashMap<>();m.put("key",key);m.put("name",name);m.put("type",type);m.put("quantity",quantity);m.put("unitPrice",price);return m;}
  List<Map<String,Object>> candidates(Connection c,int invoice,int excludeRefund)throws SQLException {

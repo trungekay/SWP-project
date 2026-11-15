@@ -32,14 +32,40 @@
                     <div class="invoice-card table-responsive"><table class="table invoice-table"><thead><tr><th>Mã lịch hẹn</th><th>Bệnh nhân</th><th>Ngày khám</th><th>Hóa đơn tổng</th><th>Trạng thái ghi nhận</th><th class="text-end">Thao tác</th></tr></thead><tbody>
                             <c:forEach var="row" items="${rows}"><tr><td><span class="invoice-code">#APT-${row.appointmentId}</span></td><td><strong><c:out value="${row.patient}" /></strong><div class="small text-muted"><c:out value="${row.phone}" /></div></td><td><c:out value="${row.date}" /></td><td><c:choose><c:when test="${row.invoiceId > 0}">#INV-<fmt:formatNumber value="${row.invoiceId}" pattern="00000" groupingUsed="false" /></c:when><c:otherwise>Chưa có hóa đơn</c:otherwise></c:choose></td>
                                     <td><span class="invoice-pill invoice-status-${row.progressColor}"><c:out value="${row.progressLabel}" /></span></td>
-                                    <td class="text-end"><div class="invoice-actions"><c:if test="${row.invoiceId > 0}">
+                                    <td class="text-end"><div class="invoice-actions">
+                                            <c:if test="${sessionScope.user.roleId == 5 && row.hasMedicalRecord}">
+                                                <button type="button" class="btn btn-sm btn-outline-teal" data-invoice-record="${row.appointmentId}"><i class="bi bi-folder2-open me-1"></i>Xem hồ sơ khám</button>
+                                            </c:if>
+                                            <c:if test="${row.invoiceId > 0}">
                                                 <c:choose>
                                                     <c:when test="${row.refundPending}"><a class="btn btn-sm btn-teal" href="${pageContext.request.contextPath}/staff/invoices/detail?id=${row.invoiceId}#refund-settlement"><i class="bi bi-receipt me-1"></i>Xử lý hoàn tiền</a></c:when>
                                                     <c:when test="${row.canOpenCheckout}"><a class="btn btn-sm btn-teal" href="${pageContext.request.contextPath}/staff/invoices/detail?id=${row.invoiceId}"><i class="bi bi-credit-card me-1"></i>Thanh toán</a></c:when>
-                                                    <c:when test="${row.canReconcileProcedure}"><a class="btn btn-sm btn-outline-teal" href="${pageContext.request.contextPath}/staff/invoices/detail?id=${row.invoiceId}"><i class="bi bi-list-check me-1"></i>Đối chiếu dịch vụ</a></c:when>
                                                     <c:when test="${row.finalized}"><a class="btn btn-sm btn-outline-teal" href="${pageContext.request.contextPath}/staff/invoices/detail?id=${row.invoiceId}"><i class="bi bi-receipt me-1"></i>Xem hóa đơn</a></c:when>
                                                 </c:choose>
                                                 <c:if test="${row.progress == 'Completed'}"><a class="btn btn-sm btn-outline-teal" href="${pageContext.request.contextPath}/staff/invoices/export?id=${row.invoiceId}"><i class="bi bi-printer me-1"></i>Xuất hóa đơn</a></c:if>
                                             </c:if></div></td></tr></c:forEach>
                             <c:if test="${empty rows}"><tr><td colspan="6" class="text-center text-muted py-5"><i class="bi bi-search fs-2 d-block mb-2"></i>Không tìm thấy lịch hẹn phù hợp.</td></tr></c:if>
-                        </tbody></table></div></div></main><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script></body></html>
+                        </tbody></table></div></div></main>
+        <c:if test="${sessionScope.user.roleId == 5}">
+            <div class="modal fade" id="invoiceMedicalRecord" tabindex="-1" aria-labelledby="invoiceMedicalRecordTitle" aria-hidden="true"
+                 data-url="${pageContext.request.contextPath}/staff/invoices/medical-record"
+                 data-loading="Đang tải hồ sơ khám…"
+                 data-load-error="Không tải được hồ sơ hoặc trạng thái thanh toán. Hãy mở lại hồ sơ để kiểm tra."
+                 data-paid="Đã ghi nhận thanh toán chi phí thủ thuật và phân công bác sĩ thực hiện."
+                 data-qr-cancelled="Giao dịch QR đã hủy hoặc hết hạn. Có thể chọn lại phương thức thanh toán."
+                 data-session-expired="Phiên thao tác đã hết hạn. Hãy đăng nhập hoặc tải lại trang.">
+                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2 class="modal-title fs-5" id="invoiceMedicalRecordTitle">Hồ sơ khám</h2>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                        </div>
+                        <div class="modal-body" aria-live="polite"></div>
+                    </div>
+                </div>
+            </div>
+        </c:if>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+        <script src="${pageContext.request.contextPath}/assets/js/staff-invoice-medical-record.js?v=2"></script>
+        </body></html>
