@@ -164,7 +164,7 @@
                             <div class="doctor-form-fields">
                                 <label class="doctor-form-field doctor-form-span"><span>Dịch vụ phẫu thuật / thủ thuật <em>*</em></span>
                                     <select name="surgeryServiceId" data-surgery-service>
-                                        <option value="">Chọn dịch vụ cần chỉ định</option>
+                                        <option value="" hidden>Chọn dịch vụ cần chỉ định</option>
                                         <c:forEach var="service" items="${surgeryServices}">
                                             <option value="<c:out value='${service.id}' />" ${formValues.surgeryServiceId eq service.id ? 'selected' : ''}><c:out value="${service.name}" /> — <fmt:formatNumber value="${service.price}" type="number" maxFractionDigits="0" /> đ</option>
                                         </c:forEach>
