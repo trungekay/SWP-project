@@ -472,11 +472,6 @@ public class WorkScheduleDAO {
                            "  ALTER TABLE [dbo].[Work_Schedule] WITH CHECK ADD CONSTRAINT [CHK_WS_Has_Employee] " +
                            "  CHECK (([Doctor_Employee_ID] IS NOT NULL OR [Specialist_Employee_ID] IS NOT NULL OR [Staff_Employee_ID] IS NOT NULL)); " +
                            "END");
-                // Dọn dẹp sạch toàn bộ các ca demo tự sinh chưa có người đặt để chỉ giữ lại ca khám do Bác sĩ thực sự đăng ký
-                st.execute("DELETE ws FROM Work_Schedule ws " +
-                           "WHERE ws.Status = 'Available' " +
-                           "  AND ws.Work_Date >= CAST(GETDATE() AS DATE) " +
-                           "  AND NOT EXISTS (SELECT 1 FROM Appointment a WHERE a.Schedule_ID = ws.Schedule_ID)");
             } catch (Exception ignored) {}
         } catch (Exception e) {
             System.err.println("ensureRealisticSchedules note: " + e.getMessage());

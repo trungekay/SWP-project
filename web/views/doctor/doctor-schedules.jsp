@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
   <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
     <%-- Include Header --%>
@@ -103,26 +103,16 @@
             <div class="filter-section">
               <form class="row g-3 align-items-end" method="get"
                 action="${pageContext.request.contextPath}/doctor-schedules">
-                <div class="col-md-4">
+                <div class="col-md-6">
                   <label for="specialty" class="form-label fw-bold">Dịch vụ / Khoa</label>
                   <select id="specialty" name="specialty" class="form-select">
                     <option value="all" ${selectedSpecialty=='all' ? 'selected' : '' }>Tất cả Dịch vụ / Khoa</option>
                     <c:forEach var="dept" items="${departments}">
-                      <option value="${dept.key}" ${selectedSpecialty==dept.key ? 'selected' : '' }>${dept.name}
-                      </option>
+                      <option value="${dept.key}" ${selectedSpecialty==dept.key ? 'selected' : '' }>${dept.name}</option>
                     </c:forEach>
                   </select>
                 </div>
-                <div class="col-md-3">
-                  <label for="title" class="form-label fw-bold">Chức danh</label>
-                  <select id="title" name="title" class="form-select">
-                    <option value="all" ${param.title=='all' ? 'selected' : '' }>Tất cả chức danh</option>
-                    <option value="ts" ${param.title=='ts' ? 'selected' : '' }>Tiến sĩ</option>
-                    <option value="ths" ${param.title=='ths' ? 'selected' : '' }>Thạc sĩ</option>
-                    <option value="bs" ${param.title=='bs' ? 'selected' : '' }>Bác sĩ</option>
-                  </select>
-                </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                   <label for="date" class="form-label fw-bold">Ngày khám</label>
                   <input type="date" class="form-control" id="date" name="date" value="${selectedDate}" required>
                 </div>
