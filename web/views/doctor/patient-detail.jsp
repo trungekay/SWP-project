@@ -281,7 +281,7 @@
         </div>
     </main>
 
-    <!-- Modal xác nhận hoàn tất ca khám cho Bác sĩ -->
+    <!-- Confirmation dialog for the doctor to complete the examination -->
     <c:if test="${appointment.status eq 'In_Progress'}">
         <div class="modal fade" id="doctorCompleteModal" tabindex="-1" aria-labelledby="doctorCompleteModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
@@ -351,7 +351,7 @@
 
     <script src="${pageContext.request.contextPath}/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Mở hộp thoại xác nhận hoàn tất ca khám từ trang chi tiết bệnh nhân.
+        // Open the examination completion dialog from the patient details page.
         function openDoctorCompleteModal() {
             var modalEl = document.getElementById('doctorCompleteModal');
             if (modalEl) {

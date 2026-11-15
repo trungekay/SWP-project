@@ -30,7 +30,7 @@ public class DoctorFormsServlet extends HttpServlet {
     private final DoctorFormDAO formDAO = new DoctorFormDAO();
     private final MedicineDAO medicineDAO = new MedicineDAO();
 
-    /** Tải phiếu khám hoặc đơn đã lưu; chỉ cho in phiếu khám khi dữ liệu bắt buộc đầy đủ. */
+    /** Load the saved examination form or prescription; allow printing only when required examination data is complete. */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {

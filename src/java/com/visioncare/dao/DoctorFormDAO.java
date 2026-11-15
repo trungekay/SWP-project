@@ -33,7 +33,7 @@ public class DoctorFormDAO {
         "OS_SPH", "OS_CYL", "OS_AXIS", "OS_ADD", "PD", "Lens_Type", "Glasses_Notes"
     };
 
-    /** Tải phiếu khám, tiền sử gần nhất và kết quả chỉ định để hiển thị cho bác sĩ. */
+    /** Load the examination form, recent history, and procedure results for the doctor. */
     public Map<String, String> loadExamination(int appointmentId) throws Exception {
         Map<String, String> values = new HashMap<>();
         String sql = "SELECT m.Clinical_Diagnosis, m.Staff_Notes, m.examination_result, m.conclusion, e.* " +
@@ -95,7 +95,7 @@ public class DoctorFormDAO {
         return values;
     }
 
-    /** Xác định phiếu khám đã có chẩn đoán, kết quả, kết luận và chi tiết khám. */
+    /** Check whether the examination form has a diagnosis, results, conclusion, and examination details. */
     public boolean hasSavedExamination(int appointmentId) throws Exception {
         String sql = "SELECT 1 FROM Medical_Record m "
                 + "JOIN Examination_Detail e ON e.Record_ID = m.Record_ID "
@@ -112,7 +112,7 @@ public class DoctorFormDAO {
         }
     }
 
-    /** Lấy tiền sử từ lần khám hoàn tất gần nhất trước ca hiện tại. */
+    /** Get the history from the most recent completed examination before this appointment. */
     private String latestPatientHistory(int appointmentId) throws Exception {
         String sql = "SELECT TOP 1 e.Medical_History FROM Appointment currentAppt " +
                 "JOIN Work_Schedule currentWs ON currentWs.Schedule_ID = currentAppt.Schedule_ID " +
@@ -136,7 +136,7 @@ public class DoctorFormDAO {
         }
     }
 
-    /** Tóm tắt tối đa năm chẩn đoán trước của bệnh nhân. */
+    /** Summarize up to five previous patient diagnoses. */
     private String previousDiagnoses(int appointmentId) throws Exception {
         String sql = "SELECT TOP 5 CONVERT(VARCHAR(10), previousWs.Work_Date, 103) AS VisitDate, " +
                 "m.Clinical_Diagnosis FROM Appointment currentAppt " +
@@ -162,7 +162,7 @@ public class DoctorFormDAO {
         return String.join("\n", lines);
     }
 
-    /** Lưu bệnh án và chi tiết phiếu khám trong cùng một giao dịch. */
+    /** Save the medical record and examination details in one transaction. */
     public void saveExamination(int appointmentId, int doctorId, Map<String, String> values) throws Exception {
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
@@ -211,7 +211,7 @@ public class DoctorFormDAO {
         }
     }
 
-    /** Tải đơn thuốc, từng dòng thuốc và thông số kính đã lưu. */
+    /** Load the saved prescription, medication lines, and eyeglass parameters. */
     public PrescriptionSnapshot loadPrescription(int appointmentId) throws Exception {
         Map<String, String> values = new HashMap<>();
         List<Map<String, String>> medicines = new ArrayList<>();
@@ -290,7 +290,7 @@ public class DoctorFormDAO {
         return new PrescriptionSnapshot(values, medicines, hasPrescription && !medicines.isEmpty(), hasGlasses);
     }
 
-    /** Thay các dòng thuốc và cập nhật đơn kính trong một giao dịch có khóa ca khám. */
+    /** Replace medication lines and update the eyeglass prescription in a transaction that locks the appointment. */
     public void savePrescription(int appointmentId, int doctorId, Map<String, String> values,
                                  List<Map<String, String>> medicines, boolean includeMedication,
                                  boolean includeGlasses) throws Exception {
@@ -415,7 +415,7 @@ public class DoctorFormDAO {
         }
     }
 
-    /** Khóa ca đang khám, xác nhận bác sĩ phụ trách và lấy hoặc tạo bệnh án. */
+    /** Lock the active appointment, verify its assigned doctor, and get or create the medical record. */
     private int lockedRecordId(Connection conn, int appointmentId, int doctorId) throws Exception {
         String authorized = "SELECT a.Appointment_ID FROM Appointment a WITH (UPDLOCK, HOLDLOCK) " +
                 "JOIN Work_Schedule ws ON ws.Schedule_ID = a.Schedule_ID " +
@@ -450,7 +450,7 @@ public class DoctorFormDAO {
         }
     }
 
-    /** Tìm bệnh án của ca khám dưới khóa giao dịch hiện tại. */
+    /** Find the appointment's medical record while holding the current transaction lock. */
     private int findRecordId(Connection conn, int appointmentId) throws Exception {
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT Record_ID FROM Medical_Record WITH (UPDLOCK, HOLDLOCK) WHERE Appointment_ID = ?")) {
@@ -461,7 +461,7 @@ public class DoctorFormDAO {
         }
     }
 
-    /** Gán các trường chi tiết khám vào câu lệnh SQL theo thứ tự EXAM_KEYS. */
+    /** Bind examination detail fields to the SQL statement in EXAM_KEYS order. */
     private void setExamFields(PreparedStatement ps, Map<String, String> values, int first) throws Exception {
         for (int i = 0; i < EXAM_KEYS.length; i++) {
             String value = blankToNull(values.get(EXAM_KEYS[i]));
@@ -472,7 +472,7 @@ public class DoctorFormDAO {
         }
     }
 
-    /** Gán thông số kính theo kiểu dữ liệu tương ứng của từng cột. */
+    /** Bind eyeglass parameters using each column's corresponding data type. */
     private void setGlassesFields(PreparedStatement ps, Map<String, String> values, int first) throws Exception {
         for (int i = 0; i < GLASSES_KEYS.length; i++) {
             String value = blankToNull(values.get(GLASSES_KEYS[i]));
@@ -490,24 +490,24 @@ public class DoctorFormDAO {
         }
     }
 
-    /** Ghi số thập phân hoặc NULL vào tham số SQL. */
+    /** Bind a decimal value or NULL to the SQL parameter. */
     private void setDecimal(PreparedStatement ps, int index, String value) throws Exception {
         if (value == null) ps.setNull(index, Types.DECIMAL);
         else ps.setBigDecimal(index, new BigDecimal(value));
     }
 
-    /** Ghi ngày ISO hoặc NULL vào tham số SQL. */
+    /** Bind an ISO date or NULL to the SQL parameter. */
     private void setDate(PreparedStatement ps, int index, String value) throws Exception {
         if (value == null || value.isBlank()) ps.setNull(index, Types.DATE);
         else ps.setDate(index, Date.valueOf(value));
     }
 
-    /** Đưa giá trị vào biểu mẫu và thay NULL bằng chuỗi rỗng. */
+    /** Populate the form value, replacing NULL with an empty string. */
     private void put(Map<String, String> map, String key, String value) {
         map.put(key, value == null ? "" : value);
     }
 
-    /** Chuyển dữ liệu trống thành NULL trước khi lưu cơ sở dữ liệu. */
+    /** Convert empty values to NULL before saving to the database. */
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value;
     }

@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css">
     <jsp:include page="/views/admin/layout/admin-css.jsp" />
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=10">
-    <script defer charset="UTF-8" src="${pageContext.request.contextPath}/assets/js/doctor-forms.js?v=14"></script>
+    <script defer charset="UTF-8" src="${pageContext.request.contextPath}/assets/js/doctor-forms.js?v=15"></script>
 </head>
 <body>
 <jsp:include page="/views/employee/layout/employee-sidebar.jsp">

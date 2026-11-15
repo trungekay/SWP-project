@@ -8,7 +8,7 @@
         const form = page.querySelector("#examination-form");
         const acuityInputs = [...form.querySelectorAll("[data-visual-acuity]")];
         const iopInputs = [...form.querySelectorAll('[name="odIop"], [name="osIop"]')];
-        // Hiển thị lỗi cạnh ô nhập và cập nhật thuộc tính hỗ trợ trình đọc màn hình.
+        // Show errors next to the input and update screen reader attributes.
         const showInputError = (input, message) => {
             let feedback = input.parentElement.querySelector(".doctor-form-input-error");
             if (!feedback) {
@@ -22,7 +22,7 @@
             if (message) input.setAttribute("aria-describedby", feedback.id);
             else input.removeAttribute("aria-describedby");
         };
-        // Kiểm tra thang thị lực; chỉ giá trị dưới 1 được có phần thập phân.
+        // Validate visual acuity; only values below 1 may have a decimal fraction.
         const validateAcuity = input => {
             const normalized = input.value.trim().replace(',', '.');
             const valid = normalized === "" || (/^[0-9]+(?:\.[0-9]+)?$/.test(normalized)
@@ -33,7 +33,7 @@
             if (/^[0-9]+(?:\.[0-9]+)?$/.test(normalized)) input.value = normalized;
             return valid;
         };
-        // Kiểm tra nhãn áp trong khoảng 5–70 mmHg với tối đa một chữ số thập phân.
+        // Validate intraocular pressure from 5 to 70 mmHg with at most one decimal place.
         const validateIop = input => {
             const raw = input.value.trim();
             const valid = !input.validity.badInput && (raw === "" || (/^[0-9]+(?:\.[0-9])?$/.test(raw)
@@ -73,7 +73,7 @@
         });
     }
 
-    // Chỉ yêu cầu liều dùng khi buổi uống và phần đơn thuốc đều được chọn.
+    // Require a dose only when both the time of day and prescription section are selected.
     function syncDoseRow(row) {
         const selected = row.querySelector("[data-dose-toggle]");
         const dose = row.querySelector("[data-dose-input]");
@@ -85,7 +85,7 @@
         dose.required = active;
     }
 
-    // Đồng bộ số thứ tự, tên trường gửi lên server và giới hạn số dòng thuốc.
+    // Update row numbers and submitted field names, and enforce the medication row limit.
     function renumberMedicines() {
         const rows = [...document.querySelectorAll("[data-medicine-list] .doctor-form-medicine")];
         const medicationToggle = document.querySelector('[data-section-toggle="medication"]');
@@ -111,7 +111,7 @@
         if (addButton) addButton.disabled = rows.length >= 20 || (medicationToggle && !medicationToggle.checked);
     }
 
-    // Thêm một dòng thuốc từ mẫu và chuyển focus tới tên thuốc khi cần.
+    // Add a medication row from the template and focus its name field when needed.
     function addMedicine(focusNewRow = true) {
         const template = document.querySelector("#medicine-row-template");
         const list = document.querySelector("[data-medicine-list]");
@@ -135,7 +135,7 @@
     document.querySelectorAll("[data-section-toggle]").forEach(toggle => {
         const section = document.getElementById(toggle.dataset.sectionToggle + "-section");
         if (!section) return;
-        // Bật hoặc tắt toàn bộ ô nhập theo lựa chọn kê thuốc/kính.
+        // Enable or disable all inputs according to the medication and eyeglass selections.
         const sync = () => {
             section.hidden = !toggle.checked;
             section.querySelectorAll("input,select,textarea,button").forEach(control => {
@@ -199,9 +199,9 @@
         const list = document.querySelector("[data-medicine-list]");
         const catalog = [...document.querySelectorAll("#doctor-medicine-catalog option")]
             .map(option => option.value).filter(Boolean);
-        // Chuẩn hóa tiếng Việt để tìm tên thuốc không phụ thuộc dấu và chữ hoa.
+        // Normalize Vietnamese text for case- and accent-insensitive medication searches.
         const normalize = value => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("vi");
-        // Đóng danh sách gợi ý và xóa trạng thái lựa chọn cho trình đọc màn hình.
+        // Close suggestions and clear the screen reader selection state.
         const closeSuggestions = combo => {
             const input = combo.querySelector("[data-name='medicineName']");
             const suggestions = combo.querySelector("[data-medicine-suggestions]");
@@ -209,7 +209,7 @@
             input.setAttribute("aria-expanded", "false");
             input.removeAttribute("aria-activedescendant");
         };
-        // Đánh dấu gợi ý đang chọn khi điều hướng bằng bàn phím.
+        // Mark the selected suggestion during keyboard navigation.
         const setActiveSuggestion = (combo, index) => {
             const input = combo.querySelector("[data-name='medicineName']");
             const options = [...combo.querySelectorAll("[data-medicine-option]")];
@@ -222,7 +222,7 @@
             if (options[index]) input.setAttribute("aria-activedescendant", options[index].id);
             else input.removeAttribute("aria-activedescendant");
         };
-        // Lọc tối đa tám thuốc phù hợp và hiển thị danh sách gợi ý.
+        // Show up to eight matching medications in the suggestion list.
         const renderSuggestions = combo => {
             list.querySelectorAll("[data-medicine-combobox]").forEach(other => {
                 if (other !== combo) closeSuggestions(other);
@@ -261,7 +261,7 @@
             input.setAttribute("aria-expanded", "true");
             input.removeAttribute("aria-activedescendant");
         };
-        // Đưa thuốc được chọn vào ô nhập và đóng danh sách gợi ý.
+        // Fill the input with the selected medication and close suggestions.
         const selectSuggestion = option => {
             const combo = option.closest("[data-medicine-combobox]");
             const input = combo.querySelector("[data-name='medicineName']");
@@ -315,7 +315,7 @@
     const surgeryToggle = page.querySelector("[data-surgery-toggle]");
     const surgeryPanel = page.querySelector("[data-surgery-panel]");
     if (surgeryToggle && surgeryPanel) {
-        // Đồng bộ trạng thái hiển thị của phần chỉ định phẫu thuật.
+        // Update the visibility of the surgery referral section.
         const syncSurgery = open => {
             surgeryPanel.hidden = !open;
             surgeryToggle.setAttribute("aria-expanded", String(open));

@@ -47,7 +47,7 @@ public class DoctorFormSaveServlet extends HttpServlet {
     private final DoctorFormDAO formDAO = new DoctorFormDAO();
     private final MedicineDAO medicineDAO = new MedicineDAO();
 
-    /** Kiểm tra quyền, CSRF và dữ liệu biểu mẫu trước khi lưu phiếu khám hoặc đơn. */
+    /** Check permissions, CSRF, and form data before saving an examination form or prescription. */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -146,7 +146,7 @@ public class DoctorFormSaveServlet extends HttpServlet {
         }
     }
 
-    /** Đọc và loại khoảng trắng thừa ở các trường biểu mẫu được cho phép. */
+    /** Read allowed form fields and trim excess whitespace. */
     private Map<String, String> values(HttpServletRequest request, String[] keys) {
         Map<String, String> result = new HashMap<>();
         for (String key : keys) {
@@ -156,7 +156,7 @@ public class DoctorFormSaveServlet extends HttpServlet {
         return result;
     }
 
-    /** Gom các dòng thuốc theo chỉ số liên tiếp và giới hạn tối đa 20 dòng. */
+    /** Collect consecutively indexed medication lines, up to a maximum of 20. */
     private List<Map<String, String>> medicineRows(HttpServletRequest request) {
         Set<Integer> indexes = new TreeSet<>();
         for (String name : request.getParameterMap().keySet()) {

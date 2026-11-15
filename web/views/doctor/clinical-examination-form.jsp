@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendor/bootstrap-icons/bootstrap-icons.css">
     <jsp:include page="/views/admin/layout/admin-css.jsp" />
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/doctor-forms.css?v=10">
-    <script defer charset="UTF-8" src="${pageContext.request.contextPath}/assets/js/doctor-forms.js?v=13"></script>
+    <script defer charset="UTF-8" src="${pageContext.request.contextPath}/assets/js/doctor-forms.js?v=15"></script>
 </head>
 <body>
 <jsp:include page="/views/employee/layout/employee-sidebar.jsp">
@@ -166,7 +166,7 @@
                         </button>
                         <div id="surgery-referral-fields" class="doctor-form-surgery-panel" data-surgery-panel hidden>
                             <div class="doctor-form-fields">
-                                <label class="doctor-form-field doctor-form-span"><span>Nội dung đề xuất tiểu phẫu</span>
+                                <label class="doctor-form-field doctor-form-span"><span>Nội dung chỉ định tiểu phẫu</span>
                                     <textarea name="surgeryIndication" rows="3" maxlength="2000" placeholder="Ghi loại phẫu thuật, mắt cần can thiệp và các lưu ý..."><c:out value="${formValues.surgeryIndication}" /></textarea>
                                 </label>
                             </div>
@@ -180,10 +180,9 @@
                         <c:when test="${printReady}"><a class="doctor-form-button secondary" href="${pageContext.request.contextPath}/doctor/examination/print?id=${appointment.id}" target="_blank" rel="noopener"><i class="bi bi-printer" aria-hidden="true"></i> In phiếu khám đã lưu</a></c:when>
                         <c:otherwise><button class="doctor-form-button secondary" type="button" disabled title="Lưu đầy đủ phiếu khám trước khi in"><i class="bi bi-printer" aria-hidden="true"></i> In phiếu khám</button></c:otherwise>
                     </c:choose>
-                    <c:if test="${not readOnly}"><button class="doctor-form-button primary" type="submit"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Lưu phiếu khám</button></c:if>
+                    <c:if test="${not readOnly}"><button class="doctor-form-button primary" type="submit"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> ẽ khám</button></c:if>
                 </div>
             </form>
-
             <aside class="doctor-form-aside" aria-label="Các bước trong ca khám">
                 <div class="doctor-form-aside-card">
                     <h2>Quy trình khám</h2>

@@ -125,70 +125,6 @@
               </div>
             </div>
 
-            <!-- CẤU HÌNH CÁC BƯỚC QUY TRÌNH (DYNAMIC WORKFLOW STEPS BUILDER) -->
-            <div class="card border rounded-3 p-3 mb-3 bg-white shadow-sm">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <div class="d-flex align-items-center gap-2">
-                  <i class="bi bi-diagram-3 fs-5" style="color: #0d9488;"></i>
-                  <div>
-                    <h6 class="fw-bold mb-0 text-dark">Quy trình các bước thực hiện (Workflow Timeline)</h6>
-                    <small class="text-muted" style="font-size: 11px;">Thêm các bước trước khám (lấy máu, đo máy...), trong khám (khám Bác sĩ) và sau khám (phẫu thuật, dặn dò...).</small>
-                  </div>
-                </div>
-                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" onclick="addWorkflowStepRow()">
-                  <i class="bi bi-plus-circle me-1"></i>Thêm bước
-                </button>
-              </div>
-
-              <div class="table-responsive">
-                <table class="table table-sm table-bordered align-middle mb-1" id="workflowStepsTable">
-                  <thead class="table-light">
-                    <tr class="small text-muted">
-                      <th style="width: 70px;" class="text-center">Thứ tự</th>
-                      <th style="width: 140px;">Giai đoạn</th>
-                      <th>Tên bước thực hiện (VD: Lấy máu, đo máy...)</th>
-                      <th>Mô tả / Hướng dẫn</th>
-                      <th style="width: 50px;" class="text-center">Xóa</th>
-                    </tr>
-                  </thead>
-                  <tbody id="workflowStepsTbody">
-                    <c:forEach items="${item.workflowSteps}" var="step" varStatus="st">
-                      <tr>
-                        <td class="text-center">
-                          <input type="number" name="stepOrder" class="form-control form-control-sm text-center" value="${step.stepOrder}" min="1">
-                        </td>
-                        <td>
-                          <select name="stepStage" class="form-select form-select-sm">
-                            <option value="PRE_EXAM" ${step.stepStage == 'PRE_EXAM' ? 'selected' : ''}>Trước khám</option>
-                            <option value="IN_EXAM" ${step.stepStage == 'IN_EXAM' ? 'selected' : ''}>Trong khám</option>
-                            <option value="POST_EXAM" ${step.stepStage == 'POST_EXAM' ? 'selected' : ''}>Sau khám</option>
-                          </select>
-                        </td>
-                        <td>
-                          <input type="text" name="stepName" class="form-control form-control-sm" value="${fn:escapeXml(step.stepName)}" placeholder="Tên bước...">
-                        </td>
-                        <td>
-                          <input type="text" name="stepDescription" class="form-control form-control-sm" value="${fn:escapeXml(step.description)}" placeholder="Ghi chú thêm...">
-                        </td>
-                        <td class="text-center">
-                          <button type="button" class="btn btn-outline-danger btn-sm p-1" onclick="this.closest('tr').remove()" title="Xóa bước này">
-                            <i class="bi bi-trash"></i>
-                          </button>
-                        </td>
-                      </tr>
-                    </c:forEach>
-                  </tbody>
-                </table>
-              </div>
-              <div class="d-flex justify-content-between align-items-center mt-2">
-                <span class="text-muted small fst-italic" style="font-size: 11px;">
-                  💡 Gợi ý: Các bước điển hình: "Lấy máu xét nghiệm", "Đo khúc xạ máy", "Chụp OCT", "Khám lâm sàng Bác sĩ", "Thực hiện phẫu thuật"...
-                </span>
-                <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-primary" onclick="addWorkflowStepRow()">
-                  <i class="bi bi-plus-lg me-1"></i>Thêm bước khác
-                </button>
-              </div>
-            </div>
           </c:when>
           <c:otherwise>
             <label><span class="catalog-label-title">Tên vật tư tiêu hao <em>*</em></span><input name="name" maxlength="255" required value="${fn:escapeXml(item.name)}"></label>
@@ -238,39 +174,6 @@
         }
       }
 
-      function addWorkflowStepRow() {
-        const tbody = document.getElementById('workflowStepsTbody');
-        if (!tbody) return;
-        const currentCount = tbody.querySelectorAll('tr').length;
-        const nextOrder = currentCount + 1;
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="text-center">
-            <input type="number" name="stepOrder" class="form-control form-control-sm text-center" value="\${nextOrder}" min="1">
-          </td>
-          <td>
-            <select name="stepStage" class="form-select form-select-sm">
-              <option value="PRE_EXAM">Trước khám</option>
-              <option value="IN_EXAM">Trong khám</option>
-              <option value="POST_EXAM">Sau khám</option>
-            </select>
-          </td>
-          <td>
-            <input type="text" name="stepName" class="form-control form-control-sm" placeholder="Nhập tên bước (VD: Lấy máu, đo máy...)" required>
-          </td>
-          <td>
-            <input type="text" name="stepDescription" class="form-control form-control-sm" placeholder="Ghi chú thêm...">
-          </td>
-          <td class="text-center">
-            <button type="button" class="btn btn-outline-danger btn-sm p-1" onclick="this.closest('tr').remove()" title="Xóa bước này">
-              <i class="bi bi-trash"></i>
-            </button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-        tr.querySelector('input[name="stepName"]').focus();
-      }
     </script>
 </body>
 </html>

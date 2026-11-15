@@ -22,7 +22,7 @@ public class DoctorPatientDetailServlet extends HttpServlet {
     private final DoctorQueueDAO doctorQueueDAO = new DoctorQueueDAO();
     private final ProcedureOrderDAO procedureOrderDAO = new ProcedureOrderDAO();
 
-    /** Mở chi tiết bệnh nhân thuộc ca khám của bác sĩ và chuẩn bị các đường dẫn thao tác. */
+    /** Open details for a patient assigned to the doctor and prepare action URLs. */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {

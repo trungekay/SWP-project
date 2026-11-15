@@ -1571,7 +1571,7 @@ public class AppointmentDAO {
     public List<Appointment> getWaitingList(Date date, Integer doctorId, Integer roomId, String keyword) throws Exception {
         return getWaitingList(date, "all", doctorId, roomId, keyword);
     }
-
+    //SortWaitingListDoctorScreen
     public List<Appointment> getWaitingList(Date date, String status, Integer doctorId, Integer roomId, String keyword) throws Exception {
         List<Appointment> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
@@ -1638,7 +1638,7 @@ public class AppointmentDAO {
             sql.append(" AND doc.Room_ID = ?");
             params.add(roomId);
         }
-
+        //Sort by Name
         if (keyword != null && !keyword.trim().isEmpty()) {
             String cleanKw = keyword.trim();
             cleanKw = cleanKw.replaceFirst("(?i)^#?APP?T-", "");
@@ -1652,7 +1652,7 @@ public class AppointmentDAO {
         }
 
         sql.append(" ORDER BY CASE WHEN a.Status = 'In_Progress' THEN 0 WHEN a.Status = 'Confirmed' THEN 1 ELSE 2 END, ws.Start_Time ASC, a.checkin_time ASC");
-
+        //Return Sort Result to JSP
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             for (int i = 0; i < params.size(); i++) {
