@@ -462,11 +462,7 @@ public class DoctorFormDAO {
         String authorized = "SELECT a.Appointment_ID FROM Appointment a WITH (UPDLOCK, HOLDLOCK) " +
                 "JOIN Work_Schedule ws ON ws.Schedule_ID = a.Schedule_ID " +
                 "WHERE a.Appointment_ID = ? AND ws.Doctor_Employee_ID = ? " +
-                "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL " +
-                "AND NOT EXISTS (SELECT 1 FROM Procedure_Order handoff " +
-                "JOIN Medical_Record handoff_record ON handoff_record.Record_ID=handoff.Record_ID " +
-                "WHERE handoff_record.Appointment_ID=a.Appointment_ID " +
-                "AND handoff.Status IN ('Pending','In_Progress'))";
+                "AND a.Status = 'In_Progress' AND a.checkin_time IS NOT NULL";
         try (PreparedStatement ps = conn.prepareStatement(authorized)) {
             ps.setInt(1, appointmentId);
             ps.setInt(2, doctorId);
