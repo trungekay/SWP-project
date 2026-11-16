@@ -86,10 +86,6 @@ public class DoctorFormsServlet extends HttpServlet {
             } else {
                 formValues = formDAO.loadExamination(appointmentId);
                 request.setAttribute("surgeryServices", procedureOrderDAO.getProcedureRequestServices());
-                if ("Pending".equals(formValues.get("surgeryStatus"))
-                        || "In_Progress".equals(formValues.get("surgeryStatus"))) {
-                    request.setAttribute("readOnly", true);
-                }
                 String staffNotes = formValues.get("staffNotes");
                 if (staffNotes != null && (staffNotes.startsWith("Dịch vụ:")
                         || staffNotes.startsWith("Dịch vụ/Bệnh lý:"))) {
