@@ -78,9 +78,7 @@
                             <textarea name="chiefComplaint" rows="3" maxlength="1000" placeholder="Ví dụ: Nhìn mờ mắt phải trong 2 tuần, tăng khi đọc gần..."><c:out value="${formValues.chiefComplaint}" /></textarea>
                         </label>
                     </div>
-                    <c:if test="${not empty formValues.previousDiagnoses}">
-                        <div class="doctor-form-prior-diagnoses"><strong>Chẩn đoán từ các lần khám trước</strong><p><c:out value="${formValues.previousDiagnoses}" /></p></div>
-                    </c:if>
+                   
                 </section>
 
                 <section class="doctor-form-card" aria-labelledby="exam-vision-heading">
