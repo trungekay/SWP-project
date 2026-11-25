@@ -641,7 +641,7 @@
                                     <c:forEach var="room" items="${rooms}">
                                         <c:set var="lowerRoomName" value="${fn:toLowerCase(room.name)}" />
                                         <c:set var="isEye" value="${fn:contains(lowerRoomName, 'mắt') || fn:contains(lowerRoomName, 'khúc xạ') || fn:contains(lowerRoomName, 'khám')}" />
-                                        <c:set var="isSurgery" value="${fn:contains(lowerRoomName, 'tiểu phẫu') || fn:contains(lowerRoomName, 'phẫu thuật') || fn:contains(lowerRoomName, 'điều trị')}" />
+                                        <c:set var="isSurgery" value="${fn:contains(lowerRoomName, 'tiểu phẫu') || (fn:contains(lowerRoomName, 'phẫu thuật') && !fn:contains(lowerRoomName, 'khám')) || (fn:contains(lowerRoomName, 'điều trị') && !fn:contains(lowerRoomName, 'khám'))}" />
 
                                         <c:set var="assignedDoctor" value="" />
                                         <c:set var="assignedSpecialist" value="" />
@@ -740,11 +740,9 @@
                                                                 <select name="doctorId" class="form-select">
                                                                     <option value="">-- Không có / Bỏ trống --</option>
                                                                     <c:forEach var="doctor" items="${doctors}">
-                                                                        <c:if test="${doctor.roomId == room.id || doctor.roomId == 0 || empty doctor.roomId}">
-                                                                            <option value="${doctor.id}" ${doctor.roomId == room.id ? 'selected' : ''}>
-                                                                                ${doctor.name} - ${doctor.specialty}
-                                                                            </option>
-                                                                        </c:if>
+                                                                        <option value="${doctor.id}" ${doctor.roomId == room.id ? 'selected' : ''}>
+                                                                            ${doctor.name} - ${doctor.specialty} ${doctor.roomId > 0 && doctor.roomId != room.id ? '(Đang ở phòng khác)' : ''}
+                                                                        </option>
                                                                     </c:forEach>
                                                                 </select>
                                                                 <div class="form-text text-muted small">Chỉ phòng khám mắt mới chọn được Bác sĩ.</div>
@@ -756,11 +754,9 @@
                                                                 <select name="specialistId" class="form-select">
                                                                     <option value="">-- Không có / Bỏ trống --</option>
                                                                     <c:forEach var="specialist" items="${specialists}">
-                                                                        <c:if test="${specialist.roomId == room.id || specialist.roomId == 0 || empty specialist.roomId}">
-                                                                            <option value="${specialist.id}" ${specialist.roomId == room.id ? 'selected' : ''}>
-                                                                                ${specialist.name} - ${specialist.specialty}
-                                                                            </option>
-                                                                        </c:if>
+                                                                        <option value="${specialist.id}" ${specialist.roomId == room.id ? 'selected' : ''}>
+                                                                            ${specialist.name} - ${specialist.specialty} ${specialist.roomId > 0 && specialist.roomId != room.id ? '(Đang ở phòng khác)' : ''}
+                                                                        </option>
                                                                     </c:forEach>
                                                                 </select>
                                                                 <div class="form-text text-muted small">Chỉ phòng tiểu phẫu/phẫu thuật mới chọn được Chuyên viên y tế.</div>
@@ -1636,9 +1632,7 @@
                                         <select name="doctorId" class="form-select">
                                             <option value="">-- Bỏ qua / Sắp xếp sau --</option>
                                             <c:forEach var="doctor" items="${doctors}">
-                                                <c:if test="${doctor.roomId == 0 || empty doctor.roomId}">
-                                                    <option value="${doctor.id}">${doctor.name} - ${doctor.specialty}</option>
-                                                </c:if>
+                                                <option value="${doctor.id}">${doctor.name} - ${doctor.specialty} ${doctor.roomId > 0 ? '(Đang ở phòng khác)' : ''}</option>
                                             </c:forEach>
                                         </select>
                                         <div class="form-text text-muted small">Chỉ phòng khám mắt mới chọn được Bác sĩ.</div>
@@ -1648,9 +1642,7 @@
                                         <select name="specialistId" class="form-select">
                                             <option value="">-- Bỏ qua / Sắp xếp sau --</option>
                                             <c:forEach var="specialist" items="${specialists}">
-                                                <c:if test="${specialist.roomId == 0 || empty specialist.roomId}">
-                                                    <option value="${specialist.id}">${specialist.name} - ${specialist.specialty}</option>
-                                                </c:if>
+                                                <option value="${specialist.id}">${specialist.name} - ${specialist.specialty} ${specialist.roomId > 0 ? '(Đang ở phòng khác)' : ''}</option>
                                             </c:forEach>
                                         </select>
                                         <div class="form-text text-muted small">Chỉ phòng tiểu phẫu/phẫu thuật mới chọn được Chuyên viên
@@ -1737,7 +1729,7 @@
         <script>
                                           function checkRoomTypeForEdit(inputElement, roomId) {
                                               const val = inputElement.value.toLowerCase();
-                                              const isSurgery = val.includes('tiểu phẫu') || val.includes('phẫu thuật') || val.includes('điều trị');
+                                              const isSurgery = val.includes('tiểu phẫu') || (val.includes('phẫu thuật') && !val.includes('khám')) || (val.includes('điều trị') && !val.includes('khám'));
                                               if (isSurgery) {
                                                   document.getElementById('docDivEdit' + roomId).style.display = 'none';
                                                   document.getElementById('docDivEdit' + roomId).querySelector('select').value = '';
@@ -1751,7 +1743,7 @@
 
                                           function checkRoomTypeForAdd(inputElement) {
                                               const val = inputElement.value.toLowerCase();
-                                              const isSurgery = val.includes('tiểu phẫu') || val.includes('phẫu thuật') || val.includes('điều trị');
+                                              const isSurgery = val.includes('tiểu phẫu') || (val.includes('phẫu thuật') && !val.includes('khám')) || (val.includes('điều trị') && !val.includes('khám'));
                                               if (isSurgery) {
                                                   document.getElementById('docDivAdd').style.display = 'none';
                                                   document.getElementById('docDivAdd').querySelector('select').value = '';

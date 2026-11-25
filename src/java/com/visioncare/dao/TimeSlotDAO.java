@@ -116,42 +116,12 @@ public class TimeSlotDAO {
     }
 
     public static boolean isSessionEndBufferEnabled() {
-        String sql = "SELECT Setting_Value FROM Clinic_Setting WHERE Setting_Key = 'SESSION_END_BUFFER_ENABLED'";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                String val = rs.getString("Setting_Value");
-                return "true".equalsIgnoreCase(val) || "1".equals(val);
-            }
-        } catch (Exception e) {
-            // default false
-        }
         return false;
     }
 
     public boolean updateSessionEndBufferEnabled(boolean enabled) {
-        ensureSettingTable();
-        String sql = "UPDATE Clinic_Setting SET Setting_Value = ? WHERE Setting_Key = 'SESSION_END_BUFFER_ENABLED'";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, enabled ? "true" : "false");
-            int rows = ps.executeUpdate();
-            if (rows == 0) {
-                String insertSql = "INSERT INTO Clinic_Setting (Setting_Key, Setting_Value, Description) "
-                        + "VALUES ('SESSION_END_BUFFER_ENABLED', ?, N'DÃ nh riÃªng 30 phÃºt cuá»‘i má»—i ca (11:00-11:30 vÃ  16:30-17:00) lÃ m ca Ä‘á»‡m bÃ¹ giá» phÃ¡t sinh')";
-                try (PreparedStatement psIns = conn.prepareStatement(insertSql)) {
-                    psIns.setString(1, enabled ? "true" : "false");
-                    return psIns.executeUpdate() > 0;
-                }
-            }
-            return rows > 0;
-        } catch (Exception e) {
-            System.err.println("Error updateSessionEndBufferEnabled: " + e.getMessage());
-            return false;
-        }
+        return true;
     }
-
     public static int getPendingHoldMinutes() {
         int minutes = 15;
         String sql = "SELECT Setting_Value FROM Clinic_Setting WHERE Setting_Key = 'BOOKING_PENDING_HOLD_MINUTES'";

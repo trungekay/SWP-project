@@ -560,7 +560,7 @@
 
                       <!-- Action Button -->
                       <div class="mt-auto pt-2 border-top">
-                        <a href="${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=schedule&empId=${emp.actorId}&year=${selectedYear}&week=${selectedWeek}&session=${sessionFilter}"
+                        <a href="${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=schedule&empId=${emp.actorId}"
                            class="btn w-100 fw-semibold rounded-3 py-2 d-flex align-items-center justify-content-center gap-2"
                            style="background: #0d9488; color: #ffffff; border: none; font-size: 13.5px; transition: all 0.2s;">
                           <i class="bi bi-calendar3"></i>
@@ -598,7 +598,7 @@
               
               <!-- Back to list & Current Doctor Info -->
               <div class="d-flex align-items-center gap-3">
-                <a href="${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=list&year=${selectedYear}&week=${selectedWeek}&session=${sessionFilter}"
+                <a href="${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=list"
                    class="btn btn-outline-secondary d-flex align-items-center gap-2 fw-semibold px-3 py-2 rounded-3 shadow-sm"
                    title="Quay lại danh sách nhân sự">
                   <i class="bi bi-arrow-left fs-6"></i>
@@ -634,40 +634,19 @@
                 </div>
               </div>
 
-              <!-- Quick Switcher Dropdown & 4 Executive KPI Stat Cards -->
-              <div class="d-flex align-items-center flex-wrap gap-3 justify-content-start justify-content-xxl-end">
-                
-                <!-- Quick Personnel Switcher -->
-                <div class="d-flex align-items-center gap-2 bg-light p-1.5 rounded-3 border">
-                  <span class="small text-muted ps-2 fw-semibold"><i class="bi bi-person-switch me-1"></i>Đổi:</span>
-                  <select class="form-select form-select-sm border-0 fw-semibold bg-white shadow-sm" style="min-width: 200px; font-size: 13px;"
-                          onchange="location.href='${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=schedule&empId=' + this.value + '&year=${selectedYear}&week=${selectedWeek}&session=${sessionFilter}'">
-                    <c:forEach var="emp" items="${employeeList}">
-                      <option value="${emp.actorId}" ${emp.actorId == selectedEmpId ? 'selected' : ''}>
-                        ${emp.fullName} (#${emp.actorId})
-                      </option>
-                    </c:forEach>
-                  </select>
+              <!-- 4 Executive KPI Stat Cards -->
+              <div class="d-flex align-items-center flex-wrap gap-2 justify-content-start justify-content-xxl-end">
+                <div class="kpi-mini-box">
+                  <div class="kpi-mini-label">Tổng ca trực</div>
+                  <div class="kpi-mini-value" style="color: #0d9488;">${totalWeeklySlots} ca</div>
                 </div>
-
-                <!-- 4 KPI Stat Boxes -->
-                <div class="d-flex align-items-center flex-wrap gap-2">
-                  <div class="kpi-mini-box">
-                    <div class="kpi-mini-label">Tổng ca trực</div>
-                    <div class="kpi-mini-value" style="color: #0d9488;">${totalWeeklySlots} ca</div>
-                  </div>
-                  <div class="kpi-mini-box">
-                    <div class="kpi-mini-label">Thời lượng</div>
-                    <div class="kpi-mini-value text-primary">${totalWeeklyHours} giờ</div>
-                  </div>
-                  <div class="kpi-mini-box">
-                    <div class="kpi-mini-label">Có lịch hẹn</div>
-                    <div class="kpi-mini-value" style="color: #2563eb;">${totalBookedSlots} lịch</div>
-                  </div>
-                  <div class="kpi-mini-box">
-                    <div class="kpi-mini-label">Sẵn sàng</div>
-                    <div class="kpi-mini-value text-success">${totalAvailableSlots} ca</div>
-                  </div>
+                <div class="kpi-mini-box">
+                  <div class="kpi-mini-label">Thời lượng</div>
+                  <div class="kpi-mini-value text-primary">${totalWeeklyHours} giờ</div>
+                </div>
+                <div class="kpi-mini-box">
+                  <div class="kpi-mini-label">Có lịch hẹn</div>
+                  <div class="kpi-mini-value" style="color: #2563eb;">${totalBookedSlots} lịch</div>
                 </div>
 
               </div>
@@ -677,17 +656,17 @@
           <!-- Full Width Schedule Calendar Board -->
           <div class="schedule-full-card">
 
-            <!-- Control Toolbar: Week / Year Navigator & Session Filters -->
+            <!-- Control Toolbar: Week / Year Navigator -->
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 pb-3 border-bottom">
               
               <!-- Week & Year Selector (Spacious, full text displayed) -->
               <div class="d-flex align-items-center flex-wrap gap-2">
                 <div class="btn-group btn-group-sm shadow-sm">
-                  <a href="${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=schedule&empId=${selectedEmpId}&year=${prevYear}&week=${prevWeek}&session=${sessionFilter}"
+                  <a href="${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=schedule&empId=${selectedEmpId}&year=${prevYear}&week=${prevWeek}"
                      class="btn btn-outline-secondary px-2.5 py-1.5" title="Tuần trước">
                     <i class="bi bi-chevron-left"></i>
                   </a>
-                  <a href="${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=schedule&empId=${selectedEmpId}&year=${nextYear}&week=${nextWeek}&session=${sessionFilter}"
+                  <a href="${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=schedule&empId=${selectedEmpId}&year=${nextYear}&week=${nextWeek}"
                      class="btn btn-outline-secondary px-2.5 py-1.5" title="Tuần sau">
                     <i class="bi bi-chevron-right"></i>
                   </a>
@@ -695,7 +674,7 @@
 
                 <!-- Week Dropdown (Min width 300px so full label is visible) -->
                 <select class="form-select form-select-sm fw-semibold shadow-sm" style="min-width: 300px; height: 36px; font-size: 13px;"
-                        onchange="location.href='${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=schedule&empId=${selectedEmpId}&year=${selectedYear}&week=' + this.value + '&session=${sessionFilter}'">
+                        onchange="location.href='${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=schedule&empId=${selectedEmpId}&year=${selectedYear}&week=' + this.value">
                   <c:forEach var="w" items="${weekOptions}">
                     <option value="${w.weekNumber}" ${w.weekNumber == selectedWeek ? 'selected' : ''}>
                       ${w.label}
@@ -705,62 +684,34 @@
 
                 <!-- Year Dropdown (Min width 130px so 'Năm 2026' is never cut off) -->
                 <select class="form-select form-select-sm fw-bold shadow-sm" style="width: 130px; min-width: 130px; height: 36px; font-size: 13px;"
-                        onchange="location.href='${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=schedule&empId=${selectedEmpId}&year=' + this.value + '&week=1&session=${sessionFilter}'">
+                        onchange="location.href='${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=schedule&empId=${selectedEmpId}&year=' + this.value + '&week=1'">
                   <c:forEach var="y" items="${availableYears}">
                     <option value="${y}" ${y == selectedYear ? 'selected' : ''}>Năm ${y}</option>
                   </c:forEach>
                 </select>
 
-                <c:if test="${!isViewingCurrentWeek}">
-                  <a href="${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=schedule&empId=${selectedEmpId}&year=${currentYear}&week=1&session=${sessionFilter}"
-                     class="btn btn-outline-teal btn-sm rounded-pill px-3 py-1.5 shadow-sm small text-decoration-none fw-semibold"
-                     style="border-color: #0d9488; color: #0d9488;">
-                    <i class="bi bi-arrow-counterclockwise me-1"></i>Tuần hiện tại
-                  </a>
-                </c:if>
-              </div>
-
-              <!-- Session Shift Filters (All, Morning, Afternoon) -->
-              <div class="btn-group btn-group-sm shadow-sm" role="group">
-                <a href="${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=schedule&empId=${selectedEmpId}&year=${selectedYear}&week=${selectedWeek}&session=all"
-                   class="btn ${sessionFilter == 'all' ? 'text-white' : 'btn-outline-secondary'}" style="${sessionFilter == 'all' ? 'background:#0d9488; border-color:#0d9488;' : ''}">
-                  <i class="bi bi-grid-fill me-1"></i>Tất cả ca (14 ca)
-                </a>
-                <a href="${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=schedule&empId=${selectedEmpId}&year=${selectedYear}&week=${selectedWeek}&session=Morning"
-                   class="btn ${sessionFilter == 'Morning' ? 'text-white' : 'btn-outline-secondary'}" style="${sessionFilter == 'Morning' ? 'background:#0d9488; border-color:#0d9488;' : ''}">
-                  🌅 Ca Sáng
-                </a>
-                <a href="${pageContext.request.contextPath}/director/${employeeType == 'doctor' ? 'doctors' : (employeeType == 'specialist' ? 'specialists' : 'staffs')}?view=schedule&empId=${selectedEmpId}&year=${selectedYear}&week=${selectedWeek}&session=Afternoon"
-                   class="btn ${sessionFilter == 'Afternoon' ? 'text-white' : 'btn-outline-secondary'}" style="${sessionFilter == 'Afternoon' ? 'background:#0d9488; border-color:#0d9488;' : ''}">
-                  🌇 Ca Chiều
-                </a>
               </div>
             </div>
 
             <!-- Main Horizontal Calendar Matrix (Min-width 1550px ensures zero overlapping text) -->
             <div class="table-responsive">
-              <table class="director-schedule-table" style="${sessionFilter == 'all' ? 'min-width: 1550px;' : 'min-width: 950px;'}">
+              <table class="director-schedule-table" style="min-width: 1550px;">
                 <thead>
                   <tr>
                     <th style="min-width: 130px; width: 130px; text-align: left; padding-left: 16px;">
                       <div class="fw-bold text-uppercase" style="font-size: 11.5px; letter-spacing: 0.5px;">Thứ / Ngày</div>
                     </th>
                     <c:forEach var="slot" items="${slots}">
-                      <c:if test="${sessionFilter == 'all' || slot.session == sessionFilter}">
-                        <c:set var="rawSlotName" value="${not empty slot.displayName ? slot.displayName : slot.id}" />
-                        <c:set var="cleanSlotName" value="${fn:contains(rawSlotName, ' (') ? fn:substringBefore(rawSlotName, ' (') : rawSlotName}" />
-                        <c:set var="cleanSlotName" value="${fn:startsWith(cleanSlotName, 'Slot ') ? fn:replace(cleanSlotName, 'Slot ', 'Ca ') : cleanSlotName}" />
-                        <th style="min-width: 95px; width: 95px; text-align: center;">
-                          <div class="slot-header-box">
-                            <span class="slot-header-title">${cleanSlotName}</span>
-                            <span class="slot-header-time">${slot.timeRange}</span>
-                          </div>
-                        </th>
-                      </c:if>
+                      <c:set var="rawSlotName" value="${not empty slot.displayName ? slot.displayName : slot.id}" />
+                      <c:set var="cleanSlotName" value="${fn:contains(rawSlotName, ' (') ? fn:substringBefore(rawSlotName, ' (') : rawSlotName}" />
+                      <th style="min-width: 95px; width: 95px; text-align: center;">
+                        <div class="slot-header-box">
+                          <span class="slot-header-title">${cleanSlotName}</span>
+                          <span class="slot-header-time">${slot.timeRange}</span>
+                        </div>
+                      </th>
                     </c:forEach>
-                    <th style="width: 90px; min-width: 90px; text-align: center;">
-                      <div class="fw-bold text-uppercase" style="font-size: 11.5px; letter-spacing: 0.5px;">Tổng ca</div>
-                    </th>
+                    
                   </tr>
                 </thead>
                 <tbody>
@@ -780,80 +731,82 @@
                       </td>
 
                       <!-- Slot Columns -->
+                      <c:set var="daySlotsCount" value="0" />
                       <c:forEach var="slot" items="${slots}">
-                        <c:if test="${sessionFilter == 'all' || slot.session == sessionFilter}">
-                          <c:set var="key" value="${day.fullDate}_${slot.id}" />
-                          <c:set var="cell" value="${scheduleMatrix[key]}" />
-                          <c:if test="${empty cell and not empty slot.timeRange and slot.timeRange.length() >= 5}">
-                            <c:set var="cell" value="${scheduleMatrix[day.fullDate.concat('_').concat(slot.timeRange.substring(0, 5))]}" />
-                          </c:if>
-                          <c:set var="rawSlotName" value="${not empty slot.displayName ? slot.displayName : slot.id}" />
-                          <c:set var="cleanSlotName" value="${fn:contains(rawSlotName, ' (') ? fn:substringBefore(rawSlotName, ' (') : rawSlotName}" />
-                          <c:set var="cleanSlotName" value="${fn:startsWith(cleanSlotName, 'Slot ') ? fn:replace(cleanSlotName, 'Slot ', 'Ca ') : cleanSlotName}" />
-
-                          <td class="text-center p-1" style="height: 64px;">
-                            <c:choose>
-                              <c:when test="${not empty cell}">
-                                <c:choose>
-                                  <%-- 1. Booked (Có khách đặt hẹn) --%>
-                                  <c:when test="${cell.booked}">
-                                    <div class="chip-slot chip-booked"
-                                         title="Nhấn để xem chi tiết cuộc hẹn: ${cell.patientName}"
-                                         onclick="openAppointmentModal('${cell.appointmentId}', '${cell.patientName}', '${cell.patientPhone}', '${cell.appointmentStatus}', '${cleanSlotName}', '${slot.timeRange}', '${cell.roomName}', '${day.dayName}, ${day.dateStr}')">
-                                      <span class="chip-title"><i class="bi bi-person-fill text-primary me-0.5"></i>${cell.patientName}</span>
-                                      <span class="chip-sub">
-                                        <i class="bi bi-clock"></i> ${cell.startTime.length() >= 5 ? cell.startTime.substring(0, 5) : cell.startTime}
-                                      </span>
-                                    </div>
-                                  </c:when>
-
-                                  <%-- 2. On Leave (Nghỉ phép) --%>
-                                  <c:when test="${cell.onLeave}">
-                                    <div class="chip-slot chip-onleave" title="Ca trực đã được duyệt nghỉ phép">
-                                      <span class="chip-title"><i class="bi bi-calendar-x me-0.5"></i>Nghỉ phép</span>
-                                      <span class="chip-sub">Đã duyệt</span>
-                                    </div>
-                                  </c:when>
-
-                                  <%-- 3. Closed (Đóng ca) --%>
-                                  <c:when test="${cell.closed}">
-                                    <div class="chip-slot chip-closed" title="Khung giờ này đã bị đóng">
-                                      <span class="chip-title"><i class="bi bi-slash-circle me-0.5"></i>Đóng ca</span>
-                                      <span class="chip-sub">Tạm dừng</span>
-                                    </div>
-                                  </c:when>
-
-                                  <%-- 4. Available (Đang trực sẵn sàng) --%>
-                                  <c:when test="${cell.available}">
-                                    <div class="chip-slot chip-available" title="Ca làm việc sẵn sàng tiếp nhận bệnh nhân">
-                                      <span class="chip-title"><i class="bi bi-check2-circle text-teal me-0.5" style="color: #0d9488;"></i>Làm việc</span>
-                                      <span class="chip-sub">
-                                        <c:out value="${not empty cell.roomName && cell.roomName != 'Chưa xếp phòng' ? cell.roomName : 'Sẵn sàng'}" />
-                                      </span>
-                                    </div>
-                                  </c:when>
-
-                                  <%-- Default Off --%>
-                                  <c:otherwise>
-                                    <div class="chip-slot chip-off" title="Không có lịch trực">—</div>
-                                  </c:otherwise>
-                                </c:choose>
-                              </c:when>
-                              <c:otherwise>
-                                <div class="chip-slot chip-off" title="Không có lịch trực">—</div>
-                              </c:otherwise>
-                            </c:choose>
-                          </td>
+                        <c:set var="key" value="${day.fullDate}_${slot.id}" />
+                        <c:set var="cell" value="${scheduleMatrix[key]}" />
+                        <c:if test="${empty cell and not empty slot.timeRange and slot.timeRange.length() >= 5}">
+                          <c:set var="cell" value="${scheduleMatrix[day.fullDate.concat('_').concat(slot.timeRange.substring(0, 5))]}" />
                         </c:if>
+                        <c:if test="${not empty cell and not cell.off and not cell.onLeave and not cell.closed}">
+                          <c:set var="daySlotsCount" value="${daySlotsCount + 1}" />
+                        </c:if>
+                        <c:set var="rawSlotName" value="${not empty slot.displayName ? slot.displayName : slot.id}" />
+                        <c:set var="cleanSlotName" value="${fn:contains(rawSlotName, ' (') ? fn:substringBefore(rawSlotName, ' (') : rawSlotName}" />
+                        <c:set var="cleanSlotName" value="${fn:startsWith(cleanSlotName, 'Slot ') ? fn:replace(cleanSlotName, 'Slot ', 'Ca ') : cleanSlotName}" />
+
+                        <td class="text-center p-1" style="height: 64px;">
+                          <c:choose>
+                            <c:when test="${not empty cell}">
+                              <c:choose>
+                                <%-- 1. Booked (Có khách đặt hẹn) --%>
+                                <c:when test="${cell.booked}">
+                                  <div class="chip-slot chip-booked"
+                                       title="Nhấn để xem chi tiết cuộc hẹn: ${cell.patientName}"
+                                       onclick="openAppointmentModal('${cell.appointmentId}', '${cell.patientName}', '${cell.patientPhone}', '${cell.appointmentStatus}', '${cleanSlotName}', '${slot.timeRange}', '${cell.roomName}', '${day.dayName}, ${day.dateStr}')">
+                                    <span class="chip-title"><i class="bi bi-person-fill text-primary me-0.5"></i>${cell.patientName}</span>
+                                    <span class="chip-sub">
+                                      <i class="bi bi-clock"></i> ${cell.startTime.length() >= 5 ? cell.startTime.substring(0, 5) : cell.startTime}
+                                    </span>
+                                  </div>
+                                </c:when>
+
+                                <%-- 2. On Leave (Nghỉ phép) --%>
+                                <c:when test="${cell.onLeave}">
+                                  <div class="chip-slot chip-onleave" title="Ca trực đã được duyệt nghỉ phép">
+                                    <span class="chip-title"><i class="bi bi-calendar-x me-0.5"></i>Nghỉ phép</span>
+                                    <span class="chip-sub">Đã duyệt</span>
+                                  </div>
+                                </c:when>
+
+                                <%-- 3. Closed (Đóng ca) --%>
+                                <c:when test="${cell.closed}">
+                                  <div class="chip-slot chip-closed" title="Khung giờ này đã bị đóng">
+                                    <span class="chip-title"><i class="bi bi-slash-circle me-0.5"></i>Đóng ca</span>
+                                    <span class="chip-sub">Tạm dừng</span>
+                                  </div>
+                                </c:when>
+
+                                <%-- 4. Available (Đang trực sẵn sàng) --%>
+                                <c:when test="${cell.available}">
+                                  <div class="chip-slot chip-available" title="Ca làm việc sẵn sàng tiếp nhận bệnh nhân">
+                                    <span class="chip-title"><i class="bi bi-check2-circle text-teal me-0.5" style="color: #0d9488;"></i>Làm việc</span>
+                                    <span class="chip-sub">
+                                      <c:out value="${not empty cell.roomName && cell.roomName != 'Chưa xếp phòng' ? cell.roomName : 'Sẵn sàng'}" />
+                                    </span>
+                                  </div>
+                                </c:when>
+
+                                <%-- Default Off --%>
+                                <c:otherwise>
+                                  <div class="chip-slot chip-off" title="Không có lịch trực">—</div>
+                                </c:otherwise>
+                              </c:choose>
+                            </c:when>
+                            <c:otherwise>
+                              <div class="chip-slot chip-off" title="Không có lịch trực">—</div>
+                            </c:otherwise>
+                          </c:choose>
+                        </td>
                       </c:forEach>
 
                       <!-- Total Column -->
                       <td class="text-center">
                         <c:choose>
-                          <c:when test="${day.totalSlotsCount > 0}">
+                          <c:when test="${daySlotsCount > 0}">
                             <span class="badge ${day.today ? 'text-white' : 'bg-light text-dark border'} rounded-pill px-2.5 py-1.5 fw-bold"
                                   style="${day.today ? 'background:#0d9488;' : ''}">
-                              ${day.totalSlotsCount} ca
+                              ${daySlotsCount} ca
                             </span>
                           </c:when>
                           <c:otherwise>

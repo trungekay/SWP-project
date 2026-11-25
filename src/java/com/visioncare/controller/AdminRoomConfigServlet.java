@@ -64,12 +64,7 @@ public class AdminRoomConfigServlet extends HttpServlet {
             } else if ("delete".equals(action)) {
                 int roomId = Integer.parseInt(request.getParameter("roomId"));
                 roomDAO.deleteRoom(roomId);
-            } else if ("assign_doctor".equals(action)) {
-                int doctorId = Integer.parseInt(request.getParameter("doctorId"));
-                int roomId = Integer.parseInt(request.getParameter("roomId"));
-                com.visioncare.dao.DoctorDAO doctorDAO = new com.visioncare.dao.DoctorDAO();
-                doctorDAO.assignDoctorToRoom(doctorId, roomId);
-            }
+            } 
         } catch (Exception e) {
             e.printStackTrace();
             request.getSession().setAttribute("errorMsg", "Không thể thực hiện thao tác. Có thể phòng đang được sử dụng.");

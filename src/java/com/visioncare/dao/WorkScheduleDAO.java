@@ -1,24 +1,32 @@
 package com.visioncare.dao;
+
 import com.visioncare.model.ScheduleCellDTO;
 import com.visioncare.model.ScheduleRegistrationDTO;
 import com.visioncare.model.User;
 import java.sql.*;
 import java.util.*;
+
 public class WorkScheduleDAO {
     public Map<String, ScheduleCellDTO> getScheduleMatrix(int actorId, String role, String startDate, String endDate) {
         Map<String, ScheduleCellDTO> matrix = new HashMap<>();
         StringBuilder sql = new StringBuilder();
+        String empJoinCol = "ws.Doctor_Employee_ID";
+        if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
+            empJoinCol = "ws.Specialist_Employee_ID";
+        } else if ("staff".equalsIgnoreCase(role)) {
+            empJoinCol = "COALESCE(ws.Staff_Employee_ID, ws.Specialist_Employee_ID)";
+        }
         sql.append("SELECT ws.Schedule_ID, ws.Doctor_Employee_ID, ws.Specialist_Employee_ID, ws.Staff_Employee_ID, ")
-           .append("       ws.Work_Date, ws.Slot, ws.Start_Time, ws.End_Time, ws.Status, ")
-           .append("       rm.Room_Name, ")
-           .append("       ap.Appointment_ID, ap.Patient_ID, ap.Status AS Appointment_Status, ")
-           .append("       p.Full_Name AS Patient_Name, p.Phone AS Patient_Phone ")
-           .append("FROM Work_Schedule ws ")
-           .append("LEFT JOIN Employee_Profile e ON (ws.Doctor_Employee_ID = e.Employee_ID OR ws.Specialist_Employee_ID = e.Employee_ID OR ws.Staff_Employee_ID = e.Employee_ID) ")
-           .append("LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID ")
-           .append("LEFT JOIN Appointment ap ON ws.Schedule_ID = ap.Schedule_ID AND ap.Status != 'Canceled' ")
-           .append("LEFT JOIN Patient p ON ap.Patient_ID = p.Patient_ID ")
-           .append("WHERE ws.Work_Date BETWEEN ? AND ? ");
+                .append("       ws.Work_Date, ws.Slot, ws.Start_Time, ws.End_Time, ws.Status, ")
+                .append("       rm.Room_Name, ")
+                .append("       ap.Appointment_ID, ap.Patient_ID, ap.Status AS Appointment_Status, ")
+                .append("       p.Full_Name AS Patient_Name, p.Phone AS Patient_Phone ")
+                .append("FROM Work_Schedule ws ")
+                .append("LEFT JOIN Employee_Profile e ON ").append(empJoinCol).append(" = e.Employee_ID ")
+                .append("LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID ")
+                .append("LEFT JOIN Appointment ap ON ws.Schedule_ID = ap.Schedule_ID AND ap.Status != 'Canceled' ")
+                .append("LEFT JOIN Patient p ON ap.Patient_ID = p.Patient_ID ")
+                .append("WHERE ws.Work_Date BETWEEN ? AND ? ");
         if ("doctor".equalsIgnoreCase(role)) {
             sql.append("AND ws.Doctor_Employee_ID = ? ");
         } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
@@ -27,10 +35,11 @@ public class WorkScheduleDAO {
             sql.append("AND (ws.Staff_Employee_ID = ? OR ws.Specialist_Employee_ID = ?) ");
         }
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+                PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             ps.setString(1, startDate);
             ps.setString(2, endDate);
-            if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
+            if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role)
+                    || "specialist".equalsIgnoreCase(role)) {
                 ps.setInt(3, actorId);
             } else if ("staff".equalsIgnoreCase(role)) {
                 ps.setInt(3, actorId);
@@ -62,7 +71,8 @@ public class WorkScheduleDAO {
     }
 
     private void putCellWithAliases(Map<String, ScheduleCellDTO> map, ScheduleCellDTO cell) {
-        if (cell == null || cell.getWorkDate() == null) return;
+        if (cell == null || cell.getWorkDate() == null)
+            return;
         String workDate = cell.getWorkDate();
         String slot = cell.getSlot();
         String startTime = cell.getStartTime();
@@ -97,7 +107,8 @@ public class WorkScheduleDAO {
     }
 
     private void addKeyAliases(Set<String> set, String workDate, String slotRaw, String startTime, String endTime) {
-        if (workDate == null) return;
+        if (workDate == null)
+            return;
         if (slotRaw != null && !slotRaw.trim().isEmpty()) {
             set.add(workDate + "_" + slotRaw.trim());
         }
@@ -125,9 +136,11 @@ public class WorkScheduleDAO {
             }
         }
     }
+
     public Set<String> getRegisteredSlotKeys(int actorId, String role, String startDate, String endDate) {
         Set<String> set = new HashSet<>();
-        StringBuilder sql = new StringBuilder("SELECT Work_Date, Slot, Start_Time, End_Time FROM Work_Schedule WHERE Work_Date BETWEEN ? AND ? ");
+        StringBuilder sql = new StringBuilder(
+                "SELECT Work_Date, Slot, Start_Time, End_Time FROM Work_Schedule WHERE Work_Date BETWEEN ? AND ? ");
         if ("doctor".equalsIgnoreCase(role)) {
             sql.append("AND Doctor_Employee_ID = ? ");
         } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
@@ -137,10 +150,11 @@ public class WorkScheduleDAO {
         }
         sql.append("AND Status NOT IN ('Canceled', 'Inactive', 'Disabled', 'Closed') ");
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+                PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             ps.setString(1, startDate);
             ps.setString(2, endDate);
-            if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
+            if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role)
+                    || "specialist".equalsIgnoreCase(role)) {
                 ps.setInt(3, actorId);
             } else if ("staff".equalsIgnoreCase(role)) {
                 ps.setInt(3, actorId);
@@ -160,7 +174,8 @@ public class WorkScheduleDAO {
 
     public Set<String> getClosedSlotKeys(int actorId, String role, String startDate, String endDate) {
         Set<String> set = new HashSet<>();
-        StringBuilder sql = new StringBuilder("SELECT Work_Date, Slot, Start_Time, End_Time FROM Work_Schedule WHERE Work_Date BETWEEN ? AND ? ");
+        StringBuilder sql = new StringBuilder(
+                "SELECT Work_Date, Slot, Start_Time, End_Time FROM Work_Schedule WHERE Work_Date BETWEEN ? AND ? ");
         if ("doctor".equalsIgnoreCase(role)) {
             sql.append("AND Doctor_Employee_ID = ? ");
         } else if ("medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
@@ -170,10 +185,11 @@ public class WorkScheduleDAO {
         }
         sql.append("AND Status IN ('Canceled', 'Inactive', 'Disabled', 'Closed') ");
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+                PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             ps.setString(1, startDate);
             ps.setString(2, endDate);
-            if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role)) {
+            if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role)
+                    || "specialist".equalsIgnoreCase(role)) {
                 ps.setInt(3, actorId);
             } else if ("staff".equalsIgnoreCase(role)) {
                 ps.setInt(3, actorId);
@@ -190,6 +206,7 @@ public class WorkScheduleDAO {
         }
         return set;
     }
+
     public boolean registerScheduleBatch(int actorId, String role, List<ScheduleRegistrationDTO> list) {
         if (list == null || list.isEmpty()) {
             return false;
@@ -206,25 +223,29 @@ public class WorkScheduleDAO {
             sql.append(") ");
         }
         sql.append("BEGIN ")
-           .append("INSERT INTO Work_Schedule (Doctor_Employee_ID, Specialist_Employee_ID, Staff_Employee_ID, Work_Date, Slot, Start_Time, End_Time, Status) ")
-           .append("VALUES (?, ?, ?, ?, ?, ?, ?, 'Available') ")
-           .append("END");
+                .append("INSERT INTO Work_Schedule (Doctor_Employee_ID, Specialist_Employee_ID, Staff_Employee_ID, Work_Date, Slot, Start_Time, End_Time, Status) ")
+                .append("VALUES (?, ?, ?, ?, ?, ?, ?, 'Available') ")
+                .append("END");
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
             try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
                 for (ScheduleRegistrationDTO item : list) {
                     try (PreparedStatement cfg = conn.prepareStatement(
                             "SELECT 1 FROM Time_Slot_Config WITH (HOLDLOCK) WHERE Slot_Name=? "
-                            + "AND Start_Time=CAST(? AS TIME) AND End_Time=CAST(? AS TIME) AND Status='Available'")) {
-                        cfg.setString(1,item.getSlot()); cfg.setString(2,item.getStartTime()); cfg.setString(3,item.getEndTime());
+                                    + "AND Start_Time=CAST(? AS TIME) AND End_Time=CAST(? AS TIME) AND Status='Available'")) {
+                        cfg.setString(1, item.getSlot());
+                        cfg.setString(2, item.getStartTime());
+                        cfg.setString(3, item.getEndTime());
                         try (ResultSet valid = cfg.executeQuery()) {
-                            if (!valid.next()) throw new IllegalArgumentException("Ca đã đóng hoặc đã thay đổi.");
+                            if (!valid.next())
+                                throw new IllegalArgumentException("Ca đã đóng hoặc đã thay đổi.");
                         }
                     }
                     int pIndex = 1;
                     ps.setString(pIndex++, item.getWorkDate());
                     ps.setString(pIndex++, item.getSlot());
-                    if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role) || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
+                    if ("doctor".equalsIgnoreCase(role) || "medical_specialist".equalsIgnoreCase(role)
+                            || "specialist".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)) {
                         ps.setInt(pIndex++, actorId);
                     }
                     if ("doctor".equalsIgnoreCase(role)) {
@@ -264,18 +285,21 @@ public class WorkScheduleDAO {
         }
         return false;
     }
+
     public List<User> getStaffAndDoctorList() {
         List<User> list = new ArrayList<>();
-        String sql = "SELECT LOWER(r.Role_Name) AS Role_Type, e.Employee_ID AS Actor_ID, e.Full_Name, COALESCE(e.Specialty, N'Nhân viên') AS Specialty, " +
-                     "CASE WHEN LOWER(r.Role_Name) = 'staff' THEN NULL ELSE COALESCE(rm.Room_Name, N'Chưa xếp phòng') END AS Room_Name " +
-                     "FROM Employee_Profile e " +
-                     "JOIN Account a ON e.Account_ID = a.Account_ID " +
-                     "JOIN Role r ON a.Role_ID = r.Role_ID " +
-                     "LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID " +
-                     "WHERE r.Role_Name IN ('Doctor', 'Medical_Specialist', 'Staff')";
+        String sql = "SELECT LOWER(r.Role_Name) AS Role_Type, e.Employee_ID AS Actor_ID, e.Full_Name, COALESCE(e.Specialty, N'Nhân viên') AS Specialty, "
+                +
+                "CASE WHEN LOWER(r.Role_Name) = 'staff' THEN NULL ELSE COALESCE(rm.Room_Name, N'Chưa xếp phòng') END AS Room_Name "
+                +
+                "FROM Employee_Profile e " +
+                "JOIN Account a ON e.Account_ID = a.Account_ID " +
+                "JOIN Role r ON a.Role_ID = r.Role_ID " +
+                "LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID " +
+                "WHERE r.Role_Name IN ('Doctor', 'Medical_Specialist', 'Staff')";
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 User u = new User();
                 u.setRole(rs.getString("Role_Type"));
@@ -300,17 +324,19 @@ public class WorkScheduleDAO {
             targetRole = "Staff";
         }
         String sql = "SELECT LOWER(r.Role_Name) AS Role_Type, r.Role_Name, e.Employee_ID AS Actor_ID, a.Account_ID, " +
-                     "e.Full_Name, a.Email, COALESCE(e.Phone, N'Chưa có') AS Phone, COALESCE(e.Specialty, N'Chung') AS Specialty, " +
-                     "CASE WHEN LOWER(r.Role_Name) = 'staff' THEN NULL ELSE COALESCE(rm.Room_Name, N'Chưa xếp phòng') END AS Room_Name, " +
-                     "e.License_Number, a.Account_Status, e.DOB, e.Address " +
-                     "FROM Employee_Profile e " +
-                     "JOIN Account a ON e.Account_ID = a.Account_ID " +
-                     "JOIN Role r ON a.Role_ID = r.Role_ID " +
-                     "LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID " +
-                     "WHERE r.Role_Name = ? AND a.Account_Status != 'Deleted' " +
-                     "ORDER BY e.Employee_ID ASC";
+                "e.Full_Name, a.Email, COALESCE(e.Phone, N'Chưa có') AS Phone, COALESCE(e.Specialty, N'Chung') AS Specialty, "
+                +
+                "CASE WHEN LOWER(r.Role_Name) = 'staff' THEN NULL ELSE COALESCE(rm.Room_Name, N'Chưa xếp phòng') END AS Room_Name, "
+                +
+                "e.License_Number, a.Account_Status, e.DOB, e.Address " +
+                "FROM Employee_Profile e " +
+                "JOIN Account a ON e.Account_ID = a.Account_ID " +
+                "JOIN Role r ON a.Role_ID = r.Role_ID " +
+                "LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID " +
+                "WHERE r.Role_Name = ? AND a.Account_Status != 'Deleted' " +
+                "ORDER BY e.Employee_ID ASC";
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, targetRole);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -336,16 +362,19 @@ public class WorkScheduleDAO {
         }
         return list;
     }
+
     public User getActorProfile(int actorId, String role) {
-        String sql = "SELECT e.Employee_ID AS Actor_ID, e.Full_Name, COALESCE(e.Specialty, N'Nhân viên') AS Specialty, " +
-                     "CASE WHEN LOWER(r.Role_Name) = 'staff' THEN NULL ELSE COALESCE(rm.Room_Name, N'Chưa xếp phòng') END AS Room_Name, e.License_Number, LOWER(r.Role_Name) AS Role, e.Phone " +
-                     "FROM Employee_Profile e " +
-                     "JOIN Account a ON e.Account_ID = a.Account_ID " +
-                     "JOIN Role r ON a.Role_ID = r.Role_ID " +
-                     "LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID " +
-                     "WHERE e.Employee_ID = ?";
+        String sql = "SELECT e.Employee_ID AS Actor_ID, e.Full_Name, COALESCE(e.Specialty, N'Nhân viên') AS Specialty, "
+                +
+                "CASE WHEN LOWER(r.Role_Name) = 'staff' THEN NULL ELSE COALESCE(rm.Room_Name, N'Chưa xếp phòng') END AS Room_Name, e.License_Number, LOWER(r.Role_Name) AS Role, e.Phone "
+                +
+                "FROM Employee_Profile e " +
+                "JOIN Account a ON e.Account_ID = a.Account_ID " +
+                "JOIN Role r ON a.Role_ID = r.Role_ID " +
+                "LEFT JOIN Room rm ON e.Room_ID = rm.Room_ID " +
+                "WHERE e.Employee_ID = ?";
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, actorId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -366,42 +395,39 @@ public class WorkScheduleDAO {
         return null;
     }
 
-    public List<com.visioncare.model.TimeSlot> getDoctorSlotsForDate(int doctorId, String dateStr) {
-        return getDoctorSlotsForDate(doctorId, dateStr, false);
-    }
-
-    /** Registered morning/afternoon slots, including slots hidden from booking by buffer mode. */
     public List<com.visioncare.model.TimeSlot> getDoctorShiftSlotsForDate(int doctorId, String dateStr) {
-        return getDoctorSlotsForDate(doctorId, dateStr, true);
+        return getDoctorSlotsForDate(doctorId, dateStr);
     }
 
-    private List<com.visioncare.model.TimeSlot> getDoctorSlotsForDate(int doctorId, String dateStr, boolean wholeShift) {
+    public List<com.visioncare.model.TimeSlot> getDoctorSlotsForDate(int doctorId, String dateStr) {
         List<com.visioncare.model.TimeSlot> list = new ArrayList<>();
         int pendingHoldMinutes = TimeSlotDAO.getPendingHoldMinutes();
         String sql = "SELECT ws.Schedule_ID, ws.Doctor_Employee_ID, ws.Work_Date, ws.Slot, " +
-                     "       CONVERT(VARCHAR(5), ws.Start_Time, 108) AS Start_Time_Str, " +
-                     "       CONVERT(VARCHAR(5), ws.End_Time, 108) AS End_Time_Str, " +
-                     "       ws.Status, " +
-                     "       CASE " +
-                     "         WHEN ws.Status = 'Booked' THEN 1 " +
-                     "         WHEN EXISTS (SELECT 1 FROM Appointment ap WHERE ap.Schedule_ID = ws.Schedule_ID " +
-                     "                      AND (ap.Status IN ('Confirmed', 'In_Progress', 'Completed') " +
-                     "                           OR (ap.Status = 'Pending' AND DATEDIFF(MINUTE, ap.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) < ?))) THEN 1 " +
-                     "         ELSE 0 " +
-                     "       END AS Is_Booked, " +
-                     "       CASE " +
-                     "         WHEN ws.Work_Date < CAST(DATEADD(HOUR, 7, SYSUTCDATETIME()) AS DATE) THEN 1 " +
-                     "         WHEN ws.Work_Date = CAST(DATEADD(HOUR, 7, SYSUTCDATETIME()) AS DATE) " +
-                     "              AND CAST(ws.Start_Time AS TIME) <= CAST(DATEADD(HOUR, 7, SYSUTCDATETIME()) AS TIME) THEN 1 " +
-                     "         ELSE 0 " +
-                     "       END AS Is_Past " +
-                     "FROM Work_Schedule ws " +
-                     "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? " +
-                     " AND " + (wholeShift ? "ws.Start_Time < '17:00:00'" : com.visioncare.util.BookingAvailability.getWindowCondition()) + " " +
-                     "  AND ws.Status IN ('Available', 'Booked') " +
-                     "ORDER BY ws.Start_Time ASC";
+                "       CONVERT(VARCHAR(5), ws.Start_Time, 108) AS Start_Time_Str, " +
+                "       CONVERT(VARCHAR(5), ws.End_Time, 108) AS End_Time_Str, " +
+                "       ws.Status, " +
+                "       CASE " +
+                "         WHEN ws.Status = 'Booked' THEN 1 " +
+                "         WHEN EXISTS (SELECT 1 FROM Appointment ap WHERE ap.Schedule_ID = ws.Schedule_ID " +
+                "                      AND (ap.Status IN ('Confirmed', 'In_Progress', 'Completed') " +
+                "                           OR (ap.Status = 'Pending' AND DATEDIFF(MINUTE, ap.created_at, DATEADD(HOUR, 7, SYSUTCDATETIME())) < ?))) THEN 1 "
+                +
+                "         ELSE 0 " +
+                "       END AS Is_Booked, " +
+                "       CASE " +
+                "         WHEN ws.Work_Date < CAST(DATEADD(HOUR, 7, SYSUTCDATETIME()) AS DATE) THEN 1 " +
+                "         WHEN ws.Work_Date = CAST(DATEADD(HOUR, 7, SYSUTCDATETIME()) AS DATE) " +
+                "              AND CAST(ws.Start_Time AS TIME) <= CAST(DATEADD(HOUR, 7, SYSUTCDATETIME()) AS TIME) THEN 1 "
+                +
+                "         ELSE 0 " +
+                "       END AS Is_Past " +
+                "FROM Work_Schedule ws " +
+                "WHERE ws.Doctor_Employee_ID = ? AND ws.Work_Date = ? " +
+                "  AND " + com.visioncare.util.BookingAvailability.getWindowCondition() + " " +
+                "  AND ws.Status IN ('Available', 'Booked') " +
+                "ORDER BY ws.Start_Time ASC";
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, pendingHoldMinutes);
             ps.setInt(2, doctorId);
             ps.setString(3, dateStr);
@@ -460,25 +486,29 @@ public class WorkScheduleDAO {
 
     public void ensureRealisticSchedules() {
         try (Connection conn = DBContext.getConnection()) {
-            if (conn == null) return;
+            if (conn == null)
+                return;
 
             // Đảm bảo cấu trúc cột và ràng buộc cho bảng Work_Schedule
             try (Statement st = conn.createStatement()) {
                 st.execute("IF COL_LENGTH('dbo.Work_Schedule', 'Staff_Employee_ID') IS NULL " +
-                           "ALTER TABLE dbo.Work_Schedule ADD Staff_Employee_ID INT NULL");
+                        "ALTER TABLE dbo.Work_Schedule ADD Staff_Employee_ID INT NULL");
                 st.execute("IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CHK_WS_Has_Employee') " +
-                           "BEGIN " +
-                           "  ALTER TABLE [dbo].[Work_Schedule] DROP CONSTRAINT [CHK_WS_Has_Employee]; " +
-                           "  ALTER TABLE [dbo].[Work_Schedule] WITH CHECK ADD CONSTRAINT [CHK_WS_Has_Employee] " +
-                           "  CHECK (([Doctor_Employee_ID] IS NOT NULL OR [Specialist_Employee_ID] IS NOT NULL OR [Staff_Employee_ID] IS NOT NULL)); " +
-                           "END");
-            } catch (Exception ignored) {}
+                        "BEGIN " +
+                        "  ALTER TABLE [dbo].[Work_Schedule] DROP CONSTRAINT [CHK_WS_Has_Employee]; " +
+                        "  ALTER TABLE [dbo].[Work_Schedule] WITH CHECK ADD CONSTRAINT [CHK_WS_Has_Employee] " +
+                        "  CHECK (([Doctor_Employee_ID] IS NOT NULL OR [Specialist_Employee_ID] IS NOT NULL OR [Staff_Employee_ID] IS NOT NULL)); "
+                        +
+                        "END");
+            } catch (Exception ignored) {
+            }
         } catch (Exception e) {
             System.err.println("ensureRealisticSchedules note: " + e.getMessage());
         }
     }
 
-    private void insertDocSlot(PreparedStatement ps, int docId, String dateStr, String slot, String start, String end) throws SQLException {
+    private void insertDocSlot(PreparedStatement ps, int docId, String dateStr, String slot, String start, String end)
+            throws SQLException {
         ps.setInt(1, docId);
         ps.setString(2, dateStr);
         ps.setString(3, slot);
@@ -490,7 +520,8 @@ public class WorkScheduleDAO {
         ps.executeUpdate();
     }
 
-    private void insertSingleRoleSlot(PreparedStatement ps, int actorId, String dateStr, String slot, String start, String end) throws SQLException {
+    private void insertSingleRoleSlot(PreparedStatement ps, int actorId, String dateStr, String slot, String start,
+            String end) throws SQLException {
         ps.setInt(1, actorId);
         ps.setString(2, dateStr);
         ps.setString(3, slot);
@@ -504,20 +535,22 @@ public class WorkScheduleDAO {
 
     /**
      * Trả về map {ngày (yyyy-MM-dd) → Set<doctorEmployeeId>} cho các bác sĩ có
-     * ít nhất một ca làm việc đang hoạt động (không bị hủy) trong khoảng ngày cho trước.
-     * Dùng để pre-load lịch làm việc 7 ngày lên JSP, tránh N+1 AJAX call khi đổi ngày.
+     * ít nhất một ca làm việc đang hoạt động (không bị hủy) trong khoảng ngày cho
+     * trước.
+     * Dùng để pre-load lịch làm việc 7 ngày lên JSP, tránh N+1 AJAX call khi đổi
+     * ngày.
      */
     public Map<String, Set<Integer>> getDoctorWorkingDays(String startDate, String endDate) {
         Map<String, Set<Integer>> result = new LinkedHashMap<>();
         String sql = "SELECT CONVERT(varchar(10), Work_Date, 120) AS work_date, Doctor_Employee_ID " +
-                     "FROM Work_Schedule " +
-                     "WHERE Work_Date BETWEEN ? AND ? " +
-                     "AND Doctor_Employee_ID IS NOT NULL " +
-                     "AND Status NOT IN ('Canceled', 'On_Leave', 'Inactive', 'Disabled', 'Closed') " +
-                     "GROUP BY Work_Date, Doctor_Employee_ID " +
-                     "ORDER BY Work_Date";
+                "FROM Work_Schedule " +
+                "WHERE Work_Date BETWEEN ? AND ? " +
+                "AND Doctor_Employee_ID IS NOT NULL " +
+                "AND Status NOT IN ('Canceled', 'On_Leave', 'Inactive', 'Disabled', 'Closed') " +
+                "GROUP BY Work_Date, Doctor_Employee_ID " +
+                "ORDER BY Work_Date";
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, startDate);
             ps.setString(2, endDate);
             try (ResultSet rs = ps.executeQuery()) {
@@ -534,7 +567,8 @@ public class WorkScheduleDAO {
     }
 
     /**
-     * Lấy thống kê số ca trực và số lịch hẹn của tất cả nhân sự thuộc 1 role trong khoảng ngày (tuần).
+     * Lấy thống kê số ca trực và số lịch hẹn của tất cả nhân sự thuộc 1 role trong
+     * khoảng ngày (tuần).
      * Trả về Map<ActorId, int[]{totalSlots, bookedSlots}>
      */
     public Map<Integer, int[]> getWeeklyEmployeeSlotStats(String roleType, String startDate, String endDate) {
@@ -547,23 +581,24 @@ public class WorkScheduleDAO {
         }
 
         String sql = "SELECT ws." + colName + " AS actor_id, " +
-                     "SUM(CASE WHEN ws.Status NOT IN ('Canceled', 'On_Leave', 'Closed') THEN 1 ELSE 0 END) AS total_slots, " +
-                     "SUM(CASE WHEN a.Appointment_ID IS NOT NULL AND a.Status NOT IN ('Canceled', 'Rejected') THEN 1 ELSE 0 END) AS booked_slots " +
-                     "FROM Work_Schedule ws " +
-                     "LEFT JOIN Appointment a ON ws.Schedule_ID = a.Schedule_ID " +
-                     "WHERE ws." + colName + " IS NOT NULL AND ws.Work_Date BETWEEN ? AND ? " +
-                     "GROUP BY ws." + colName;
+                "COUNT(DISTINCT CASE WHEN ws.Status NOT IN ('Canceled', 'On_Leave', 'Closed') THEN ws.Schedule_ID END) AS total_slots, " +
+                "COUNT(DISTINCT CASE WHEN a.Appointment_ID IS NOT NULL AND a.Status NOT IN ('Canceled', 'Rejected') THEN ws.Schedule_ID END) AS booked_slots " +
+                "FROM Work_Schedule ws " +
+                "LEFT JOIN Appointment a ON ws.Schedule_ID = a.Schedule_ID " +
+                "WHERE ws." + colName + " IS NOT NULL AND ws.Work_Date BETWEEN ? AND ? " +
+                "GROUP BY ws." + colName;
 
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, startDate);
             ps.setString(2, endDate);
+            // lưu vào map
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     int actorId = rs.getInt("actor_id");
                     int totalSlots = rs.getInt("total_slots");
                     int bookedSlots = rs.getInt("booked_slots");
-                    stats.put(actorId, new int[]{totalSlots, bookedSlots});
+                    stats.put(actorId, new int[] { totalSlots, bookedSlots });
                 }
             }
         } catch (Exception e) {
