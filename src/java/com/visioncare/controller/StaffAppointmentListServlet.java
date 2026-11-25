@@ -37,19 +37,6 @@ public class StaffAppointmentListServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String ajaxAction = request.getParameter("ajax");
-        if ("toggleBufferSlot".equalsIgnoreCase(ajaxAction)) {
-            response.setContentType("application/json;charset=UTF-8");
-            String bufferVal = request.getParameter("sessionEndBufferEnabled");
-            boolean newEnabled;
-            if (bufferVal != null && !bufferVal.trim().isEmpty()) {
-                newEnabled = "true".equalsIgnoreCase(bufferVal) || "on".equalsIgnoreCase(bufferVal) || "1".equals(bufferVal);
-            } else {
-                newEnabled = !TimeSlotDAO.isSessionEndBufferEnabled();
-            }
-            boolean success = timeSlotDAO.updateSessionEndBufferEnabled(newEnabled);
-            response.getWriter().write("{\"success\":" + success + ",\"sessionEndBufferEnabled\":" + newEnabled + "}");
-            return;
-        }
         if ("checkPayment".equalsIgnoreCase(ajaxAction)) {
             response.setContentType("application/json;charset=UTF-8");
             String apptIdStr = request.getParameter("appointmentId");
@@ -234,7 +221,6 @@ public class StaffAppointmentListServlet extends HttpServlet {
             request.setAttribute("checkedInCount", checkedInCount);
             request.setAttribute("completedCount", completedCount);
             request.setAttribute("canceledCount", canceledCount);
-            request.setAttribute("sessionEndBufferEnabled", TimeSlotDAO.isSessionEndBufferEnabled());
 
             String servletPath = request.getServletPath();
             String currentNav = "/staff/check-in".equals(servletPath) ? "checkin" : "appointments";
@@ -254,40 +240,6 @@ public class StaffAppointmentListServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
         String action = request.getParameter("action");
         HttpSession session = request.getSession();
-
-        if ("toggleBufferSlot".equalsIgnoreCase(action) || "update_session_buffer".equalsIgnoreCase(action)) {
-            String bufferVal = request.getParameter("sessionEndBufferEnabled");
-            boolean newEnabled;
-            if (bufferVal != null && !bufferVal.trim().isEmpty()) {
-                newEnabled = "true".equalsIgnoreCase(bufferVal) || "on".equalsIgnoreCase(bufferVal) || "1".equals(bufferVal);
-            } else {
-                newEnabled = !TimeSlotDAO.isSessionEndBufferEnabled();
-            }
-            boolean success = timeSlotDAO.updateSessionEndBufferEnabled(newEnabled);
-
-            String isAjax = request.getHeader("X-Requested-With");
-            String ajaxParam = request.getParameter("ajax");
-            if ("true".equalsIgnoreCase(ajaxParam) || "XMLHttpRequest".equalsIgnoreCase(isAjax)) {
-                response.setContentType("application/json;charset=UTF-8");
-                response.getWriter().write("{\"success\":" + success + ",\"sessionEndBufferEnabled\":" + newEnabled + "}");
-                return;
-            }
-
-            if (success) {
-                session.setAttribute("successMessage", newEnabled
-                    ? "Đã kích hoạt chế độ Ca Đệm (11:00-11:30 & 16:30-17:00). Hai khung giờ này được bảo lưu dự phòng chống quá tải!"
-                    : "Đã tắt chế độ Ca Đệm. Toàn bộ các khung giờ (08:00-11:30 & 13:30-17:00) đã mở cho bệnh nhân đặt lịch!");
-            } else {
-                session.setAttribute("errorMessage", "Không thể cập nhật cấu hình Ca Đệm. Vui lòng thử lại!");
-            }
-            String returnUrl = request.getParameter("returnUrl");
-            if (returnUrl != null && !returnUrl.trim().isEmpty() && !returnUrl.contains(".jsp")) {
-                response.sendRedirect(returnUrl);
-            } else {
-                response.sendRedirect(request.getContextPath() + "/staff/appointments");
-            }
-            return;
-        }
 
         if ("approveCancellation".equals(action)) {
             try {

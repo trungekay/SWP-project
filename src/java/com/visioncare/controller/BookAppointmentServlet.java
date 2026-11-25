@@ -227,7 +227,8 @@ public class BookAppointmentServlet extends HttpServlet {
                     } catch (Exception ignored) {}
                 }
             }
-
+            
+            // truyền vào ca khám tiền phẫu nếu có
             if (serviceParam != null && !serviceParam.isEmpty()) {
                 String effectiveServiceParam = serviceParam;
                 try {
@@ -309,12 +310,10 @@ public class BookAppointmentServlet extends HttpServlet {
             appointmentDAO.autoCancelExpiredPendingAppointments();
             List<TimeSlot> slots = workScheduleDAO.getDoctorSlotsForDate(doctorId, dateStr);
             String shift = workScheduleDAO.getDoctorWorkShiftSummary(doctorId, dateStr);
-            boolean bufferEnabled = com.visioncare.dao.TimeSlotDAO.isSessionEndBufferEnabled();
 
             StringBuilder json = new StringBuilder();
             json.append("{");
             json.append("\"shiftSummary\":\"").append(shift).append("\",");
-            json.append("\"sessionEndBufferEnabled\":").append(bufferEnabled).append(",");
             json.append("\"slots\":[");
             for (int i = 0; i < slots.size(); i++) {
                 TimeSlot s = slots.get(i);
@@ -536,7 +535,6 @@ public class BookAppointmentServlet extends HttpServlet {
                 // Lấy link trang thanh toán do PayOS trả về
                 payosCheckoutUrl = payosRes.checkoutUrl;
                 
-                // Nạp link checkout vào request để JSP có thể hiển thị nút "Mở trang PayOS" nếu cần
                 request.setAttribute("payosCheckoutUrl", payosRes.checkoutUrl);
                 
                 // Bật cờ đánh dấu cổng thanh toán PayOS đang hoạt động bình thường
@@ -548,7 +546,6 @@ public class BookAppointmentServlet extends HttpServlet {
                     qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + URLEncoder.encode(payosRes.qrCode, StandardCharsets.UTF_8);
                 }
             } else {
-                // Nếu PayOS phản hồi lỗi hoặc mất kết nối: Đánh dấu cổng thanh toán PayOS bị tắt/lỗi
                 request.setAttribute("isPayOSEnabled", false);
             }
 
@@ -561,7 +558,7 @@ public class BookAppointmentServlet extends HttpServlet {
                 return;
             }
 
-            // 18. Lấy lại toàn bộ thông tin chi tiết của lịch hẹn vừa tạo trong DB (tên bác sĩ, chuyên khoa, phòng khám, ngày giờ...)
+            //. Lấy lại toàn bộ thông tin chi tiết của lịch hẹn vừa tạo trong DB (tên bác sĩ, chuyên khoa, phòng khám, ngày giờ...)
             Appointment fullAppt = appointmentDAO.getAppointmentDetailById(newId);
             
             if (fullAppt != null) {
@@ -693,7 +690,8 @@ public class BookAppointmentServlet extends HttpServlet {
                         Long sessionOrder = (Long) request.getSession().getAttribute("payos_order_" + apptId);
                         orderCode = (sessionOrder != null) ? sessionOrder : apptId;
                     }
-
+                    
+                    //trả ve status tu ngan hang + so tien can thanh toan + so tien da thanh toan vao ngan hang
                     com.visioncare.util.PayOSUtil.VerifiedReceipt receipt = com.visioncare.util.PayOSUtil.getVerifiedReceipt(orderCode);
                     if (com.visioncare.util.BookingPaymentSession.matches(apptId, orderCode, appt.getFee(), receipt)) {
                         if (!appointmentDAO.confirmPayment(apptId)) {
@@ -814,7 +812,7 @@ public class BookAppointmentServlet extends HttpServlet {
     }
 
     /* =========================================================================
-     * [HỦY GIỮ CHỖ]: BỆNH NHÂN HỦY LỊCH PENDING ĐỂ CHỌN LẠI LỊCH KHÁC
+     * [HỦY GIỮ CHỖ]: BỆNH NHÂN HỦY LỊCH PENDING ĐỂ CHỌN LẠI LỊCH KHÁC HAOWJC HẾT GIỜ
      * ========================================================================= */
     private void handleCancelPending(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
@@ -894,28 +892,6 @@ public class BookAppointmentServlet extends HttpServlet {
         // Tải danh sách bác sĩ từ Database
         List<Doctor> doctors = doctorDAO.getAll();
         request.setAttribute("doctors", doctors);
-
-        // Pre-load lịch làm việc 7 ngày tới để client-side filter bác sĩ theo ngày 
-        String today = LocalDate.now().toString();
-        String weekEnd = LocalDate.now().plusDays(6).toString();
-        Map<String, Set<Integer>> scheduleMap = workScheduleDAO.getDoctorWorkingDays(today, weekEnd);
-        StringBuilder scheduleJson = new StringBuilder("{");
-        boolean firstDate = true;
-        for (Map.Entry<String, Set<Integer>> entry : scheduleMap.entrySet()) {
-            if (!firstDate) scheduleJson.append(",");
-            firstDate = false;
-            scheduleJson.append("\"").append(entry.getKey()).append("\":[");
-            boolean firstId = true;
-            for (Integer docId : entry.getValue()) {
-                if (!firstId) scheduleJson.append(",");
-                firstId = false;
-                scheduleJson.append(docId);
-            }
-            scheduleJson.append("]");
-        }
-        scheduleJson.append("}");
-        request.setAttribute("doctorScheduleMapJson", scheduleJson.toString());
-        request.setAttribute("sessionEndBufferEnabled", com.visioncare.dao.TimeSlotDAO.isSessionEndBufferEnabled());
 
         // Tự động điền thông tin nếu bệnh nhân đã đăng nhập
         HttpSession session = request.getSession(false);

@@ -159,7 +159,7 @@ public class DoctorDAO {
         if (imgPath == null) {
             if (fullName.contains("Trần Văn Nam")) {
                 imgPath = "doctors/doctors-1.jpg";
-            } else if (fullName.contains("Lê Hoàng Lan")) {
+            } else if (fullName.contains("Lê Hoàng Lan") || fullName.contains("Hoàng Mai Linh")) {
                 imgPath = "doctors/doctors-2.jpg";
             } else if (fullName.contains("Nguyễn Xuân Tịnh")) {
                 imgPath = "doctors/doctors-3.jpg";

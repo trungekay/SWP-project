@@ -321,7 +321,7 @@
                         <c:if test="${step == null || step == 'form'}">
                             <form id="bookingWizardForm" method="post"
                                   action="${pageContext.request.contextPath}/book-appointment">
-                                <input type="hidden" name="action" value="verify">
+                                <input type="hidden" name="action" value="vselectedScheduleIderify">
                                 <input type="hidden" name="scheduleId" id="selectedScheduleId" value="">
 
                                 <%--========================================================--%>
@@ -363,6 +363,7 @@
                                     </div>
 
                                     <div class="row g-3 mb-4" id="bookingServicesGrid">
+                                        <%-- nút phân loại ở trên --%>
                                         <c:forEach var="svc" items="${services}" varStatus="status">
                                             <c:set var="bGroup" value="kham_khucxa" />
                                             <c:set var="bGroupLabel" value="Khám & Khúc xạ" />
@@ -378,9 +379,7 @@
                                                     <c:set var="bGroupLabel" value="Phẫu thuật & Thủ thuật" />
                                                     <c:set var="bBadgeStyle" value="background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa;" />
                                                 </c:when>
-                                                <%-- Nhóm "Tiền phẫu & Tầm soát": nhận dạng qua specialty hoặc tên dịch vụ,
-                                                     không hardcode service code. GL-06/OCT-DM/KM-DM giữ lại vì là gói
-                                                     tầm soát chuyên sâu không có specialty riêng. --%>
+
                                                 <c:when test="${svc.specialty == 'lasik' or svc.specialty == 'cataract' or fn:contains(svc.name, 'tiền phẫu') or fn:contains(svc.name, 'Tiền phẫu') or fn:contains(svc.name, 'tầm soát') or fn:contains(svc.name, 'Tầm soát') or svc.code == 'GL-06' or svc.code == 'OCT-DM' or svc.code == 'KM-DM'}">
                                                     <c:set var="bGroup" value="tienphau_tamsoat" />
                                                     <c:set var="bGroupLabel" value="Tiền phẫu & Tầm soát" />
@@ -394,6 +393,8 @@
                                             </c:choose>
 
                                             <div class="col-md-6 col-lg-4 booking-service-col" data-bgroup="${bGroup}">
+                                                <%-- in ra các thẻ service, nếu chọn card nào thì sẽ lưu vào input --%>
+
                                                 <label class="d-block h-100 mb-0">
                                                     <input type="radio" class="d-none service-radio"
                                                            name="serviceId" value="${svc.id}"
@@ -652,7 +653,7 @@
                                                                       class="badge bg-success-subtle text-success border border-success-subtle rounded-pill small">
                                                                     <i class="bi bi-check-circle me-1"></i>Bác sĩ tiếp
                                                                     nhận
-                                                                </span>
+                                                                 </span>
                                                             </div>
                                                             <p class="text-primary small mb-1 fw-semibold"
                                                                id="docPreviewSpecialty"></p>
@@ -758,7 +759,7 @@
                                                     <span
                                                         class="badge-session badge-morning me-2"><i
                                                             class="bi bi-sun me-1"></i>Ca Sáng</span>
-                                                    <small class="text-muted" id="morningTimeRangeLabel">${sessionEndBufferEnabled ? '(08:00 — 11:00)' : '(08:00 — 11:30)'}</small>
+                                                    <small class="text-muted" id="morningTimeRangeLabel">(08:00 — 11:30)</small>
                                                 </div>
                                                 <div class="d-flex flex-wrap gap-2"
                                                      id="morningSlotsContainer"></div>
@@ -771,7 +772,7 @@
                                                         class="badge-session badge-afternoon me-2"><i
                                                             class="bi bi-brightness-high me-1"></i>Ca
                                                         Chiều</span>
-                                                    <small class="text-muted" id="afternoonTimeRangeLabel">${sessionEndBufferEnabled ? '(13:30 — 16:30)' : '(13:30 — 17:00)'}</small>
+                                                    <small class="text-muted" id="afternoonTimeRangeLabel">(13:30 — 17:00)</small>
                                                 </div>
                                                 <div class="d-flex flex-wrap gap-2"
                                                      id="afternoonSlotsContainer"></div>
@@ -896,7 +897,7 @@
                                                 <input type="text"
                                                        class="form-control form-control-lg rounded-3"
                                                        id="patientName" name="patientName"
-                                                       value="${not empty appointment.patientName ? appointment.patientName : (not empty loggedUser ? loggedUser.fullName : '')}"
+                                                       value="${not empty loggedUser ? loggedUser.fullName : ''}"
                                                        placeholder="Ví dụ: Nguyễn Văn A" required>
                                             </div>
 
@@ -907,7 +908,7 @@
                                                 <input type="tel"
                                                        class="form-control form-control-lg rounded-3"
                                                        id="patientPhone" name="patientPhone"
-                                                       value="${not empty appointment.phone ? appointment.phone : (not empty loggedUser ? loggedUser.phone : '')}"
+                                                       value="${not empty loggedUser ? loggedUser.phone : ''}"
                                                        placeholder="Ví dụ: 0912345678"
                                                        pattern="^0[3|5|7|8|9][0-9]{8}$" required>
                                             </div>
@@ -920,7 +921,7 @@
                                                 <input type="email"
                                                        class="form-control form-control-lg rounded-3"
                                                        id="patientEmail" name="patientEmail"
-                                                       value="${not empty appointment.email ? appointment.email : (not empty loggedUser ? loggedUser.email : '')}"
+                                                       value="${not empty loggedUser ? loggedUser.email : ''}"
                                                        placeholder="email@example.com" required>
                                             </div>
 
@@ -931,7 +932,7 @@
                                                 <input type="text"
                                                        class="form-control form-control-lg rounded-3"
                                                        id="patientDob" name="patientDob"
-                                                       value="${not empty appointment.dob ? appointment.dob : (not empty loggedUser ? loggedUser.dob : '')}"
+                                                       value="${not empty loggedUser ? loggedUser.dob : ''}"
                                                        placeholder="dd/mm/yyyy"
                                                        pattern="\d{2}[/-]\d{2}[/-]\d{4}|\d{4}-\d{2}-\d{2}"
                                                        required>
@@ -942,7 +943,7 @@
                                                     do khám / Triệu chứng cụ thể</label>
                                                 <textarea class="form-control rounded-3"
                                                           id="visitReason" name="visitReason" rows="2"
-                                                          placeholder="Ví dụ: Nhìn mờ mắt phải khi đọc sách, mỏi mắt khi làm việc máy tính, muốn đo tật khúc xạ...">${appointment.reason}</textarea>
+                                                          placeholder="Ví dụ: Nhìn mờ mắt phải khi đọc sách, mỏi mắt khi làm việc máy tính, muốn đo tật khúc xạ..."></textarea>
                                             </div>
                                         </div>
 
@@ -1263,12 +1264,9 @@
     <script>
         /* =========================================================================
          * [PHẦN 1]: CẤU HÌNH DỮ LIỆU & ĐIỀU HƯỚNG WIZARD (CHUNG CHO BƯỚC 1, 2, 3)
-         *   - Lịch làm việc 7 ngày (doctorScheduleMap)
          *   - Ràng buộc ngày tối thiểu (min = today)
          *   - Chuyển bước Wizard: nextWizardStep(), prevWizardStep(), goToWizardStep(), jumpToWizardStep()
          * ========================================================================= */
-        // Lịch làm việc 7 ngày tới, pre-load từ server để filter bác sĩ client-side theo ngày 
-        const doctorScheduleMap = ${not empty doctorScheduleMapJson ? doctorScheduleMapJson : '{}'};
         let currentWizardStep = 1;
 
         // Thiết lập ngày tối thiểu là ngày hôm nay theo giờ địa phương
@@ -1283,16 +1281,11 @@
             if (!dateInput.value) {
                 dateInput.value = todayStr;
             }
-            // Re-filter bác sĩ theo lịch làm việc khi bệnh nhân đổi ngày khám (Option C)
-            dateInput.addEventListener('change', function () {
-                const checkedSvc = document.querySelector('input[name="serviceId"]:checked');
-                if (checkedSvc)
-                    filterDoctorsByService(checkedSvc);
-            });
         }
 
         // Điều hướng chuyển bước trong wizard
-        function nextWizardStep(step) {
+        function 
+        nextWizardStep(step) {
             if (step === 1) {
                 const docSelect = document.getElementById('doctorSelect');
                 if (!docSelect || !docSelect.value) {
@@ -1465,14 +1458,6 @@
                 const docDept = (opt.dataset.dept || '').toLowerCase().trim();
                 const docSpecialty = (opt.dataset.specialty || '').toLowerCase().trim();
 
-                // Kiểm tra lịch làm việc theo ngày đã chọn (Option C - pre-loaded 7-day schedule map)
-                const selectedDate = document.getElementById('appointmentDate')?.value || '';
-                const workingDocIds = (selectedDate && doctorScheduleMap[selectedDate])
-                        ? new Set(doctorScheduleMap[selectedDate])
-                        : null; // null = không có dữ liệu → hiện tất cả
-                const docId = parseInt(opt.dataset.doctorId || '0');
-                const isWorkingToday = !workingDocIds || workingDocIds.has(docId);
-
                 let isMatch = false;
                 if (specialtyCode === 'lasik' && (docDept === 'lasik' || docSpecialty.includes('lasik') || docSpecialty.includes('phẫu thuật'))) {
                     isMatch = true;
@@ -1499,30 +1484,19 @@
 
                 const baseText = opt.dataset.name + ' — Chuyên khoa: ' + opt.dataset.specialty + (opt.dataset.room ? ' (' + opt.dataset.room + ')' : '');
 
-                if (!isWorkingToday) {
-                    // Bác sĩ nghỉ hôm đó → vô hiệu hóa (không ẩn, giúp bệnh nhân thấy và chọn ngày khác)
-                    opt.disabled = true;
-                    opt.hidden = false;
-                    opt.style.display = '';
-                    opt.style.color = '#94a3b8';
-                    opt.text = '🔴 [Nghỉ hôm nay] ' + (opt.dataset.name || '') + ' — ' + (opt.dataset.specialty || '');
-                } else if (isMatch) {
-                    opt.disabled = false;
-                    opt.hidden = false;
-                    opt.style.display = '';
-                    opt.style.color = '';
+                opt.disabled = false;
+                opt.hidden = false;
+                opt.style.display = '';
+                opt.style.color = '';
+                if (isMatch) {
                     const tagPrefix = (radioElement.dataset.requiresPreop === 'true')
                             ? '★ [Bác sĩ phẫu thuật & Tiền phẫu] '
                             : (bgroup === 'thuthuat' ? '★ [Bác sĩ khám lâm sàng chỉ định] ' : '★ [Đúng chuyên khoa] ');
                     opt.text = tagPrefix + baseText;
                     matchedCount++;
                     if (!firstMatchedValue)
-                        firstMatchedValue = opt.value; // Chỉ auto-chọn bác sĩ có lịch
+                        firstMatchedValue = opt.value;
                 } else {
-                    opt.disabled = false;
-                    opt.hidden = false;
-                    opt.style.display = '';
-                    opt.style.color = '';
                     opt.text = baseText;
                 }
             });
@@ -1660,10 +1634,12 @@
         // Khi người dùng chọn bác sĩ trong dropdown: Giữ nguyên bệnh/dịch vụ đã chọn, không tự ý nhảy sang dịch vụ khác
         function onDoctorSelectChange() {
             const doctorSelect = document.getElementById('doctorSelect');
+            // nếu chưa chọn bsi nào thì out luôn
             if (!doctorSelect || !doctorSelect.value) {
                 updateDoctorPreview();
                 return;
             }
+            //đọc dữ liệu đã được chọn
 
             const selectedOpt = doctorSelect.selectedOptions[0];
             const docName = selectedOpt.dataset.name || selectedOpt.text;
@@ -1904,20 +1880,12 @@
                             }
                         });
 
-                        const isBuffer = Boolean(data.sessionEndBufferEnabled);
                         const mLabel = document.getElementById('morningTimeRangeLabel');
                         const aLabel = document.getElementById('afternoonTimeRangeLabel');
-                        if (isBuffer) {
-                            if (mLabel)
-                                mLabel.textContent = '(08:00 — 11:00)';
-                            if (aLabel)
-                                aLabel.textContent = '(13:30 — 16:30)';
-                        } else {
-                            if (mLabel)
-                                mLabel.textContent = '(08:00 — 11:30)';
-                            if (aLabel)
-                                aLabel.textContent = '(13:30 — 17:00)';
-                        }
+                        if (mLabel)
+                            mLabel.textContent = '(08:00 — 11:30)';
+                        if (aLabel)
+                            aLabel.textContent = '(13:30 — 17:00)';
 
                         if (hasMorning && morningSection)
                             morningSection.classList.remove('d-none');
@@ -2124,12 +2092,7 @@
                 docSelect.value = initialDocId;
                 onDoctorSelectChange();
             } else if (checkedSvc) {
-                const bg = (checkedSvc.dataset.bgroup || '').toLowerCase().trim();
-                if (bg && bg !== 'all') {
-                    const catBtn = document.querySelector('.booking-cat-btn[data-bgroup="' + bg + '"]');
-                    if (catBtn)
-                        filterBookingCategory(bg, catBtn);
-                }
+
                 filterDoctorsByService(checkedSvc);
             } else {
                 updateDoctorPreview();
@@ -2153,6 +2116,7 @@
             const storageKey = 'vc_pay_expire_' + currentApptId;
             let expireTimestamp = sessionStorage.getItem(storageKey);
             const now = Date.now();
+            //tính mốc hết hạn
             if (!expireTimestamp || isNaN(expireTimestamp) || parseInt(expireTimestamp) < now) {
                 expireTimestamp = now + (totalHoldSeconds * 1000);
                 sessionStorage.setItem(storageKey, expireTimestamp);
@@ -2261,7 +2225,7 @@
                         clearInterval(checkInterval);
                         return;
                     }
-                          fetch('${pageContext.request.contextPath}/book-appointment?action=checkPayment&appointmentId=' + currentApptId + '&orderCode=${orderCode}')
+                    fetch('${pageContext.request.contextPath}/book-appointment?action=checkPayment&appointmentId=' + currentApptId + '&orderCode=${orderCode}')
                             .then(res => res.json())
                             .then(data => {
                                 if (data && data.isPaid) {

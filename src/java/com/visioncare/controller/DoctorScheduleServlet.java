@@ -56,7 +56,6 @@ public class DoctorScheduleServlet extends HttpServlet {
             request.setAttribute("doctorShiftSummary", doctorShiftSummary);
             request.setAttribute("selectedDate", selectedDate.toString());
             request.setAttribute("selectedSpecialty", specialty != null ? specialty : "all");
-            request.setAttribute("sessionEndBufferEnabled", com.visioncare.dao.TimeSlotDAO.isSessionEndBufferEnabled());
             request.getRequestDispatcher("/views/doctor/doctor-schedules.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();

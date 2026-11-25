@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
   <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
     <%-- Include Header --%>
@@ -175,7 +175,7 @@
                             <c:if test="${hasMorning}">
                               <div class="mb-2">
                                 <small class="text-muted fw-bold d-block mb-1" style="font-size: 0.78rem;">
-                                  <i class="bi bi-sunrise me-1 text-warning"></i>${sessionEndBufferEnabled ? 'Ca Sáng (08:00 - 11:00)' : 'Ca Sáng (08:00 - 11:30)'}:
+                                  <i class="bi bi-sunrise me-1 text-warning"></i>Ca Sáng (08:00 - 11:30):
                                 </small>
                                 <div class="d-flex flex-wrap gap-1">
                                   <c:forEach var="slot" items="${doctorSlots[doc.id]}">
@@ -207,7 +207,7 @@
                             <c:if test="${hasAfternoon}">
                               <div class="mb-3">
                                 <small class="text-muted fw-bold d-block mb-1" style="font-size: 0.78rem;">
-                                  <i class="bi bi-sun me-1 text-primary"></i>${sessionEndBufferEnabled ? 'Ca Chiều (13:30 - 16:30)' : 'Ca Chiều (13:30 - 17:00)'}:
+                                  <i class="bi bi-sun me-1 text-primary"></i>Ca Chiều (13:30 - 17:00):
                                 </small>
                                 <div class="d-flex flex-wrap gap-1">
                                   <c:forEach var="slot" items="${doctorSlots[doc.id]}">
