@@ -224,7 +224,7 @@
                                             </div>
                                             <h3><c:out value="${record.clinicalDiagnosis}" default="Chưa có chẩn đoán" /></h3>
                                             <p class="doctor-detail-history-doctor"><i class="bi bi-person-badge" aria-hidden="true"></i> <c:out value="${record.doctorName}" default="Chưa cập nhật" /></p>
-                                            <a class="doctor-detail-history-link" href="${pageContext.request.contextPath}/profile/medical-record?id=${record.recordId}"><i class="bi bi-file-earmark-medical" aria-hidden="true"></i> Chi tiết lần khám</a>
+                                           
                                             <c:if test="${not empty record.examinationResult or not empty record.conclusion}">
                                                 <details class="doctor-detail-history-more">
                                                     <summary>Xem kết quả khám <i class="bi bi-chevron-down" aria-hidden="true"></i></summary>

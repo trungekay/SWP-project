@@ -69,9 +69,32 @@ public class DoctorWaitingListServlet extends HttpServlet {
             Date sqlDate = Date.valueOf(day);
             int doctorId = doctor.getActorId();
             // One result set keeps tab counts and visible rows in sync with the search.
-            List<Appointment> matchingDay = appointmentDAO.getWaitingList(sqlDate, "doctor_day", doctorId, null, keyword);
-            List<Appointment> appointments = "all_day".equals(selectedStatus) ? new ArrayList<>(matchingDay)
-                    : matchingDay.stream().filter(a -> selectedStatus.equals(a.getStatus())).collect(Collectors.toList());
+            // One SELECT ... WHERE Status = '<status>' per state; total is the sum of the four.
+            List<Appointment> waitingList = appointmentDAO.getWaitingList(sqlDate, "doctor_Confirmed", doctorId, null, keyword);
+            List<Appointment> examiningList = appointmentDAO.getWaitingList(sqlDate, "doctor_In_Progress", doctorId, null, keyword);
+            List<Appointment> completedList = appointmentDAO.getWaitingList(sqlDate, "doctor_Completed", doctorId, null, keyword);
+            List<Appointment> canceledList = appointmentDAO.getWaitingList(sqlDate, "doctor_Canceled", doctorId, null, keyword);
+
+            long waitingCount = waitingList.size();
+            long examiningCount = examiningList.size();
+            long completedCount = completedList.size();
+            long canceledCount = canceledList.size();
+            long totalCount = waitingCount + examiningCount + completedCount + canceledCount;
+
+            List<Appointment> matchingDay = new ArrayList<>(totalCount > 0 ? (int) totalCount : 0);
+            matchingDay.addAll(waitingList);
+            matchingDay.addAll(examiningList);
+            matchingDay.addAll(completedList);
+            matchingDay.addAll(canceledList);
+
+            List<Appointment> appointments;
+            switch (selectedStatus) {
+                case "Confirmed": appointments = new ArrayList<>(waitingList); break;
+                case "In_Progress": appointments = new ArrayList<>(examiningList); break;
+                case "Completed": appointments = new ArrayList<>(completedList); break;
+                case "Canceled": appointments = new ArrayList<>(canceledList); break;
+                default: appointments = new ArrayList<>(matchingDay);
+            }
             sortAppointments(appointments, selectedSort);
 
             LocalDateTime clinicNow = LocalDateTime.now(CLINIC_ZONE);
@@ -86,10 +109,6 @@ public class DoctorWaitingListServlet extends HttpServlet {
                 }
             }
 
-            long waitingCount = matchingDay.stream().filter(a -> "Confirmed".equals(a.getStatus())).count();
-            long examiningCount = matchingDay.stream().filter(a -> "In_Progress".equals(a.getStatus())).count();
-            long completedCount = matchingDay.stream().filter(a -> "Completed".equals(a.getStatus())).count();
-            long canceledCount = matchingDay.stream().filter(a -> "Canceled".equals(a.getStatus())).count();
             Set<Integer> completionReadyIds = doctorQueueDAO.readyForCompletion(doctorId, sqlDate);
             boolean doctorBusy = examiningCount > 0;
             if (!doctorBusy && !keyword.isEmpty()) {
@@ -109,7 +128,7 @@ public class DoctorWaitingListServlet extends HttpServlet {
             request.setAttribute("examiningCount", examiningCount);
             request.setAttribute("completedCount", completedCount);
             request.setAttribute("canceledCount", canceledCount);
-            request.setAttribute("totalCount", matchingDay.size());
+            request.setAttribute("totalCount", totalCount);
             request.setAttribute("doctorBusy", doctorBusy);
             request.setAttribute("completionReadyIds", completionReadyIds);
             request.setAttribute("selectedDate", day.toString());

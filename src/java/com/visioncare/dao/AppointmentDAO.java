@@ -1490,7 +1490,23 @@ public class AppointmentDAO {
         }
 
         if (status != null && !status.trim().isEmpty() && !"all".equalsIgnoreCase(status) && !"all_queue".equalsIgnoreCase(status)) {
-            if ("doctor_day".equalsIgnoreCase(status)) {
+            if (status.startsWith("doctor_") && !"doctor_day".equalsIgnoreCase(status)) {
+                // Doctor queue: one explicit WHERE a.Status = '<status>' per tab.
+                String doctorStatus = status.substring("doctor_".length());
+                switch (doctorStatus) {
+                    case "Confirmed":
+                    case "In_Progress":
+                        sql.append(" AND a.Status = '").append(doctorStatus).append("'");
+                        sql.append(" AND " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF);
+                        break;
+                    case "Completed":
+                    case "Canceled":
+                        sql.append(" AND a.Status = '").append(doctorStatus).append("'");
+                        break;
+                    default:
+                        sql.append(" AND 1 = 0");
+                }
+            } else if ("doctor_day".equalsIgnoreCase(status)) {
                 sql.append(" AND a.Status IN ('Confirmed', 'In_Progress', 'Completed', 'Canceled')");
                 sql.append(" AND (a.Status IN ('Completed','Canceled') OR " + ProcedureOrderDAO.NO_PROCEDURE_HANDOFF + ")");
             } else if ("all_day".equalsIgnoreCase(status)) {

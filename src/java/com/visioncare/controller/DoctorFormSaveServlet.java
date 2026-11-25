@@ -93,7 +93,6 @@ public class DoctorFormSaveServlet extends HttpServlet {
             Map<String, String> values = values(request,
                     prescription ? PRESCRIPTION_FIELDS : EXAM_FIELDS);
             if (!prescription) {
-                // This field is no longer on the form; retain previously recorded history.
                 values.put("medicalHistory", formDAO.loadExamination(appointmentId)
                         .getOrDefault("medicalHistory", ""));
             }
