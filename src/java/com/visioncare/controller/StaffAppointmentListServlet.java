@@ -176,11 +176,11 @@ public class StaffAppointmentListServlet extends HttpServlet {
 
             // Lấy toàn bộ lịch hẹn trong ngày để tính chỉ số KPI tiếp đón
             List<Appointment> allDayAppointments = appointmentDAO.getStaffAppointments(queryDate, "all", doctorId, null);
-            int totalCount = allDayAppointments.size();
             long pendingCount = allDayAppointments.stream().filter(a -> a.isReadyForCheckIn() || a.isCancellationRequested()).count();
             long checkedInCount = allDayAppointments.stream().filter(a -> a.getCheckinTime() != null && !"Canceled".equalsIgnoreCase(a.getStatus())).count();
             long completedCount = allDayAppointments.stream().filter(a -> "Completed".equalsIgnoreCase(a.getEffectiveStatus())).count();
             long canceledCount = allDayAppointments.stream().filter(a -> "Canceled".equalsIgnoreCase(a.getStatus())).count();
+            long totalCount = pendingCount + checkedInCount + canceledCount;
             request.setAttribute("cancellationRequestedCount", appointmentDAO.getStaffAppointments(null, "CancellationRequested", null, null).size());
             request.setAttribute("refundEligibleCount", appointmentDAO.getStaffAppointments(null, "RefundEligible", null, null).size());
 
@@ -215,6 +215,7 @@ public class StaffAppointmentListServlet extends HttpServlet {
             request.setAttribute("todayStr", todayStr);
 
             request.setAttribute("totalCount", totalCount);
+            request.setAttribute("allAppointmentsCount", allDayAppointments.size());
             request.setAttribute("pendingCount", pendingCount);
             request.setAttribute("checkedInCount", checkedInCount);
             request.setAttribute("completedCount", completedCount);
