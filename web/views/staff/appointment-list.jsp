@@ -205,7 +205,7 @@
                                 <div class="appointment-status-tabs d-flex align-items-center gap-2">
                                     <a href="${pageContext.request.contextPath}/staff/appointments?date=${selectedDate}&status=all&doctorId=${selectedDoctorId}&keyword=${param.keyword}"
                                         class="btn btn-sm ${selectedStatus == 'all' || empty selectedStatus ? 'btn-dark fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
-                                        <i class="bi bi-calendar4-event me-1"></i> Tất cả (${totalCount})
+                                        <i class="bi bi-calendar4-event me-1"></i> Tất cả (${allAppointmentsCount})
                                     </a>
                                     <a href="${pageContext.request.contextPath}/staff/appointments?date=${selectedDate}&status=Pending&doctorId=${selectedDoctorId}&keyword=${param.keyword}"
                                         class="btn btn-sm ${selectedStatus == 'Pending' ? 'btn-warning text-dark fw-bold shadow-sm' : 'btn-white border text-secondary'} rounded-pill px-3">
